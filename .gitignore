@@ -1,0 +1,102 @@
+# Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+flutter_export_environment.sh
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Generated plugin registrants
+generated_plugin_registrant.*
+
+# Linux
+linux/flutter/ephemeral/
+
+# Windows
+windows/flutter/ephemeral/
+
+# Web build
+web/.dart_tool/
+web/.flutter-plugins
+web/.flutter-plugins-dependencies
+
+# macOS
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Runner/GeneratedPluginRegistrant.swift
+macos/Runner.xcodeproj/project.xcworkspace/
+macos/Runner.xcodeproj/xcuserdata/
+macos/Runner.xcworkspace/
+macos/Runner/DebugProfile.entitlements
+macos/Runner/Release.entitlements
+
+# iOS
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/App.framework
+ios/.symlinks/
+ios/Pods/
+ios/Runner/GeneratedPluginRegistrant.*
+ios/Flutter/Generated.xcconfig
+ios/ServiceDefinitions.json
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Podfile.lock
+ios/build/
+**/xcuserdata/
+
+
+# Xcode
+**/DerivedData/
+*.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+*.xcuserstate
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+*.xcuserdatad/
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+
+# Pod files
+Podfile.lock
+pubspec.lock
+
+# Android
+android/.gradle/
+android/app/build/
+android/local.properties
+android/key.properties
+android/.idea/
+
+# Gradle
+.gradle/
+gradlew
+gradlew.bat
+
+# VS Code
+.vscode/
+.history/
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+
+# Linux/Mac system files
+.DS_Store
+*.swp
+*.lock
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# Firebase (if using CLI)
+firebase-debug.log
+
+# Environment files (if you store secrets)
+*.env
+*.env.*
