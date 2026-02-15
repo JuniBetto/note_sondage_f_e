@@ -1,0 +1,90 @@
+import 'dart:io' show Platform;
+
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+class DioClient {
+  static DioClient? _instance;
+  final Dio dio;
+
+  /// The host to use depending on platform
+  static String get _host {
+    if (kIsWeb) return '127.0.0.1';
+    if (Platform.isAndroid) return '10.0.2.2';
+    return '127.0.0.1';
+  }
+
+  /// Returns the correct base URL depending on the platform:
+  /// - Web / iOS / macOS / desktop: http://127.0.0.1:8001
+  /// - Android emulator:            http://10.0.2.2:8001
+  static String get baseUrl => 'http://$_host:8001';
+
+  /// MinIO API port for direct access (only used if bucket is public)
+  static String get _minioBaseUrl => 'http://$_host:9002/bucket1';
+
+  /// Resolves an image URL from the server (e.g. MinIO) so it works
+  /// on every platform.
+  ///
+  /// Since MinIO requires authentication (access_key / secret_key),
+  /// images are served through the backend API as a proxy.
+  ///
+  /// The imageUrl from the backend is a relative path like:
+  ///   "team_member/{member_id}/{filename}.jpg"
+  ///
+  /// We build: http://{host}:8001/team-members/{member_id}/profile-image
+  static String resolveImageUrl(String url) {
+    if (url.isEmpty) return url;
+
+    // Already a full URL – just fix the host
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url.replaceAll('localhost', _host).replaceAll('127.0.0.1', _host);
+    }
+
+    // Relative path from MinIO: "team_member/{member_id}/{filename}"
+    // Route through backend API proxy
+    final path = url.startsWith('/') ? url.substring(1) : url;
+    final parts = path.split('/');
+
+    // Expected format: team_member/{member_id}/{filename}
+    if (parts.length >= 2) {
+      final memberId = parts[1]; // second segment is the member_id
+      return '$baseUrl/team-members/$memberId/profile-image';
+    }
+
+    // Fallback: try direct MinIO URL
+    return '$_minioBaseUrl/$path';
+  }
+
+  DioClient._(this.dio) {
+    // Aggiungi interceptors nel costruttore privato
+    dio.interceptors.add(
+      LogInterceptor(
+        request: true,
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: true,
+        responseBody: true,
+        error: true,
+      ),
+    );
+  }
+
+  factory DioClient({Dio? dio}) {
+    _instance ??= DioClient._(
+      dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: baseUrl,
+              connectTimeout: const Duration(seconds: 30),
+              receiveTimeout: const Duration(seconds: 30),
+              sendTimeout: const Duration(seconds: 30),
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+            ),
+          ),
+    );
+    return _instance!;
+  }
+}
