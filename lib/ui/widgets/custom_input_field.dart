@@ -17,10 +17,12 @@ class CustomInputField extends StatefulWidget {
   final IconData? prefixIcon; // Icona opzionale a sinistra
   final TextEditingController controller;
   final bool isPassword;
+  final bool isSearch; // Se true, mostra l'icona di ricerca a destra
   final bool isNumber;
   final int? minLines;
   final int? maxLines;
   final String? Function(String?)? validator; // Funzione di validazione
+  final void Function()? onSearchPressed; // Callback per il pulsante di ricerca
 
   const CustomInputField({
     super.key,
@@ -28,10 +30,12 @@ class CustomInputField extends StatefulWidget {
     required this.controller,
     this.prefixIcon,
     this.isPassword = false, // Default: false
+    this.isSearch = false, // Default: false
     this.isNumber = false, // Default: false
     this.validator,
     this.minLines,
     this.maxLines = 1,
+    this.onSearchPressed,
   });
 
   @override
@@ -83,6 +87,11 @@ class _CustomInputFieldState extends State<CustomInputField> {
                     _isObscured = !_isObscured;
                   });
                 },
+              )
+            : widget.isSearch
+            ? IconButton(
+                icon: Icon(Icons.search, color: colorScheme.bgIcons),
+                onPressed: widget.onSearchPressed,
               )
             : null,
 

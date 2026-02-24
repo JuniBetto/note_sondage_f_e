@@ -8,7 +8,7 @@ class SondageWeb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context.read<NavigationBloc>().add(NavigationPositionChanged(6));
+    context.read<NavigationBloc>().add(NavigationPositionChanged(4));
 
     return const Padding(
       padding: EdgeInsets.all(16.0),

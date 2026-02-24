@@ -37,9 +37,11 @@ class LoginWeb extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          localization.welcomeBack,
-                          style: textTheme.displayLarge,
+                        Expanded(
+                          child: Text(
+                            localization.welcomeBack,
+                            style: textTheme.displayLarge,
+                          ),
                         ),
                       ],
                     ),

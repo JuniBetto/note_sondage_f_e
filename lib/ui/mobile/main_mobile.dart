@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
+import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
@@ -24,14 +26,22 @@ class MainMobile extends StatelessWidget {
             ? "Home"
             : navBarItem == 1
             ? "Teams"
-            : "Settings",
+            : navBarItem == 2
+            ? "Settings"
+            : navBarItem == 3
+            ? "Clocking"
+            : "Sondage",
       ),
       backgroundColor: colorScheme.bgColor,
       body: navBarItem == 0
           ? const HomeMobile()
           : navBarItem == 1
           ? const TeamsMobile()
-          : const SettingsMobile(),
+          : navBarItem == 2
+          ? const SettingsMobile()
+          : navBarItem == 3
+          ? const ClockingMobile()
+          : const SondageMobile(),
       bottomNavigationBar: NavigationBarWidget(
         key: Key("mobile_navigation_bar"),
       ),

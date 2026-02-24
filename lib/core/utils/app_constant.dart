@@ -20,3 +20,5 @@ const List<String> listPermissionsUser = [
       'Delete',
   'Manage',
 ];
+
+const List<String> listStatusClockCheck = ["Team with users", "Only user"];

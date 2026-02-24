@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:note_sondage/feature/clocking/ui/mobile/widgets/clocking_mobile.dart';
+import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
 import 'package:note_sondage/feature/clocking/ui/web/clocking_web.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/web/sondage_web.dart';
@@ -74,7 +74,7 @@ GoRouter createRouter(BuildContext context) {
         path: RouterPaths.clocking,
         name: RouterPaths.clocking,
         pageBuilder: (context, state) => const NoTransitionPage<void>(
-          child: kIsWeb ? MainWebNew(child: ClockingWeb()) : ClockingMobile(),
+          child: kIsWeb ? MainWeb(child: ClockingWeb()) : ClockingMobile(),
         ),
       ),
       GoRoute(

@@ -7,6 +7,7 @@ import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/mobile/widgets/home/home_mobile.dart';
 import 'package:note_sondage/ui/web/settings/settings_web.dart';
 import 'package:note_sondage/ui/web/widgets/home/left_home_section.dart';
+import 'package:note_sondage/ui/web/widgets/home/left_home_section_new.dart';
 import 'package:note_sondage/ui/web/widgets/right_home_section.dart';
 import 'package:note_sondage/ui/web/widgets/web_full_section.dart';
 import 'package:note_sondage/ui/web/widgets/web_navbar.dart';
@@ -22,14 +23,14 @@ class MainWebNew extends StatelessWidget {
     final navBarItem = context.watch<NavigationBloc>().state;
     return Scaffold(
       backgroundColor: colorScheme.bgColor,
-      appBar: WebNavbar(), // <-- Semplificato: non passa più nulla
+      // appBar: WebNavbar(), // <-- Semplificato: non passa più nulla
       body: Column(
         children: [
           SizedBox(height: 4),
           Expanded(
             child: Row(
               children: [
-                Expanded(child: LeftHomeSection()),
+                Expanded(child: LeftHomeSectionNew()),
                 Expanded(
                   flex: 3,
                   child:
@@ -41,8 +42,8 @@ class MainWebNew extends StatelessWidget {
                           1 =>
                             const TeamPage(), // Puoi sostituire con un altro widget web
                           2 => const SettingsWeb(),
-                          5 => const ClockingWeb(),
-                          6 => const SondageWeb(),
+                          3 => const ClockingWeb(),
+                          4 => const SondageWeb(),
                           // TODO: Handle this case.
                           int() => throw UnimplementedError(),
                         },

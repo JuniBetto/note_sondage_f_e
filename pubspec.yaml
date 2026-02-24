@@ -54,6 +54,8 @@ dependencies:
   get_it: ^9.2.0
   skeletonizer: 2.1.2
   bloc: ^9.2.0
+  data_table_2: ^2.0.10
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:
