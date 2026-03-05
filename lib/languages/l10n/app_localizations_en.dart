@@ -159,4 +159,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editTeam => 'Edit team';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get notification => 'Notification';
+
+  @override
+  String get contactUs => 'Contact us';
+
+  @override
+  String get privacy => 'Privacy';
 }

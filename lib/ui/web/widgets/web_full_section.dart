@@ -25,7 +25,7 @@ class WebFullSection extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              Expanded(child: LeftHomeSection()),
+              Expanded(child: LeftHomeSection(listSidebarItem: [])),
               Expanded(
                 flex: 3,
                 child: /*RightHomeSection() */ Container(

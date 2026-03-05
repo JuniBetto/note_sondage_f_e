@@ -46,5 +46,9 @@
     "roleName":"Role name",
     "roleDescription":"Role description",
     "selectedPermission":"Select Permission",
-    "editTeam":"Edit team"
+    "editTeam":"Edit team",
+    "language":"Language",
+    "notification":"Notification",
+    "contactUs":"Contact us",
+    "privacy":"Privacy"
 }

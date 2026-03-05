@@ -46,6 +46,10 @@
     "roleName":"Nome del ruolo",
     "roleDescription":"Descrizione del ruolo",
     "selectedPermission":"Selezionare la Permissione",
-    "editTeam":"Modificare squadra"
+    "editTeam":"Modificare squadra",
+    "language":"Lingua",
+    "notification":"Notification",
+    "contactUs":"Contattaci",
+    "privacy":"Privacy"
 
 }

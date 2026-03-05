@@ -161,4 +161,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get editTeam => 'equipo edición';
+
+  @override
+  String get language => 'Idioma';
+
+  @override
+  String get notification => 'Notificación';
+
+  @override
+  String get contactUs => 'Contáctenos';
+
+  @override
+  String get privacy => 'Privacidad';
 }

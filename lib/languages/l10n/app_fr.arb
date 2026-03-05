@@ -46,5 +46,9 @@
     "roleName":"Nom du role",
     "roleDescription":"Description du role",
     "selectedPermission":"Selection de la Permission",
-    "editTeam":"Modifier equipe"
+    "editTeam":"Modifier equipe",
+    "language":"Langue",
+    "notification":"Notification",
+    "contactUs":"Contactez nous",
+    "privacy":"Confidentialité"
 }

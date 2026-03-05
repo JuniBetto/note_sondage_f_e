@@ -12,6 +12,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/languages/l10n/l10n.dart';
 import 'package:note_sondage/ui/bloc/auth_bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
+import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 
@@ -32,6 +33,9 @@ class _MainAppState extends State<MainApp> {
         BlocProvider<ThemeBloc>(create: (context) => ThemeBloc()),
         BlocProvider<AuthBloc>(create: (context) => AuthBloc()),
         BlocProvider<NavigationBloc>(create: (context) => NavigationBloc()),
+        BlocProvider<SettingNavigationBloc>(
+          create: (context) => SettingNavigationBloc(),
+        ),
         BlocProvider<RoleBloc>(create: (context) => getIt<RoleBloc>()),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(

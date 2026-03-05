@@ -46,5 +46,9 @@
     "roleName":"Nombre rol",
     "roleDescription":"Descripción del rol",
     "selectedPermission":"Seleccionar permiso",
-    "editTeam":"equipo edición"
+    "editTeam":"equipo edición",
+    "language":"Idioma",
+    "notification":"Notificación",
+    "contactUs":"Contáctenos",
+    "privacy":"Privacidad"
 }

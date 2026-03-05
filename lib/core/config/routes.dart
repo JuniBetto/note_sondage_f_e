@@ -10,11 +10,9 @@ import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.da
 import 'package:note_sondage/feature/sondage/ui/web/sondage_web.dart';
 import 'package:note_sondage/feature/team/ui/mobile/role_page.dart';
 import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
-import 'package:note_sondage/feature/team/ui/mobile/widgets/create_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/update_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/web/role_page_web.dart';
 import 'package:note_sondage/feature/team/ui/web/teams_web.dart';
-import 'package:note_sondage/feature/team/ui/web/widgets/create_team_web.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/update_team_web.dart';
 import 'package:note_sondage/ui/bloc/auth_bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/bloc/auth_bloc/auth_state.dart';
@@ -23,11 +21,13 @@ import 'package:note_sondage/ui/mobile/widgets/login/login_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/settings_mobile.dart';
 import 'package:note_sondage/ui/web/login/login_web.dart';
 import 'package:note_sondage/ui/web/main_web.dart';
-import 'package:note_sondage/ui/web/main_web_new.dart';
+import 'package:note_sondage/ui/web/settings/settings_contact_us_web.dart';
+import 'package:note_sondage/ui/web/settings/settings_language_web.dart';
+import 'package:note_sondage/ui/web/settings/settings_notification_web.dart';
+import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_web.dart';
 import 'package:note_sondage/ui/widgets/about_page.dart';
 import 'package:note_sondage/ui/widgets/splash_screen/splash_sreen_begin.dart';
-import 'package:note_sondage/ui/widgets/team_page.dart';
 
 //String currentAppPath = RouterPaths.splashScreen;
 
@@ -47,6 +47,44 @@ GoRouter createRouter(BuildContext context) {
         pageBuilder: (context, state) => const NoTransitionPage<void>(
           child: kIsWeb ? MainWeb(child: SettingsWeb()) : SettingsMobile(),
         ),
+        routes: [
+          GoRoute(
+            path: 'language',
+            name: RouterPaths.settingsLanguage,
+            pageBuilder: (context, state) => const NoTransitionPage<void>(
+              child: kIsWeb
+                  ? SettingsLanguageWeb()
+                  : LoginMobile(isForgetPassword: true),
+            ),
+          ),
+          GoRoute(
+            path: 'notifications',
+            name: RouterPaths.settingsNotifications,
+            pageBuilder: (context, state) => const NoTransitionPage<void>(
+              child: kIsWeb
+                  ? SettingsNotificationWeb()
+                  : LoginMobile(isForgetPassword: true),
+            ),
+          ),
+          GoRoute(
+            path: 'contact_us',
+            name: RouterPaths.settingsContactUs,
+            pageBuilder: (context, state) => const NoTransitionPage<void>(
+              child: kIsWeb
+                  ? SettingsContactUsWeb()
+                  : LoginMobile(isForgetPassword: true),
+            ),
+          ),
+          GoRoute(
+            path: 'privacy',
+            name: RouterPaths.settingsPrivacy,
+            pageBuilder: (context, state) => const NoTransitionPage<void>(
+              child: kIsWeb
+                  ? SettingsPrivacyWeb()
+                  : LoginMobile(isForgetPassword: true),
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: RouterPaths.forgotPassword,
@@ -312,6 +350,10 @@ abstract class RouterPaths {
   static const forgotPassword = '/forgot_password';
   static const splashScreen = '/splash_screen';
   static const settings = '/settings';
+  static const settingsLanguage = '/settings/language';
+  static const settingsNotifications = '/settings/notifications';
+  static const settingsPrivacy = '/settings/privacy';
+  static const settingsContactUs = '/settings/contact_us';
   static const clocking = '/clocking';
   static const sondage = '/sondage';
   static const createTeam = '/create_team';

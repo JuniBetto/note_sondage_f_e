@@ -159,4 +159,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get editTeam => 'Modifier equipe';
+
+  @override
+  String get language => 'Langue';
+
+  @override
+  String get notification => 'Notification';
+
+  @override
+  String get contactUs => 'Contactez nous';
+
+  @override
+  String get privacy => 'Confidentialité';
 }

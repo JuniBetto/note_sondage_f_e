@@ -389,6 +389,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit team'**
   String get editTeam;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @notification.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification'**
+  String get notification;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get contactUs;
+
+  /// No description provided for @privacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get privacy;
 }
 
 class _AppLocalizationsDelegate

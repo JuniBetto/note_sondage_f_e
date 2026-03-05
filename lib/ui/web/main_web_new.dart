@@ -11,6 +11,7 @@ import 'package:note_sondage/ui/web/widgets/home/left_home_section_new.dart';
 import 'package:note_sondage/ui/web/widgets/right_home_section.dart';
 import 'package:note_sondage/ui/web/widgets/web_full_section.dart';
 import 'package:note_sondage/ui/web/widgets/web_navbar.dart';
+import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 import 'package:note_sondage/ui/widgets/team_page.dart';
 
 class MainWebNew extends StatelessWidget {
@@ -41,7 +42,13 @@ class MainWebNew extends StatelessWidget {
                           0 => const HomeMobile(),
                           1 =>
                             const TeamPage(), // Puoi sostituire con un altro widget web
-                          2 => const SettingsWeb(),
+                          2 => CustomDialog(
+                            title: "Settings",
+
+                            child: SingleChildScrollView(
+                              child: Text("Settings Web"),
+                            ),
+                          ), //const SettingsWeb(),
                           3 => const ClockingWeb(),
                           4 => const SondageWeb(),
                           // TODO: Handle this case.
