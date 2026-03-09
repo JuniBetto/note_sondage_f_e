@@ -12,6 +12,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get login => 'Entre';
 
   @override
+  String get logout => 'Deconnexion';
+
+  @override
   String get register => 'S\'inscrire';
 
   @override

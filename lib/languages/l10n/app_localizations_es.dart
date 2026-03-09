@@ -12,6 +12,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get login => 'Login';
 
   @override
+  String get logout => 'Cerra sesion';
+
+  @override
   String get register => 'Registrarse';
 
   @override

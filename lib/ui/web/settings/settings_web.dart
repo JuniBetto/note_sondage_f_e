@@ -6,6 +6,7 @@ import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_event.dart';
+import 'package:note_sondage/ui/web/login/login_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_contact_us_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_language_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_notification_web.dart';
@@ -95,6 +96,15 @@ class SettingsWeb extends StatelessWidget {
               isSmallScreen: isExpanded,
               lastIndexes: lastIndexes,
             ),
+            SidebarItem(
+              isSettings: true,
+              key: const ValueKey(4),
+              icon: Icons.logout_outlined,
+              label: localizations.logout,
+              index: 4,
+              isSmallScreen: isExpanded,
+              lastIndexes: lastIndexes,
+            ),
           ],
         );
       },
@@ -107,6 +117,7 @@ class SettingsWeb extends StatelessWidget {
               1 => const SettingsNotificationWeb(),
               2 => const SettingsContactUsWeb(),
               3 => const SettingsPrivacyWeb(),
+              4 => const LoginWeb(),
               int() => const SettingsLanguageWeb(),
             },
           ),

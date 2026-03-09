@@ -1,5 +1,6 @@
 {
     "login":"Accesso",
+    "logout":"disconnessione",
     "register": "Registrati",
     "gladYouAreBack": "Siamo felici di riaverti.!",
     "welcomeBack": "Bentornato.!",

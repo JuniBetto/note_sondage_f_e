@@ -1,18 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
-import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
+import 'package:note_sondage/feature/sondage/ui/web/sondage_web_skeleton.dart';
+import 'package:note_sondage/ui/widgets/skeleton_wrapper.dart';
 
-class SondageWeb extends StatelessWidget {
+class SondageWeb extends StatefulWidget {
   const SondageWeb({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    context.read<NavigationBloc>().add(NavigationPositionChanged(4));
+  State<SondageWeb> createState() => _SondageWebState();
+}
 
-    return const Padding(
-      padding: EdgeInsets.all(16.0),
-      child: Text("Sondaggio web"),
+class _SondageWebState extends State<SondageWeb> {
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    // Simula caricamento dati - sostituire con chiamata API reale
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SkeletonWrapper(
+      isLoading: _isLoading,
+      skeleton: const SondageWebSkeleton(),
+      child: const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Text("Sondaggio web"),
+      ),
     );
   }
 }

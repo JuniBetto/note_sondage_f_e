@@ -1,5 +1,6 @@
 {
     "login":"Entre",
+    "logout":"Deconnexion",
     "register": "S'inscrire",
     "gladYouAreBack": "Content de vous revoir.!",
     "welcomeBack": "Bon retour.!",

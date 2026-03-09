@@ -16,10 +16,22 @@ class StatusClockInChangeView extends StatefulWidget {
 
 class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   bool isClockedTeamWithUsers = true;
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _onStatusChanged(String? value) {
     // Handle status change logic here
-    print("Selected status: $value");
   }
 
   @override
@@ -49,7 +61,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                     ),
                     CustomInputField(
                       hintText: "Email or team name",
-                      controller: TextEditingController(),
+                      controller: _searchController,
                       validator: emailValidator,
                       isSearch: true,
                       onSearchPressed: () {

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_role.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_role_permission.dart';
+import 'package:note_sondage/feature/team/ui/web/role_page_web_skeleton.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/ui/widgets/skeleton_wrapper.dart';
 
 const _kMaxWidth = 1200.0;
 const _kHeightRatio = 0.88;
@@ -19,12 +21,24 @@ class _RolePageWebState extends State<RolePageWeb>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
   int currentViewType = 1;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 2, vsync: this);
     tabController.addListener(_handleTabChange);
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    // Simula caricamento dati - sostituire con chiamata API reale
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _handleTabChange() {
@@ -64,65 +78,68 @@ class _RolePageWebState extends State<RolePageWeb>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final colorScheme = theme.colorScheme;
     final localization = AppLocalizations.of(context)!;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: _kMaxWidth,
-              maxHeight: constraints.maxHeight * _kHeightRatio,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        // Prima tab: Lista ruoli
-                        Text(
-                          localization.roleList,
-                          style: textTheme.headlineMedium!.copyWith(
-                            fontWeight: FontWeight.bold,
+    return SkeletonWrapper(
+      isLoading: _isLoading,
+      skeleton: const RolePageWebSkeleton(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: _kMaxWidth,
+                maxHeight: constraints.maxHeight * _kHeightRatio,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          // Prima tab: Lista ruoli
+                          Text(
+                            localization.roleList,
+                            style: textTheme.headlineMedium!.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: ListRolePermission(
-                            isMobile: false,
-                            teamId: widget.teamId,
+                          Expanded(
+                            child: ListRolePermission(
+                              isMobile: false,
+                              teamId: widget.teamId,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        // Prima tab: Lista ruoli
-                        Text(
-                          localization.createRole,
-                          style: textTheme.headlineMedium!.copyWith(
-                            fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          // Prima tab: Lista ruoli
+                          Text(
+                            localization.createRole,
+                            style: textTheme.headlineMedium!.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: CreateRoleWidget(teamId: widget.teamId),
-                        ),
-                      ],
+                          Expanded(
+                            child: CreateRoleWidget(teamId: widget.teamId),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

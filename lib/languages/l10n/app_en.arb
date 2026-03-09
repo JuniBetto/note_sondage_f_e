@@ -1,5 +1,6 @@
 {
     "login":"Login",
+    "logout":"Logout",
     "register":"Register",
     "gladYouAreBack":"Glad you're back.!",
     "welcomeBack":"Welcome back .!",
