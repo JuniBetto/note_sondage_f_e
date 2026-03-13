@@ -149,89 +149,87 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             );
           }
         },
-        child: Expanded(
-          child: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 0.0,
-                  vertical: 8.0,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (widget.teamId != null) ...[
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          CustomAppButton(
-                            type: ButtonType.text,
-                            isActive: true,
-                            child: Text(localization.roleManager),
-                            onPressed: () {
-                              context.go(
-                                RouterPaths.rolePage,
-                                extra: widget.teamId,
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      Divider(height: 4, color: colorScheme.bgborderLogin),
-                      SizedBox(height: 16),
-                    ],
-                    // Campi del form
-                    CustomInputField(
-                      hintText: localization.teamName,
-                      controller: nameTeamController,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 0.0,
+                vertical: 8.0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.teamId != null) ...[
+                    Row(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        CustomAppButton(
+                          type: ButtonType.text,
+                          isActive: true,
+                          child: Text(localization.roleManager),
+                          onPressed: () {
+                            context.go(
+                              RouterPaths.rolePage,
+                              extra: widget.teamId,
+                            );
+                          },
+                        ),
+                      ],
                     ),
                     SizedBox(height: 16),
-                    CustomInputField(
-                      hintText: localization.teamDescription,
-                      controller: descriptionTeamController,
-                    ),
+                    Divider(height: 4, color: colorScheme.bgborderLogin),
                     SizedBox(height: 16),
-                    Text(localization.selectedTeamcolor),
-                    ListCheckbox(selectedColor: selectedColor),
-
-                    SizedBox(height: 16),
-                    AddUserMobile(listUserFormData: listUserFormData),
-
-                    SizedBox(height: 32),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState?.validate() ?? false) {
-                          // TODO: sostituire con userId reale (preso da auth)
-                          const currentUserId =
-                              '7f49a0ab-d27e-462d-89d6-e10494c5b3da';
-
-                          // Crea il team
-                          final team = TeamEntity(
-                            null,
-                            selectedColor.isNotEmpty
-                                ? selectedColor.first
-                                : '0xFF513387',
-                            name: nameTeamController.text,
-                            description: descriptionTeamController.text,
-                            createdByUserId: currentUserId,
-                          );
-                          _teamBloc.add(
-                            CreateTeamEvent(team, userId: currentUserId),
-                          );
-                          // selectedColor.clear();
-                          listUserFormData.clear();
-                          nameTeamController.clear();
-                          descriptionTeamController.clear();
-                        }
-                      },
-                      child: Text(localization.createTeam),
-                    ),
                   ],
-                ),
+                  // Campi del form
+                  CustomInputField(
+                    hintText: localization.teamName,
+                    controller: nameTeamController,
+                  ),
+                  SizedBox(height: 16),
+                  CustomInputField(
+                    hintText: localization.teamDescription,
+                    controller: descriptionTeamController,
+                  ),
+                  SizedBox(height: 16),
+                  Text(localization.selectedTeamcolor),
+                  ListCheckbox(selectedColor: selectedColor),
+
+                  SizedBox(height: 16),
+                  AddUserMobile(listUserFormData: listUserFormData),
+
+                  SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState?.validate() ?? false) {
+                        // TODO: sostituire con userId reale (preso da auth)
+                        const currentUserId =
+                            '7f49a0ab-d27e-462d-89d6-e10494c5b3da';
+
+                        // Crea il team
+                        final team = TeamEntity(
+                          null,
+                          selectedColor.isNotEmpty
+                              ? selectedColor.first
+                              : '0xFF513387',
+                          name: nameTeamController.text,
+                          description: descriptionTeamController.text,
+                          createdByUserId: currentUserId,
+                        );
+                        _teamBloc.add(
+                          CreateTeamEvent(team, userId: currentUserId),
+                        );
+                        // selectedColor.clear();
+                        listUserFormData.clear();
+                        nameTeamController.clear();
+                        descriptionTeamController.clear();
+                      }
+                    },
+                    child: Text(localization.createTeam),
+                  ),
+                ],
               ),
             ),
           ),

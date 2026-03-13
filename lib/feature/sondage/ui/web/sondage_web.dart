@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/sondage/ui/web/sondage_web_skeleton.dart';
-import 'package:note_sondage/ui/widgets/skeleton_wrapper.dart';
 
 class SondageWeb extends StatefulWidget {
   const SondageWeb({super.key});
@@ -30,13 +29,14 @@ class _SondageWebState extends State<SondageWeb> {
 
   @override
   Widget build(BuildContext context) {
-    return SkeletonWrapper(
-      isLoading: _isLoading,
-      skeleton: const SondageWebSkeleton(),
-      child: const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text("Sondaggio web"),
-      ),
+    // Mostra skeleton durante il caricamento
+    if (_isLoading) {
+      return const SondageWebSkeleton();
+    }
+
+    return const Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Text("Sondaggio web"),
     );
   }
 }

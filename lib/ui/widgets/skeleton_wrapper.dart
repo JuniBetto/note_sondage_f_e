@@ -47,13 +47,19 @@ class SkeletonWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Se è in loading e abbiamo uno skeleton personalizzato, mostralo direttamente
+    if (isLoading && skeleton != null) {
+      return skeleton!;
+    }
+
+    // Altrimenti usa Skeletonizer per animare il child
     return Skeletonizer(
       enabled: isLoading,
       ignoreContainers: ignoreContainers,
       justifyMultiLineText: justifyMultiLineText,
       containersColor: containersColor,
       effect: effect ?? const ShimmerEffect(),
-      child: isLoading ? (skeleton ?? child) : child,
+      child: child,
     );
   }
 }
