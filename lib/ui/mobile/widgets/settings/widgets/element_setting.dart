@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/domain/entities/all_enum.dart';
 import 'package:note_sondage/domain/entities/setting_type.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/change_language.dart';
+import 'package:note_sondage/ui/mobile/widgets/settings/widgets/change_theme.dart';
+import 'package:note_sondage/ui/mobile/widgets/settings/widgets/contact_us_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/element_inside_setting.dart';
+import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 
 class ElementSetting extends StatelessWidget {
   const ElementSetting({super.key, required this.settings});
@@ -47,12 +51,27 @@ class ElementSetting extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: setting.asMap().entries.expand((entry) {
                           final isLast = entry.key == setting.length - 1;
+
+                          // Determina quale modal mostrare in base al titolo del setting
+                          Widget contentModal;
+                          final titleEnum = entry.value.title;
+
+                          if (titleEnum == SettingCategory.language) {
+                            contentModal = const ChangeLanguage();
+                          } else if (titleEnum == SettingCategory.theme) {
+                            contentModal = const ChangeTheme();
+                          } else if (titleEnum == SettingCategory.contactus) {
+                            contentModal = const ContactUsMobile();
+                          } else if (titleEnum == SettingCategory.privacy) {
+                            contentModal = const SettingsPrivacyWeb();
+                          } else {
+                            contentModal = const SizedBox(height: 40);
+                          }
+
                           return [
                             ElementInsideSetting(
                               setting: entry.value,
-                              contentModal: entry.value.title == "Language"
-                                  ? ChangeLanguage()
-                                  : SizedBox(height: 40),
+                              contentModal: contentModal,
                             ),
                             if (!isLast) const Divider(height: 16),
                           ];

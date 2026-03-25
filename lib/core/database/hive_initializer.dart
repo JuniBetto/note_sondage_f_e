@@ -15,7 +15,10 @@ class HiveInitializer {
 
       // Open boxes with unique names
       // await Future.wait([Hive.openBox<AppConfigModel>(appConfigBox)]);
-      await Future.wait([Hive.openBox<bool>(themeConfigBox)]);
+      await Future.wait([
+        Hive.openBox<bool>(themeConfigBox),
+        Hive.openBox<String>(languageConfigBox),
+      ]);
     } catch (e) {
       rethrow;
     }
@@ -23,6 +26,9 @@ class HiveInitializer {
 
   static Future<void> closeBoxes() async {
     // await Future.wait([Hive.box<AppConfigModel>(appConfigBox).close()]);
-    await Future.wait([Hive.box<bool>(themeConfigBox).close()]);
+    await Future.wait([
+      Hive.box<bool>(themeConfigBox).close(),
+      Hive.box<String>(languageConfigBox).close(),
+    ]);
   }
 }

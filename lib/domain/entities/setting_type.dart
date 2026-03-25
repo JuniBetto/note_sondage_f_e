@@ -1,5 +1,7 @@
+import 'package:note_sondage/domain/entities/all_enum.dart';
+
 class SettingType {
-  final String title;
+  final SettingCategory title;
   final String subtitle;
   final String category;
 

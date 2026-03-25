@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/domain/entities/all_enum.dart';
 import 'package:note_sondage/domain/entities/setting_type.dart';
+import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
+import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
+import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
 
 class ElementInsideSetting extends StatelessWidget {
   const ElementInsideSetting({
@@ -13,8 +18,37 @@ class ElementInsideSetting extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+
+    // Get dynamic subtitle based on setting type
+    String getSubtitle() {
+      if (setting.title == SettingCategory.theme) {
+        final themeState = context.watch<ThemeBloc>().state;
+        if (themeState is ThemeisDark) {
+          return 'Dark';
+        } else if (themeState is ThemeisLight) {
+          return 'Light';
+        } else {
+          return 'System';
+        }
+      } else if (setting.title == SettingCategory.language) {
+        final languageState = context.watch<LanguageBloc>().state;
+        final languageCode = languageState.locale.languageCode;
+        switch (languageCode) {
+          case 'en':
+            return 'English';
+          case 'it':
+            return 'Italiano';
+          case 'es':
+            return 'Español';
+          case 'fr':
+            return 'Français';
+          default:
+            return 'English';
+        }
+      }
+      return setting.subtitle;
+    }
 
     _showModalBottomPermissionEdit(BuildContext context) {
       showModalBottomSheet(
@@ -58,13 +92,27 @@ class ElementInsideSetting extends StatelessWidget {
       onTap: () => _showModalBottomPermissionEdit(context),
       child: Padding(
         padding: const EdgeInsets.only(left: 4.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(setting.title, style: textTheme.bodyLarge),
-            const SizedBox(height: 8),
-            Text(setting.subtitle, style: textTheme.bodyMedium),
-          ],
+        child: SizedBox(
+          width: double.infinity,
+          child: Card(
+            color: Colors.transparent,
+            elevation: 4,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    setting.title.name.toLowerCase(),
+                    style: textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(getSubtitle(), style: textTheme.bodyMedium),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

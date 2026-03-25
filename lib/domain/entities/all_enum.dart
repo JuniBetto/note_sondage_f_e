@@ -20,3 +20,15 @@ enum UserRole {
   @override
   String toString() => value;
 }
+
+enum SettingCategory {
+  theme,
+  language,
+  notifications,
+  privacy,
+  contactus,
+  appearance,
+  account,
+  security,
+  general,
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/domain/entities/all_enum.dart';
 import 'package:note_sondage/domain/entities/setting_type.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/element_setting.dart';
 
@@ -17,22 +18,30 @@ class SettingsMobile extends StatelessWidget {
 }
 
 List<SettingType> settings = [
-  SettingType(title: 'Theme', subtitle: 'System', category: 'Preferences'),
-  SettingType(title: 'Language', subtitle: 'English', category: 'Preferences'),
   SettingType(
-    title: 'Notifications',
+    title: SettingCategory.theme,
+    subtitle: 'System',
+    category: 'Preferences',
+  ),
+  SettingType(
+    title: SettingCategory.language,
+    subtitle: 'English',
+    category: 'Preferences',
+  ),
+  SettingType(
+    title: SettingCategory.notifications,
     subtitle: 'None',
     category: 'Preferences',
   ),
 
   SettingType(
-    title: 'Privacy',
+    title: SettingCategory.privacy,
     subtitle: 'Manage your privacy settings',
     category: 'Privacy',
   ),
   SettingType(
-    title: 'Appearance',
-    subtitle: 'Customize the app appearance',
-    category: 'General',
+    title: SettingCategory.contactus,
+    subtitle: 'Get in touch with our support team',
+    category: 'Privacy',
   ),
 ];

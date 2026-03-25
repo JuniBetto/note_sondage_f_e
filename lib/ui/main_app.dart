@@ -13,6 +13,8 @@ import 'package:note_sondage/languages/l10n/l10n.dart';
 import 'package:note_sondage/ui/bloc/auth_bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
+import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
+import 'package:note_sondage/ui/widgets/language_config/bloc/language_state.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 
@@ -31,6 +33,7 @@ class _MainAppState extends State<MainApp> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<ThemeBloc>(create: (context) => ThemeBloc()),
+        BlocProvider<LanguageBloc>(create: (context) => LanguageBloc()),
         BlocProvider<AuthBloc>(create: (context) => AuthBloc()),
         BlocProvider<NavigationBloc>(create: (context) => NavigationBloc()),
         BlocProvider<SettingNavigationBloc>(
@@ -39,19 +42,19 @@ class _MainAppState extends State<MainApp> {
         BlocProvider<RoleBloc>(create: (context) => getIt<RoleBloc>()),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
-        builder: (context, state) {
-          return Builder(
-            builder: (innerContext) {
-              _router ??= createRouter(innerContext);
+        builder: (context, themeState) {
+          return BlocBuilder<LanguageBloc, LanguageState>(
+            builder: (context, languageState) {
+              _router ??= createRouter(context);
 
               return MaterialApp.router(
                 title: 'Flutter Demo',
                 debugShowCheckedModeBanner: false,
                 routerConfig: _router,
-                theme: state.themeData,
+                theme: themeState.themeData,
                 themeMode: ThemeMode.system,
                 supportedLocales: L10n.all,
-                locale: const Locale('en'),
+                locale: languageState.locale,
                 localizationsDelegates: const [
                   AppLocalizations.delegate,
                   GlobalMaterialLocalizations.delegate,

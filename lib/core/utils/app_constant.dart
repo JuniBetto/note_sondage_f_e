@@ -3,6 +3,8 @@
 //const appConfigBox = 'app_config';
 const themeKeyBox = 'theme_key';
 const themeConfigBox = 'theme_config';
+const languageKeyBox = 'language_key';
+const languageConfigBox = 'language_config';
 
 const List<String> listStatusUser = [
   'ACTIVE',

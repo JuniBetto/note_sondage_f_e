@@ -124,6 +124,46 @@ class _CustomInputFieldState extends State<CustomInputField> {
   }
 }
 
+// Widget per i campi di testo personalizzati
+class CustomTextFieldImmersive extends StatefulWidget {
+  final String hint;
+  final int maxLines;
+  final TextEditingController controller;
+
+  const CustomTextFieldImmersive({
+    super.key,
+    required this.hint,
+    this.maxLines = 1,
+    required this.controller,
+  });
+
+  @override
+  State<CustomTextFieldImmersive> createState() =>
+      _CustomTextFieldImmersiveState();
+}
+
+class _CustomTextFieldImmersiveState extends State<CustomTextFieldImmersive> {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: TextFormField(
+        maxLines: widget.maxLines,
+        decoration: InputDecoration(
+          hintText: widget.hint,
+          hintStyle: TextStyle(color: Colors.grey[400]),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(20),
+        ),
+        controller: widget.controller,
+      ),
+    );
+  }
+}
+
 String? emailValidator(String? value) {
   if (value == null || value.isEmpty) {
     return 'Email is required';
