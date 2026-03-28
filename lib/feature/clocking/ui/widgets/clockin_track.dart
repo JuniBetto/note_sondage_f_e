@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/clocking/domain/entities/user_clock_info.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/widgets/table_component_mobile.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/table_component.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class ClockInTrack extends StatelessWidget {
   final bool isMobile;
@@ -20,6 +21,8 @@ class ClockInTrack extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final localization = AppLocalizations.of(context)!;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -30,7 +33,12 @@ class ClockInTrack extends StatelessWidget {
 
           child: isTeamWithUsers
               ? userByTeam(isMobile, listUserClockInfo, listheaderTable)
-              : onlyAllUser(isMobile, listUserClockInfo, listheaderTable),
+              : onlyAllUser(
+                  isMobile,
+                  listUserClockInfo,
+                  listheaderTable,
+                  localization.allUsers,
+                ),
         ),
       ],
     );
@@ -41,13 +49,17 @@ Widget onlyAllUser(
   bool isMobile,
   List<UserClockInfo> dataTable,
   List<String> headerTable,
+  String allUsersLabel,
 ) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Text("All users", style: TextStyle(fontWeight: FontWeight.bold)),
+        child: Text(
+          allUsersLabel,
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       SizedBox(
         height:

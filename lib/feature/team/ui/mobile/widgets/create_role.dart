@@ -77,14 +77,14 @@ class _CreateRoleWidgetState extends State<CreateRoleWidget> {
         if (state is RoleError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${state.message}'),
+              content: Text('${localization.errorPrefix} ${state.message}'),
               backgroundColor: Colors.red,
             ),
           );
         } else if (state is RoleCreated) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Role created successfully!'),
+              content: Text(localization.roleCreatedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );

@@ -111,8 +111,8 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
           }
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Team creato con successo!'),
+            SnackBar(
+              content: Text(localization.teamCreatedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
@@ -124,7 +124,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         } else if (teamState is TeamError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Errore: ${teamState.message}'),
+              content: Text('${localization.errorPrefix} ${teamState.message}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -135,15 +135,17 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         listener: (context, memberState) {
           if (memberState is TeamMemberCreated) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Membro aggiunto con successo!'),
+              SnackBar(
+                content: Text(localization.memberAddedSuccessfully),
                 backgroundColor: Colors.green,
               ),
             );
           } else if (memberState is TeamMemberError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Errore membro: ${memberState.message}'),
+                content: Text(
+                  '${localization.memberErrorPrefix} ${memberState.message}',
+                ),
                 backgroundColor: Colors.red,
               ),
             );

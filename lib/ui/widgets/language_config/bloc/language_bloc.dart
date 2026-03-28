@@ -42,7 +42,7 @@ class LanguageBloc extends Bloc<LanguageEvent, LanguageState> {
     Emitter<LanguageState> emit,
   ) async {
     debugPrint("[LanguageBloc] Changing language to: ${event.languageCode}");
-    
+
     // Salva la lingua in Hive
     await HiveService.putHive<String>(
       event.languageCode,

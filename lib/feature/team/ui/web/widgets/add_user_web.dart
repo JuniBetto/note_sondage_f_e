@@ -101,6 +101,7 @@ class _AddUserWebState extends State<AddUserWeb> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final localization = AppLocalizations.of(context)!;
 
     /*  Widget buildAvatarInput(UserFormData userFormData, int index) {
       return AvatarInput(
@@ -161,7 +162,7 @@ class _AddUserWebState extends State<AddUserWeb> {
         if (roleState is RoleError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${roleState.message}'),
+              content: Text('${localization.errorPrefix} ${roleState.message}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -178,7 +179,9 @@ class _AddUserWebState extends State<AddUserWeb> {
             if (userState is UserError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Error: ${userState.message}'),
+                  content: Text(
+                    '${localization.errorPrefix} ${userState.message}',
+                  ),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -222,7 +225,7 @@ class _AddUserWebState extends State<AddUserWeb> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (widget.listUserFormData.length > 1) ...[
-                    Text("User List"),
+                    Text(localization.userList),
                     DecoratedBox(
                       decoration: BoxDecoration(
                         color: colorScheme.bgNavbarSurface,
@@ -361,7 +364,7 @@ Widget buildNewUserForm(
           },
           type: ButtonType.text,
           isActive: true,
-          child: Text("Add user"),
+          child: Text(localization.addUser),
         ),
       ],
     ),
@@ -456,7 +459,7 @@ Widget buildEditUserForm(
           },
           type: ButtonType.text,
           isActive: true,
-          child: Text("Save changes"),
+          child: Text(localization.saveChanges),
         ),
       ],
     ),

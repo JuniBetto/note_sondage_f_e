@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/theme_selector.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_event.dart';
@@ -10,6 +11,8 @@ class ChangeTheme extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
+
     return BlocBuilder<ThemeBloc, ThemeState>(
       builder: (context, state) {
         // Determina il tema corrente in base allo state
@@ -25,21 +28,21 @@ class ChangeTheme extends StatelessWidget {
         final List<Map<String, dynamic>> themes = [
           {
             'code': 'light',
-            'name': 'Light Mode',
+            'name': localization.lightMode,
             'icon': Icons.light_mode,
-            'description': 'Default light theme',
+            'description': localization.defaultLightTheme,
           },
           {
             'code': 'dark',
-            'name': 'Dark Mode',
+            'name': localization.darkMode,
             'icon': Icons.dark_mode,
-            'description': 'Dark theme for low light',
+            'description': localization.darkThemeForLowLight,
           },
           {
             'code': 'system',
-            'name': 'System Default',
+            'name': localization.systemDefault,
             'icon': Icons.settings_brightness,
-            'description': 'Follow system settings',
+            'description': localization.followSystemSettings,
           },
         ];
 

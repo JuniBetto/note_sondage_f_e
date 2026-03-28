@@ -128,13 +128,17 @@ class _CustomInputFieldState extends State<CustomInputField> {
 class CustomTextFieldImmersive extends StatefulWidget {
   final String hint;
   final int maxLines;
+  final Widget? suffixIcon;
   final TextEditingController controller;
+  final Function(String)? onChanged;
 
   const CustomTextFieldImmersive({
     super.key,
     required this.hint,
     this.maxLines = 1,
     required this.controller,
+    this.suffixIcon,
+    this.onChanged,
   });
 
   @override
@@ -157,8 +161,10 @@ class _CustomTextFieldImmersiveState extends State<CustomTextFieldImmersive> {
           hintStyle: TextStyle(color: Colors.grey[400]),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(20),
+          suffixIcon: widget.suffixIcon,
         ),
         controller: widget.controller,
+        onChanged: widget.onChanged,
       ),
     );
   }

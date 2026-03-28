@@ -52,7 +52,7 @@ class WebNavbar extends StatelessWidget implements PreferredSizeWidget {
     // 2. Restituiamo la AppBar
     return AppBar(
       key: const ValueKey("web_navbar"),
-      leading: Text("Web Navbar"),
+      leading: Text(localization.webNavbar),
       actions: [
         Visibility(
           visible: isVisible!,

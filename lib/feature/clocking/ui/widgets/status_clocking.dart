@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class StatusClocking extends StatelessWidget {
   const StatusClocking({super.key, this.isCompact = false});
@@ -6,6 +7,8 @@ class StatusClocking extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
+
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: isCompact
@@ -13,13 +16,13 @@ class StatusClocking extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Clocked in at: 9:00 AM"),
+                Text("${localization.clockedInAt} 9:00 AM"),
                 SizedBox(height: 10.0), // height per Column, non width
-                Text("Start break at: 5:00 PM"),
+                Text("${localization.startBreakAt} 5:00 PM"),
                 SizedBox(height: 10.0), // height per Column, non width
-                Text("End break at: 9:00 AM"),
+                Text("${localization.endBreakAt} 9:00 AM"),
                 SizedBox(height: 10.0), // height per Column, non width
-                Text("Clocked out at: 5:00 PM"),
+                Text("${localization.clockedOutAt} 5:00 PM"),
               ],
             )
           : Row(
@@ -30,9 +33,9 @@ class StatusClocking extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Clocked in at: 9:00 AM"),
+                    Text("${localization.clockedInAt} 9:00 AM"),
                     SizedBox(height: 10.0), // width per Row
-                    Text("Start break at: 5:00 PM"),
+                    Text("${localization.startBreakAt} 5:00 PM"),
                   ],
                 ),
 
@@ -42,9 +45,9 @@ class StatusClocking extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("End break at: 9:00 AM"),
+                    Text("${localization.endBreakAt} 9:00 AM"),
                     SizedBox(height: 10.0), // width per Row
-                    Text("Clocked out at: 5:00 PM"),
+                    Text("${localization.clockedOutAt} 5:00 PM"),
                   ],
                 ),
               ],

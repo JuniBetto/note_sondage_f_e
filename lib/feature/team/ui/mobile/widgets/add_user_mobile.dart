@@ -51,6 +51,7 @@ class _AddUserMobileState extends State<AddUserMobile> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final localization = AppLocalizations.of(context)!;
 
     Widget buildAvatarInput(UserFormData userFormData, int index) {
       return AvatarInput(
@@ -107,7 +108,7 @@ class _AddUserMobileState extends State<AddUserMobile> {
         if (state is RoleError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${state.message}'),
+              content: Text('${localization.errorPrefix} ${state.message}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -124,7 +125,7 @@ class _AddUserMobileState extends State<AddUserMobile> {
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("User List"),
+              Text(localization.userList),
               widget.listUserFormData.length > 1
                   ? DecoratedBox(
                       decoration: BoxDecoration(
@@ -250,7 +251,7 @@ Widget buildNewUserForm(
           },
           type: ButtonType.text,
           isActive: true,
-          child: Text("Add user"),
+          child: Text(localization.addUser),
         ),
       ],
     ),

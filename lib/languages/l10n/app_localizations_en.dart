@@ -174,4 +174,201 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacy => 'Privacy';
+
+  @override
+  String get askQuestion => 'Ask a question';
+
+  @override
+  String get options => 'Options';
+
+  @override
+  String get option => 'Option';
+
+  @override
+  String get allowMultipleResponses => 'Allow multiple responses';
+
+  @override
+  String get makeResponsesAnonymous => 'Make responses anonymous';
+
+  @override
+  String get selectTeam => 'Select team';
+
+  @override
+  String get teamLabel => 'Team:';
+
+  @override
+  String get surveyCreatedSuccessfully => 'Survey created successfully!';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get responses => 'responses';
+
+  @override
+  String get questions => 'questions';
+
+  @override
+  String get system => 'System';
+
+  @override
+  String get dark => 'Dark';
+
+  @override
+  String get light => 'Light';
+
+  @override
+  String get preferences => 'Preferences';
+
+  @override
+  String get manageYourPrivacySettings => 'Manage your privacy settings';
+
+  @override
+  String get getInTouchWithOurSupportTeam =>
+      'Get in touch with our support team';
+
+  @override
+  String get themeTitle => 'Theme';
+
+  @override
+  String get languageTitle => 'Language';
+
+  @override
+  String get lightMode => 'Light Mode';
+
+  @override
+  String get darkMode => 'Dark Mode';
+
+  @override
+  String get systemDefault => 'System Default';
+
+  @override
+  String get defaultLightTheme => 'Default light theme';
+
+  @override
+  String get darkThemeForLowLight => 'Dark theme for low light';
+
+  @override
+  String get followSystemSettings => 'Follow system settings';
+
+  @override
+  String get selectYourLanguage => 'Select your language';
+
+  @override
+  String get settingsNotification => 'Settings Notification';
+
+  @override
+  String get yourName => 'Your Name';
+
+  @override
+  String get yourEmail => 'Your Email';
+
+  @override
+  String get message => 'Message';
+
+  @override
+  String get submit => 'Submit';
+
+  @override
+  String get none => 'None';
+
+  @override
+  String get personalStatusClockingActions =>
+      'Personal status clocking actions';
+
+  @override
+  String get clockedInAt => 'Clocked in at:';
+
+  @override
+  String get startBreakAt => 'Start break at:';
+
+  @override
+  String get endBreakAt => 'End break at:';
+
+  @override
+  String get clockedOutAt => 'Clocked out at:';
+
+  @override
+  String get allUsers => 'All users';
+
+  @override
+  String get clockInSuccessful => 'Clock In successful';
+
+  @override
+  String get clockOutSuccessful => 'Clock Out successful';
+
+  @override
+  String get teamCreatedSuccessfully => 'Team created successfully!';
+
+  @override
+  String get errorPrefix => 'Error:';
+
+  @override
+  String get memberAddedSuccessfully => 'Member added successfully!';
+
+  @override
+  String get memberErrorPrefix => 'Member error:';
+
+  @override
+  String get noTeamsFound => 'No teams found';
+
+  @override
+  String get roleCreatedSuccessfully => 'Role created successfully!';
+
+  @override
+  String get noRolesAvailable => 'No roles available';
+
+  @override
+  String get userList => 'User List';
+
+  @override
+  String get addUser => 'Add user';
+
+  @override
+  String get clearAll => 'Clear All';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get saveChanges => 'Save changes';
+
+  @override
+  String get goBack => 'Go Back';
+
+  @override
+  String get errorDetailsDebug => 'Error Details (Debug)';
+
+  @override
+  String get aboutPageText => 'This is the About page';
+
+  @override
+  String get teamPageMobileText => 'This is the Team page for Mobile';
+
+  @override
+  String get noTeamMembersFound => 'No team members found.';
+
+  @override
+  String get takePhoto => 'Take photo';
+
+  @override
+  String get chooseFromGallery => 'Choose from gallery';
+
+  @override
+  String get selectMultiple => 'Select multiple';
+
+  @override
+  String get removeImage => 'Remove image';
+
+  @override
+  String get settingsWeb => 'Settings Web';
+
+  @override
+  String get webNavbar => 'Web Navbar';
+
+  @override
+  String get surveyMobile => 'Survey Mobile';
 }

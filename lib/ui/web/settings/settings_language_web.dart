@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/language_selected.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_event.dart';
@@ -12,6 +13,7 @@ class SettingsLanguageWeb extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final localization = AppLocalizations.of(context)!;
 
     return BlocBuilder<LanguageBloc, LanguageState>(
       builder: (context, state) {
@@ -45,7 +47,7 @@ class SettingsLanguageWeb extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
-                  "Select your language",
+                  localization.selectYourLanguage,
                   style: textTheme.headlineMedium,
                 ),
               ),
@@ -59,8 +61,8 @@ class SettingsLanguageWeb extends StatelessWidget {
                     if (selected.isNotEmpty) {
                       // Dispatch del evento per cambiare lingua
                       context.read<LanguageBloc>().add(
-                            LanguageChangeEvent(selected.first),
-                          );
+                        LanguageChangeEvent(selected.first),
+                      );
                     }
                   },
                 ),

@@ -4,6 +4,7 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/widgets/role_permission_component.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class ListRolePermission extends StatefulWidget {
@@ -101,7 +102,8 @@ class _ListRolePermissionState extends State<ListRolePermission> {
           }
 
           if (rolesList.isEmpty) {
-            return const Center(child: Text('Nessun ruolo disponibile'));
+            final localization = AppLocalizations.of(context)!;
+            return Center(child: Text(localization.noRolesAvailable));
           }
 
           return Padding(

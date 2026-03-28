@@ -419,6 +419,396 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Privacy'**
   String get privacy;
+
+  /// No description provided for @askQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a question'**
+  String get askQuestion;
+
+  /// No description provided for @options.
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get options;
+
+  /// No description provided for @option.
+  ///
+  /// In en, this message translates to:
+  /// **'Option'**
+  String get option;
+
+  /// No description provided for @allowMultipleResponses.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow multiple responses'**
+  String get allowMultipleResponses;
+
+  /// No description provided for @makeResponsesAnonymous.
+  ///
+  /// In en, this message translates to:
+  /// **'Make responses anonymous'**
+  String get makeResponsesAnonymous;
+
+  /// No description provided for @selectTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Select team'**
+  String get selectTeam;
+
+  /// No description provided for @teamLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Team:'**
+  String get teamLabel;
+
+  /// No description provided for @surveyCreatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey created successfully!'**
+  String get surveyCreatedSuccessfully;
+
+  /// No description provided for @create.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get create;
+
+  /// No description provided for @responses.
+  ///
+  /// In en, this message translates to:
+  /// **'responses'**
+  String get responses;
+
+  /// No description provided for @questions.
+  ///
+  /// In en, this message translates to:
+  /// **'questions'**
+  String get questions;
+
+  /// No description provided for @system.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get system;
+
+  /// No description provided for @dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get dark;
+
+  /// No description provided for @light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get light;
+
+  /// No description provided for @preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferences;
+
+  /// No description provided for @manageYourPrivacySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your privacy settings'**
+  String get manageYourPrivacySettings;
+
+  /// No description provided for @getInTouchWithOurSupportTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Get in touch with our support team'**
+  String get getInTouchWithOurSupportTeam;
+
+  /// No description provided for @themeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get themeTitle;
+
+  /// No description provided for @languageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get languageTitle;
+
+  /// No description provided for @lightMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Light Mode'**
+  String get lightMode;
+
+  /// No description provided for @darkMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Mode'**
+  String get darkMode;
+
+  /// No description provided for @systemDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'System Default'**
+  String get systemDefault;
+
+  /// No description provided for @defaultLightTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Default light theme'**
+  String get defaultLightTheme;
+
+  /// No description provided for @darkThemeForLowLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark theme for low light'**
+  String get darkThemeForLowLight;
+
+  /// No description provided for @followSystemSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow system settings'**
+  String get followSystemSettings;
+
+  /// No description provided for @selectYourLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your language'**
+  String get selectYourLanguage;
+
+  /// No description provided for @settingsNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings Notification'**
+  String get settingsNotification;
+
+  /// No description provided for @yourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Name'**
+  String get yourName;
+
+  /// No description provided for @yourEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Email'**
+  String get yourEmail;
+
+  /// No description provided for @message.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get message;
+
+  /// No description provided for @submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
+
+  /// No description provided for @none.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get none;
+
+  /// No description provided for @personalStatusClockingActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal status clocking actions'**
+  String get personalStatusClockingActions;
+
+  /// No description provided for @clockedInAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocked in at:'**
+  String get clockedInAt;
+
+  /// No description provided for @startBreakAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Start break at:'**
+  String get startBreakAt;
+
+  /// No description provided for @endBreakAt.
+  ///
+  /// In en, this message translates to:
+  /// **'End break at:'**
+  String get endBreakAt;
+
+  /// No description provided for @clockedOutAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocked out at:'**
+  String get clockedOutAt;
+
+  /// No description provided for @allUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'All users'**
+  String get allUsers;
+
+  /// No description provided for @clockInSuccessful.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock In successful'**
+  String get clockInSuccessful;
+
+  /// No description provided for @clockOutSuccessful.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock Out successful'**
+  String get clockOutSuccessful;
+
+  /// No description provided for @teamCreatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Team created successfully!'**
+  String get teamCreatedSuccessfully;
+
+  /// No description provided for @errorPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Error:'**
+  String get errorPrefix;
+
+  /// No description provided for @memberAddedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Member added successfully!'**
+  String get memberAddedSuccessfully;
+
+  /// No description provided for @memberErrorPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Member error:'**
+  String get memberErrorPrefix;
+
+  /// No description provided for @noTeamsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No teams found'**
+  String get noTeamsFound;
+
+  /// No description provided for @roleCreatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Role created successfully!'**
+  String get roleCreatedSuccessfully;
+
+  /// No description provided for @noRolesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles available'**
+  String get noRolesAvailable;
+
+  /// No description provided for @userList.
+  ///
+  /// In en, this message translates to:
+  /// **'User List'**
+  String get userList;
+
+  /// No description provided for @addUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Add user'**
+  String get addUser;
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get clearAll;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get saveChanges;
+
+  /// No description provided for @goBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get goBack;
+
+  /// No description provided for @errorDetailsDebug.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Details (Debug)'**
+  String get errorDetailsDebug;
+
+  /// No description provided for @aboutPageText.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the About page'**
+  String get aboutPageText;
+
+  /// No description provided for @teamPageMobileText.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the Team page for Mobile'**
+  String get teamPageMobileText;
+
+  /// No description provided for @noTeamMembersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No team members found.'**
+  String get noTeamMembersFound;
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get takePhoto;
+
+  /// No description provided for @chooseFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get chooseFromGallery;
+
+  /// No description provided for @selectMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Select multiple'**
+  String get selectMultiple;
+
+  /// No description provided for @removeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove image'**
+  String get removeImage;
+
+  /// No description provided for @settingsWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings Web'**
+  String get settingsWeb;
+
+  /// No description provided for @webNavbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Web Navbar'**
+  String get webNavbar;
+
+  /// No description provided for @surveyMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey Mobile'**
+  String get surveyMobile;
 }
 
 class _AppLocalizationsDelegate

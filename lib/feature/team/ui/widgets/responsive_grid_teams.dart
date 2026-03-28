@@ -13,9 +13,13 @@ class ResponsiveGridTeams extends StatefulWidget {
     super.key,
     required this.items,
     required this.isRow,
+    this.isSelectionMode = false,
+    this.onTeamSelected,
   });
   final List<Map<String, dynamic>> items;
   final bool isRow;
+  final bool isSelectionMode;
+  final void Function(Map<String, dynamic> selectedTeam)? onTeamSelected;
 
   @override
   State<ResponsiveGridTeams> createState() => _ResponsiveGridTeamsState();
@@ -165,7 +169,13 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
             );
             debugPrint("📱 ResponsiveGridTeams: isRow = ${widget.isRow}");
 
-            return viewScrollWebMobile(_teamBloc, items, widget.isRow);
+            return viewScrollWebMobile(
+              _teamBloc,
+              items,
+              widget.isRow,
+              widget.isSelectionMode,
+              widget.onTeamSelected,
+            );
           },
         );
       },
@@ -177,6 +187,8 @@ Widget viewScrollWebMobile(
   TeamBloc teamBloc,
   List<Map<String, dynamic>> items,
   bool isRow,
+  bool isSelectionMode,
+  void Function(Map<String, dynamic> selectedTeam)? onTeamSelected,
 ) {
   return Padding(
     padding: const EdgeInsets.all(0.0),
@@ -193,29 +205,37 @@ Widget viewScrollWebMobile(
           return isRow
               ? TeamComponentCard(
                   key: ValueKey('team_card_$teamId'),
-                  isActive: true,
+                  isActive: false,
                   teamName: item["teamName"],
                   teamFocus: item["teamFocus"],
                   teamId: teamId,
                   members: item["members"],
-                  onTap: () {},
+                  onTap: isSelectionMode
+                      ? () => onTeamSelected?.call(item)
+                      : () {},
                   colorTeam: item["color"],
-                  onDeleteTap: (teamId) {
-                    teamBloc.add(DeleteTeamEvent(teamId));
-                  },
+                  onDeleteTap: isSelectionMode
+                      ? null
+                      : (teamId) {
+                          teamBloc.add(DeleteTeamEvent(teamId));
+                        },
                 )
               : TeamComponentRow(
                   key: ValueKey('team_row_$teamId'),
-                  isActive: true,
+                  isActive: false,
                   teamName: item["teamName"],
                   teamFocus: item["teamFocus"],
                   members: item["members"],
-                  onTap: () {},
+                  onTap: isSelectionMode
+                      ? () => onTeamSelected?.call(item)
+                      : () {},
                   colorTeam: item["color"],
                   teamId: teamId,
-                  onDeleteTap: (teamId) {
-                    teamBloc.add(DeleteTeamEvent(teamId));
-                  },
+                  onDeleteTap: isSelectionMode
+                      ? null
+                      : (teamId) {
+                          teamBloc.add(DeleteTeamEvent(teamId));
+                        },
                 );
         }).toList(),
       ),

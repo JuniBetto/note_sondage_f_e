@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/team/domain/entities/permission_entity.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:uuid/uuid.dart';
 
@@ -510,15 +511,17 @@ class _MultiSelectDialogState<T> extends State<_MultiSelectDialog<T>> {
               _selectedItems.clear();
             });
           },
-          child: Text('Clear All'),
+          child: Text(AppLocalizations.of(context)!.clearAll),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel'),
+          child: Text(AppLocalizations.of(context)!.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_selectedItems),
-          child: Text('Confirm (${_selectedItems.length})'),
+          child: Text(
+            '${AppLocalizations.of(context)!.confirm} (${_selectedItems.length})',
+          ),
         ),
       ],
     );

@@ -44,8 +44,8 @@ class ChangeLanguage extends StatelessWidget {
               if (selected.isNotEmpty) {
                 // Dispatch del evento per cambiare lingua
                 context.read<LanguageBloc>().add(
-                      LanguageChangeEvent(selected.first),
-                    );
+                  LanguageChangeEvent(selected.first),
+                );
               }
             },
           ),

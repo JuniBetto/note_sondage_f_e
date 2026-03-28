@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile_skeleton.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/button_clocking.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clockin_change_view.dart';
@@ -39,6 +40,7 @@ class _ClockingMobileState extends State<ClockingMobile> {
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final localization = AppLocalizations.of(context)!;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -53,7 +55,7 @@ class _ClockingMobileState extends State<ClockingMobile> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                "Personal status clocking actions",
+                localization.personalStatusClockingActions,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   color: colorScheme.textColor,
                   fontStyle: FontStyle.italic,

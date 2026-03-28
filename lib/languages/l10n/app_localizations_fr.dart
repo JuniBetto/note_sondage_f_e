@@ -174,4 +174,202 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privacy => 'Confidentialité';
+
+  @override
+  String get askQuestion => 'Posez une question';
+
+  @override
+  String get options => 'Options';
+
+  @override
+  String get option => 'Option';
+
+  @override
+  String get allowMultipleResponses => 'Autoriser plusieurs réponses';
+
+  @override
+  String get makeResponsesAnonymous => 'Rendre les réponses anonymes';
+
+  @override
+  String get selectTeam => 'Sélectionner une équipe';
+
+  @override
+  String get teamLabel => 'Équipe:';
+
+  @override
+  String get surveyCreatedSuccessfully => 'Sondage créé avec succès!';
+
+  @override
+  String get create => 'Créer';
+
+  @override
+  String get responses => 'réponses';
+
+  @override
+  String get questions => 'questions';
+
+  @override
+  String get system => 'Système';
+
+  @override
+  String get dark => 'Sombre';
+
+  @override
+  String get light => 'Clair';
+
+  @override
+  String get preferences => 'Préférences';
+
+  @override
+  String get manageYourPrivacySettings =>
+      'Gérez vos paramètres de confidentialité';
+
+  @override
+  String get getInTouchWithOurSupportTeam =>
+      'Contactez notre équipe d\'assistance';
+
+  @override
+  String get themeTitle => 'Thème';
+
+  @override
+  String get languageTitle => 'Langue';
+
+  @override
+  String get lightMode => 'Mode Clair';
+
+  @override
+  String get darkMode => 'Mode Sombre';
+
+  @override
+  String get systemDefault => 'Par Défaut du Système';
+
+  @override
+  String get defaultLightTheme => 'Thème clair par défaut';
+
+  @override
+  String get darkThemeForLowLight => 'Thème sombre pour faible lumière';
+
+  @override
+  String get followSystemSettings => 'Suivre les paramètres système';
+
+  @override
+  String get selectYourLanguage => 'Sélectionnez votre langue';
+
+  @override
+  String get settingsNotification => 'Paramètres de Notification';
+
+  @override
+  String get yourName => 'Votre Nom';
+
+  @override
+  String get yourEmail => 'Votre Email';
+
+  @override
+  String get message => 'Message';
+
+  @override
+  String get submit => 'Soumettre';
+
+  @override
+  String get none => 'Aucun';
+
+  @override
+  String get personalStatusClockingActions =>
+      'Actions personnelles de pointage';
+
+  @override
+  String get clockedInAt => 'Arrivée à:';
+
+  @override
+  String get startBreakAt => 'Début de pause à:';
+
+  @override
+  String get endBreakAt => 'Fin de pause à:';
+
+  @override
+  String get clockedOutAt => 'Départ à:';
+
+  @override
+  String get allUsers => 'Tous les utilisateurs';
+
+  @override
+  String get clockInSuccessful => 'Pointage d\'entrée réussi';
+
+  @override
+  String get clockOutSuccessful => 'Pointage de sortie réussi';
+
+  @override
+  String get teamCreatedSuccessfully => 'Équipe créée avec succès!';
+
+  @override
+  String get errorPrefix => 'Erreur:';
+
+  @override
+  String get memberAddedSuccessfully => 'Membre ajouté avec succès!';
+
+  @override
+  String get memberErrorPrefix => 'Erreur membre:';
+
+  @override
+  String get noTeamsFound => 'Aucune équipe trouvée';
+
+  @override
+  String get roleCreatedSuccessfully => 'Rôle créé avec succès!';
+
+  @override
+  String get noRolesAvailable => 'Aucun rôle disponible';
+
+  @override
+  String get userList => 'Liste des utilisateurs';
+
+  @override
+  String get addUser => 'Ajouter un utilisateur';
+
+  @override
+  String get clearAll => 'Tout effacer';
+
+  @override
+  String get cancel => 'Annuler';
+
+  @override
+  String get confirm => 'Confirmer';
+
+  @override
+  String get saveChanges => 'Enregistrer les modifications';
+
+  @override
+  String get goBack => 'Retourner';
+
+  @override
+  String get errorDetailsDebug => 'Détails de l\'erreur (Debug)';
+
+  @override
+  String get aboutPageText => 'Ceci est la page À propos';
+
+  @override
+  String get teamPageMobileText => 'Ceci est la page Équipe pour Mobile';
+
+  @override
+  String get noTeamMembersFound => 'Aucun membre de l\'équipe trouvé.';
+
+  @override
+  String get takePhoto => 'Prendre une photo';
+
+  @override
+  String get chooseFromGallery => 'Choisir dans la galerie';
+
+  @override
+  String get selectMultiple => 'Sélection multiple';
+
+  @override
+  String get removeImage => 'Supprimer l\'image';
+
+  @override
+  String get settingsWeb => 'Paramètres Web';
+
+  @override
+  String get webNavbar => 'Barre de navigation Web';
+
+  @override
+  String get surveyMobile => 'Sondage Mobile';
 }

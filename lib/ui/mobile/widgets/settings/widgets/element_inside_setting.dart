@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/domain/entities/all_enum.dart';
 import 'package:note_sondage/domain/entities/setting_type.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
@@ -19,17 +20,18 @@ class ElementInsideSetting extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final localization = AppLocalizations.of(context)!;
 
     // Get dynamic subtitle based on setting type
     String getSubtitle() {
       if (setting.title == SettingCategory.theme) {
         final themeState = context.watch<ThemeBloc>().state;
         if (themeState is ThemeisDark) {
-          return 'Dark';
+          return localization.dark;
         } else if (themeState is ThemeisLight) {
-          return 'Light';
+          return localization.light;
         } else {
-          return 'System';
+          return localization.system;
         }
       } else if (setting.title == SettingCategory.language) {
         final languageState = context.watch<LanguageBloc>().state;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class ThemeSelector extends StatelessWidget {
   final List<Map<String, dynamic>> themes;
@@ -16,13 +17,15 @@ class ThemeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final localization = AppLocalizations.of(context)!;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text("Theme", style: textTheme.headlineMedium),
+          child: Text(localization.themeTitle, style: textTheme.headlineMedium),
         ),
         Container(
           decoration: BoxDecoration(

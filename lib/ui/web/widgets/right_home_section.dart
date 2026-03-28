@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class RightHomeSection extends StatelessWidget {
   const RightHomeSection({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
+
     return Container(
       width: 280,
       padding: const EdgeInsets.all(16),
@@ -22,13 +25,13 @@ class RightHomeSection extends StatelessWidget {
           const SizedBox(height: 20),
           _AttendanceButton(
             label: 'Clock In',
-            onPressed: () => _handleClockIn(context),
+            onPressed: () => _handleClockIn(context, localization),
             primary: true,
           ),
           const SizedBox(height: 12),
           _AttendanceButton(
             label: 'Clock Out',
-            onPressed: () => _handleClockOut(context),
+            onPressed: () => _handleClockOut(context, localization),
             primary: false,
           ),
           const SizedBox(height: 24),
@@ -60,18 +63,18 @@ class RightHomeSection extends StatelessWidget {
     );
   }
 
-  void _handleClockIn(BuildContext context) {
+  void _handleClockIn(BuildContext context, AppLocalizations localization) {
     // Logica per clock in
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Clock In successful')));
+    ).showSnackBar(SnackBar(content: Text(localization.clockInSuccessful)));
   }
 
-  void _handleClockOut(BuildContext context) {
+  void _handleClockOut(BuildContext context, AppLocalizations localization) {
     // Logica per clock out
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Clock Out successful')));
+    ).showSnackBar(SnackBar(content: Text(localization.clockOutSuccessful)));
   }
 }
 

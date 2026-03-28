@@ -128,7 +128,7 @@ class _TeamsWebState extends State<TeamsWeb> {
                     width: double.infinity,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: colorScheme.borderColor,
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(

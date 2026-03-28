@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class AvatarInput extends StatefulWidget {
   final double size;
@@ -99,7 +100,7 @@ class _AvatarInputState extends State<AvatarInput> {
 
       if (images != null && images.isNotEmpty) {
         final firstImage = images.first;
-        
+
         if (kIsWeb) {
           final bytes = await firstImage.readAsBytes();
           setState(() {
@@ -142,6 +143,8 @@ class _AvatarInputState extends State<AvatarInput> {
   }
 
   void _showImageOptions() {
+    final localization = AppLocalizations.of(context)!;
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -155,7 +158,7 @@ class _AvatarInputState extends State<AvatarInput> {
             if (!kIsWeb)
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                title: const Text("Scatta foto"),
+                title: Text(localization.takePhoto),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
@@ -163,7 +166,7 @@ class _AvatarInputState extends State<AvatarInput> {
               ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.green),
-              title: const Text("Scegli dalla galleria"),
+              title: Text(localization.chooseFromGallery),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
@@ -173,17 +176,19 @@ class _AvatarInputState extends State<AvatarInput> {
             if (!kIsWeb)
               ListTile(
                 leading: const Icon(Icons.collections, color: Colors.purple),
-                title: const Text("Seleziona multiple"),
+                title: Text(localization.selectMultiple),
                 onTap: () {
                   Navigator.pop(context);
                   _pickMultiImage();
                 },
               ),
             if (widget.showRemoveOption &&
-                (_selectedImage != null || _selectedImageBytes != null || widget.initialImageUrl != null))
+                (_selectedImage != null ||
+                    _selectedImageBytes != null ||
+                    widget.initialImageUrl != null))
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text("Rimuovi immagine"),
+                title: Text(localization.removeImage),
                 onTap: () {
                   Navigator.pop(context);
                   _removeImage();
@@ -192,7 +197,7 @@ class _AvatarInputState extends State<AvatarInput> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.close),
-              title: const Text("Annulla"),
+              title: Text(localization.cancel),
               onTap: () => Navigator.pop(context),
             ),
           ],

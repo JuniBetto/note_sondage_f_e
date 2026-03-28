@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class LanguageSelector extends StatefulWidget {
   final List<Map<String, dynamic>> languages;
@@ -55,6 +56,8 @@ class _LanguageSelectorState extends State<LanguageSelector> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final localization = AppLocalizations.of(context)!;
+
     return widget.isMobile
         ? Column(
             mainAxisSize: MainAxisSize.min,
@@ -62,7 +65,10 @@ class _LanguageSelectorState extends State<LanguageSelector> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text("Language", style: textTheme.headlineMedium),
+                child: Text(
+                  localization.languageTitle,
+                  style: textTheme.headlineMedium,
+                ),
               ),
               Container(
                 decoration: BoxDecoration(

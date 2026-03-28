@@ -175,4 +175,201 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get privacy => 'Privacy';
+
+  @override
+  String get askQuestion => 'Fai una domanda';
+
+  @override
+  String get options => 'Opzioni';
+
+  @override
+  String get option => 'Opzione';
+
+  @override
+  String get allowMultipleResponses => 'Consenti più risposte';
+
+  @override
+  String get makeResponsesAnonymous => 'Rendi anonimi le risposte';
+
+  @override
+  String get selectTeam => 'Seleziona squadra';
+
+  @override
+  String get teamLabel => 'Squadra:';
+
+  @override
+  String get surveyCreatedSuccessfully => 'Sondaggio creato con successo!';
+
+  @override
+  String get create => 'Crea';
+
+  @override
+  String get responses => 'risposte';
+
+  @override
+  String get questions => 'domande';
+
+  @override
+  String get system => 'Sistema';
+
+  @override
+  String get dark => 'Scuro';
+
+  @override
+  String get light => 'Chiaro';
+
+  @override
+  String get preferences => 'Preferenze';
+
+  @override
+  String get manageYourPrivacySettings =>
+      'Gestisci le tue impostazioni sulla privacy';
+
+  @override
+  String get getInTouchWithOurSupportTeam =>
+      'Mettiti in contatto con il nostro team di supporto';
+
+  @override
+  String get themeTitle => 'Tema';
+
+  @override
+  String get languageTitle => 'Lingua';
+
+  @override
+  String get lightMode => 'Modalità Chiara';
+
+  @override
+  String get darkMode => 'Modalità Scura';
+
+  @override
+  String get systemDefault => 'Predefinito del Sistema';
+
+  @override
+  String get defaultLightTheme => 'Tema chiaro predefinito';
+
+  @override
+  String get darkThemeForLowLight => 'Tema scuro per poca luce';
+
+  @override
+  String get followSystemSettings => 'Segui le impostazioni di sistema';
+
+  @override
+  String get selectYourLanguage => 'Seleziona la tua lingua';
+
+  @override
+  String get settingsNotification => 'Impostazioni Notifiche';
+
+  @override
+  String get yourName => 'Il tuo Nome';
+
+  @override
+  String get yourEmail => 'La tua Email';
+
+  @override
+  String get message => 'Messaggio';
+
+  @override
+  String get submit => 'Invia';
+
+  @override
+  String get none => 'Nessuno';
+
+  @override
+  String get personalStatusClockingActions => 'Azioni personali di timbratura';
+
+  @override
+  String get clockedInAt => 'Entrata alle:';
+
+  @override
+  String get startBreakAt => 'Inizio pausa alle:';
+
+  @override
+  String get endBreakAt => 'Fine pausa alle:';
+
+  @override
+  String get clockedOutAt => 'Uscita alle:';
+
+  @override
+  String get allUsers => 'Tutti gli utenti';
+
+  @override
+  String get clockInSuccessful => 'Entrata registrata con successo';
+
+  @override
+  String get clockOutSuccessful => 'Uscita registrata con successo';
+
+  @override
+  String get teamCreatedSuccessfully => 'Team creato con successo!';
+
+  @override
+  String get errorPrefix => 'Errore:';
+
+  @override
+  String get memberAddedSuccessfully => 'Membro aggiunto con successo!';
+
+  @override
+  String get memberErrorPrefix => 'Errore membro:';
+
+  @override
+  String get noTeamsFound => 'Nessun team trovato';
+
+  @override
+  String get roleCreatedSuccessfully => 'Ruolo creato con successo!';
+
+  @override
+  String get noRolesAvailable => 'Nessun ruolo disponibile';
+
+  @override
+  String get userList => 'Lista utenti';
+
+  @override
+  String get addUser => 'Aggiungi utente';
+
+  @override
+  String get clearAll => 'Cancella tutto';
+
+  @override
+  String get cancel => 'Annulla';
+
+  @override
+  String get confirm => 'Conferma';
+
+  @override
+  String get saveChanges => 'Salva modifiche';
+
+  @override
+  String get goBack => 'Torna indietro';
+
+  @override
+  String get errorDetailsDebug => 'Dettagli errore (Debug)';
+
+  @override
+  String get aboutPageText => 'Questa è la pagina Chi siamo';
+
+  @override
+  String get teamPageMobileText => 'Questa è la pagina Team per Mobile';
+
+  @override
+  String get noTeamMembersFound => 'Nessun membro del team trovato.';
+
+  @override
+  String get takePhoto => 'Scatta foto';
+
+  @override
+  String get chooseFromGallery => 'Scegli dalla galleria';
+
+  @override
+  String get selectMultiple => 'Seleziona multiple';
+
+  @override
+  String get removeImage => 'Rimuovi immagine';
+
+  @override
+  String get settingsWeb => 'Impostazioni Web';
+
+  @override
+  String get webNavbar => 'Barra di navigazione Web';
+
+  @override
+  String get surveyMobile => 'Sondaggio Mobile';
 }
