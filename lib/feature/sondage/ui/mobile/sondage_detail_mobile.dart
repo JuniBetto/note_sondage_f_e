@@ -51,8 +51,10 @@ class SondageDetailMobile extends StatelessWidget {
         backgroundColor: colorScheme.bgNavbarSurface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: colorScheme.iconLabel),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: colorScheme.iconLabel,
+          ),
           onPressed: () {
             // Imposta il NavigationBloc su sondage (index 4) e torna a MainMobile.
             // Non usare RouterPaths.sondage che è una route senza Scaffold.
@@ -156,8 +158,7 @@ class SondageDetailMobile extends StatelessWidget {
                           : 0,
                       minHeight: 10,
                       backgroundColor: Colors.grey[300],
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(sondageColor),
+                      valueColor: AlwaysStoppedAnimation<Color>(sondageColor),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -196,8 +197,9 @@ class SondageDetailMobile extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: 14,
-                            backgroundColor:
-                                sondageColor.withValues(alpha: 0.2),
+                            backgroundColor: sondageColor.withValues(
+                              alpha: 0.2,
+                            ),
                             child: Text(
                               '${index + 1}',
                               style: TextStyle(

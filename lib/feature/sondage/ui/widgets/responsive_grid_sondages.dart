@@ -55,10 +55,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
                     isActive: _selectedSondageId == sondageId,
                     onTap: () {
                       setState(() => _selectedSondageId = sondageId);
-                      context.go(
-                        RouterPaths.sondageDetail,
-                        extra: sondageId,
-                      );
+                      context.go(RouterPaths.sondageDetail, extra: sondageId);
                     },
                     onDeleteTap: (sondageId) {
                       debugPrint("Delete sondage: $sondageId");
@@ -78,10 +75,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
                     isActive: _selectedSondageId == sondageId,
                     onTap: () {
                       setState(() => _selectedSondageId = sondageId);
-                      context.go(
-                        RouterPaths.sondageDetail,
-                        extra: sondageId,
-                      );
+                      context.go(RouterPaths.sondageDetail, extra: sondageId);
                     },
                     onDeleteTap: (sondageId) {
                       debugPrint("Delete sondage: $sondageId");

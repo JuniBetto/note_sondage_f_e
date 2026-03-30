@@ -195,8 +195,11 @@ class SondageDetailWeb extends StatelessWidget {
                                 children: [
                                   Row(
                                     children: [
-                                      Icon(Icons.info_outline,
-                                          size: 22, color: sondageColor),
+                                      Icon(
+                                        Icons.info_outline,
+                                        size: 22,
+                                        color: sondageColor,
+                                      ),
                                       const SizedBox(width: 8),
                                       Text(
                                         'Dettagli',
@@ -630,8 +633,9 @@ class _ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        totalQuestions > 0 ? (responses / (totalQuestions * 10)).clamp(0.0, 1.0) : 0.0;
+    final progress = totalQuestions > 0
+        ? (responses / (totalQuestions * 10)).clamp(0.0, 1.0)
+        : 0.0;
 
     return _InfoCard(
       colorScheme: colorScheme,
