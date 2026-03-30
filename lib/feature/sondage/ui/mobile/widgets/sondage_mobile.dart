@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/sondage/ui/mobile/sondage_mobile_skeleton.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_display.dart';
 import 'package:note_sondage/theme/color_palette.dart';
@@ -58,33 +57,20 @@ class _SondageMobileState extends State<SondageMobile>
   int currentViewType = 1;
   List<Map<String, dynamic>> sondages =
       sondagesList; // Lista di sondaggi fittizi
-  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 2, vsync: this);
+    // Ascolta TUTTI i cambiamenti del tabController (non solo indexIsChanging)
+    // per aggiornare i colori della tab bar anche durante lo swipe del TabBarView.
     tabController.addListener(_handleTabChange);
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    // Simula il caricamento dei dati
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
   void _handleTabChange() {
-    if (tabController.indexIsChanging) {
-      setState(() {
-        // Reset della view quando cambi tab (opzionale)
-        // currentViewType = 1;
-      });
-    }
+    // setState su ogni cambio di indice (incluso swipe completato)
+    // per aggiornare correttamente i colori dei testi nella tab bar.
+    setState(() {});
   }
 
   void _handleViewTypeChanged(int viewType) {
@@ -113,10 +99,6 @@ class _SondageMobileState extends State<SondageMobile>
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const SondageMobileSkeleton();
-    }
-
     final localization = AppLocalizations.of(context)!;
 
     return SafeArea(
@@ -159,7 +141,7 @@ class _SondageMobileState extends State<SondageMobile>
                 children: [
                   // Prima tab: Visualizzazione sondaggi
                   SondageDisplay(
-                    teams: sondages, // Lista di sondaggi
+                    sondages: sondages, // Lista di sondaggi
                     onViewChanged: _handleViewTypeChanged,
                     initialViewType: currentViewType,
                   ),

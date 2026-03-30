@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
-import 'package:note_sondage/feature/team/ui/web/teams_web_skeleton.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/create_team_web.dart';
 import 'package:note_sondage/feature/team/ui/widgets/responsive_grid_teams.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
@@ -18,31 +17,9 @@ class TeamsWeb extends StatefulWidget {
 
 class _TeamsWebState extends State<TeamsWeb> {
   int isGridView = 1;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    // Simula caricamento dati - sostituire con chiamata API reale
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    // Mostra skeleton durante il caricamento
-    if (_isLoading) {
-      return const TeamsWebSkeleton();
-    }
-
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 

@@ -5,7 +5,6 @@ import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/auth_bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/bloc/auth_bloc/auth_event.dart';
-import 'package:note_sondage/ui/bloc/auth_bloc/auth_state.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
@@ -31,35 +30,35 @@ class SidebarItem extends StatelessWidget {
   });
 
   void _onTap(BuildContext context, int index) {
-    // 1. Invoca il Cubit per aggiornare la posizione
+    // 1. Aggiorna il NavigationBloc — su web l'IndexedStack in MainWeb
+    //    reagisce immediatamente senza ricostruire nulla.
     context.read<NavigationBloc>().add(NavigationPositionChanged(index));
 
     // 2. Gestione della cronologia delle pagine visitate
-    // Solo le pagine diverse da Settings (index 2) vengono aggiunte alla cronologia
     if (index != 2) {
       lastIndexes.add(index);
-      lastIndexes.length > 5
-          ? lastIndexes.removeAt(0)
-          : null; // Mantieni solo gli ultimi 10
+      lastIndexes.length > 5 ? lastIndexes.removeAt(0) : null;
     }
 
-    // 3. Navigazione con GoRouter
+    // 3. Settings (index 2) apre un dialog, niente navigazione.
+    if (index == 2) {
+      showSettingsDialog(
+        context,
+        lastIndexes.isNotEmpty ? lastIndexes.last : 0,
+      );
+      return;
+    }
+
+    // 4. Aggiorna anche l'URL del browser via GoRouter.
+    //    Su web questo è fondamentale perché altrimenti i pulsanti
+    //    back/forward del browser non funzionano (nessuna cronologia).
+    //    Su mobile serve per cambiare scaffold.
     switch (index) {
       case 0:
-        // context.go() sostituisce la pila.
-        // Usare context.go(path) è più corretto per la navigazione principale
         context.go(RouterPaths.home);
         break;
       case 1:
-        // context.go() sostituisce la pila.
-        // Usare context.go(path) è più corretto per la navigazione principale
         context.go(RouterPaths.team);
-        break;
-      case 2:
-        showSettingsDialog(
-          context,
-          lastIndexes.isNotEmpty ? lastIndexes.last : 0,
-        );
         break;
       case 3:
         context.go(RouterPaths.clocking);

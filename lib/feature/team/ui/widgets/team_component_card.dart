@@ -57,164 +57,159 @@ class _TeamComponentCardState extends State<TeamComponentCard> {
                   alignment: Alignment.topLeft,
                   clipBehavior: Clip.none,
                   children: [
-                    Expanded(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(0),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4.0,
+                          vertical: 20.0,
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4.0,
-                            vertical: 20.0,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          decoration: BoxDecoration(
+                            color: colorScheme.bgColor,
+                            borderRadius: BorderRadius.circular(30),
+                            border: (widget.isActive || _isHovered)
+                                ? Border.all(
+                                    color: colorScheme.selectionColor!,
+                                    width: 3,
+                                  )
+                                : null,
+                            boxShadow: _isHovered
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ]
+                                : [],
                           ),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            decoration: BoxDecoration(
-                              color: colorScheme.bgColor,
-                              borderRadius: BorderRadius.circular(30),
-                              border: (widget.isActive || _isHovered)
-                                  ? Border.all(
-                                      color: colorScheme.selectionColor!,
-                                      width: 3,
-                                    )
-                                  : null,
-                              boxShadow: _isHovered
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ]
-                                  : [],
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0,
+                              vertical: 8,
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12.0,
-                                vertical: 8,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.avatarTextColor!,
-                                          borderRadius: BorderRadius.circular(
-                                            30,
-                                          ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.max,
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.avatarTextColor!,
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 6.0,
+                                          horizontal: 8,
                                         ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 6.0,
-                                            horizontal: 8,
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            spacing: 8,
-                                            children: [
-                                              ActionOnUser(
-                                                iconSize: 18,
-                                                icon: Icons.edit,
-                                                color: colorScheme.cursorColor!,
-                                                onTap: () {
-                                                  context.go(
-                                                    RouterPaths.updateTeam,
-                                                    extra: widget.teamId,
-                                                  );
-                                                },
-                                              ),
-                                              ActionOnUser(
-                                                iconSize: 18,
-                                                icon: Icons
-                                                    .delete_forever_outlined,
-                                                color: colorScheme.deleteCard!,
-                                                onTap: () {
-                                                  widget.onDeleteTap?.call(
-                                                    widget.teamId,
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          spacing: 8,
+                                          children: [
+                                            ActionOnUser(
+                                              iconSize: 18,
+                                              icon: Icons.edit,
+                                              color: colorScheme.cursorColor!,
+                                              onTap: () {
+                                                context.go(
+                                                  RouterPaths.updateTeam,
+                                                  extra: widget.teamId,
+                                                );
+                                              },
+                                            ),
+                                            ActionOnUser(
+                                              iconSize: 18,
+                                              icon:
+                                                  Icons.delete_forever_outlined,
+                                              color: colorScheme.deleteCard!,
+                                              onTap: () {
+                                                widget.onDeleteTap?.call(
+                                                  widget.teamId,
+                                                );
+                                              },
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  Column(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      SizedBox(
-                                        width: 150,
-                                        child: Text(
-                                          widget.teamName,
-                                          style: textTheme.bodySmall!.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 2,
-                                          softWrap: true,
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  mainAxisSize: MainAxisSize.max,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      width: 150,
+                                      child: Text(
+                                        widget.teamName,
+                                        style: textTheme.bodySmall!.copyWith(
+                                          fontWeight: FontWeight.bold,
                                         ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 2,
+                                        softWrap: true,
                                       ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.max,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        spacing: 4,
-                                        children: [
-                                          Icon(
-                                            Icons.gps_fixed,
-                                            size: 16,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.max,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      spacing: 4,
+                                      children: [
+                                        Icon(
+                                          Icons.gps_fixed,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                        SizedBox(
+                                          width: 100,
+                                          child: Text(
+                                            widget.teamFocus,
+                                            style: textTheme.labelMedium,
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 3,
+                                            softWrap: true,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.max,
+                                      children: [
+                                        Expanded(
+                                          child: Divider(
+                                            height: 10,
                                             color: Colors.grey,
                                           ),
-                                          SizedBox(
-                                            width: 100,
-                                            child: Text(
-                                              widget.teamFocus,
-                                              style: textTheme.labelMedium,
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 3,
-                                              softWrap: true,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          Expanded(
-                                            child: Divider(
-                                              height: 10,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Text(
-                                        localization.teamMember,
-                                        style: textTheme.labelMedium!.copyWith(
-                                          fontWeight: FontWeight.w600,
                                         ),
+                                      ],
+                                    ),
+                                    Text(
+                                      localization.teamMember,
+                                      style: textTheme.labelMedium!.copyWith(
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                      buildRowTeamItem(
-                                        context,
-                                        widget.members ?? [],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                    ),
+                                    buildRowTeamItem(
+                                      context,
+                                      widget.members ?? [],
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ),

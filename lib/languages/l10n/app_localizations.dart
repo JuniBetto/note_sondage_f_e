@@ -809,6 +809,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Survey Mobile'**
   String get surveyMobile;
+
+  /// No description provided for @progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get progress;
+
+  /// No description provided for @createdDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Created date'**
+  String get createdDate;
+
+  /// No description provided for @expiryDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry date'**
+  String get expiryDate;
 }
 
 class _AppLocalizationsDelegate

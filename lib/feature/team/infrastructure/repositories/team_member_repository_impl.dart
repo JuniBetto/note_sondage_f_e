@@ -3,16 +3,19 @@ import 'dart:typed_data';
 
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_member_repository.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_member_local_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_member_remote_data_source.dart';
 
 class TeamMemberRepositoryImpl implements TeamMemberRepository {
-  final TeamMemberRemoteDataSource remoteDataSource;
-  TeamMemberRepositoryImpl(this.remoteDataSource);
+  final TeamMemberLocalDataSource _local;
+  final TeamMemberRemoteDataSource _remote;
+
+  TeamMemberRepositoryImpl(this._local, this._remote);
 
   @override
   Future<bool> delete(String id) async {
     try {
-      await remoteDataSource.delete(id);
+      await _remote.delete(id);
       return true;
     } catch (e) {
       throw Exception('Failed to delete team member: $e');
@@ -22,8 +25,15 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
   @override
   Future<List<TeamMemberEntity>> getAll() async {
     try {
-      return await remoteDataSource.getAll();
+      final local = await _local.getAll();
+      if (local.isNotEmpty) {
+        _remote.getAll().catchError((_) => <TeamMemberEntity>[]);
+        return local;
+      }
+      return await _remote.getAll();
     } catch (e) {
+      final cached = await _local.getAll();
+      if (cached.isNotEmpty) return cached;
       throw Exception('Failed to fetch team members: $e');
     }
   }
@@ -31,8 +41,15 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
   @override
   Future<List<TeamMemberEntity>> getAllByTeamId(String teamId) async {
     try {
-      return await remoteDataSource.getAllByTeamId(teamId);
+      final local = await _local.getAllByTeamId(teamId);
+      if (local.isNotEmpty) {
+        _remote.getAllByTeamId(teamId).catchError((_) => <TeamMemberEntity>[]);
+        return local;
+      }
+      return await _remote.getAllByTeamId(teamId);
     } catch (e) {
+      final cached = await _local.getAllByTeamId(teamId);
+      if (cached.isNotEmpty) return cached;
       throw Exception('Failed to fetch team members by team ID: $e');
     }
   }
@@ -40,7 +57,7 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
   @override
   Future<TeamMemberEntity?> getById(String id) async {
     try {
-      return await remoteDataSource.getById(id);
+      return await _remote.getById(id);
     } catch (e) {
       throw Exception('Failed to fetch team member: $e');
     }
@@ -49,7 +66,7 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
   @override
   Future<TeamMemberEntity> create(TeamMemberEntity member) async {
     try {
-      return await remoteDataSource.create(member);
+      return await _remote.create(member);
     } catch (e) {
       throw Exception('Failed to create team member: $e');
     }
@@ -58,7 +75,7 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
   @override
   Future<TeamMemberEntity> update(TeamMemberEntity member) async {
     try {
-      return await remoteDataSource.update(member.id?.toString() ?? '', member);
+      return await _remote.update(member.id?.toString() ?? '', member);
     } catch (e) {
       throw Exception('Failed to update team member: $e');
     }
@@ -67,7 +84,7 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
   @override
   Future<bool> inviteMember(String teamId, String email, String roleId) async {
     try {
-      return await remoteDataSource.inviteMember(teamId, email, roleId);
+      return await _remote.inviteMember(teamId, email, roleId);
     } catch (e) {
       throw Exception('Failed to invite team member: $e');
     }
@@ -81,7 +98,7 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
     String? fileName,
   }) async {
     try {
-      return await remoteDataSource.uploadProfileImage(
+      return await _remote.uploadProfileImage(
         memberId: memberId,
         imageFile: imageFile,
         imageBytes: imageBytes,
@@ -90,5 +107,9 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
     } catch (e) {
       throw Exception('Failed to upload profile image: $e');
     }
+  }
+
+  Future<void> refreshAll() async {
+    await _remote.getAll();
   }
 }

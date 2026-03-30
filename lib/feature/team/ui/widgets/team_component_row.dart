@@ -58,155 +58,149 @@ class _TeamComponentRowState extends State<TeamComponentRow> {
                   alignment: Alignment.topLeft,
                   clipBehavior: Clip.none,
                   children: [
-                    Expanded(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(0),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0,
+                          vertical: 40.0,
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8.0,
-                            vertical: 40.0,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          decoration: BoxDecoration(
+                            color: colorScheme.bgColor,
+                            borderRadius: BorderRadius.circular(30),
+                            border: (widget.isActive || _isHovered)
+                                ? Border.all(
+                                    color: colorScheme.selectionColor!,
+                                    width: 3,
+                                  )
+                                : null,
+                            boxShadow: _isHovered
+                                ? [
+                                    BoxShadow(
+                                      color: colorScheme.selectionColor!
+                                          .withValues(alpha: 0.3),
+                                      blurRadius: 12,
+                                      spreadRadius: 2,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : [],
                           ),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeInOut,
-                            decoration: BoxDecoration(
-                              color: colorScheme.bgColor,
-                              borderRadius: BorderRadius.circular(30),
-                              border: (widget.isActive || _isHovered)
-                                  ? Border.all(
-                                      color: colorScheme.selectionColor!,
-                                      width: 3,
-                                    )
-                                  : null,
-                              boxShadow: _isHovered
-                                  ? [
-                                      BoxShadow(
-                                        color: colorScheme.selectionColor!
-                                            .withValues(alpha: 0.3),
-                                        blurRadius: 12,
-                                        spreadRadius: 2,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ]
-                                  : [],
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32.0,
+                              vertical: 8,
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32.0,
-                                vertical: 8,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.avatarTextColor!,
-                                          borderRadius: BorderRadius.circular(
-                                            30,
-                                          ),
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 12.0,
-                                            horizontal: 16,
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            spacing: 8,
-                                            children: [
-                                              ActionOnUser(
-                                                iconSize: 28,
-                                                icon: Icons.edit,
-                                                color: colorScheme.cursorColor!,
-                                                onTap: () {
-                                                  print('edit team');
-                                                  context.go(
-                                                    RouterPaths.updateTeam,
-                                                    extra: widget.teamId,
-                                                  );
-                                                },
-                                              ),
-                                              ActionOnUser(
-                                                iconSize: 28,
-                                                icon: Icons
-                                                    .delete_forever_outlined,
-                                                color: colorScheme.deleteCard!,
-                                                onTap: () {
-                                                  widget.onDeleteTap?.call(
-                                                    widget.teamId,
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.max,
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.avatarTextColor!,
+                                        borderRadius: BorderRadius.circular(30),
                                       ),
-                                    ],
-                                  ),
-                                  Column(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        widget.teamName,
-                                        style: textTheme.headlineSmall!
-                                            .copyWith(
-                                              fontWeight: FontWeight.bold,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12.0,
+                                          horizontal: 16,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          spacing: 8,
+                                          children: [
+                                            ActionOnUser(
+                                              iconSize: 28,
+                                              icon: Icons.edit,
+                                              color: colorScheme.cursorColor!,
+                                              onTap: () {
+                                                print('edit team');
+                                                context.go(
+                                                  RouterPaths.updateTeam,
+                                                  extra: widget.teamId,
+                                                );
+                                              },
                                             ),
+                                            ActionOnUser(
+                                              iconSize: 28,
+                                              icon:
+                                                  Icons.delete_forever_outlined,
+                                              color: colorScheme.deleteCard!,
+                                              onTap: () {
+                                                widget.onDeleteTap?.call(
+                                                  widget.teamId,
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.max,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        spacing: 8,
-                                        children: [
-                                          Icon(
-                                            Icons.gps_fixed,
-                                            size: 16,
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  mainAxisSize: MainAxisSize.max,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.teamName,
+                                      style: textTheme.headlineSmall!.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.max,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      spacing: 8,
+                                      children: [
+                                        Icon(
+                                          Icons.gps_fixed,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                        Text(
+                                          widget.teamFocus,
+                                          style: textTheme.bodyLarge,
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.max,
+                                      children: [
+                                        Expanded(
+                                          child: Divider(
+                                            height: 10,
                                             color: Colors.grey,
                                           ),
-                                          Text(
-                                            widget.teamFocus,
-                                            style: textTheme.bodyLarge,
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          Expanded(
-                                            child: Divider(
-                                              height: 10,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Text(
-                                        localization.teamMember,
-                                        style: textTheme.bodyLarge!.copyWith(
-                                          fontWeight: FontWeight.w600,
                                         ),
+                                      ],
+                                    ),
+                                    Text(
+                                      localization.teamMember,
+                                      style: textTheme.bodyLarge!.copyWith(
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                      buildRowTeamItem(
-                                        context,
-                                        widget.members ?? [],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                    ),
+                                    buildRowTeamItem(
+                                      context,
+                                      widget.members ?? [],
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ),

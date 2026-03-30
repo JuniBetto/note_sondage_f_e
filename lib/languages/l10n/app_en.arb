@@ -116,5 +116,8 @@
     "removeImage":"Remove image",
     "settingsWeb":"Settings Web",
     "webNavbar":"Web Navbar",
-    "surveyMobile":"Survey Mobile"
+    "surveyMobile":"Survey Mobile",
+    "progress":"Progress",
+    "createdDate":"Created date",
+    "expiryDate":"Expiry date"
 }

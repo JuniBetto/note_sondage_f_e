@@ -30,6 +30,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
   late final TeamMemberBloc _teamMemberBloc;
   List<TeamEntityForView> teamsWithMembers = [];
   Map<String, List<TeamMemberforView>> teamMembersMap = {};
+  bool _syncedFromCurrentState = false;
 
   @override
   void initState() {
@@ -47,26 +48,62 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
       bloc: _teamBloc,
       listener: (context, state) {
         if (state is TeamsLoaded) {
-          debugPrint("Loaded teams: ${state.teams}");
+          debugPrint("✅ TeamsLoaded: ${state.teams.length} teams");
+          final newTeams = state.teams
+              .map((team) => TeamEntityForView(team: team, members: []))
+              .toList();
+
+          // Preserve already-loaded members when teams update
+          final updatedTeams = newTeams.map((newTeam) {
+            final existing = teamsWithMembers
+                .where((t) => t.team.id == newTeam.team.id)
+                .firstOrNull;
+            if (existing != null && existing.members.isNotEmpty) {
+              return newTeam.copyWith(members: existing.members)
+                  as TeamEntityForView;
+            }
+            return newTeam;
+          }).toList();
+
           setState(() {
-            teamsWithMembers = state.teams
-                .map((team) => TeamEntityForView(team: team, members: []))
-                .toList();
+            teamsWithMembers = updatedTeams;
           });
 
-          // Load members for each team
+          // Load members only for teams that don't have members yet
           for (var team in state.teams) {
             final createdTeamId = team.id;
-            if (createdTeamId != null) {
+            if (createdTeamId != null &&
+                !teamMembersMap.containsKey(createdTeamId)) {
               _teamMemberBloc.add(LoadTeamMembersByTeamIdEvent(createdTeamId));
             }
           }
         }
         if (state is TeamError) {
-          debugPrint("Error loading teams: ${state.message}");
+          debugPrint("❌ TeamError: ${state.message}");
         }
       },
       builder: (context, teamState) {
+        // If bloc already has teams loaded (singleton reuse), sync local state
+        if (teamState is TeamsLoaded &&
+            teamsWithMembers.isEmpty &&
+            !_syncedFromCurrentState) {
+          _syncedFromCurrentState = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() {
+              teamsWithMembers = teamState.teams
+                  .map((team) => TeamEntityForView(team: team, members: []))
+                  .toList();
+            });
+            for (var team in teamState.teams) {
+              final id = team.id;
+              if (id != null) {
+                _teamMemberBloc.add(LoadTeamMembersByTeamIdEvent(id));
+              }
+            }
+          });
+        }
+
         // Show loading only on initial load (no teams yet)
         if (teamState is TeamLoading && teamsWithMembers.isEmpty) {
           return const Center(child: CircularProgressIndicator());

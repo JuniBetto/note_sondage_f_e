@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
-class SondageComponentCard extends StatelessWidget {
+class SondageComponentCard extends StatefulWidget {
   final String sondageName;
   final String sondageFocus;
   final String sondageId;
@@ -12,6 +12,7 @@ class SondageComponentCard extends StatelessWidget {
   final DateTime createdDate;
   final DateTime expiryDate;
   final Color colorSondage;
+  final bool isActive;
   final VoidCallback onTap;
   final Function(String) onDeleteTap;
 
@@ -26,9 +27,17 @@ class SondageComponentCard extends StatelessWidget {
     required this.createdDate,
     required this.expiryDate,
     required this.colorSondage,
+    this.isActive = false,
     required this.onTap,
     required this.onDeleteTap,
   });
+
+  @override
+  State<SondageComponentCard> createState() => _SondageComponentCardState();
+}
+
+class _SondageComponentCardState extends State<SondageComponentCard> {
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -37,19 +46,44 @@ class SondageComponentCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    return SizedBox(
-      width: 320,
-      height: 200,
-      child: Card(
-        elevation: 4,
-        color: colorScheme.bgNavbarSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: colorSondage, width: 2),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+    final showBorder = widget.isActive || _isHovered;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 320,
+          height: 200,
+          decoration: BoxDecoration(
+            color: colorScheme.bgNavbarSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: showBorder
+                  ? colorScheme.selectionColor!
+                  : widget.colorSondage,
+              width: showBorder ? 3 : 2,
+            ),
+            boxShadow: _isHovered
+                ? [
+                    BoxShadow(
+                      color: colorScheme.selectionColor!.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -61,7 +95,7 @@ class SondageComponentCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        sondageName,
+                        widget.sondageName,
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colorScheme.iconLabel,
@@ -72,7 +106,7 @@ class SondageComponentCard extends StatelessWidget {
                     ),
                     IconButton(
                       icon: Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => onDeleteTap(sondageId),
+                      onPressed: () => widget.onDeleteTap(widget.sondageId),
                       padding: EdgeInsets.zero,
                       constraints: BoxConstraints(),
                     ),
@@ -82,7 +116,7 @@ class SondageComponentCard extends StatelessWidget {
 
                 // Focus/descrizione
                 Text(
-                  sondageFocus,
+                  widget.sondageFocus,
                   style: textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -95,13 +129,15 @@ class SondageComponentCard extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(status).withValues(alpha: 0.2),
+                    color: _getStatusColor(
+                      widget.status,
+                    ).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    status,
+                    widget.status,
                     style: TextStyle(
-                      color: _getStatusColor(status),
+                      color: _getStatusColor(widget.status),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -118,7 +154,7 @@ class SondageComponentCard extends StatelessWidget {
                         Icon(Icons.people, size: 16, color: Colors.grey),
                         SizedBox(width: 4),
                         Text(
-                          '$responses ${localization.responses}',
+                          '${widget.responses} ${localization.responses}',
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
@@ -128,7 +164,7 @@ class SondageComponentCard extends StatelessWidget {
                         Icon(Icons.quiz, size: 16, color: Colors.grey),
                         SizedBox(width: 4),
                         Text(
-                          '$totalQuestions ${localization.questions}',
+                          '${widget.totalQuestions} ${localization.questions}',
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],

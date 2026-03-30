@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
-import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile_skeleton.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/button_clocking.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clockin_change_view.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clocking.dart';
@@ -14,30 +13,8 @@ class ClockingMobile extends StatefulWidget {
 }
 
 class _ClockingMobileState extends State<ClockingMobile> {
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    // Simula il caricamento dei dati
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const ClockingMobileSkeleton();
-    }
-
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final localization = AppLocalizations.of(context)!;

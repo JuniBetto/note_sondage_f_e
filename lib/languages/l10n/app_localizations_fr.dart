@@ -372,4 +372,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get surveyMobile => 'Sondage Mobile';
+
+  @override
+  String get progress => 'Progrès';
+
+  @override
+  String get createdDate => 'Date de création';
+
+  @override
+  String get expiryDate => 'Date d\'expiration';
 }

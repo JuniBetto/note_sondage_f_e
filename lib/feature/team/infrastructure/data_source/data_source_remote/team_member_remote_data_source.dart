@@ -6,9 +6,13 @@ import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/crud_service.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/team_member_mapper.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_member_local_data_source.dart';
 
 class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
-  TeamMemberRemoteDataSource() : super(DioClient().dio, '/team-members');
+  final TeamMemberLocalDataSource localDataSource;
+
+  TeamMemberRemoteDataSource(this.localDataSource)
+    : super(DioClient().dio, '/team-members');
 
   @override
   Future<TeamMemberEntity> create(TeamMemberEntity item) async {
@@ -87,10 +91,12 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       }
 
       final data = response.data as List;
-      return data
+      final members = data
           .where((e) => e != null)
           .map((e) => TeamMemberMapper.fromJson(e as Map<String, dynamic>))
           .toList();
+      await localDataSource.saveAll(members);
+      return members;
     } catch (e) {
       throw Exception('Failed to fetch team members: $e');
     }
@@ -105,10 +111,12 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       }
 
       final data = response.data as List;
-      return data
+      final members = data
           .where((e) => e != null)
           .map((e) => TeamMemberMapper.fromJson(e as Map<String, dynamic>))
           .toList();
+      await localDataSource.saveAll(members);
+      return members;
     } catch (e) {
       throw Exception('Failed to fetch team members by team ID: $e');
     }

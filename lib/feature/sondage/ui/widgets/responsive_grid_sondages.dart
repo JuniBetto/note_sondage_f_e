@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_component_card.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_component_row.dart';
 
-class ResponsiveGridSondages extends StatelessWidget {
+class ResponsiveGridSondages extends StatefulWidget {
   const ResponsiveGridSondages({
     super.key,
     required this.items,
@@ -11,6 +13,13 @@ class ResponsiveGridSondages extends StatelessWidget {
 
   final List<Map<String, dynamic>> items;
   final bool isRow;
+
+  @override
+  State<ResponsiveGridSondages> createState() => _ResponsiveGridSondagesState();
+}
+
+class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
+  String? _selectedSondageId;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +31,7 @@ class ResponsiveGridSondages extends StatelessWidget {
           alignment: WrapAlignment.spaceAround,
           runSpacing: 8.0,
           spacing: 8.0,
-          children: items.map((item) {
+          children: widget.items.map((item) {
             final sondageId = item["sondageId"] as String;
             final createdDate = item["createdDate"] is String
                 ? DateTime.parse(item["createdDate"])
@@ -31,7 +40,7 @@ class ResponsiveGridSondages extends StatelessWidget {
                 ? DateTime.parse(item["expiryDate"])
                 : item["expiryDate"] as DateTime;
 
-            return isRow
+            return widget.isRow
                 ? SondageComponentCard(
                     key: ValueKey('sondage_card_$sondageId'),
                     sondageName: item["sondageName"],
@@ -43,12 +52,15 @@ class ResponsiveGridSondages extends StatelessWidget {
                     createdDate: createdDate,
                     expiryDate: expiryDate,
                     colorSondage: item["color"],
+                    isActive: _selectedSondageId == sondageId,
                     onTap: () {
-                      // TODO: Implementare navigazione ai dettagli del sondaggio
-                      debugPrint("Clicked on sondage: ${item["sondageName"]}");
+                      setState(() => _selectedSondageId = sondageId);
+                      context.go(
+                        RouterPaths.sondageDetail,
+                        extra: sondageId,
+                      );
                     },
                     onDeleteTap: (sondageId) {
-                      // TODO: Implementare eliminazione sondaggio
                       debugPrint("Delete sondage: $sondageId");
                     },
                   )
@@ -63,8 +75,13 @@ class ResponsiveGridSondages extends StatelessWidget {
                     createdDate: createdDate,
                     expiryDate: expiryDate,
                     colorSondage: item["color"],
+                    isActive: _selectedSondageId == sondageId,
                     onTap: () {
-                      debugPrint("Clicked on sondage: ${item["sondageName"]}");
+                      setState(() => _selectedSondageId = sondageId);
+                      context.go(
+                        RouterPaths.sondageDetail,
+                        extra: sondageId,
+                      );
                     },
                     onDeleteTap: (sondageId) {
                       debugPrint("Delete sondage: $sondageId");

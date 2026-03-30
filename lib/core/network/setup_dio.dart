@@ -15,8 +15,8 @@ class DioClient {
   }
 
   /// Returns the correct base URL depending on the platform:
-  /// - Web / iOS / macOS / desktop: http://127.0.0.1:8001
-  /// - Android emulator:            http://10.0.2.2:8001
+  /// - Web / iOS / macOS / desktop: http://127.0.0.1:8081
+  /// - Android emulator:            http://10.0.2.2:8081
   static String get baseUrl => 'http://$_host:8001';
 
   /// MinIO API port for direct access (only used if bucket is public)

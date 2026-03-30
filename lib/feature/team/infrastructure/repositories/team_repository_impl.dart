@@ -1,15 +1,18 @@
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_repository.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_remote_data_source.dart';
 
 class TeamRepositoryImpl implements TeamRepository {
-  final TeamRemoteDataSource remoteDataSource;
-  TeamRepositoryImpl(this.remoteDataSource);
+  final TeamLocalDataSource _local;
+  final TeamRemoteDataSource _remote;
+
+  TeamRepositoryImpl(this._local, this._remote);
 
   @override
   Future<bool> delete(String id) async {
     try {
-      await remoteDataSource.delete(id);
+      await _remote.delete(id);
       return true;
     } catch (e) {
       throw Exception('Failed to delete team: $e');
@@ -19,8 +22,15 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<List<TeamEntity>> getAll() async {
     try {
-      return await remoteDataSource.getAll();
+      final local = await _local.getAll();
+      if (local.isNotEmpty) {
+        _remote.getAll().catchError((_) => <TeamEntity>[]);
+        return local;
+      }
+      return await _remote.getAll();
     } catch (e) {
+      final cached = await _local.getAll();
+      if (cached.isNotEmpty) return cached;
       throw Exception('Failed to fetch teams: $e');
     }
   }
@@ -28,8 +38,15 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<List<TeamEntity>> getAllByUserId(String userId) async {
     try {
-      return await remoteDataSource.getAllByUserId(userId);
+      final local = await _local.getAll();
+      if (local.isNotEmpty) {
+        _remote.getAllByUserId(userId).catchError((_) => <TeamEntity>[]);
+        return local;
+      }
+      return await _remote.getAllByUserId(userId);
     } catch (e) {
+      final cached = await _local.getAll();
+      if (cached.isNotEmpty) return cached;
       throw Exception('Failed to fetch teams by user ID: $e');
     }
   }
@@ -37,7 +54,7 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<TeamEntity?> getById(String id) async {
     try {
-      return await remoteDataSource.getById(id);
+      return await _remote.getById(id);
     } catch (e) {
       throw Exception('Failed to fetch team: $e');
     }
@@ -46,7 +63,7 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<TeamEntity> create(TeamEntity team) async {
     try {
-      return await remoteDataSource.create(team);
+      return await _remote.create(team);
     } catch (e) {
       throw Exception('Failed to create team: $e');
     }
@@ -55,7 +72,7 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<TeamEntity> createByUser(TeamEntity team, String userId) async {
     try {
-      return await remoteDataSource.createByUser(team, userId);
+      return await _remote.createByUser(team, userId);
     } catch (e) {
       throw Exception('Failed to create team by user: $e');
     }
@@ -64,13 +81,13 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<TeamUpdate> update(TeamUpdate team) async {
     try {
-      final updatedTeam = await remoteDataSource.updateTeamUpdater(
-        team.id ?? '',
-        team,
-      );
-      return updatedTeam;
+      return await _remote.updateTeamUpdater(team.id ?? '', team);
     } catch (e) {
       throw Exception('Failed to update team: $e');
     }
+  }
+
+  Future<void> refreshAll() async {
+    await _remote.getAll();
   }
 }

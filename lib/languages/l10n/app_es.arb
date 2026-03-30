@@ -116,5 +116,8 @@
     "removeImage":"Eliminar imagen",
     "settingsWeb":"Configuración Web",
     "webNavbar":"Barra de navegación Web",
-    "surveyMobile":"Encuesta Móvil"
+    "surveyMobile":"Encuesta Móvil",
+    "progress":"Progreso",
+    "createdDate":"Fecha de creación",
+    "expiryDate":"Fecha de vencimiento"
 }

@@ -26,8 +26,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     LoadTeamsEvent event,
     Emitter<TeamState> emit,
   ) async {
-    // Show loading only on first load (cache is empty)
-    if (_cachedTeams.isEmpty) {
+    // Emit cached data instantly if available (zero delay)
+    if (_cachedTeams.isNotEmpty) {
+      emit(TeamsLoaded(_cachedTeams));
+    } else {
       emit(TeamLoading());
     }
     try {
@@ -35,7 +37,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       _cachedTeams = teams;
       emit(TeamsLoaded(teams));
     } catch (e) {
-      emit(TeamError(e.toString()));
+      // Only show error if we have no cached data
+      if (_cachedTeams.isEmpty) {
+        emit(TeamError(e.toString()));
+      }
     }
   }
 
@@ -43,8 +48,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     LoadTeamsByUserIdEvent event,
     Emitter<TeamState> emit,
   ) async {
-    // Show loading only on first load (cache is empty)
-    if (_cachedTeams.isEmpty) {
+    // Emit cached data instantly if available (zero delay)
+    if (_cachedTeams.isNotEmpty) {
+      emit(TeamsLoaded(_cachedTeams));
+    } else {
       emit(TeamLoading());
     }
     try {
@@ -52,7 +59,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       _cachedTeams = teams;
       emit(TeamsLoaded(teams));
     } catch (e) {
-      emit(TeamError(e.toString()));
+      // Only show error if we have no cached data
+      if (_cachedTeams.isEmpty) {
+        emit(TeamError(e.toString()));
+      }
     }
   }
 

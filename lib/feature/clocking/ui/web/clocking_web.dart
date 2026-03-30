@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/clocking/ui/web/clocking_web_skeleton.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/button_clocking.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clockin_change_view.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clocking.dart';
@@ -13,35 +12,8 @@ class ClockingWeb extends StatefulWidget {
 }
 
 class _ClockingWebState extends State<ClockingWeb> {
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    // Carica i dati dopo il primo frame per mostrare subito lo skeleton
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
-    });
-  }
-
-  Future<void> _loadData() async {
-    // Qui caricherai i dati dal tuo bloc/repository
-    // Per ora simuliamo un breve delay per il caricamento
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Mostra skeleton durante il caricamento
-    if (_isLoading) {
-      return const ClockingWebSkeleton();
-    }
-
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 

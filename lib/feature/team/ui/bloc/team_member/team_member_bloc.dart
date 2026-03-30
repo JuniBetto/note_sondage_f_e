@@ -14,7 +14,8 @@ part 'team_member_state.dart';
 class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
   final TeamMemberUseCase teamMemberUseCase;
 
-  TeamMemberBloc({required this.teamMemberUseCase}) : super(TeamMemberInitial()) {
+  TeamMemberBloc({required this.teamMemberUseCase})
+    : super(TeamMemberInitial()) {
     on<LoadTeamMembersEvent>(_onLoadMembers);
     on<LoadTeamMembersByTeamIdEvent>(_onLoadMembersByTeamId);
     on<LoadTeamMemberByIdEvent>(_onLoadMemberById);
@@ -43,9 +44,13 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
     LoadTeamMembersByTeamIdEvent event,
     Emitter<TeamMemberState> emit,
   ) async {
-    emit(TeamMemberLoading());
+    // Don't emit TeamMemberLoading here — it would reset the UI
+    // for all teams while loading members for just one team.
+    // The UI already shows previously loaded members.
     try {
-      final members = await teamMemberUseCase.getAllMembersByTeamId(event.teamId);
+      final members = await teamMemberUseCase.getAllMembersByTeamId(
+        event.teamId,
+      );
       emit(TeamMembersLoaded(members));
     } catch (e) {
       emit(TeamMemberError(e.toString()));
@@ -77,7 +82,7 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
     try {
       // 1. Crea il member
       var member = await teamMemberUseCase.createMember(event.member);
-      
+
       // 2. Se c'è un'immagine da caricare, fallo
       if (event.member.hasImageToUpload && member.id != null) {
         member = await teamMemberUseCase.uploadProfileImage(
@@ -87,7 +92,7 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
           fileName: event.member.fileName,
         );
       }
-      
+
       emit(TeamMemberCreated(member));
       // Ricarica la lista dopo la creazione
       add(LoadTeamMembersByTeamIdEvent(event.teamId));
@@ -106,9 +111,9 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
     emit(TeamMemberLoading());
     try {
       final bool hasImage = event.imageFile != null || event.imageBytes != null;
-      
+
       TeamMemberEntity member;
-      
+
       if (hasImage) {
         // Usa il metodo che crea e carica l'immagine
         member = await teamMemberUseCase.createMemberWithImage(
@@ -129,7 +134,7 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
           status: event.status,
         );
       }
-      
+
       emit(TeamMemberCreated(member));
       // Ricarica la lista dopo la creazione
       add(LoadTeamMembersByTeamIdEvent(event.teamId));

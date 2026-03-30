@@ -5,17 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
-import 'package:note_sondage/feature/clocking/ui/web/clocking_web.dart';
+import 'package:note_sondage/feature/sondage/ui/mobile/sondage_detail_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
-import 'package:note_sondage/feature/sondage/ui/web/sondage_web.dart';
+import 'package:note_sondage/feature/sondage/ui/web/sondage_detail_web.dart';
 import 'package:note_sondage/feature/team/ui/mobile/role_page.dart';
 import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/update_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/web/role_page_web.dart';
-import 'package:note_sondage/feature/team/ui/web/teams_web.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/update_team_web.dart';
 import 'package:note_sondage/ui/bloc/auth_bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/bloc/auth_bloc/auth_state.dart';
+import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
+import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/mobile/main_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/login_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/settings_mobile.dart';
@@ -32,60 +33,272 @@ import 'package:note_sondage/ui/widgets/splash_screen/splash_sreen_begin.dart';
 //String currentAppPath = RouterPaths.splashScreen;
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Mappa il path URL all'indice dell'IndexedStack nel NavigationBloc.
+/// Usato per sincronizzare il bloc quando il browser naviga (back/forward).
+int _pathToNavIndex(String path) {
+  switch (path) {
+    case RouterPaths.home:
+      return 0;
+    case RouterPaths.team:
+      return 1;
+    case RouterPaths.clocking:
+      return 3;
+    case RouterPaths.sondage:
+      return 4;
+    default:
+      return 0;
+  }
+}
 
 GoRouter createRouter(BuildContext context) {
   final authBloc = context.read<AuthBloc>(); // Ottiene l'istanza del BLoC
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    //initialLocation: currentAppPath,
-    // observers: [GoRouterObserver()],
     routes: [
-      GoRoute(
-        path: RouterPaths.settings,
-        name: RouterPaths.settings,
-        pageBuilder: (context, state) => const NoTransitionPage<void>(
-          child: kIsWeb ? MainWeb(child: SettingsWeb()) : SettingsMobile(),
+      // =====================
+      // 🔒 WEB — ShellRoute: MainWeb rimane stabile.
+      // Le 4 pagine principali (Home/Team/Clocking/Sondage) sono dentro un
+      // IndexedStack in MainWeb, gestito dal NavigationBloc → zero rebuild.
+      // GoRouter serve solo per le route secondarie (rolePage, updateTeam, etc.)
+      // =====================
+      if (kIsWeb)
+        ShellRoute(
+          navigatorKey: _shellNavigatorKey,
+          pageBuilder: (context, state, child) {
+            // child è SizedBox.shrink per la home (IndexedStack gestisce),
+            // oppure il widget della route secondaria (rolePage, etc.)
+            final path = state.uri.path;
+            final isMainPage =
+                path == RouterPaths.home ||
+                path == RouterPaths.team ||
+                path == RouterPaths.clocking ||
+                path == RouterPaths.sondage;
+
+            // ═══ Sincronizza il NavigationBloc con l'URL corrente ═══
+            // Fondamentale per i pulsanti back/forward del browser:
+            // GoRouter aggiorna il path, ma senza questo l'IndexedStack
+            // resterebbe fermo sull'indice precedente.
+            if (isMainPage) {
+              final targetIndex = _pathToNavIndex(path);
+              final navBloc = context.read<NavigationBloc>();
+              if (navBloc.state != targetIndex) {
+                navBloc.add(NavigationPositionChanged(targetIndex));
+              }
+            }
+
+            return NoTransitionPage<void>(
+              child: MainWeb(child: isMainPage ? null : child),
+            );
+          },
+          routes: [
+            // Home è il punto di ingresso — IndexedStack gestisce la vista
+            GoRoute(
+              path: RouterPaths.home,
+              name: RouterPaths.home,
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage<void>(child: SizedBox.shrink()),
+            ),
+            // Queste route servono per il redirect (es. da login → home)
+            // e per aggiornare l'URL nel browser
+            GoRoute(
+              path: RouterPaths.team,
+              name: RouterPaths.team,
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage<void>(child: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: RouterPaths.clocking,
+              name: RouterPaths.clocking,
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage<void>(child: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: RouterPaths.sondage,
+              name: RouterPaths.sondage,
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage<void>(child: SizedBox.shrink()),
+            ),
+            // Route secondarie — queste passano il child a MainWeb
+            GoRoute(
+              path: RouterPaths.rolePage,
+              name: RouterPaths.rolePage,
+              pageBuilder: (context, state) {
+                final teamId = state.extra as String? ?? '';
+                return NoTransitionPage<void>(
+                  child: RolePageWeb(teamId: teamId),
+                );
+              },
+            ),
+            GoRoute(
+              path: RouterPaths.permissionPage,
+              name: RouterPaths.permissionPage,
+              pageBuilder: (context, state) {
+                final teamId = state.extra as String? ?? '';
+                return NoTransitionPage<void>(
+                  child: RolePageWeb(teamId: teamId),
+                );
+              },
+            ),
+            GoRoute(
+              path: RouterPaths.updateTeam,
+              name: RouterPaths.updateTeam,
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                child: UpdateTeamWeb(teamId: state.extra as String?),
+              ),
+            ),
+            GoRoute(
+              path: RouterPaths.sondageDetail,
+              name: RouterPaths.sondageDetail,
+              pageBuilder: (context, state) {
+                final sondageId = state.extra as String? ?? '';
+                return NoTransitionPage<void>(
+                  child: SondageDetailWeb(sondageId: sondageId),
+                );
+              },
+            ),
+            GoRoute(
+              path: RouterPaths.settings,
+              name: RouterPaths.settings,
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage<void>(child: SettingsWeb()),
+              routes: [
+                GoRoute(
+                  path: 'language',
+                  name: RouterPaths.settingsLanguage,
+                  pageBuilder: (context, state) => const NoTransitionPage<void>(
+                    child: SettingsLanguageWeb(),
+                  ),
+                ),
+                GoRoute(
+                  path: 'notifications',
+                  name: RouterPaths.settingsNotifications,
+                  pageBuilder: (context, state) => const NoTransitionPage<void>(
+                    child: SettingsNotificationWeb(),
+                  ),
+                ),
+                GoRoute(
+                  path: 'contact_us',
+                  name: RouterPaths.settingsContactUs,
+                  pageBuilder: (context, state) => const NoTransitionPage<void>(
+                    child: SettingsContactUsWeb(),
+                  ),
+                ),
+                GoRoute(
+                  path: 'privacy',
+                  name: RouterPaths.settingsPrivacy,
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage<void>(child: SettingsPrivacyWeb()),
+                ),
+              ],
+            ),
+          ],
         ),
-        routes: [
-          GoRoute(
-            path: 'language',
-            name: RouterPaths.settingsLanguage,
-            pageBuilder: (context, state) => const NoTransitionPage<void>(
-              child: kIsWeb
-                  ? SettingsLanguageWeb()
-                  : LoginMobile(isForgetPassword: true),
-            ),
+
+      // =====================
+      // 📱 MOBILE routes (no shell needed, each has its own scaffold)
+      // =====================
+      if (!kIsWeb) ...[
+        GoRoute(
+          path: RouterPaths.home,
+          name: RouterPaths.home,
+          pageBuilder: (context, state) =>
+              const NoTransitionPage<void>(child: MainMobile()),
+        ),
+        GoRoute(
+          path: RouterPaths.team,
+          name: RouterPaths.team,
+          pageBuilder: (context, state) =>
+              const NoTransitionPage<void>(child: TeamsMobile()),
+        ),
+        GoRoute(
+          path: RouterPaths.clocking,
+          name: RouterPaths.clocking,
+          pageBuilder: (context, state) =>
+              const NoTransitionPage<void>(child: ClockingMobile()),
+        ),
+        GoRoute(
+          path: RouterPaths.sondage,
+          name: RouterPaths.sondage,
+          pageBuilder: (context, state) =>
+              const NoTransitionPage<void>(child: SondageMobile()),
+        ),
+        GoRoute(
+          path: RouterPaths.rolePage,
+          name: RouterPaths.rolePage,
+          pageBuilder: (context, state) {
+            final teamId = state.extra as String? ?? '';
+            return NoTransitionPage<void>(child: RolePage(teamId: teamId));
+          },
+        ),
+        GoRoute(
+          path: RouterPaths.permissionPage,
+          name: RouterPaths.permissionPage,
+          pageBuilder: (context, state) {
+            final teamId = state.extra as String? ?? '';
+            return NoTransitionPage<void>(child: RolePage(teamId: teamId));
+          },
+        ),
+        GoRoute(
+          path: RouterPaths.updateTeam,
+          name: RouterPaths.updateTeam,
+          pageBuilder: (context, state) => NoTransitionPage<void>(
+            child: UpdateTeamMobile(teamId: state.extra as String?),
           ),
-          GoRoute(
-            path: 'notifications',
-            name: RouterPaths.settingsNotifications,
-            pageBuilder: (context, state) => const NoTransitionPage<void>(
-              child: kIsWeb
-                  ? SettingsNotificationWeb()
-                  : LoginMobile(isForgetPassword: true),
+        ),
+        GoRoute(
+          path: RouterPaths.sondageDetail,
+          name: RouterPaths.sondageDetail,
+          pageBuilder: (context, state) {
+            final sondageId = state.extra as String? ?? '';
+            return NoTransitionPage<void>(
+              child: SondageDetailMobile(sondageId: sondageId),
+            );
+          },
+        ),
+        GoRoute(
+          path: RouterPaths.settings,
+          name: RouterPaths.settings,
+          pageBuilder: (context, state) =>
+              const NoTransitionPage<void>(child: SettingsMobile()),
+          routes: [
+            GoRoute(
+              path: 'language',
+              name: RouterPaths.settingsLanguage,
+              pageBuilder: (context, state) => const NoTransitionPage<void>(
+                child: LoginMobile(isForgetPassword: true),
+              ),
             ),
-          ),
-          GoRoute(
-            path: 'contact_us',
-            name: RouterPaths.settingsContactUs,
-            pageBuilder: (context, state) => const NoTransitionPage<void>(
-              child: kIsWeb
-                  ? SettingsContactUsWeb()
-                  : LoginMobile(isForgetPassword: true),
+            GoRoute(
+              path: 'notifications',
+              name: RouterPaths.settingsNotifications,
+              pageBuilder: (context, state) => const NoTransitionPage<void>(
+                child: LoginMobile(isForgetPassword: true),
+              ),
             ),
-          ),
-          GoRoute(
-            path: 'privacy',
-            name: RouterPaths.settingsPrivacy,
-            pageBuilder: (context, state) => const NoTransitionPage<void>(
-              child: kIsWeb
-                  ? SettingsPrivacyWeb()
-                  : LoginMobile(isForgetPassword: true),
+            GoRoute(
+              path: 'contact_us',
+              name: RouterPaths.settingsContactUs,
+              pageBuilder: (context, state) => const NoTransitionPage<void>(
+                child: LoginMobile(isForgetPassword: true),
+              ),
             ),
-          ),
-        ],
-      ),
+            GoRoute(
+              path: 'privacy',
+              name: RouterPaths.settingsPrivacy,
+              pageBuilder: (context, state) => const NoTransitionPage<void>(
+                child: LoginMobile(isForgetPassword: true),
+              ),
+            ),
+          ],
+        ),
+      ],
+
+      // =====================
+      // 🔓 PUBLIC ROUTES (shared between web and mobile)
+      // =====================
       GoRoute(
         path: RouterPaths.forgotPassword,
         name: RouterPaths.forgotPassword,
@@ -102,76 +315,15 @@ GoRouter createRouter(BuildContext context) {
             const NoTransitionPage<void>(child: AboutPage()),
       ),
       GoRoute(
-        path: RouterPaths.sondage,
-        name: RouterPaths.sondage,
-        pageBuilder: (context, state) => const NoTransitionPage<void>(
-          child: kIsWeb ? MainWeb(child: SondageWeb()) : SondageMobile(),
-        ),
-      ),
-      GoRoute(
-        path: RouterPaths.clocking,
-        name: RouterPaths.clocking,
-        pageBuilder: (context, state) => const NoTransitionPage<void>(
-          child: kIsWeb ? MainWeb(child: ClockingWeb()) : ClockingMobile(),
-        ),
-      ),
-      GoRoute(
-        path: RouterPaths.team,
-        name: RouterPaths.team,
-        pageBuilder: (context, state) => const NoTransitionPage<void>(
-          child: kIsWeb ? MainWeb(child: TeamsWeb()) : TeamsMobile(),
-        ),
-      ),
-      GoRoute(
         path: RouterPaths.splashScreen,
         name: RouterPaths.splashScreen,
         pageBuilder: (context, state) =>
             const NoTransitionPage<void>(child: SplashScreenBegin()),
       ),
       GoRoute(
-        path: RouterPaths.home,
-        name: RouterPaths.home,
-        pageBuilder: (context, state) => const NoTransitionPage<void>(
-          child: kIsWeb ? MainWeb() : MainMobile(),
-        ),
-      ),
-      GoRoute(
-        path: RouterPaths.rolePage,
-        name: RouterPaths.rolePage,
-        pageBuilder: (context, state) {
-          final teamId = state.extra as String? ?? '';
-          return NoTransitionPage<void>(
-            child: kIsWeb
-                ? MainWeb(child: RolePageWeb(teamId: teamId))
-                : RolePage(teamId: teamId),
-          );
-        },
-      ),
-      GoRoute(
-        path: RouterPaths.permissionPage,
-        name: RouterPaths.permissionPage,
-        pageBuilder: (context, state) {
-          final teamId = state.extra as String? ?? '';
-          return NoTransitionPage<void>(
-            child: kIsWeb
-                ? MainWeb(child: RolePageWeb(teamId: teamId))
-                : RolePage(teamId: teamId),
-          );
-        },
-      ),
-      GoRoute(
         path: RouterPaths.login,
         pageBuilder: (context, state) => const NoTransitionPage<void>(
           child: kIsWeb ? LoginWeb() : LoginMobile(),
-        ),
-      ),
-      GoRoute(
-        path: RouterPaths.updateTeam,
-        name: RouterPaths.updateTeam,
-        pageBuilder: (context, state) => NoTransitionPage<void>(
-          child: kIsWeb
-              ? MainWeb(child: UpdateTeamWeb(teamId: state.extra as String?))
-              : UpdateTeamMobile(teamId: state.extra as String?),
         ),
       ),
     ],
@@ -210,120 +362,6 @@ GoRouter createRouter(BuildContext context) {
   );
 }
 
-/*
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
-
-GoRouter createRouter(BuildContext context) {
-  final authBloc = context.read<AuthBloc>();
-
-  return GoRouter(
-    navigatorKey: _rootNavigatorKey,
-
-    routes: [
-      // =====================
-      // 🔒 SHELL (Dashboard)
-      // =====================
-      ShellRoute(
-        builder: (context, state, child) {
-          return kIsWeb ? MainWeb() : MainMobile();
-        },
-        routes: [
-          GoRoute(
-            path: RouterPaths.home,
-            name: RouterPaths.home,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: kIsWeb ? MainWeb() : MainMobile(),
-            ),
-          ),
-          GoRoute(
-            path: RouterPaths.team,
-            name: RouterPaths.team,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: kIsWeb ? MainWeb(child: TeamsWeb()) : TeamsMobile(),
-            ),
-          ),
-          GoRoute(
-            path: RouterPaths.settings,
-            name: RouterPaths.settings,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: kIsWeb ? MainWeb(child: SettingsWeb()) : SettingsMobile(),
-            ),
-          ),
-          GoRoute(
-            path: RouterPaths.clocking,
-            name: RouterPaths.clocking,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: kIsWeb ? MainWeb(child: ClockingWeb()) : ClockingMobile(),
-            ),
-          ),
-          GoRoute(
-            path: RouterPaths.sondage,
-            name: RouterPaths.sondage,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: kIsWeb ? MainWeb(child: SondageWeb()) : SondageMobile(),
-            ),
-          ),
-        ],
-      ),
-
-      // =====================
-      // 🔓 PUBLIC ROUTES
-      // =====================
-      GoRoute(
-        path: RouterPaths.login,
-        pageBuilder: (context, state) =>
-            const NoTransitionPage(child: kIsWeb ? LoginWeb() : LoginMobile()),
-      ),
-      GoRoute(
-        path: RouterPaths.forgotPassword,
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: kIsWeb
-              ? LoginWeb(isForgetPassword: true)
-              : LoginMobile(isForgetPassword: true),
-        ),
-      ),
-      GoRoute(
-        path: RouterPaths.splashScreen,
-        pageBuilder: (context, state) =>
-            const NoTransitionPage(child: SplashScreenBegin()),
-      ),
-      GoRoute(
-        path: RouterPaths.about,
-        pageBuilder: (context, state) =>
-            const NoTransitionPage(child: AboutPage()),
-      ),
-    ],
-
-    // =====================
-    // 🔁 REDIRECT (INALTERATO)
-    // =====================
-    redirect: (context, state) {
-      final isAuthenticated = authBloc.isAuthenticated;
-      final currentPath = state.fullPath;
-
-      final isPublicRoute =
-          currentPath == RouterPaths.login ||
-          currentPath == RouterPaths.forgotPassword;
-
-      if (authBloc.state is AuthUnknown) {
-        return RouterPaths.splashScreen;
-      }
-
-      if (isAuthenticated) {
-        return isPublicRoute ? RouterPaths.home : null;
-      }
-
-      if (!isAuthenticated) {
-        return isPublicRoute ? null : RouterPaths.login;
-      }
-
-      return null;
-    },
-
-    refreshListenable: GoRouterRefreshStream(authBloc.stream),
-  );
-}*/
-
 // GO ROUTER REFRESH STREAM (Necessario per usare Stream/Bloc con GoRouter)
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -360,4 +398,5 @@ abstract class RouterPaths {
   static const updateTeam = '/update_team';
   static const permissionPage = '/permission_page';
   static const rolePage = '/role_page';
+  static const sondageDetail = '/sondage_detail';
 }

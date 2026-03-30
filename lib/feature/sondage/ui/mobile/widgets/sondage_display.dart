@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/team/ui/widgets/responsive_grid_teams.dart';
+import 'package:note_sondage/feature/sondage/ui/widgets/responsive_grid_sondages.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class SondageDisplay extends StatefulWidget {
-  final List<Map<String, dynamic>> teams;
+  final List<Map<String, dynamic>> sondages;
   final Function(int) onViewChanged;
   final int initialViewType;
 
   const SondageDisplay({
     Key? key,
-    required this.teams,
+    required this.sondages,
     required this.onViewChanged,
     this.initialViewType = 1,
   }) : super(key: key);
@@ -76,8 +76,8 @@ class _TeamsDisplaySectionState extends State<SondageDisplay> {
                   ),
                 ],
               ),
-              child: ResponsiveGridTeams(
-                items: widget.teams,
+              child: ResponsiveGridSondages(
+                items: widget.sondages,
                 isRow: isGridView == 1,
               ),
             ),

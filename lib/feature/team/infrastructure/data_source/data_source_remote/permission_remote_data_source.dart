@@ -2,18 +2,25 @@ import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/team/domain/entities/permission_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/crud_service.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/permission_mapper.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/permission_local_data_source.dart';
 
 class PermissionRemoteDataSource extends CrudService<PermissionEntity> {
-  PermissionRemoteDataSource() : super(DioClient().dio, '/permissions');
+  final PermissionLocalDataSource localDataSource;
+
+  PermissionRemoteDataSource(this.localDataSource)
+    : super(DioClient().dio, '/permissions');
 
   @override
   Future<List<PermissionEntity>> getAll() async {
     try {
       final response = await DioClient().dio.get('$endpoint/all');
       final data = response.data as List;
-      return data
+      final permissions = data
           .map((e) => PermissionMapper.fromJson(e as Map<String, dynamic>))
           .toList();
+      // Aggiorna la cache locale
+      await localDataSource.saveAll(permissions);
+      return permissions;
     } catch (e) {
       throw Exception('Failed to fetch permissions: $e');
     }

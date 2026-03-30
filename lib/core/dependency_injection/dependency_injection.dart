@@ -9,6 +9,11 @@ import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dar
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/user/user_use_case.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/permission_local_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/role_local_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_member_local_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/user_local_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/permission_remote_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/role_remote_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_member_remote_data_source.dart';
@@ -19,8 +24,6 @@ import 'package:note_sondage/feature/team/infrastructure/repositories/role_repos
 import 'package:note_sondage/feature/team/infrastructure/repositories/team_member_repository_impl.dart';
 import 'package:note_sondage/feature/team/infrastructure/repositories/team_repository_impl.dart';
 import 'package:note_sondage/feature/team/infrastructure/repositories/user_repository_impl.dart';
-import 'package:note_sondage/feature/team/ui/bloc/permission/permission_bloc.dart'
-    hide RoleBloc;
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
@@ -39,54 +42,87 @@ Future<void> setup() async {
 // ==================== DATA SOURCES ====================
 
 void _registerDataSources() {
-  // Role
+  // Local data sources
+  getIt.registerLazySingleton<PermissionLocalDataSource>(
+    () => PermissionLocalDataSource(),
+  );
+  getIt.registerLazySingleton<RoleLocalDataSource>(() => RoleLocalDataSource());
+  getIt.registerLazySingleton<TeamLocalDataSource>(() => TeamLocalDataSource());
+  getIt.registerLazySingleton<TeamMemberLocalDataSource>(
+    () => TeamMemberLocalDataSource(),
+  );
+  getIt.registerLazySingleton<UserLocalDataSource>(() => UserLocalDataSource());
+
+  // Remote data sources (inject local data source for caching)
+  getIt.registerLazySingleton<PermissionRemoteDataSource>(
+    () => PermissionRemoteDataSource(getIt<PermissionLocalDataSource>()),
+  );
   getIt.registerLazySingleton<RoleRemoteDataSource>(
-    () => RoleRemoteDataSource(),
+    () => RoleRemoteDataSource(getIt<RoleLocalDataSource>()),
   );
-
-  // Team
   getIt.registerLazySingleton<TeamRemoteDataSource>(
-    () => TeamRemoteDataSource(),
+    () => TeamRemoteDataSource(getIt<TeamLocalDataSource>()),
   );
-
-  // TeamMember
   getIt.registerLazySingleton<TeamMemberRemoteDataSource>(
-    () => TeamMemberRemoteDataSource(),
+    () => TeamMemberRemoteDataSource(getIt<TeamMemberLocalDataSource>()),
   );
-
-  // User
   getIt.registerLazySingleton<UserRemoteDataSource>(
-    () => UserRemoteDataSource(),
+    () => UserRemoteDataSource(getIt<UserLocalDataSource>()),
   );
 }
 
 // ==================== REPOSITORIES ====================
 
 void _registerRepositories() {
+  // Permission
+  getIt.registerLazySingleton<PermissionRepository>(
+    () => PermissionRepositoryImpl(
+      getIt<PermissionLocalDataSource>(),
+      getIt<PermissionRemoteDataSource>(),
+    ),
+  );
+
   // Role
   getIt.registerLazySingleton<RoleRepository>(
-    () => RoleRepositoryImpl(getIt<RoleRemoteDataSource>()),
+    () => RoleRepositoryImpl(
+      getIt<RoleLocalDataSource>(),
+      getIt<RoleRemoteDataSource>(),
+    ),
   );
 
   // Team
   getIt.registerLazySingleton<TeamRepository>(
-    () => TeamRepositoryImpl(getIt<TeamRemoteDataSource>()),
+    () => TeamRepositoryImpl(
+      getIt<TeamLocalDataSource>(),
+      getIt<TeamRemoteDataSource>(),
+    ),
   );
 
   // TeamMember
   getIt.registerLazySingleton<TeamMemberRepository>(
-    () => TeamMemberRepositoryImpl(getIt<TeamMemberRemoteDataSource>()),
+    () => TeamMemberRepositoryImpl(
+      getIt<TeamMemberLocalDataSource>(),
+      getIt<TeamMemberRemoteDataSource>(),
+    ),
   );
 
   // User
   getIt.registerLazySingleton<UserRepository>(
-    () => UserRepositoryImpl(remoteDataSource: getIt<UserRemoteDataSource>()),
+    () => UserRepositoryImpl(
+      local: getIt<UserLocalDataSource>(),
+      remote: getIt<UserRemoteDataSource>(),
+    ),
   );
 }
 
 // ==================== USE CASES ====================
 
 void _registerUseCases() {
+  // Permission
+  getIt.registerLazySingleton<PermissionUseCase>(
+    () => PermissionUseCase(getIt<PermissionRepository>()),
+  );
+
   // Role
   getIt.registerLazySingleton<RoleUseCase>(
     () => RoleUseCase(getIt<RoleRepository>()),

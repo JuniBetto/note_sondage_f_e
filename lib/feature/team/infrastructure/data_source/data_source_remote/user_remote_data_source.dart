@@ -1,9 +1,13 @@
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_entity.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/user_mapper.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/user_local_data_source.dart';
 
 class UserRemoteDataSource {
   final String endpoint = '/users';
+  final UserLocalDataSource localDataSource;
+
+  UserRemoteDataSource(this.localDataSource);
 
   Future<List<UserEntity>> getAll() async {
     try {
@@ -14,10 +18,12 @@ class UserRemoteDataSource {
       }
 
       final data = response.data as List;
-      return data
+      final users = data
           .where((e) => e != null)
           .map((e) => UserMapper.fromJson(e as Map<String, dynamic>))
           .toList();
+      await localDataSource.saveAll(users);
+      return users;
     } catch (e) {
       throw Exception('Failed to fetch users: $e');
     }

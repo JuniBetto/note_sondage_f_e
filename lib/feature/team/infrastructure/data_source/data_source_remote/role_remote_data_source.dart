@@ -2,9 +2,13 @@ import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/crud_service.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/role_mapper.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/role_local_data_source.dart';
 
 class RoleRemoteDataSource extends CrudService<RoleEntity> {
-  RoleRemoteDataSource() : super(DioClient().dio, '/roles');
+  final RoleLocalDataSource localDataSource;
+
+  RoleRemoteDataSource(this.localDataSource) : super(DioClient().dio, '/roles');
+
   @override
   Future<RoleEntity> create(RoleEntity item) async {
     try {
@@ -15,7 +19,7 @@ class RoleRemoteDataSource extends CrudService<RoleEntity> {
       final data = response.data;
       return RoleMapper.fromJson(data as Map<String, dynamic>);
     } catch (e) {
-      throw Exception('Failed to fetch roles: $e');
+      throw Exception('Failed to create role: $e');
     }
   }
 
@@ -32,16 +36,14 @@ class RoleRemoteDataSource extends CrudService<RoleEntity> {
   Future<List<RoleEntity>> getAll() async {
     try {
       final response = await DioClient().dio.get('$endpoint/all');
-
-      if (response.data == null) {
-        return [];
-      }
-
+      if (response.data == null) return [];
       final data = response.data as List;
-      return data
+      final roles = data
           .where((e) => e != null)
           .map((e) => RoleMapper.fromJson(e as Map<String, dynamic>))
           .toList();
+      await localDataSource.saveAll(roles);
+      return roles;
     } catch (e) {
       throw Exception('Failed to fetch roles: $e');
     }
@@ -52,18 +54,14 @@ class RoleRemoteDataSource extends CrudService<RoleEntity> {
       final response = await DioClient().dio.get(
         '$endpoint/all_by_team/$teamId',
       );
-
-      if (response.data == null) {
-        return [];
-      }
-
+      if (response.data == null) return [];
       final data = response.data as List;
       return data
           .where((e) => e != null)
           .map((e) => RoleMapper.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      throw Exception('Failed to fetch roles: $e');
+      throw Exception('Failed to fetch roles by team: $e');
     }
   }
 

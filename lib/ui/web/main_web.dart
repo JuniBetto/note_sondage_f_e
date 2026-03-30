@@ -15,6 +15,17 @@ import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_event.dart
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 import 'package:note_sondage/ui/widgets/theme_config/custom_toggle_switch.dart';
 
+/// Le 4 pagine principali, pre-costruite una sola volta.
+/// IndexedStack le tiene tutte in memoria e mostra solo quella attiva
+/// → cambio istantaneo senza ricostruire nulla.
+const _pages = <Widget>[
+  HomeMobile(), // index 0
+  TeamsWeb(), // index 1
+  SizedBox.shrink(), // index 2 (settings = dialog, niente pagina)
+  ClockingWeb(), // index 3
+  SondageWeb(), // index 4
+];
+
 class MainWeb extends StatelessWidget {
   const MainWeb({super.key, this.child});
   final Widget? child;
@@ -22,7 +33,6 @@ class MainWeb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final navBarItem = context.watch<NavigationBloc>().state;
     final localizations = AppLocalizations.of(context)!;
     final themeBloc = context.watch<ThemeBloc>();
     final currentState = themeBloc.state;
@@ -81,9 +91,8 @@ class MainWeb extends StatelessWidget {
                   Expanded(
                     child: CustomToggleSwitch(
                       key: ValueKey("theme_toggle"),
-                      value: isDarkMode, // <-- Usa lo stato ottenuto dal BLoC
+                      value: isDarkMode,
                       onChanged: (value) {
-                        // 3. Chiamiamo il BLoC direttamente (ORA FUNZIONERÀ)
                         if (currentState is ThemeisLight) {
                           themeBloc.add(ThemeSetDarkEvent());
                         } else if (currentState is ThemeisDark) {
@@ -106,16 +115,16 @@ class MainWeb extends StatelessWidget {
             ],
           );
         },
+        // Se un child è passato (es. da GoRouter per rolePage / updateTeam),
+        // mostralo direttamente. Altrimenti usa IndexedStack per le pagine
+        // principali — zero rebuild al cambio tab.
         rightSection:
             child ??
-            Container(
-              color: Colors.transparent,
-              child: switch (navBarItem) {
-                0 => const HomeMobile(),
-                1 => const TeamsWeb(),
-                3 => ClockingWeb(),
-                4 => const SondageWeb(),
-                int() => const HomeMobile(),
+            BlocBuilder<NavigationBloc, int>(
+              builder: (context, navIndex) {
+                // Clamp index per evitare out-of-range
+                final safeIndex = navIndex.clamp(0, _pages.length - 1);
+                return IndexedStack(index: safeIndex, children: _pages);
               },
             ),
       ),

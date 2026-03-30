@@ -1,17 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
-import 'package:note_sondage/feature/team/ui/mobile/teams_mobile_skeleton.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/team_display.dart';
-import 'package:note_sondage/feature/team/ui/widgets/responsive_grid_teams.dart';
-import 'package:note_sondage/feature/team/ui/widgets/team_component_row.dart';
-import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/theme/color_palette.dart';
-import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:note_sondage/ui/mobile/widgets/header_page.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
-import 'package:note_sondage/ui/widgets/avatar_app.dart';
 
 // 3. Modifica il tuo TeamsMobile widget per utilizzare i nuovi componenti
 class TeamsMobile extends StatefulWidget {
@@ -26,24 +18,12 @@ class _TeamsMobileState extends State<TeamsMobile>
   late TabController tabController;
   int currentViewType = 1;
   List<Map<String, dynamic>> teams = teamsList ?? []; // La tua lista di team
-  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 2, vsync: this);
     tabController.addListener(_handleTabChange);
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    // Simula il caricamento dei dati
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
   void _handleTabChange() {
@@ -81,10 +61,6 @@ class _TeamsMobileState extends State<TeamsMobile>
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const TeamsMobileSkeleton();
-    }
-
     final localization = AppLocalizations.of(context)!;
 
     return SafeArea(

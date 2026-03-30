@@ -1,50 +1,71 @@
 import 'package:note_sondage/feature/team/domain/entities/user_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/user_repository.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/user_local_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/user_remote_data_source.dart';
 
 class UserRepositoryImpl implements UserRepository {
-  final UserRemoteDataSource remoteDataSource;
+  final UserLocalDataSource _local;
+  final UserRemoteDataSource _remote;
 
-  UserRepositoryImpl({required this.remoteDataSource});
+  UserRepositoryImpl({
+    required UserLocalDataSource local,
+    required UserRemoteDataSource remote,
+  }) : _local = local,
+       _remote = remote;
 
   @override
   Future<List<UserEntity>> getAll() async {
-    return await remoteDataSource.getAll();
+    try {
+      final local = await _local.getAll();
+      if (local.isNotEmpty) {
+        _remote.getAll().catchError((_) => <UserEntity>[]);
+        return local;
+      }
+      return await _remote.getAll();
+    } catch (e) {
+      final cached = await _local.getAll();
+      if (cached.isNotEmpty) return cached;
+      throw Exception('Failed to fetch users: $e');
+    }
   }
 
   @override
   Future<UserEntity?> getById(String id) async {
-    return await remoteDataSource.getById(id);
+    return await _remote.getById(id);
   }
 
   @override
   Future<UserEntity?> getByEmail(String email) async {
-    return await remoteDataSource.getByEmail(email);
+    return await _remote.getByEmail(email);
   }
 
   @override
   Future<UserEntity> create(UserEntity user) async {
-    return await remoteDataSource.create(user);
+    return await _remote.create(user);
   }
 
   @override
   Future<UserEntity> createInactive(String email) async {
-    return await remoteDataSource.createInactive(email);
+    return await _remote.createInactive(email);
   }
 
   @override
   Future<UserEntity> update(UserEntity user) async {
-    return await remoteDataSource.update(user);
+    return await _remote.update(user);
   }
 
   @override
   Future<bool> delete(String id) async {
-    await remoteDataSource.delete(id);
+    await _remote.delete(id);
     return true;
   }
 
   @override
   Future<List<UserEntityForUpdate>> getAllByTeamId(String teamId) async {
-    return await remoteDataSource.getAllByTeamId(teamId);
+    return await _remote.getAllByTeamId(teamId);
+  }
+
+  Future<void> refreshAll() async {
+    await _remote.getAll();
   }
 }

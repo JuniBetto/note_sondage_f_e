@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
-import 'package:note_sondage/feature/sondage/ui/web/sondage_web_skeleton.dart';
 import 'package:note_sondage/feature/sondage/ui/web/widgets/create_sondage_web.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/responsive_grid_sondages.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
@@ -18,31 +17,9 @@ class SondageWeb extends StatefulWidget {
 
 class _SondageWebState extends State<SondageWeb> {
   int isGridView = 1;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    // Simula caricamento dati - sostituire con chiamata API reale
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    // Mostra skeleton durante il caricamento
-    if (_isLoading) {
-      return const SondageWebSkeleton();
-    }
-
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 

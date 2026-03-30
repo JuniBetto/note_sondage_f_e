@@ -13,11 +13,12 @@ class TeamMemberLoading extends TeamMemberState {}
 
 class TeamMembersLoaded extends TeamMemberState {
   final List<TeamMemberEntity> members;
+  final DateTime _timestamp;
 
-  const TeamMembersLoaded(this.members);
+  TeamMembersLoaded(this.members) : _timestamp = DateTime.now();
 
   @override
-  List<Object?> get props => [members];
+  List<Object?> get props => [members, _timestamp];
 }
 
 class TeamMemberLoaded extends TeamMemberState {
