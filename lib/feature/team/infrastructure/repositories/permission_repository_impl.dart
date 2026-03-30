@@ -3,7 +3,7 @@ import 'package:note_sondage/feature/team/domain/entities/permission_entity.dart
 import 'package:note_sondage/feature/team/domain/repositories/crud_service.dart';
 import 'package:note_sondage/feature/team/domain/repositories/permission_repository.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/permission_mapper.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/permission_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/permission_remote_data_source.dart';
 
 class PermissionRepositoryImpl implements PermissionRepository {
   final PermissionRemoteDataSource remoteDataSource;

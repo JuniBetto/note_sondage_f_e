@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class ContactUsWeb extends StatelessWidget {
@@ -8,10 +9,12 @@ class ContactUsWeb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     // Colore di sfondo simile all'immagine
-    const backgroundColor = Color(0xFFF9D5D3);
-    const primaryDark = Color(0xFF2D4356);
+    final backgroundColor = colorScheme.homeSecondary!;
+    final primaryDark = Color(0xFF2D4356);
     final TextEditingController _nameController = TextEditingController();
     final TextEditingController _emailController = TextEditingController();
     final TextEditingController _messageController = TextEditingController();
@@ -47,17 +50,17 @@ class ContactUsWeb extends StatelessWidget {
                         ),
                         const SizedBox(height: 30),
                         CustomTextFieldImmersive(
-                          hint: localization.yourName,
+                          hintText: localization.yourName,
                           controller: _nameController,
                         ),
                         const SizedBox(height: 20),
                         CustomTextFieldImmersive(
-                          hint: localization.yourEmail,
+                          hintText: localization.yourEmail,
                           controller: _emailController,
                         ),
                         const SizedBox(height: 20),
                         CustomTextFieldImmersive(
-                          hint: localization.message,
+                          hintText: localization.message,
                           maxLines: 5,
                           controller: _messageController,
                         ),
@@ -90,15 +93,10 @@ class ContactUsWeb extends StatelessWidget {
                   Expanded(
                     flex: 1,
                     child: Center(
-                      child: Image.network(
-                        'https://placeholder.com/illustration_url', // Sostituisci con il tuo asset
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.support_agent,
-                            size: 300,
-                            color: primaryDark,
-                          );
-                        },
+                      child: Icon(
+                        Icons.support_agent,
+                        size: 300,
+                        color: primaryDark,
                       ),
                     ),
                   ),

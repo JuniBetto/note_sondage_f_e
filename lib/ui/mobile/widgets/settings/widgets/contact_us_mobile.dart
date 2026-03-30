@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -36,13 +37,13 @@ class _ContactUsMobileState extends State<ContactUsMobile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
     final localization = AppLocalizations.of(context)!;
 
-    const backgroundColor = Color(0xFFF9D5D3);
     const primaryDark = Color(0xFF2D4356);
 
     return DecoratedBox(
-      decoration: BoxDecoration(color: backgroundColor),
+      decoration: BoxDecoration(color: colorScheme.homeSecondary!),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
         child: Column(
@@ -59,18 +60,13 @@ class _ContactUsMobileState extends State<ContactUsMobile> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Contact Us".toUpperCase(),
+                    localization.contactUs.toUpperCase(),
                     style: textTheme.headlineMedium,
                   ),
-                  Image.network(
-                    'https://placeholder.com/illustration_url', // Sostituisci con il tuo asset
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.support_agent,
-                        size: 60,
-                        color: primaryDark,
-                      );
-                    },
+                  const Icon(
+                    Icons.support_agent,
+                    size: 60,
+                    color: primaryDark,
                   ),
                 ],
               ),
@@ -78,19 +74,19 @@ class _ContactUsMobileState extends State<ContactUsMobile> {
             SizedBox(height: 8),
             CustomTextFieldImmersive(
               key: ValueKey("Your name"),
-              hint: "Your Name",
+              hintText: localization.yourName,
               controller: _nameController,
             ),
             const SizedBox(height: 16),
             CustomTextFieldImmersive(
               key: ValueKey("Your email"),
               controller: _loginEmailController,
-              hint: "Your Email",
+              hintText: localization.yourEmail,
             ),
             const SizedBox(height: 16),
             CustomTextFieldImmersive(
               key: ValueKey("Your message"),
-              hint: "Your Message",
+              hintText: localization.message,
               maxLines: 5,
               controller: _messageController,
             ),
@@ -106,7 +102,7 @@ class _ContactUsMobileState extends State<ContactUsMobile> {
                     Navigator.pop(context);
                   },
                   isActive: true,
-                  child: Text("Submit"),
+                  child: Text(localization.submit),
                 ),
               ],
             ),

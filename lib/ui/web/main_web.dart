@@ -29,7 +29,7 @@ class MainWeb extends StatelessWidget {
     final bool isDarkMode = currentState is ThemeisDark;
 
     return Scaffold(
-      backgroundColor: colorScheme.bgColor,
+      backgroundColor: colorScheme.homePrimary,
       body: FullSidebar(
         leftSectionBuilder: (isExpanded, onToggle, lastIndexes) {
           return LeftHomeSection(

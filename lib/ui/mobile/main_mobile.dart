@@ -32,7 +32,7 @@ class MainMobile extends StatelessWidget {
             ? "Clocking"
             : "Sondage",
       ),
-      backgroundColor: colorScheme.bgColor,
+      backgroundColor: colorScheme.homePrimary,
       body: navBarItem == 0
           ? const HomeMobile()
           : navBarItem == 1

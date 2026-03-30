@@ -129,7 +129,7 @@ class _AddUserMobileState extends State<AddUserMobile> {
               widget.listUserFormData.length > 1
                   ? DecoratedBox(
                       decoration: BoxDecoration(
-                        color: colorScheme.bgNavbarSurface,
+                        color: colorScheme.homeSecondary,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: buildListUserForm(
@@ -142,7 +142,7 @@ class _AddUserMobileState extends State<AddUserMobile> {
               Text("  Add New User", style: textTheme.labelMedium),
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: colorScheme.bgNavbarSurface,
+                  color: colorScheme.homeSecondary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Builder(

@@ -1,6 +1,6 @@
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/role_repository.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/role_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/role_remote_data_source.dart';
 
 class RoleRepositoryImpl implements RoleRepository {
   final RoleRemoteDataSource remoteDataSource;

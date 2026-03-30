@@ -27,6 +27,9 @@ class _SelectTeamPageState extends State<SelectTeamPage> {
       appBar: HeaderPage(
         showBackButton: true,
         title: localization.selectedTeam,
+        onBackPressed: () {
+          Navigator.pop(context);
+        },
       ),
       backgroundColor: colorScheme.bgColor,
       body: SafeArea(

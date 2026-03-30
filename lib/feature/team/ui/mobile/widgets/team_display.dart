@@ -69,7 +69,7 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.bgNavbarSurface!.withValues(alpha: 0.2),
+                    color: colorScheme.homeSecondary!.withValues(alpha: 0.2),
                     blurRadius: 8,
                     spreadRadius: 2,
                     offset: Offset(0, 2),

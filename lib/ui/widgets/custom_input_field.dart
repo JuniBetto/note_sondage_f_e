@@ -126,7 +126,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
 
 // Widget per i campi di testo personalizzati
 class CustomTextFieldImmersive extends StatefulWidget {
-  final String hint;
+  final String hintText;
   final int maxLines;
   final Widget? suffixIcon;
   final TextEditingController controller;
@@ -134,7 +134,7 @@ class CustomTextFieldImmersive extends StatefulWidget {
 
   const CustomTextFieldImmersive({
     super.key,
-    required this.hint,
+    required this.hintText,
     this.maxLines = 1,
     required this.controller,
     this.suffixIcon,
@@ -157,7 +157,7 @@ class _CustomTextFieldImmersiveState extends State<CustomTextFieldImmersive> {
       child: TextFormField(
         maxLines: widget.maxLines,
         decoration: InputDecoration(
-          hintText: widget.hint,
+          hintText: widget.hintText,
           hintStyle: TextStyle(color: Colors.grey[400]),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(20),

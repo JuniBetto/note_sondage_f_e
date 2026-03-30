@@ -6,9 +6,38 @@ extension AppColorScheme on ColorScheme {
       ? ColorPalette.gray[7]
       : ColorPalette.gray[1];
 
-  Color? get bgLogin => brightness == Brightness.light
+  /* Color? get bgLogin => brightness == Brightness.light
       ? ColorPalette.primary[6]
-      : ColorPalette.gray[8];
+      : ColorPalette.gray[8];*/
+  Color? get bgsurface => brightness == Brightness.light
+      ? ColorPalette.surface
+      : ColorPalette.gray[5];
+
+  Color? get bgColor => brightness == Brightness.light
+      ? ColorPalette.gray[2]
+      : ColorPalette.gray[6];
+
+  Color? get homePrimary => brightness == Brightness.light
+      ? ColorPalette.gray[1]
+      : ColorPalette.gray[6];
+
+  Color? get homeSecondary => brightness == Brightness.light
+      ? ColorPalette.gray[1]
+      : ColorPalette.gray[5];
+
+  Color? get homeTertiary => brightness == Brightness.light
+      ? ColorPalette.gray[2]
+      : ColorPalette.gray[5];
+
+  Color? get bgDialogSecondary => brightness == Brightness.light
+      ? ColorPalette.gray[1]
+      : ColorPalette.gray[6];
+
+  Color? get dialogBackgroundColor => brightness == Brightness.light
+      ? ColorPalette.gray[2]
+      : ColorPalette.gray[5];
+
+  /***** */
 
   Color? get bgborderLogin => brightness == Brightness.light
       ? ColorPalette.gray[3]
@@ -20,10 +49,6 @@ extension AppColorScheme on ColorScheme {
 
   Color? get textInvertedColor => brightness == Brightness.light
       ? ColorPalette.gray[1]
-      : ColorPalette.gray[7];
-
-  Color? get bgColor => brightness == Brightness.light
-      ? ColorPalette.gray[2]
       : ColorPalette.gray[7];
 
   Color? get bgColorNew => brightness == Brightness.light
@@ -38,9 +63,6 @@ extension AppColorScheme on ColorScheme {
       ? ColorPalette.primary[2]
       : ColorPalette.gray[7];
 
-  Color? get bgsurface => brightness == Brightness.light
-      ? ColorPalette.surface
-      : ColorPalette.gray[6];
   //navbar
   Color? get bgNavbarSurface => brightness == Brightness.light
       ? ColorPalette.gray[1]
@@ -94,9 +116,7 @@ extension AppColorScheme on ColorScheme {
       ? ColorPalette.gray[4]
       : ColorPalette.gray[2];
 
-  Color? get dialogBackgroundColor => brightness == Brightness.light
-      ? ColorPalette.surface
-      : ColorPalette.gray[6];
+
 
   Color? get cursorColor => brightness == Brightness.light
       ? ColorPalette.primary[4]

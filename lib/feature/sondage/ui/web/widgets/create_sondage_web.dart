@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/toggle_tile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/select_team_page.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/time_range_picker.dart';
@@ -23,7 +24,7 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
   final TextEditingController namesondageController = TextEditingController();
   final TextEditingController descriptionsondageController =
       TextEditingController();
-
+  bool isFixedTime = false;
   TimeOfDay start = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay end = const TimeOfDay(hour: 9, minute: 0);
 
@@ -77,6 +78,8 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -97,7 +100,7 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                     children: [
                       // Campo domanda
                       CustomTextFieldImmersive(
-                        hint: localization.askQuestion,
+                        hintText: localization.askQuestion,
                         maxLines: 3,
                         controller: namesondageController,
                       ),
@@ -116,7 +119,7 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                             padding: const EdgeInsets.symmetric(vertical: 8.0),
                             child: CustomTextFieldImmersive(
                               controller: items[index],
-                              hint: '${localization.option} ${index + 1}',
+                              hintText: '${localization.option} ${index + 1}',
                               suffixIcon: ReorderableDragStartListener(
                                 index: index,
                                 child: Icon(Icons.drag_handle),
@@ -162,11 +165,44 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                       SizedBox(height: 16),
 
                       // Time Range Picker
-                      TimeRangePicker(
-                        start: start,
-                        end: end,
-                        onStartChanged: (val) => setState(() => start = val),
-                        onEndChanged: (val) => setState(() => end = val),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colorScheme.homeSecondary!,
+                          borderRadius: BorderRadius.circular(18.0),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: Checkbox(
+                                  value: isFixedTime,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      isFixedTime = value!;
+                                    });
+                                  },
+                                  activeColor: colorScheme.selectionColor,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                title: Text("imposta tempo di risposta"),
+                              ),
+                              IgnorePointer(
+                                ignoring:!isFixedTime,
+                                child: TimeRangePicker(
+                                  start: start,
+                                  end: end,
+                                  onStartChanged: (val) =>
+                                      setState(() => start = val),
+                                  onEndChanged: (val) =>
+                                      setState(() => end = val),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       SizedBox(height: 32),
 

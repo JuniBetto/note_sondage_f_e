@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/color_palette.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class TabBarComponent extends StatelessWidget {
   const TabBarComponent({
@@ -17,12 +18,12 @@ class TabBarComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final localization = AppLocalizations.of(context)!;
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: colorScheme.homeSecondary!, //Colors.grey[100],
         borderRadius: BorderRadius.circular(30),
       ),
       padding: const EdgeInsets.all(4.0),

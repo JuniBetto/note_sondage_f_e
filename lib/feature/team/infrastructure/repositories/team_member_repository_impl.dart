@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_member_repository.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/team_member_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_member_remote_data_source.dart';
 
 class TeamMemberRepositoryImpl implements TeamMemberRepository {
   final TeamMemberRemoteDataSource remoteDataSource;

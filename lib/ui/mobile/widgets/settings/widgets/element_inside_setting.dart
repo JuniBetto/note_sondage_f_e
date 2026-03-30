@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/domain/entities/all_enum.dart';
 import 'package:note_sondage/domain/entities/setting_type.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
@@ -20,6 +21,7 @@ class ElementInsideSetting extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
     final localization = AppLocalizations.of(context)!;
 
     // Get dynamic subtitle based on setting type
@@ -97,8 +99,8 @@ class ElementInsideSetting extends StatelessWidget {
         child: SizedBox(
           width: double.infinity,
           child: Card(
-            color: Colors.transparent,
-            elevation: 4,
+            color: colorScheme.homeSecondary!, //Colors.transparent,
+            elevation: 2,
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(

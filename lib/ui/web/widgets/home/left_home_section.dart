@@ -36,7 +36,7 @@ class _LeftHomeSectionState extends State<LeftHomeSection> {
     final colorScheme = theme.colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.bgColorNew,
+        color: colorScheme.homeSecondary,
         borderRadius: BorderRadius.circular(4.0),
         border: Border(
           right: BorderSide(color: colorScheme.borderColor!, width: 2),
@@ -97,62 +97,6 @@ class _LeftHomeSectionState extends State<LeftHomeSection> {
             ),
 
             ...widget.listSidebarItem,
-
-            /*   SidebarItem(
-              key: ValueKey(0),
-              icon: Icons.home_outlined,
-              label: localizations.home,
-              index: 0,
-              isSmallScreen: widget.isSmallScreen,
-              lastIndexes: lastIndexes,
-            ),
-            SidebarItem(
-              key: ValueKey(1),
-              icon: Icons.group,
-              label: localizations.team,
-              index: 1,
-              isSmallScreen: widget.isSmallScreen,
-              lastIndexes: lastIndexes,
-            ),
-            /* Divider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                "Tools :",
-                style: textTheme.headlineSmall!.copyWith(
-                  decoration: TextDecoration.underline,
-                  decorationStyle: TextDecorationStyle.solid,
-                  decorationThickness: 4.0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),*/
-            SidebarItem(
-              key: ValueKey(3),
-              icon: Icons.timer,
-              label: localizations.clockingInOut,
-              index: 3,
-              isSmallScreen: widget.isSmallScreen,
-              lastIndexes: lastIndexes,
-            ),
-            SidebarItem(
-              key: ValueKey(4),
-              icon: Icons.checklist,
-              label: localizations.sondage,
-              isSmallScreen: widget.isSmallScreen,
-              index: 4,
-              lastIndexes: lastIndexes,
-            ),
-            const Spacer(),
-            Divider(),
-            SidebarItem(
-              key: ValueKey(2),
-              icon: Icons.settings,
-              label: localizations.settings,
-              index: 2,
-              isSmallScreen: widget.isSmallScreen,
-              lastIndexes: lastIndexes,
-            ),*/
           ],
         ),
       ),

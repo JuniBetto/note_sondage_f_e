@@ -70,7 +70,7 @@ class _ListCheckboxState extends State<ListCheckbox> {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colorScheme.bgNavbarSurface,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(12.0),
         ),
         child: Padding(

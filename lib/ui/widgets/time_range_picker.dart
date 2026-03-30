@@ -38,7 +38,7 @@ class TimeRangePicker extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        //color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(

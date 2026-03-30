@@ -36,7 +36,7 @@ class ColorPalette {
     Color(0xFFF5F5F5), // 100
     Color(0xFFE5E5E5), // 200
     Color(0xFFD4D4D4), // 300
-    Color(0xFFA3A3A3), // 400
+    Color(0xFF21222D), // 400
     Color(0xFF21222D), // 500
     Color(0xFF171821), // 600
     Color(0xFF292929), // 700

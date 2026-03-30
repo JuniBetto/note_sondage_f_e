@@ -1,6 +1,6 @@
 import 'package:note_sondage/feature/team/domain/entities/user_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/user_repository.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/user_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/user_remote_data_source.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final UserRemoteDataSource remoteDataSource;

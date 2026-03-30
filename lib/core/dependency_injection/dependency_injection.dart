@@ -9,11 +9,11 @@ import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dar
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/user/user_use_case.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/permission_remote_data_source.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/role_remote_data_source.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/team_member_remote_data_source.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/team_remote_data_source.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/user_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/permission_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/role_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_member_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/user_remote_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/repositories/permission_repository_impl.dart';
 import 'package:note_sondage/feature/team/infrastructure/repositories/role_repository_impl.dart';
 import 'package:note_sondage/feature/team/infrastructure/repositories/team_member_repository_impl.dart';
@@ -134,4 +134,3 @@ void _registerBlocs() {
     () => UserBloc(userUseCase: getIt<UserUseCase>()),
   );
 }
-

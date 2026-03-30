@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class VisualType extends StatelessWidget {
   final IconData? iconData1;
@@ -26,9 +27,10 @@ class VisualType extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: background ?? Colors.grey[200],
+        color: background ?? colorScheme.homeSecondary!,
         borderRadius: BorderRadius.circular(30),
       ),
       child: Padding(

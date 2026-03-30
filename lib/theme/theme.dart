@@ -33,7 +33,7 @@ class AppTheme {
     return ThemeData(
       colorScheme: ColorScheme(
         primary: colorScheme.bgColor!,
-        secondary: colorScheme.bgsecondary!,
+        secondary: Colors.blue, //colorScheme.bgsecondary!,
         surface: colorScheme.bgsurface!,
         surfaceContainer: colorScheme.error,
         error: colorScheme.error,
@@ -41,6 +41,7 @@ class AppTheme {
         onSecondary: colorScheme.onSecondary,
         onSurface: colorScheme.textColor!,
         onError: Colors.transparent,
+
         brightness: isDark ? Brightness.dark : Brightness.light,
       ),
       scaffoldBackgroundColor: colorScheme.bgsurface!,
@@ -78,9 +79,8 @@ class AppTheme {
           textStyle: AppTypography.textTheme(isDark).labelLarge,
         ),
       ),
-      /*textTheme: ThemeData.light().textTheme.apply(
-        fontSizeFactor: appTheme.fontSizeScale,
-      ), */
+      fontFamily: AppTypography.fontFamily,
+      //textTheme: AppTypography.textTheme(isDark),
     );
   }
 }

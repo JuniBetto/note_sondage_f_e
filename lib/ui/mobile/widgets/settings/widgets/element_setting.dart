@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/domain/entities/all_enum.dart';
 import 'package:note_sondage/domain/entities/setting_type.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/change_language.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/change_theme.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/contact_us_mobile.dart';
@@ -14,6 +15,8 @@ class ElementSetting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final List<List<SettingType>> settingsByCategory = [];
 
     final settingsType = settings
@@ -42,7 +45,7 @@ class ElementSetting extends StatelessWidget {
                   ),
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: colorScheme.homeSecondary!,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Padding(
@@ -87,28 +90,3 @@ class ElementSetting extends StatelessWidget {
     );
   }
 }
-
-
-
-// Widget element(BuildContext context, SettingType setting, Function()? onTap) {
-//   final theme = Theme.of(context);
-//   final colorScheme = theme.colorScheme;
-//   final textTheme = theme.textTheme;
-
-
-
-//   return GestureDetector(
-//     onTap: onTap,
-//     child: Padding(
-//       padding: const EdgeInsets.only(left: 4.0),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Text(setting.title, style: textTheme.bodyLarge),
-//           const SizedBox(height: 8),
-//           Text(setting.subtitle, style: textTheme.bodyMedium),
-//         ],
-//       ),
-//     ),
-//   );
-// }

@@ -1,6 +1,6 @@
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_repository.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/team_remote_data_source.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_remote_data_source.dart';
 
 class TeamRepositoryImpl implements TeamRepository {
   final TeamRemoteDataSource remoteDataSource;

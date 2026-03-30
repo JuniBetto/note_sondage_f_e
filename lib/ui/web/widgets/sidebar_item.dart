@@ -100,6 +100,7 @@ class SidebarItem extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     return Material(
+      color: Colors.transparent,
       child: ListTile(
         leading: Icon(
           icon,

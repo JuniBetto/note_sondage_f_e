@@ -93,7 +93,7 @@ class _CreateSondageMobileState extends State<CreateSondageMobile> {
             children: [
               // Campi del form
               CustomTextFieldImmersive(
-                hint: localization.askQuestion,
+                hintText: localization.askQuestion,
                 maxLines: 3,
                 controller: namesondageController,
               ),
@@ -115,7 +115,7 @@ class _CreateSondageMobileState extends State<CreateSondageMobile> {
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: CustomTextFieldImmersive(
                       controller: items[index],
-                      hint: '${localization.option} ${index + 1}',
+                      hintText: '${localization.option} ${index + 1}',
                       suffixIcon: ReorderableDragStartListener(
                         index: index,
                         child: Icon(Icons.drag_handle),
@@ -161,8 +161,8 @@ class _CreateSondageMobileState extends State<CreateSondageMobile> {
               ),
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: colorScheme.cursorColor!,
-                  borderRadius: BorderRadius.circular(8),
+                  color: colorScheme.homeSecondary!,
+                  borderRadius: BorderRadius.circular(18.0),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -176,7 +176,7 @@ class _CreateSondageMobileState extends State<CreateSondageMobile> {
                               isFixedTime = value!;
                             });
                           },
-                          activeColor: Colors.blue,
+                          activeColor: colorScheme.selectionColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),

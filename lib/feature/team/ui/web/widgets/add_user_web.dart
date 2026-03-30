@@ -243,7 +243,7 @@ class _AddUserWebState extends State<AddUserWeb> {
                   Text("  Add New User", style: textTheme.labelMedium),
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      color: colorScheme.bgNavbarSurface,
+                      color: colorScheme.bgDialogSecondary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Builder(

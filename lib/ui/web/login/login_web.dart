@@ -18,11 +18,11 @@ class LoginWeb extends StatelessWidget {
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          /* gradient: LinearGradient(
             colors: [colorScheme.surface, Colors.white],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-          ),
+          ),*/
         ),
         child: Column(
           children: [
