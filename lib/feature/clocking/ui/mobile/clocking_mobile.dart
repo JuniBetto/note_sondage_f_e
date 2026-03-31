@@ -17,44 +17,77 @@ class _ClockingMobileState extends State<ClockingMobile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final localization = AppLocalizations.of(context)!;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                localization.personalStatusClockingActions,
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: colorScheme.textColor,
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w600,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // ═══════════════════════════════
+          // Status + Subtitle
+          // ═══════════════════════════════
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.bgNavbarSurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.15)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
-              ),
+              ],
             ),
-            Divider(height: 4, color: colorScheme.avatarBg),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.max,
-              children: [Expanded(child: StatusClocking(isCompact: false))],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.timer_rounded,
+                        color: Colors.blue,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      localization.personalStatusClockingActions,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                StatusClocking(isCompact: true),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 32.0, bottom: 16.0),
-              child: ButtonClocking(),
-            ),
-            Divider(height: 4, color: colorScheme.avatarBg),
-            SizedBox(height: 16.0),
-            StatusClockInChangeView(isMobile: true),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+
+          // ═══════════════════════════════
+          // Action buttons — centered
+          // ═══════════════════════════════
+          const Center(child: ButtonClocking(isCompact: true)),
+
+          const SizedBox(height: 16),
+
+          // ═══════════════════════════════
+          // Tracking section
+          // ═══════════════════════════════
+          StatusClockInChangeView(isMobile: true),
+        ],
       ),
     );
   }

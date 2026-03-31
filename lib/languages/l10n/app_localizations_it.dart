@@ -381,4 +381,35 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get expiryDate => 'Data scadenza';
+
+  @override
+  String get dashboardSubtitle =>
+      'Ecco un rapido riepilogo del tuo spazio di lavoro';
+
+  @override
+  String get quickActions => 'Azioni rapide';
+
+  @override
+  String get recentActivity => 'Attività recente';
+
+  @override
+  String get activeTeams => 'Team attivi';
+
+  @override
+  String get activeSurveys => 'Sondaggi attivi';
+
+  @override
+  String get todayClocking => 'Timbratura di oggi';
+
+  @override
+  String get totalMembers => 'Membri totali';
+
+  @override
+  String get viewAll => 'Vedi tutto';
+
+  @override
+  String get noRecentActivity => 'Nessuna attività recente';
+
+  @override
+  String get getStarted => 'Inizia esplorando il tuo spazio di lavoro';
 }

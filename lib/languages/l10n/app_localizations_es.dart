@@ -382,4 +382,35 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get expiryDate => 'Fecha de vencimiento';
+
+  @override
+  String get dashboardSubtitle =>
+      'Aquí tienes un resumen rápido de tu espacio de trabajo';
+
+  @override
+  String get quickActions => 'Acciones rápidas';
+
+  @override
+  String get recentActivity => 'Actividad reciente';
+
+  @override
+  String get activeTeams => 'Equipos activos';
+
+  @override
+  String get activeSurveys => 'Encuestas activas';
+
+  @override
+  String get todayClocking => 'Fichaje de hoy';
+
+  @override
+  String get totalMembers => 'Miembros totales';
+
+  @override
+  String get viewAll => 'Ver todo';
+
+  @override
+  String get noRecentActivity => 'Sin actividad reciente';
+
+  @override
+  String get getStarted => 'Comienza explorando tu espacio de trabajo';
 }

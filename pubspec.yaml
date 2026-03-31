@@ -56,6 +56,9 @@ dependencies:
   bloc: ^9.2.0
   data_table_2: ^2.0.10
   flutter_svg: ^2.0.9
+  firebase_core: ^3.15.2
+  firebase_auth: ^5.7.0
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:

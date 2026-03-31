@@ -6,9 +6,8 @@ import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/mobile/widgets/header_page.dart';
-import 'package:note_sondage/ui/mobile/widgets/home/home_mobile.dart';
+import 'package:note_sondage/ui/mobile/widgets/home/home_dashboard_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/settings_mobile.dart';
-import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/navigation_bar.dart';
 
 class MainMobile extends StatelessWidget {
@@ -34,7 +33,7 @@ class MainMobile extends StatelessWidget {
       ),
       backgroundColor: colorScheme.homePrimary,
       body: navBarItem == 0
-          ? const HomeMobile()
+          ? const HomeDashboardMobile()
           : navBarItem == 1
           ? const TeamsMobile()
           : navBarItem == 2

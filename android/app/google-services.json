@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "907402131431",
+    "project_id": "notesondage",
+    "storage_bucket": "notesondage.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:907402131431:android:4a01283d2319c621ed6f42",
+        "android_client_info": {
+          "package_name": "com.arthbet.noteSondage"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "907402131431-ab4jqm8g8bbivs0b966jnt4hvft4podk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.arthbet.noteSondage",
+            "certificate_hash": "537bc4325f77de0a9945dfe229cb4e8fde2c779d"
+          }
+        },
+        {
+          "client_id": "907402131431-pqiaudv68qea3uufo7ectug6cnst58uf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_IEc4K_CjPOFq3Seut_HlmezxmwtsNeo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "907402131431-pqiaudv68qea3uufo7ectug6cnst58uf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "907402131431-9qbqp8qvse5hkbgbphd22fd39i0hn7qt.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.arthbet.noteSondage"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

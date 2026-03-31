@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
-import 'package:note_sondage/feature/team/domain/repositories/permission_repository.dart';
-import 'package:note_sondage/feature/team/domain/use_case/permission/permission_use_case.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/app_lifecycle_bloc.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
+import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
+import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/permission/permission_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/languages/l10n/l10n.dart';
-import 'package:note_sondage/ui/bloc/auth_bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
@@ -34,12 +36,18 @@ class _MainAppState extends State<MainApp> {
       providers: [
         BlocProvider<ThemeBloc>(create: (context) => ThemeBloc()),
         BlocProvider<LanguageBloc>(create: (context) => LanguageBloc()),
-        BlocProvider<AuthBloc>(create: (context) => AuthBloc()),
+        BlocProvider<AuthBloc>.value(value: getIt<AuthBloc>()),
+        BlocProvider<AppLifecycleBloc>.value(value: getIt<AppLifecycleBloc>()),
         BlocProvider<NavigationBloc>(create: (context) => NavigationBloc()),
         BlocProvider<SettingNavigationBloc>(
           create: (context) => SettingNavigationBloc(),
         ),
         BlocProvider<RoleBloc>(create: (context) => getIt<RoleBloc>()),
+        BlocProvider<SondageBloc>(create: (context) => getIt<SondageBloc>()),
+        BlocProvider<ClockingBloc>(create: (context) => getIt<ClockingBloc>()),
+        BlocProvider<DashboardBloc>(
+          create: (context) => getIt<DashboardBloc>(),
+        ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
         builder: (context, themeState) {

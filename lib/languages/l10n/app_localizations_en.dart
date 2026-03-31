@@ -380,4 +380,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get expiryDate => 'Expiry date';
+
+  @override
+  String get dashboardSubtitle => 'Here\'s a quick overview of your workspace';
+
+  @override
+  String get quickActions => 'Quick Actions';
+
+  @override
+  String get recentActivity => 'Recent Activity';
+
+  @override
+  String get activeTeams => 'Active Teams';
+
+  @override
+  String get activeSurveys => 'Active Surveys';
+
+  @override
+  String get todayClocking => 'Today\'s Clocking';
+
+  @override
+  String get totalMembers => 'Total Members';
+
+  @override
+  String get viewAll => 'View All';
+
+  @override
+  String get noRecentActivity => 'No recent activity';
+
+  @override
+  String get getStarted => 'Get started by exploring your workspace';
 }

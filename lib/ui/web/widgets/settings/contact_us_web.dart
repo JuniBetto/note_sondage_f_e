@@ -19,21 +19,18 @@ class ContactUsWeb extends StatelessWidget {
     final TextEditingController _emailController = TextEditingController();
     final TextEditingController _messageController = TextEditingController();
 
-    return DecoratedBox(
-      decoration: BoxDecoration(color: backgroundColor),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 20.0),
-        child: SingleChildScrollView(
+    return SizedBox.expand(
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: backgroundColor),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 20.0),
           child: Column(
             children: [
-              // --- Header / Navbar ---
-              //const _HeaderSection(),
-              //const SizedBox(height: 10),
-
               // --- Main Content (Row per Web/Tablet) ---
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
                   // Lato Sinistro: Il Form
                   Expanded(
                     flex: 1,
@@ -102,8 +99,9 @@ class ContactUsWeb extends StatelessWidget {
                   ),
                 ],
               ),
+              ),
 
-              const SizedBox(height: 60),
+              const SizedBox(height: 20),
 
               // --- Footer Icons ---
               const Row(
@@ -116,52 +114,9 @@ class ContactUsWeb extends StatelessWidget {
                   Icon(Icons.alternate_email, color: Colors.grey),
                 ],
               ),
+              const SizedBox(height: 20),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// Widget per la Navbar superiore
-class _HeaderSection extends StatelessWidget {
-  const _HeaderSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'YOUR LOGO',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            color: Colors.redAccent,
-          ),
-        ),
-        Row(
-          children: [
-            _navItem('HOME'),
-            _navItem('ABOUT US'),
-            _navItem('SERVICES'),
-            _navItem('CONTACT US', isActive: true),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _navItem(String title, {bool isActive = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 30.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          color: isActive ? Colors.black : Colors.grey,
         ),
       ),
     );

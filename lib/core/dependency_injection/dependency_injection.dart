@@ -1,4 +1,25 @@
 import 'package:get_it/get_it.dart';
+import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
+import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
+import 'package:note_sondage/feature/auth/infrastructure/repositories/firebase_auth_repository_impl.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/app_lifecycle_bloc.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/clocking/domain/repositories/clocking_repository.dart';
+import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
+import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_local/clocking_local_data_source.dart';
+import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_remote/clocking_remote_data_source.dart';
+import 'package:note_sondage/feature/clocking/infrastructure/repositories/clocking_repository_impl.dart';
+import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
+import 'package:note_sondage/feature/home/domain/repositories/dashboard_repository.dart';
+import 'package:note_sondage/feature/home/domain/use_case/dashboard_use_case.dart';
+import 'package:note_sondage/feature/home/infrastructure/repositories/dashboard_repository_impl.dart';
+import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
+import 'package:note_sondage/feature/sondage/domain/repositories/sondage_repository.dart';
+import 'package:note_sondage/feature/sondage/domain/use_case/sondage_use_case.dart';
+import 'package:note_sondage/feature/sondage/infrastructure/data_source/data_source_local/sondage_local_data_source.dart';
+import 'package:note_sondage/feature/sondage/infrastructure/data_source/data_source_remote/sondage_remote_data_source.dart';
+import 'package:note_sondage/feature/sondage/infrastructure/repositories/sondage_repository_impl.dart';
+import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/domain/repositories/permission_repository.dart';
 import 'package:note_sondage/feature/team/domain/repositories/role_repository.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_member_repository.dart';
@@ -33,10 +54,35 @@ final getIt = GetIt.instance;
 
 /// Setup all dependencies
 Future<void> setup() async {
+  _registerAuth();
   _registerDataSources();
   _registerRepositories();
   _registerUseCases();
   _registerBlocs();
+}
+
+// ==================== AUTH (Firebase) ====================
+
+void _registerAuth() {
+  // Repository
+  getIt.registerLazySingleton<AuthRepository>(
+    () => FirebaseAuthRepositoryImpl(),
+  );
+
+  // Use Case
+  getIt.registerLazySingleton<AuthUseCase>(
+    () => AuthUseCase(getIt<AuthRepository>()),
+  );
+
+  // Auth BLoC — singleton, ascolta lo stream di Firebase Auth
+  getIt.registerLazySingleton<AuthBloc>(
+    () => AuthBloc(authUseCase: getIt<AuthUseCase>()),
+  );
+
+  // App Lifecycle BLoC — gestisce background/foreground
+  getIt.registerLazySingleton<AppLifecycleBloc>(
+    () => AppLifecycleBloc(authBloc: getIt<AuthBloc>()),
+  );
 }
 
 // ==================== DATA SOURCES ====================
@@ -53,6 +99,16 @@ void _registerDataSources() {
   );
   getIt.registerLazySingleton<UserLocalDataSource>(() => UserLocalDataSource());
 
+  // Sondage local data source
+  getIt.registerLazySingleton<SondageLocalDataSource>(
+    () => SondageLocalDataSource(),
+  );
+
+  // Clocking local data source
+  getIt.registerLazySingleton<ClockingLocalDataSource>(
+    () => ClockingLocalDataSource(),
+  );
+
   // Remote data sources (inject local data source for caching)
   getIt.registerLazySingleton<PermissionRemoteDataSource>(
     () => PermissionRemoteDataSource(getIt<PermissionLocalDataSource>()),
@@ -68,6 +124,16 @@ void _registerDataSources() {
   );
   getIt.registerLazySingleton<UserRemoteDataSource>(
     () => UserRemoteDataSource(getIt<UserLocalDataSource>()),
+  );
+
+  // Sondage remote data source
+  getIt.registerLazySingleton<SondageRemoteDataSource>(
+    () => SondageRemoteDataSource(getIt<SondageLocalDataSource>()),
+  );
+
+  // Clocking remote data source
+  getIt.registerLazySingleton<ClockingRemoteDataSource>(
+    () => ClockingRemoteDataSource(getIt<ClockingLocalDataSource>()),
   );
 }
 
@@ -113,6 +179,27 @@ void _registerRepositories() {
       remote: getIt<UserRemoteDataSource>(),
     ),
   );
+
+  // Sondage
+  getIt.registerLazySingleton<SondageRepository>(
+    () => SondageRepositoryImpl(
+      getIt<SondageLocalDataSource>(),
+      getIt<SondageRemoteDataSource>(),
+    ),
+  );
+
+  // Clocking
+  getIt.registerLazySingleton<ClockingRepository>(
+    () => ClockingRepositoryImpl(
+      getIt<ClockingLocalDataSource>(),
+      getIt<ClockingRemoteDataSource>(),
+    ),
+  );
+
+  // Dashboard
+  getIt.registerLazySingleton<DashboardRepository>(
+    () => DashboardRepositoryImpl(),
+  );
 }
 
 // ==================== USE CASES ====================
@@ -145,6 +232,21 @@ void _registerUseCases() {
       userUseCase: getIt<UserUseCase>(),
     ),
   );
+
+  // Sondage
+  getIt.registerLazySingleton<SondageUseCase>(
+    () => SondageUseCase(getIt<SondageRepository>()),
+  );
+
+  // Clocking
+  getIt.registerLazySingleton<ClockingUseCase>(
+    () => ClockingUseCase(getIt<ClockingRepository>()),
+  );
+
+  // Dashboard
+  getIt.registerLazySingleton<DashboardUseCase>(
+    () => DashboardUseCase(getIt<DashboardRepository>()),
+  );
 }
 
 // ==================== BLOCS ====================
@@ -168,5 +270,20 @@ void _registerBlocs() {
   // User - Singleton per condividere lo stato tra widget
   getIt.registerLazySingleton<UserBloc>(
     () => UserBloc(userUseCase: getIt<UserUseCase>()),
+  );
+
+  // Sondage - Singleton per condividere lo stato tra widget
+  getIt.registerLazySingleton<SondageBloc>(
+    () => SondageBloc(sondageUseCase: getIt<SondageUseCase>()),
+  );
+
+  // Clocking - Singleton per condividere lo stato tra widget
+  getIt.registerLazySingleton<ClockingBloc>(
+    () => ClockingBloc(clockingUseCase: getIt<ClockingUseCase>()),
+  );
+
+  // Dashboard - Singleton per condividere lo stato tra widget
+  getIt.registerLazySingleton<DashboardBloc>(
+    () => DashboardBloc(dashboardUseCase: getIt<DashboardUseCase>()),
   );
 }

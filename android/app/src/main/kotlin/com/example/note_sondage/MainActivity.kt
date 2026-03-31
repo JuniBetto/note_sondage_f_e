@@ -1,4 +1,4 @@
-package com.example.note_sondage
+package com.arthbet.noteSondage
 
 import io.flutter.embedding.android.FlutterActivity
 

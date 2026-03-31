@@ -119,5 +119,15 @@
     "surveyMobile":"Sondage Mobile",
     "progress":"Progrès",
     "createdDate":"Date de création",
-    "expiryDate":"Date d'expiration"
+    "expiryDate":"Date d'expiration",
+    "dashboardSubtitle":"Voici un aperçu rapide de votre espace de travail",
+    "quickActions":"Actions rapides",
+    "recentActivity":"Activité récente",
+    "activeTeams":"Équipes actives",
+    "activeSurveys":"Sondages actifs",
+    "todayClocking":"Pointage d'aujourd'hui",
+    "totalMembers":"Membres totaux",
+    "viewAll":"Voir tout",
+    "noRecentActivity":"Aucune activité récente",
+    "getStarted":"Commencez par explorer votre espace de travail"
 }

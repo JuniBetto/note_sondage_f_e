@@ -119,5 +119,15 @@
     "surveyMobile":"Encuesta Móvil",
     "progress":"Progreso",
     "createdDate":"Fecha de creación",
-    "expiryDate":"Fecha de vencimiento"
+    "expiryDate":"Fecha de vencimiento",
+    "dashboardSubtitle":"Aquí tienes un resumen rápido de tu espacio de trabajo",
+    "quickActions":"Acciones rápidas",
+    "recentActivity":"Actividad reciente",
+    "activeTeams":"Equipos activos",
+    "activeSurveys":"Encuestas activas",
+    "todayClocking":"Fichaje de hoy",
+    "totalMembers":"Miembros totales",
+    "viewAll":"Ver todo",
+    "noRecentActivity":"Sin actividad reciente",
+    "getStarted":"Comienza explorando tu espacio de trabajo"
 }

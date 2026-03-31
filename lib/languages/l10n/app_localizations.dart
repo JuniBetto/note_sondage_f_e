@@ -827,6 +827,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expiry date'**
   String get expiryDate;
+
+  /// No description provided for @dashboardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s a quick overview of your workspace'**
+  String get dashboardSubtitle;
+
+  /// No description provided for @quickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Actions'**
+  String get quickActions;
+
+  /// No description provided for @recentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Activity'**
+  String get recentActivity;
+
+  /// No description provided for @activeTeams.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Teams'**
+  String get activeTeams;
+
+  /// No description provided for @activeSurveys.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Surveys'**
+  String get activeSurveys;
+
+  /// No description provided for @todayClocking.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Clocking'**
+  String get todayClocking;
+
+  /// No description provided for @totalMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Members'**
+  String get totalMembers;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View All'**
+  String get viewAll;
+
+  /// No description provided for @noRecentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent activity'**
+  String get noRecentActivity;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started by exploring your workspace'**
+  String get getStarted;
 }
 
 class _AppLocalizationsDelegate

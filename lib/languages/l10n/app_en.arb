@@ -119,5 +119,15 @@
     "surveyMobile":"Survey Mobile",
     "progress":"Progress",
     "createdDate":"Created date",
-    "expiryDate":"Expiry date"
+    "expiryDate":"Expiry date",
+    "dashboardSubtitle":"Here's a quick overview of your workspace",
+    "quickActions":"Quick Actions",
+    "recentActivity":"Recent Activity",
+    "activeTeams":"Active Teams",
+    "activeSurveys":"Active Surveys",
+    "todayClocking":"Today's Clocking",
+    "totalMembers":"Total Members",
+    "viewAll":"View All",
+    "noRecentActivity":"No recent activity",
+    "getStarted":"Get started by exploring your workspace"
 }

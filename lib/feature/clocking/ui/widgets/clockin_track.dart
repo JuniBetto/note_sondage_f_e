@@ -1,9 +1,8 @@
-import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/clocking/domain/entities/user_clock_info.dart';
-import 'package:note_sondage/feature/clocking/ui/mobile/widgets/table_component_mobile.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/table_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class ClockInTrack extends StatelessWidget {
   final bool isMobile;
@@ -19,123 +18,450 @@ class ClockInTrack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final localization = AppLocalizations.of(context)!;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: textTheme.titleMedium),
-        SizedBox(height: 2.0),
-        Padding(
-          padding: EdgeInsets.all(8.0),
-
-          child: isTeamWithUsers
-              ? userByTeam(isMobile, listUserClockInfo, listheaderTable)
-              : onlyAllUser(
-                  isMobile,
-                  listUserClockInfo,
-                  listheaderTable,
-                  localization.allUsers,
-                ),
-        ),
+        if (title.isNotEmpty) ...[
+          Text(title, style: textTheme.titleMedium),
+          const SizedBox(height: 8),
+        ],
+        isTeamWithUsers
+            ? _buildByTeam(
+                context,
+                isMobile,
+                listUserClockInfo,
+                listheaderTable,
+              )
+            : _buildAllUsers(
+                context,
+                isMobile,
+                listUserClockInfo,
+                listheaderTable,
+                localization.allUsers,
+              ),
       ],
     );
   }
 }
 
-Widget onlyAllUser(
+// ════════════════════════════════════════════════════════════════
+//  ALL USERS VIEW
+// ════════════════════════════════════════════════════════════════
+
+Widget _buildAllUsers(
+  BuildContext context,
   bool isMobile,
   List<UserClockInfo> dataTable,
   List<String> headerTable,
   String allUsersLabel,
 ) {
+  if (isMobile) {
+    return _MobileTeamSection(teamName: allUsersLabel, users: dataTable);
+  }
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Text(
-          allUsersLabel,
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
+      _WebTeamHeader(teamName: allUsersLabel, count: dataTable.length),
+      const SizedBox(height: 4),
       SizedBox(
-        height:
-            dataTable.length *
-            58.0, // Adjust the height based on the number of rows
+        height: dataTable.length * 58.0,
         width: double.infinity,
-        child: isMobile
-            ? TableComponentMobile(
-                dataTable: dataTable,
-                headerTable: headerTable,
-              )
-            : TableComponent(dataTable: dataTable, headerTable: headerTable),
+        child: TableComponent(dataTable: dataTable, headerTable: headerTable),
       ),
     ],
   );
 }
 
-Widget userByTeam(
+// ════════════════════════════════════════════════════════════════
+//  BY TEAM VIEW
+// ════════════════════════════════════════════════════════════════
+
+Widget _buildByTeam(
+  BuildContext context,
   bool isMobile,
   List<UserClockInfo> dataTable,
   List<String> headerTable,
 ) {
-  List<List<UserClockInfo>> teamsData = [];
+  final teams = dataTable.map((u) => u.teamName).toSet().toList();
 
-  final teams = dataTable
-      .map((userClockInfo) => userClockInfo.teamName)
-      .toSet()
-      .toList(); // Get unique team names
+  final List<List<UserClockInfo>> teamsData = teams
+      .map((team) => dataTable.where((u) => u.teamName == team).toList())
+      .toList();
 
-  for (var teamName in teams) {
-    final teamData = dataTable
-        .where((userClockInfo) => userClockInfo.teamName == teamName)
-        .toList();
-    teamsData.add(teamData);
+  if (isMobile) {
+    return Column(
+      children: teamsData
+          .map(
+            (teamData) => _MobileTeamSection(
+              teamName: teamData.first.teamName,
+              users: teamData,
+            ),
+          )
+          .toList(),
+    );
   }
 
+  // Web: keep DataTable2
   return Column(
-    children: [
-      ...teamsData.map((teamData) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 8.0,
-                horizontal: 16.0,
-              ),
-              child: Text(
-                teamData.first.teamName,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+    children: teamsData.map((teamData) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _WebTeamHeader(
+            teamName: teamData.first.teamName,
+            count: teamData.length,
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: teamData.length == 1
+                ? 128.0
+                : teamData.length > 2
+                ? teamData.length * 58.0
+                : teamData.length * 72.0,
+            width: double.infinity,
+            child: TableComponent(
+              dataTable: teamData,
+              headerTable: headerTable,
             ),
-            SizedBox(
-              height: teamData.length == 1
-                  ? 128.0
-                  : teamData.length > 2
-                  ? teamData.length * 68.0
-                  : teamData.length *
-                        86.0, // Adjust height based on number of users in the team
-              width: double.infinity,
-              child: isMobile
-                  ? TableComponentMobile(
-                      dataTable: teamData,
-                      headerTable: headerTable,
-                    )
-                  : TableComponent(
-                      dataTable: teamData,
-                      headerTable: headerTable,
-                    ),
-            ),
-          ],
-        );
-      }).toList(),
-    ],
+          ),
+          const SizedBox(height: 12),
+        ],
+      );
+    }).toList(),
   );
 }
+
+// ════════════════════════════════════════════════════════════════
+//  WEB — TEAM HEADER (STYLED)
+// ════════════════════════════════════════════════════════════════
+
+class _WebTeamHeader extends StatelessWidget {
+  const _WebTeamHeader({required this.teamName, required this.count});
+  final String teamName;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final teamColor = _teamColor(teamName);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 20,
+            decoration: BoxDecoration(
+              color: teamColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Icon(Icons.group_rounded, size: 18, color: teamColor),
+          const SizedBox(width: 6),
+          Text(
+            teamName,
+            style: textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: teamColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: teamColor.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count members',
+              style: textTheme.labelSmall?.copyWith(
+                color: teamColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MOBILE — TEAM SECTION (CARD-BASED)
+// ════════════════════════════════════════════════════════════════
+
+class _MobileTeamSection extends StatelessWidget {
+  const _MobileTeamSection({required this.teamName, required this.users});
+  final String teamName;
+  final List<UserClockInfo> users;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+
+    // Pick a team color
+    final teamColor = _teamColor(teamName);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Team header ──
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: teamColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Icon(Icons.group_rounded, size: 18, color: teamColor),
+              const SizedBox(width: 6),
+              Text(
+                teamName,
+                style: textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.textColor,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: teamColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${users.length}',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: teamColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // ── User cards ──
+          ...users.map(
+            (user) => _UserClockCard(user: user, teamColor: teamColor),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MOBILE — SINGLE USER CARD
+// ════════════════════════════════════════════════════════════════
+
+class _UserClockCard extends StatelessWidget {
+  const _UserClockCard({required this.user, required this.teamColor});
+  final UserClockInfo user;
+  final Color teamColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.bgNavbarSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Name + Avatar ──
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: teamColor.withValues(alpha: 0.15),
+                child: Text(
+                  _initials(user.user),
+                  style: textTheme.labelMedium?.copyWith(
+                    color: teamColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  user.user,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.textColor,
+                  ),
+                ),
+              ),
+              // Team badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: teamColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  user.teamName,
+                  style: textTheme.labelSmall?.copyWith(
+                    color: teamColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ── Clock info row ──
+          Row(
+            children: [
+              _ClockInfoChip(
+                icon: Icons.login_rounded,
+                label: user.clockInTime,
+                color: Colors.green,
+              ),
+              const SizedBox(width: 8),
+              _ClockInfoChip(
+                icon: Icons.logout_rounded,
+                label: user.clockOutTime,
+                color: Colors.red,
+              ),
+              const Spacer(),
+              // Time worked
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 14,
+                      color: Colors.blue[700],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      user.timeWorked,
+                      style: textTheme.labelMedium?.copyWith(
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════
+
+class _ClockInfoChip extends StatelessWidget {
+  const _ClockInfoChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _initials(String name) {
+  final parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+  return name.isNotEmpty ? name[0].toUpperCase() : '?';
+}
+
+Color _teamColor(String teamName) {
+  switch (teamName.toLowerCase()) {
+    case 'developper':
+    case 'developer':
+      return Colors.indigo;
+    case 'manager':
+      return Colors.teal;
+    case 'commercial':
+      return Colors.orange;
+    case 'mobile':
+      return Colors.purple;
+    default:
+      return Colors.blueGrey;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MOCK DATA
+// ════════════════════════════════════════════════════════════════
 
 final List<String> listheaderTable = [
   "User",
@@ -202,7 +528,6 @@ final List<UserClockInfo> listUserClockInfo = [
     timeWorked: "8 hours",
     teamName: "Manager",
   ),
-
   UserClockInfo(
     user: "User 9",
     clockInTime: "09:12 AM",

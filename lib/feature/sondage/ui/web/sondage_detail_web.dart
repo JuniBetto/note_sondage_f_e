@@ -254,12 +254,14 @@ class SondageDetailWeb extends StatelessWidget {
                       // Colonna destra — Domande
                       Expanded(
                         flex: 5,
-                        child: _QuestionsCard(
-                          totalQuestions: totalQuestions,
-                          sondageColor: sondageColor,
-                          colorScheme: colorScheme,
-                          textTheme: textTheme,
-                          localization: localization,
+                        child: SingleChildScrollView(
+                          child: _QuestionsCard(
+                            totalQuestions: totalQuestions,
+                            sondageColor: sondageColor,
+                            colorScheme: colorScheme,
+                            textTheme: textTheme,
+                            localization: localization,
+                          ),
                         ),
                       ),
                     ],

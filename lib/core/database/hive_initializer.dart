@@ -1,5 +1,7 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:note_sondage/core/utils/app_constant.dart';
+import 'package:note_sondage/feature/clocking/infrastructure/data/hive_models/clocking_hive_model.dart';
+import 'package:note_sondage/feature/sondage/infrastructure/data/hive_models/sondage_hive_model.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/hive_models/permission_hive_model.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/hive_models/role_hive_model.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/hive_models/team_hive_model.dart';
@@ -22,6 +24,8 @@ class HiveInitializer {
       Hive.registerAdapter(TeamHiveModelAdapter());
       Hive.registerAdapter(TeamMemberHiveModelAdapter());
       Hive.registerAdapter(UserHiveModelAdapter());
+      Hive.registerAdapter(SondageHiveModelAdapter());
+      Hive.registerAdapter(ClockingHiveModelAdapter());
 
       // Open boxes with unique names
       // await Future.wait([Hive.openBox<AppConfigModel>(appConfigBox)]);
@@ -33,6 +37,8 @@ class HiveInitializer {
         Hive.openBox<TeamHiveModel>('teams_box'),
         Hive.openBox<TeamMemberHiveModel>('team_members_box'),
         Hive.openBox<UserHiveModel>('users_box'),
+        Hive.openBox<SondageHiveModel>('sondages_box'),
+        Hive.openBox<ClockingHiveModel>('clocking_box'),
       ]);
     } catch (e) {
       rethrow;
@@ -49,6 +55,8 @@ class HiveInitializer {
       Hive.box<TeamHiveModel>('teams_box').close(),
       Hive.box<TeamMemberHiveModel>('team_members_box').close(),
       Hive.box<UserHiveModel>('users_box').close(),
+      Hive.box<SondageHiveModel>('sondages_box').close(),
+      Hive.box<ClockingHiveModel>('clocking_box').close(),
     ]);
   }
 }

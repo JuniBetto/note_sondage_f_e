@@ -6,7 +6,7 @@ import 'package:note_sondage/feature/team/ui/web/teams_web.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
-import 'package:note_sondage/ui/mobile/widgets/home/home_mobile.dart';
+import 'package:note_sondage/ui/web/widgets/home/home_web.dart';
 import 'package:note_sondage/ui/web/widgets/full_sidebar.dart';
 import 'package:note_sondage/ui/web/widgets/home/left_home_section.dart';
 import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
@@ -19,7 +19,7 @@ import 'package:note_sondage/ui/widgets/theme_config/custom_toggle_switch.dart';
 /// IndexedStack le tiene tutte in memoria e mostra solo quella attiva
 /// → cambio istantaneo senza ricostruire nulla.
 const _pages = <Widget>[
-  HomeMobile(), // index 0
+  HomeWeb(), // index 0
   TeamsWeb(), // index 1
   SizedBox.shrink(), // index 2 (settings = dialog, niente pagina)
   ClockingWeb(), // index 3

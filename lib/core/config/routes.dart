@@ -13,8 +13,8 @@ import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/update_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/web/role_page_web.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/update_team_web.dart';
-import 'package:note_sondage/ui/bloc/auth_bloc/auth_bloc.dart';
-import 'package:note_sondage/ui/bloc/auth_bloc/auth_state.dart';
+import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/mobile/main_mobile.dart';
@@ -333,13 +333,16 @@ GoRouter createRouter(BuildContext context) {
 
       final isPublicRoute =
           currentPath == RouterPaths.login ||
-          currentPath ==
-              RouterPaths
-                  .forgotPassword /*||
-          currentPath == RouterPaths.splashScreen*/;
+          currentPath == RouterPaths.splashScreen ||
+          currentPath == RouterPaths.forgotPassword;
+
+      // 0. Operazione in corso (login/register/SSO): non toccare la rotta
+      if (authBloc.state.status == AuthStatus.loading) {
+        return null;
+      }
 
       // 1. Se lo stato di autenticazione è SCONOSCIUTO, mostra splash screen
-      if (authBloc.state is AuthUnknown) {
+      if (authBloc.state.status == AuthStatus.unknown) {
         return RouterPaths.splashScreen;
       }
       // 2. Se l'utente è loggato (Authenticated):

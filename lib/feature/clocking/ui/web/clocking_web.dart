@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/button_clocking.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clockin_change_view.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clocking.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class ClockingWeb extends StatefulWidget {
@@ -16,62 +17,121 @@ class _ClockingWebState extends State<ClockingWeb> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final localization = AppLocalizations.of(context)!;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 600;
-        // Rimosso print() per evitare rallentamenti
+        final isSmallScreen = constraints.maxWidth < 700;
+
         return Padding(
-          padding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 4.0),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8.0,
-                      vertical: 16.0,
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ═══════════════════════════════
+              // Header
+              // ═══════════════════════════════
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.bgNavbarSurface,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    child: Text(
-                      "Clock in/out web",
-                      style: Theme.of(context).textTheme.headlineMedium!
-                          .copyWith(fontWeight: FontWeight.bold),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.timer_rounded,
+                        color: Colors.blue,
+                        size: 24,
+                      ),
                     ),
-                  ),
-                  Divider(height: 4, color: colorScheme.avatarBg),
-                  Text(
-                    "Personal status clocking actions",
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: colorScheme.textColor,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          StatusClocking(isCompact: isSmallScreen),
-                          const ButtonClocking(),
+                          Text(
+                            localization.clockingInOut,
+                            style: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.iconLabel,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            localization.personalStatusClockingActions,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[500],
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                  Divider(height: 4, color: colorScheme.avatarBg),
-                  const SizedBox(height: 16.0),
-                  const StatusClockInChangeView(),
-                ],
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 20),
+
+              // ═══════════════════════════════
+              // Status + Actions card
+              // ═══════════════════════════════
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colorScheme.bgNavbarSurface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.blue.withValues(alpha: 0.15),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: isSmallScreen
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          StatusClocking(isCompact: true),
+                          const SizedBox(height: 16),
+                          const Center(child: ButtonClocking(isCompact: true)),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(child: StatusClocking(isCompact: false)),
+                          const SizedBox(width: 20),
+                          const ButtonClocking(),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 20),
+
+              // ═══════════════════════════════
+              // Tracking table section
+              // ═══════════════════════════════
+              const StatusClockInChangeView(),
+            ],
           ),
         );
       },

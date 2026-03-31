@@ -4,9 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:note_sondage/ui/bloc/auth_bloc/auth_bloc.dart';
-import 'package:note_sondage/ui/bloc/auth_bloc/auth_event.dart';
-import 'package:note_sondage/ui/bloc/auth_bloc/auth_state.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
@@ -69,25 +67,51 @@ class _AuthTabLoginState extends State<AuthTabLogin>
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          const SizedBox(height: 60),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state.errorMessage != null) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage!),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const SizedBox(height: 60),
 
-          // Tab Bar custom
-          TabBarComponent(tabController: _tabController, setToUpdate: setState),
-
-          const SizedBox(height: 32),
-
-          // Tab Bar View
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [buildLoginForm(context), buildRegisterForm(context)],
+            // Tab Bar custom
+            TabBarComponent(
+              tabController: _tabController,
+              setToUpdate: setState,
             ),
-          ),
-        ],
+
+            const SizedBox(height: 32),
+
+            // Tab Bar View
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  KeyedSubtree(
+                    key: const ValueKey('login_tab_content'),
+                    child: buildLoginForm(context),
+                  ),
+                  KeyedSubtree(
+                    key: const ValueKey('register_tab_content'),
+                    child: buildRegisterForm(context),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -131,7 +155,10 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                 onPressed: () {
                   if (_loginFormKey.currentState?.validate() ?? false) {
                     context.read<AuthBloc>().add(
-                      AuthStatusChanged(AuthAuthenticated()),
+                      AuthLoginRequested(
+                        email: _loginEmailController.text.trim(),
+                        password: _loginPasswordController.text,
+                      ),
                     );
                   }
                 },
@@ -162,18 +189,26 @@ class _AuthTabLoginState extends State<AuthTabLogin>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Divider(color: colorScheme.bgborderLogin!, thickness: 2),
+                  child: Divider(
+                    color: colorScheme.bgborderLogin!,
+                    thickness: 2,
+                  ),
                 ),
                 Text(' Or '),
                 Expanded(
-                  child: Divider(color: colorScheme.bgborderLogin!, thickness: 2),
+                  child: Divider(
+                    color: colorScheme.bgborderLogin!,
+                    thickness: 2,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             SsoLogin(
-              key: ValueKey("google_sso_register_button"),
-              onPressed: () {},
+              key: ValueKey("google_sso_login_button"),
+              onPressed: () {
+                context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
+              },
             ),
           ],
         ),
@@ -236,7 +271,13 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                 key: ValueKey("register_button"),
                 onPressed: () {
                   if (_registerFormKey.currentState?.validate() ?? false) {
-                    // Logica per registrare l'utente
+                    context.read<AuthBloc>().add(
+                      AuthRegisterRequested(
+                        email: _registerEmailController.text.trim(),
+                        password: _registerPasswordController.text,
+                        displayName: _registerNameController.text.trim(),
+                      ),
+                    );
                   }
                 },
                 isActive: true,
@@ -249,18 +290,26 @@ class _AuthTabLoginState extends State<AuthTabLogin>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Divider(color: colorScheme.bgborderLogin!, thickness: 2),
+                  child: Divider(
+                    color: colorScheme.bgborderLogin!,
+                    thickness: 2,
+                  ),
                 ),
                 Text(' Or '),
                 Expanded(
-                  child: Divider(color: colorScheme.bgborderLogin!, thickness: 2),
+                  child: Divider(
+                    color: colorScheme.bgborderLogin!,
+                    thickness: 2,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             SsoLogin(
               key: ValueKey("google_sso_register_button"),
-              onPressed: () {},
+              onPressed: () {
+                context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
+              },
             ),
           ],
         ),

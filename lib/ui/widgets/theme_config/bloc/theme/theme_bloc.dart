@@ -8,7 +8,7 @@ import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_event.dart
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 
 class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
-  ThemeBloc() : super(ThemeInitial(ThemeData.light())) {
+  ThemeBloc() : super(ThemeInitial(AppTheme.buildTheme(false))) {
     on<ThemeSetLightEvent>(_onSetLightTheme);
     on<ThemeSetDarkEvent>(_onSetDarkTheme);
     on<ThemeSetSystemEvent>(_onSetSystemTheme);
@@ -64,9 +64,7 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
     // Salva lo stato del tema di sistema
     await HiveService.putHive<bool>(isSystemDark, themeConfigBox, themeKeyBox);
 
-    final ThemeData systemTheme = isSystemDark
-        ? ThemeData.dark()
-        : ThemeData.light();
+    final ThemeData systemTheme = AppTheme.buildTheme(isSystemDark);
     emit(ThemeisSystem(systemTheme));
   }
 }
