@@ -31,74 +31,74 @@ class ContactUsWeb extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                  // Lato Sinistro: Il Form
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          localization.contactUs,
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: primaryDark,
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        CustomTextFieldImmersive(
-                          hintText: localization.yourName,
-                          controller: _nameController,
-                        ),
-                        const SizedBox(height: 20),
-                        CustomTextFieldImmersive(
-                          hintText: localization.yourEmail,
-                          controller: _emailController,
-                        ),
-                        const SizedBox(height: 20),
-                        CustomTextFieldImmersive(
-                          hintText: localization.message,
-                          maxLines: 5,
-                          controller: _messageController,
-                        ),
-                        const SizedBox(height: 40),
-
-                        // Bottone Submit
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryDark,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 50,
-                              vertical: 20,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                    // Lato Sinistro: Il Form
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            localization.contactUs,
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: primaryDark,
                             ),
                           ),
-                          child: Text(
-                            localization.submit,
-                            style: TextStyle(fontSize: 18),
+                          const SizedBox(height: 30),
+                          CustomTextFieldImmersive(
+                            hintText: localization.yourName,
+                            controller: _nameController,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
+                          const SizedBox(height: 20),
+                          CustomTextFieldImmersive(
+                            hintText: localization.yourEmail,
+                            controller: _emailController,
+                          ),
+                          const SizedBox(height: 20),
+                          CustomTextFieldImmersive(
+                            hintText: localization.message,
+                            maxLines: 5,
+                            controller: _messageController,
+                          ),
+                          const SizedBox(height: 40),
 
-                  // Lato Destro: Illustrazione
-                  Expanded(
-                    flex: 1,
-                    child: Center(
-                      child: Icon(
-                        Icons.support_agent,
-                        size: 300,
-                        color: primaryDark,
+                          // Bottone Submit
+                          ElevatedButton(
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryDark,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 50,
+                                vertical: 20,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: Text(
+                              localization.submit,
+                              style: TextStyle(fontSize: 18),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
-              ),
+
+                    // Lato Destro: Illustrazione
+                    Expanded(
+                      flex: 1,
+                      child: Center(
+                        child: Icon(
+                          Icons.support_agent,
+                          size: 300,
+                          color: primaryDark,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 20),

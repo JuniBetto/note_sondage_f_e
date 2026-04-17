@@ -10,7 +10,6 @@ import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.d
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/avatar_input.dart';
-import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/user_status_widget.dart';
 
@@ -125,40 +124,37 @@ class _AddUserMobileState extends State<AddUserMobile> {
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(localization.userList),
-              widget.listUserFormData.length > 1
-                  ? DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.homeSecondary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: buildListUserForm(
-                        context,
-                        widget.listUserFormData,
-                      ),
-                    )
-                  : SizedBox(),
-              SizedBox(height: 16),
-              Text("  Add New User", style: textTheme.labelMedium),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.homeSecondary,
-                  borderRadius: BorderRadius.circular(12),
+              if (widget.listUserFormData.length > 1) ...[
+                buildListUserForm(context, widget.listUserFormData),
+                const SizedBox(height: 16),
+                Divider(
+                  height: 1,
+                  color: colorScheme.borderColor!.withValues(alpha: 0.2),
                 ),
-                child: Builder(
-                  builder: (context) {
-                    final currentIndex = widget.listUserFormData.length - 1;
-                    final currentUser = widget
-                        .listUserFormData[currentIndex < 0 ? 0 : currentIndex];
-                    return buildNewUserForm(
-                      context,
-                      currentUser,
-                      selectedRoles,
-                      buildAvatarInput(currentUser, currentIndex),
-                      _addEmptyUser,
-                    );
-                  },
+                const SizedBox(height: 16),
+              ],
+              Text(
+                localization.addUser.toUpperCase(),
+                style: textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.0,
+                  color: colorScheme.descriptionColor,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Builder(
+                builder: (context) {
+                  final currentIndex = widget.listUserFormData.length - 1;
+                  final currentUser = widget
+                      .listUserFormData[currentIndex < 0 ? 0 : currentIndex];
+                  return buildNewUserForm(
+                    context,
+                    currentUser,
+                    selectedRoles,
+                    buildAvatarInput(currentUser, currentIndex),
+                    _addEmptyUser,
+                  );
+                },
               ),
             ],
           ),
@@ -243,15 +239,23 @@ Widget buildNewUserForm(
             ),
           ],
         ),
-        CustomAppButton(
-          onPressed: () {
-            if (onPressed != null) {
-              onPressed();
-            }
-          },
-          type: ButtonType.text,
-          isActive: true,
-          child: Text(localization.addUser),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonalIcon(
+            onPressed: () {
+              if (onPressed != null) {
+                onPressed();
+              }
+            },
+            icon: const Icon(Icons.person_add_rounded, size: 18),
+            label: Text(localization.addUser),
+            style: FilledButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
         ),
       ],
     ),
@@ -266,7 +270,7 @@ Widget buildListUserForm(
   final colorScheme = theme.colorScheme;
   final themeText = theme.textTheme;
   return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+    padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4.0),
     child: Column(
       children: [
         DecoratedBox(

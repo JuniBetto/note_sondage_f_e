@@ -31,133 +31,133 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          // Header
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF9800).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+            // Header
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_rounded,
+                    color: Color(0xFFFF9800),
+                    size: 26,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.notifications_rounded,
-                  color: Color(0xFFFF9800),
-                  size: 26,
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      localization.settingsNotification,
+                      style: textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Configure how you want to be notified',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.descriptionColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // General Notifications
+            _buildSectionTitle(context, 'General'),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.homeSecondary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colorScheme.borderColor!.withValues(alpha: 0.3),
                 ),
               ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
                 children: [
-                  Text(
-                    localization.settingsNotification,
-                    style: textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  _buildSwitchTile(
+                    context,
+                    icon: Icons.email_rounded,
+                    iconColor: const Color(0xFF2196F3),
+                    title: 'Email Notifications',
+                    subtitle: 'Receive updates via email',
+                    value: _emailNotifications,
+                    onChanged: (v) => setState(() => _emailNotifications = v),
+                    showDivider: true,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Configure how you want to be notified',
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.descriptionColor,
-                    ),
+                  _buildSwitchTile(
+                    context,
+                    icon: Icons.phone_iphone_rounded,
+                    iconColor: const Color(0xFF4CAF50),
+                    title: 'Push Notifications',
+                    subtitle: 'Receive push notifications on your device',
+                    value: _pushNotifications,
+                    onChanged: (v) => setState(() => _pushNotifications = v),
+                    showDivider: false,
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
 
-          const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
-          // General Notifications
-          _buildSectionTitle(context, 'General'),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: colorScheme.homeSecondary,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: colorScheme.borderColor!.withValues(alpha: 0.3),
+            // Activity Notifications
+            _buildSectionTitle(context, 'Activity'),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.homeSecondary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                children: [
+                  _buildSwitchTile(
+                    context,
+                    icon: Icons.assignment_rounded,
+                    iconColor: const Color(0xFF9C27B0),
+                    title: 'Survey Reminders',
+                    subtitle: 'Get reminded about pending surveys',
+                    value: _surveyReminders,
+                    onChanged: (v) => setState(() => _surveyReminders = v),
+                    showDivider: true,
+                  ),
+                  _buildSwitchTile(
+                    context,
+                    icon: Icons.groups_rounded,
+                    iconColor: const Color(0xFF00BCD4),
+                    title: 'Team Updates',
+                    subtitle: 'Notifications about team changes',
+                    value: _teamUpdates,
+                    onChanged: (v) => setState(() => _teamUpdates = v),
+                    showDivider: true,
+                  ),
+                  _buildSwitchTile(
+                    context,
+                    icon: Icons.access_time_rounded,
+                    iconColor: const Color(0xFFE91E63),
+                    title: 'Clocking Alerts',
+                    subtitle: 'Reminders to clock in and out',
+                    value: _clockingAlerts,
+                    onChanged: (v) => setState(() => _clockingAlerts = v),
+                    showDivider: false,
+                  ),
+                ],
               ),
             ),
-            child: Column(
-              children: [
-                _buildSwitchTile(
-                  context,
-                  icon: Icons.email_rounded,
-                  iconColor: const Color(0xFF2196F3),
-                  title: 'Email Notifications',
-                  subtitle: 'Receive updates via email',
-                  value: _emailNotifications,
-                  onChanged: (v) => setState(() => _emailNotifications = v),
-                  showDivider: true,
-                ),
-                _buildSwitchTile(
-                  context,
-                  icon: Icons.phone_iphone_rounded,
-                  iconColor: const Color(0xFF4CAF50),
-                  title: 'Push Notifications',
-                  subtitle: 'Receive push notifications on your device',
-                  value: _pushNotifications,
-                  onChanged: (v) => setState(() => _pushNotifications = v),
-                  showDivider: false,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Activity Notifications
-          _buildSectionTitle(context, 'Activity'),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: colorScheme.homeSecondary,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: colorScheme.borderColor!.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Column(
-              children: [
-                _buildSwitchTile(
-                  context,
-                  icon: Icons.assignment_rounded,
-                  iconColor: const Color(0xFF9C27B0),
-                  title: 'Survey Reminders',
-                  subtitle: 'Get reminded about pending surveys',
-                  value: _surveyReminders,
-                  onChanged: (v) => setState(() => _surveyReminders = v),
-                  showDivider: true,
-                ),
-                _buildSwitchTile(
-                  context,
-                  icon: Icons.groups_rounded,
-                  iconColor: const Color(0xFF00BCD4),
-                  title: 'Team Updates',
-                  subtitle: 'Notifications about team changes',
-                  value: _teamUpdates,
-                  onChanged: (v) => setState(() => _teamUpdates = v),
-                  showDivider: true,
-                ),
-                _buildSwitchTile(
-                  context,
-                  icon: Icons.access_time_rounded,
-                  iconColor: const Color(0xFFE91E63),
-                  title: 'Clocking Alerts',
-                  subtitle: 'Reminders to clock in and out',
-                  value: _clockingAlerts,
-                  onChanged: (v) => setState(() => _clockingAlerts = v),
-                  showDivider: false,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

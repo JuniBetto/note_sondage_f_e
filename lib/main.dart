@@ -31,25 +31,21 @@ void main() {
         debugPrint('[Firebase] Already initialized, skipping.');
       }
 
-      // 2b. Inizializza Google Sign-In (obbligatorio per v7+)
-      // Su Android il clientId non serve (usa google-services.json).
-      // Su iOS/Web: passa il clientId corrispondente.
-      await GoogleSignIn.instance.initialize();
-
-      // 3. Setup dependency injection
+      // 3. Setup dependency injection (sincrono — va prima delle init async)
       setup();
 
-      // 4. Inizializza Hive
-      await HiveInitializer.initialize();
+      // 4. Inizializza in parallelo le operazioni indipendenti:
+      //    - Google Sign-In (obbligatorio per v7+)
+      //    - Hive (database locale)
+      //    - Sentry (error logger)
+      //    Questo riduce i tempi di avvio perché non si aspettano a vicenda.
+      await Future.wait([
+        GoogleSignIn.instance.initialize(),
+        HiveInitializer.initialize(),
+        ErrorLogger.init(dsn: 'YOUR_DSN_HERE', enabled: !kDebugMode),
+      ]);
 
-      // 5. Inizializza il logger (Sentry)
-      await ErrorLogger.init(
-        dsn: 'YOUR_DSN_HERE',
-        // Attiva Sentry solo in modalità release
-        enabled: !kDebugMode,
-      );
-
-      // 6. Gestore per errori specifici di Flutter (es. build, layout)
+      // 5. Gestore per errori specifici di Flutter (es. build, layout)
       FlutterError.onError = (FlutterErrorDetails details) {
         // ── DEBUG: stampa anche lo stack per trovare la riga esatta ──
         debugPrint("━━━ FlutterError ━━━");
@@ -60,7 +56,7 @@ void main() {
         ErrorLogger.log(details.exception, details.stack);
       };
 
-      // 7. Costruisce un widget personalizzato in caso di errore
+      // 6. Costruisce un widget personalizzato in caso di errore
       //    durante la build di un widget.
       ErrorWidget.builder = (FlutterErrorDetails details) {
         // In modalità debug, mostra l'errore standard (schermo rosso)
@@ -78,12 +74,12 @@ void main() {
 
       runApp(MainApp());
     },
-    // 8. Questa è la callback di runZonedGuarded.
+    // 7. Questa è la callback di runZonedGuarded.
     // Cattura TUTTI gli errori non gestiti dall'app.
     (error, stack) {
       ErrorLogger.log(error, stack);
 
-      // 9. Naviga alla pagina di errore fatale per l'utente
+      // 8. Naviga alla pagina di errore fatale per l'utente
       // Usiamo la chiave globale per accedere al Navigator
       navigatorKey.currentState?.pushAndRemoveUntil(
         MaterialPageRoute(

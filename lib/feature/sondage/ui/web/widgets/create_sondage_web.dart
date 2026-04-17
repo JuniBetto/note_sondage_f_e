@@ -3,7 +3,6 @@ import 'package:note_sondage/feature/sondage/ui/mobile/widgets/toggle_tile.dart'
 import 'package:note_sondage/feature/team/ui/mobile/widgets/select_team_page.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/time_range_picker.dart';
 
@@ -190,7 +189,7 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                                 title: Text("imposta tempo di risposta"),
                               ),
                               IgnorePointer(
-                                ignoring:!isFixedTime,
+                                ignoring: !isFixedTime,
                                 child: TimeRangePicker(
                                   start: start,
                                   end: end,
@@ -211,11 +210,8 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.max,
                         children: [
-                          CustomAppButton(
-                            type: ButtonType.text,
-                            backgroundColor: Colors.blueAccent,
+                          FilledButton.tonalIcon(
                             onPressed: () async {
-                              // Naviga alla pagina di selezione team
                               final result =
                                   await Navigator.push<Map<String, dynamic>>(
                                     context,
@@ -231,11 +227,25 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                                 });
                               }
                             },
-                            isActive: true,
-                            child: Text(
+                            icon: Icon(
+                              selectedTeam == null
+                                  ? Icons.group_rounded
+                                  : Icons.check_circle_rounded,
+                              size: 20,
+                            ),
+                            label: Text(
                               selectedTeam == null
                                   ? localization.selectTeam
                                   : "${localization.teamLabel} ${selectedTeam!['teamName']}",
+                            ),
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
                             ),
                           ),
                         ],
@@ -243,31 +253,53 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                       SizedBox(height: 16),
 
                       // Bottone di creazione
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState?.validate() ?? false) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  localization.surveyCreatedSuccessfully,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            if (_formKey.currentState?.validate() ?? false) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    localization.surveyCreatedSuccessfully,
+                                  ),
+                                  backgroundColor: Colors.green,
                                 ),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
+                              );
 
-                            if (widget.onsondageCreated != null) {
-                              widget.onsondageCreated!();
+                              if (widget.onsondageCreated != null) {
+                                widget.onsondageCreated!();
+                              }
+
+                              namesondageController.clear();
+                              descriptionsondageController.clear();
                             }
-
-                            namesondageController.clear();
-                            descriptionsondageController.clear();
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: Text(
-                          '${localization.create} ${localization.sondage}',
+                          },
+                          icon: const Icon(Icons.send_rounded, size: 20),
+                          label: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
+                            ),
+                            child: Text(
+                              '${localization.create} ${localization.sondage}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF7C4DFF),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 16,
+                            ),
+                          ),
                         ),
                       ),
                     ],

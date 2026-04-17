@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/team_card.dart';
 
 class TeamPage extends StatefulWidget {
@@ -38,7 +39,7 @@ class _TeamPageState extends State<TeamPage> {
               visible: !kIsWeb,
               child: Text('This is the Team page for Mobile'),
             ),
-            headerTeamPage(() {}, () {}, () {}),
+            headerTeamPage(context, () {}, () {}, () {}),
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(top: 16.0),
@@ -62,10 +63,14 @@ class _TeamPageState extends State<TeamPage> {
 }
 
 Widget headerTeamPage(
+  BuildContext context,
   void Function()? onPressedToList,
   void Function()? onPressedToCard,
   void Function()? onPressedToAdd,
 ) {
+  final localization = AppLocalizations.of(context)!;
+  final colorScheme = Theme.of(context).colorScheme;
+
   return Row(
     mainAxisAlignment: MainAxisAlignment.end,
     mainAxisSize: MainAxisSize.max,
@@ -75,7 +80,56 @@ Widget headerTeamPage(
         icon: Icon(Icons.window_sharp),
       ),
       IconButton.outlined(onPressed: onPressedToList, icon: Icon(Icons.list)),
-      IconButton.outlined(onPressed: onPressedToAdd, icon: Icon(Icons.add)),
+      const SizedBox(width: 8),
+      // ── Beautiful "Create Team" button ──
+      Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressedToAdd,
+          borderRadius: BorderRadius.circular(12),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.secondary,
+                  colorScheme.secondary.withValues(alpha: 0.75),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.secondary.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.group_add_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  localization.createNewTeam,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     ],
   );
 }

@@ -5,6 +5,7 @@ import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/widgets/role_permission_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class ListRolePermission extends StatefulWidget {
@@ -51,6 +52,9 @@ class _ListRolePermissionState extends State<ListRolePermission> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return BlocProvider.value(
       value: _roleBloc,
       child: BlocConsumer<RoleBloc, RoleState>(
@@ -76,14 +80,14 @@ class _ListRolePermissionState extends State<ListRolePermission> {
           }
         },
         builder: (context, state) {
-          // Mostra skeleton durante il caricamento
           if (_isLoading) {
             return Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Skeletonizer(
                 enabled: true,
-                child: ListView.builder(
-                  itemCount: 3, // Numero di skeleton items
+                child: ListView.separated(
+                  itemCount: 3,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     return RolePermissionComponent(
                       teamId: '',
@@ -103,34 +107,66 @@ class _ListRolePermissionState extends State<ListRolePermission> {
 
           if (rolesList.isEmpty) {
             final localization = AppLocalizations.of(context)!;
-            return Center(child: Text(localization.noRolesAvailable));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C4DFF).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Icon(
+                      Icons.shield_rounded,
+                      size: 32,
+                      color: Color(0xFF7C4DFF),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    localization.noRolesAvailable,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Swipe to create a new role',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.descriptionColor,
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ListView.builder(
-              itemCount: rolesList.length,
-              itemBuilder: (context, index) {
-                final role = rolesList[index];
-                final isSelected = selectedIds.contains(role.id);
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: rolesList.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final role = rolesList[index];
+              final isSelected = selectedIds.contains(role.id);
 
-                return RolePermissionComponent(
-                  isMobile: widget.isMobile,
-                  id: role.id,
-                  code: role.name,
-                  permissions: [...role.permissions],
-                  description: role.description ?? '',
-                  teamId: role.teamId,
-                  isSelected: isSelected,
-                  onTap: (id) {
-                    if (id != null) {
-                      toggleSelection(id);
-                    }
-                  },
-                  onDelete: _deleteRole,
-                );
-              },
-            ),
+              return RolePermissionComponent(
+                isMobile: widget.isMobile,
+                id: role.id,
+                code: role.name,
+                permissions: [...role.permissions],
+                description: role.description ?? '',
+                teamId: role.teamId,
+                isSelected: isSelected,
+                onTap: (id) {
+                  if (id != null) {
+                    toggleSelection(id);
+                  }
+                },
+                onDelete: _deleteRole,
+              );
+            },
           );
         },
       ),

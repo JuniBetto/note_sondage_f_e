@@ -6,19 +6,13 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
-import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/add_user_web.dart';
-import 'package:note_sondage/ui/widgets/custom_app_button.dart';
-import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:uuid/uuid.dart';
-
-// Aggiungi in cima al file
-const _kMaxWidth = 700.0;
-const _kHeightRatio = 0.88;
-const _kPadding = EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0);
 
 class UpdateTeamWeb extends StatefulWidget {
   const UpdateTeamWeb({super.key, this.teamId});
@@ -43,6 +37,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   ];
   List<String> selectedColor = [];
   late final TeamBloc _teamBloc;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -61,181 +56,270 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
 
     return BlocListener<TeamBloc, TeamState>(
       bloc: _teamBloc,
       listener: (context, teamState) {
         if (teamState is TeamLoaded) {
           final team = teamState.team;
-
           nameTeamController.text = team.name;
           focusTeamController.text = team.description;
-
           setState(() {
             selectedColor = team.color != null ? [team.color!] : [];
+            _isLoading = false;
           });
+        } else if (teamState is TeamError) {
+          setState(() => _isLoading = false);
         }
       },
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: _kMaxWidth,
-              maxHeight: constraints.maxHeight * _kHeightRatio,
-            ),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: constraints.maxHeight * _kHeightRatio,
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Header ──
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7C4DFF).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.group_rounded,
+                        color: Color(0xFF7C4DFF),
+                        size: 26,
+                      ),
                     ),
-                    child: Padding(
-                      padding: _kPadding,
+                    const SizedBox(width: 16),
+                    Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.max,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Qui metti il form per creare un nuovo team
-                          /* Text(
-                            localization.createNewTeam,
-                            style: theme.textTheme.headlineSmall,
-                          ),*/
-                          if (widget.teamId != null) ...[
-                            Row(
-                              mainAxisSize: MainAxisSize.max,
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                CustomAppButton(
-                                  type: ButtonType.text,
-                                  isActive: true,
-                                  child: Text(localization.roleManager),
-                                  onPressed: () {
-                                    context.go(
-                                      RouterPaths.rolePage,
-                                      extra: widget.teamId,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 14),
-                            Divider(height: 4),
-                            SizedBox(height: 14),
-                          ],
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.max,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: CustomInputField(
-                                    hintText: localization.teamName,
-                                    controller: nameTeamController,
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Il nome del team è obbligatorio';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                SizedBox(width: 16),
-                                Expanded(
-                                  child: CustomInputField(
-                                    hintText: localization.teamDescription,
-                                    controller: focusTeamController,
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'La descrizione è obbligatoria';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                              ],
+                          Text(
+                            localization.editTeam,
+                            style: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-
-                          // Aggiungi qui i campi del form (TextField, Dropdown, ecc.)
-                          // Esempio:
-                          Text(localization.selectedTeamcolor),
-                          ListCheckbox(
-                            selectedColor: selectedColor,
-                            isEditMode: true,
-                          ),
-
-                          SizedBox(height: 16),
-                          AddUserWeb(
-                            listUserFormData: listUserFormData,
-                            teamId: widget.teamId,
-                          ),
-
-                          SizedBox(height: 32),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Logica per creare il team
-                              /* if (widget.onTeamCreated != null) {
-                                widget.onTeamCreated!();
-                              } */
-                              if (_formKey.currentState?.validate() ?? false) {
-                                // Logica per creare il team
-                                /* if (widget.onTeamCreated != null) {
-                                widget.onTeamCreated!();
-                              } */
-
-                                print(
-                                  "Team modificato con successo $selectedColor",
-                                );
-                                final listteamMember = <TeamMemberUpdateTeam>[];
-                                listUserFormData.removeLast();
-                                for (var userData in listUserFormData) {
-                                  final teamMember = TeamMemberUpdateTeam(
-                                    userId: userData.userId,
-                                    email: userData.emailController.text,
-                                    status: userData.statusController.text,
-                                    teamMemberId: '',
-                                    imageUrl: userData.avatarUrl ?? '',
-                                    role: userData.roleController.text,
-                                  );
-                                  listteamMember.add(teamMember);
-                                }
-
-                                final team = TeamUpdate(
-                                  false,
-                                  id: widget.teamId,
-                                  color: selectedColor.isNotEmpty
-                                      ? selectedColor.first
-                                      : '0xFF513387',
-                                  name: nameTeamController.text,
-                                  description: focusTeamController.text,
-                                  createdByUserId: null,
-                                  listMember: listteamMember,
-                                );
-
-                                _teamBloc.add(UpdateTeamEvent(team));
-                                context.go(
-                                  RouterPaths.team,
-                                  extra: widget.teamId,
-                                );
-                              }
-                            },
-                            child: Text(localization.editTeam),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Update team information, members and roles',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.descriptionColor,
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    // Role Manager button
+                    if (widget.teamId != null)
+                      FilledButton.tonalIcon(
+                        onPressed: () {
+                          context.go(
+                            RouterPaths.rolePage,
+                            extra: widget.teamId,
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.admin_panel_settings_rounded,
+                          size: 18,
+                        ),
+                        label: Text(localization.roleManager),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 32),
+
+                // ── Team Info Section ──
+                _buildSectionTitle(context, localization.teamName),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: CustomInputField(
+                                hintText: localization.teamName,
+                                controller: nameTeamController,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Il nome del team è obbligatorio';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: CustomInputField(
+                                hintText: localization.teamDescription,
+                                controller: focusTeamController,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'La descrizione è obbligatoria';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Team Color Section ──
+                _buildSectionTitle(context, localization.selectedTeamcolor),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: ListCheckbox(
+                    selectedColor: selectedColor,
+                    isEditMode: true,
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 24),
+
+                // ── Members Section ──
+                _buildSectionTitle(context, localization.userList),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: AddUserWeb(
+                    listUserFormData: listUserFormData,
+                    teamId: widget.teamId,
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // ── Save Button ──
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: _onSave,
+                    icon: const Icon(Icons.save_rounded, size: 20),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        localization.editTeam,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF7C4DFF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+          color: theme.colorScheme.descriptionColor,
+        ),
+      ),
+    );
+  }
+
+  void _onSave() {
+    if (_formKey.currentState?.validate() ?? false) {
+      final listteamMember = <TeamMemberUpdateTeam>[];
+      final dataToSave = listUserFormData.length > 1
+          ? listUserFormData.sublist(0, listUserFormData.length - 1)
+          : <UserFormData>[];
+
+      for (var userData in dataToSave) {
+        final teamMember = TeamMemberUpdateTeam(
+          userId: userData.userId,
+          email: userData.emailController.text,
+          status: userData.statusController.text,
+          teamMemberId: '',
+          imageUrl: userData.avatarUrl ?? '',
+          role: userData.roleController.text,
+        );
+        listteamMember.add(teamMember);
+      }
+
+      final team = TeamUpdate(
+        false,
+        id: widget.teamId,
+        color: selectedColor.isNotEmpty ? selectedColor.first : '0xFF513387',
+        name: nameTeamController.text,
+        description: focusTeamController.text,
+        createdByUserId: null,
+        listMember: listteamMember,
+      );
+
+      _teamBloc.add(UpdateTeamEvent(team));
+      context.go(RouterPaths.team, extra: widget.teamId);
+    }
   }
 }

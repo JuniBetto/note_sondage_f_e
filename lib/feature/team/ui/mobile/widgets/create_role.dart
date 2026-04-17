@@ -7,9 +7,9 @@ import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.dart';
-import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class CreateRoleWidget extends StatefulWidget {
   const CreateRoleWidget({super.key, this.teamId});
@@ -104,57 +104,87 @@ class _CreateRoleWidgetState extends State<CreateRoleWidget> {
         return Form(
           key: _formKey,
           autovalidateMode: AutovalidateMode.disabled,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20.0),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DecoratedBox(
+                // ── Role Info Section ──
+                _buildSectionHeader(
+                  context,
+                  localization.roleName,
+                  Icons.badge_rounded,
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12.0),
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                    ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CustomInputField(
-                          hintText: localization.roleName,
-                          controller: nameController,
-                        ),
-                        SizedBox(height: 16),
-                        CustomInputField(
-                          hintText: localization.roleDescription,
-                          controller: descriptionController,
-                          minLines: 3,
-                          maxLines: 5,
-                        ),
-                        SizedBox(height: 16),
-                        GenericMultiSelectDropdown<String>(
-                          label: '',
-                          items: listPermissionsUser,
-                          selectedItems: _selectedStatusList,
-                          displayText: (item) => item,
-                          valueGetter: (item) => item,
-                          onChanged: (List<String> selectedItems) {
-                            setState(() {
-                              _selectedStatusList = selectedItems;
-                            });
-                          },
-                          hintText: localization.selectedPermission,
-                        ),
+                  child: Column(
+                    children: [
+                      CustomInputField(
+                        hintText: localization.roleName,
+                        controller: nameController,
+                      ),
+                      const SizedBox(height: 14),
+                      CustomInputField(
+                        hintText: localization.roleDescription,
+                        controller: descriptionController,
+                        minLines: 3,
+                        maxLines: 5,
+                      ),
+                    ],
+                  ),
+                ),
 
-                        SizedBox(height: 24),
-                        CustomAppButton(
-                          type: ButtonType.text,
-                          isActive: isFormValid,
-                          child: Text(localization.createRole),
-                          onPressed: () {
+                const SizedBox(height: 24),
+
+                // ── Permissions Section ──
+                _buildSectionHeader(
+                  context,
+                  localization.selectedPermission,
+                  Icons.security_rounded,
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: GenericMultiSelectDropdown<String>(
+                    label: '',
+                    items: listPermissionsUser,
+                    selectedItems: _selectedStatusList,
+                    displayText: (item) => item,
+                    valueGetter: (item) => item,
+                    onChanged: (List<String> selectedItems) {
+                      setState(() {
+                        _selectedStatusList = selectedItems;
+                      });
+                    },
+                    hintText: localization.selectedPermission,
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // ── Create Button ──
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: isFormValid
+                        ? () {
                             if (_formKey.currentState?.validate() ?? false) {
-                              // Logica per creare il team
-                              /* if (widget.onTeamCreated != null) {
-                                      widget.onTeamCreated!();
-                                    }*/
                               final role = RoleEntity(
                                 null,
                                 name: nameController.text,
@@ -169,9 +199,30 @@ class _CreateRoleWidgetState extends State<CreateRoleWidget> {
                                 ),
                               );
                             }
-                          },
+                          }
+                        : null,
+                    icon: const Icon(Icons.add_rounded, size: 20),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        localization.createRole,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF7C4DFF),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(
+                        0xFF7C4DFF,
+                      ).withValues(alpha: 0.3),
+                      disabledForegroundColor: Colors.white60,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
                 ),
@@ -180,6 +231,31 @@ class _CreateRoleWidgetState extends State<CreateRoleWidget> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    IconData icon,
+  ) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.descriptionColor),
+          const SizedBox(width: 6),
+          Text(
+            title.toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: theme.colorScheme.descriptionColor,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

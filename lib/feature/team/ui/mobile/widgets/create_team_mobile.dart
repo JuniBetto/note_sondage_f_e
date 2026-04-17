@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
@@ -13,7 +11,6 @@ import 'package:note_sondage/feature/team/ui/mobile/widgets/add_user_mobile.dart
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class CreateTeamMobile extends StatefulWidget {
@@ -69,15 +66,11 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
       bloc: _teamBloc,
       listener: (context, teamState) {
         if (teamState is TeamCreated) {
-          // Team creato con successo, ora aggiungi i membri
           final createdTeamId = teamState.team.id;
 
           if (createdTeamId != null) {
-            // Crea i TeamMember per ogni utente nel form
             for (final userFormData in listUserFormData) {
-              // Verifica che l'email non sia vuota
               if (userFormData.emailController.text.isNotEmpty) {
-                // Convert status string to UserStatus, default to UserStatus.pending
                 UserStatus status;
                 try {
                   status = UserStatus.values.firstWhere(
@@ -90,7 +83,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                 }
 
                 final member = TeamMemberEntity(
-                  id: null, // id sarà generato dal backend
+                  id: null,
                   userEmail: userFormData.emailController.text,
                   teamId: createdTeamId,
                   status: status,
@@ -117,7 +110,6 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             ),
           );
 
-          // Callback se fornita
           if (widget.onTeamCreated != null) {
             widget.onTeamCreated!();
           }
@@ -154,63 +146,101 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 0.0,
-                vertical: 8.0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (widget.teamId != null) ...[
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        CustomAppButton(
-                          type: ButtonType.text,
-                          isActive: true,
-                          child: Text(localization.roleManager),
-                          onPressed: () {
-                            context.go(
-                              RouterPaths.rolePage,
-                              extra: widget.teamId,
-                            );
-                          },
-                        ),
-                      ],
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Team Info Section ──
+                _buildSectionHeader(
+                  context,
+                  localization.teamName,
+                  Icons.info_outline_rounded,
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
                     ),
-                    SizedBox(height: 16),
-                    Divider(height: 4, color: colorScheme.bgborderLogin),
-                    SizedBox(height: 16),
-                  ],
-                  // Campi del form
-                  CustomInputField(
-                    hintText: localization.teamName,
-                    controller: nameTeamController,
                   ),
-                  SizedBox(height: 16),
-                  CustomInputField(
-                    hintText: localization.teamDescription,
-                    controller: descriptionTeamController,
+                  child: Column(
+                    children: [
+                      CustomInputField(
+                        hintText: localization.teamName,
+                        controller: nameTeamController,
+                      ),
+                      const SizedBox(height: 14),
+                      CustomInputField(
+                        hintText: localization.teamDescription,
+                        controller: descriptionTeamController,
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 16),
-                  Text(localization.selectedTeamcolor),
-                  ListCheckbox(selectedColor: selectedColor),
+                ),
 
-                  SizedBox(height: 16),
-                  AddUserMobile(listUserFormData: listUserFormData),
+                const SizedBox(height: 24),
 
-                  SizedBox(height: 32),
-                  ElevatedButton(
+                // ── Team Color Section ──
+                _buildSectionHeader(
+                  context,
+                  localization.selectedTeamcolor,
+                  Icons.palette_rounded,
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: ListCheckbox(selectedColor: selectedColor),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Members Section ──
+                _buildSectionHeader(
+                  context,
+                  localization.userList,
+                  Icons.people_rounded,
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: AddUserMobile(
+                    listUserFormData: listUserFormData,
+                    teamId: widget.teamId,
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // ── Save / Create Button ──
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
                     onPressed: () {
                       if (_formKey.currentState?.validate() ?? false) {
-                        // TODO: sostituire con userId reale (preso da auth)
                         const currentUserId =
                             '7f49a0ab-d27e-462d-89d6-e10494c5b3da';
 
-                        // Crea il team
                         final team = TeamEntity(
                           null,
                           selectedColor.isNotEmpty
@@ -223,19 +253,61 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                         _teamBloc.add(
                           CreateTeamEvent(team, userId: currentUserId),
                         );
-                        // selectedColor.clear();
                         listUserFormData.clear();
                         nameTeamController.clear();
                         descriptionTeamController.clear();
                       }
                     },
-                    child: Text(localization.createTeam),
+                    icon: const Icon(Icons.check_rounded, size: 20),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        localization.createTeam,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF7C4DFF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    IconData icon,
+  ) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.descriptionColor),
+          const SizedBox(width: 6),
+          Text(
+            title.toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: theme.colorScheme.descriptionColor,
+            ),
+          ),
+        ],
       ),
     );
   }

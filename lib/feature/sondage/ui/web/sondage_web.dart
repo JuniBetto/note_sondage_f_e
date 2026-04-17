@@ -3,8 +3,8 @@ import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.da
 import 'package:note_sondage/feature/sondage/ui/web/widgets/create_sondage_web.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/responsive_grid_sondages.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 
 class SondageWeb extends StatefulWidget {
@@ -41,26 +41,65 @@ class _SondageWebState extends State<SondageWeb> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 mainAxisSize: MainAxisSize.max,
                 children: [
-                  CustomAppButton(
-                    elevation: 4,
-                    backgroundColor: colorScheme.selectionColor,
-                    type: ButtonType.outlined,
-                    isActive: false,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Icon(
-                        Icons.add,
-                        color: colorScheme.iconLabel,
-                        size: 34,
+                  // ── Beautiful "Create Sondage" button ──
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        CustomDialog(
+                          title: widget.title,
+                          width: 700,
+                          child: CreateSondageWeb(),
+                        ).show(context);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colorScheme.secondary,
+                              colorScheme.secondary.withValues(alpha: 0.75),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.secondary.withValues(
+                                alpha: 0.35,
+                              ),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.poll_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              '${AppLocalizations.of(context)!.create} ${AppLocalizations.of(context)!.sondage}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    onPressed: () {
-                      CustomDialog(
-                        title: widget.title,
-                        width: 700,
-                        child: CreateSondageWeb(),
-                      ).show(context);
-                    },
                   ),
                 ],
               ),

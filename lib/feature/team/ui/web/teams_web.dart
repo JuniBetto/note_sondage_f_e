@@ -3,8 +3,8 @@ import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/create_team_web.dart';
 import 'package:note_sondage/feature/team/ui/widgets/responsive_grid_teams.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 
 class TeamsWeb extends StatefulWidget {
@@ -22,6 +22,7 @@ class _TeamsWebState extends State<TeamsWeb> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final localization = AppLocalizations.of(context)!;
 
     return SizedBox.expand(
       child: Padding(
@@ -35,26 +36,14 @@ class _TeamsWebState extends State<TeamsWeb> {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0,
-                  vertical: 8.0,
+                  horizontal: 16.0,
+                  vertical: 12.0,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    CustomAppButton(
-                      elevation: 4,
-                      backgroundColor: colorScheme.selectionColor,
-                      type: ButtonType.outlined,
-                      isActive: false,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Icon(
-                          Icons.add,
-                          color: colorScheme.iconLabel,
-                          size: 34,
-                        ),
-                      ),
+                    FilledButton.icon(
                       onPressed: () {
                         CustomDialog(
                           title: widget.title,
@@ -62,6 +51,25 @@ class _TeamsWebState extends State<TeamsWeb> {
                           child: CreateTeamWeb(),
                         ).show(context);
                       },
+                      icon: const Icon(Icons.group_add_rounded, size: 20),
+                      label: Text(
+                        localization.createTeam,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C4DFF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 14,
+                        ),
+                      ),
                     ),
                   ],
                 ),

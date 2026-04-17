@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/add_user_web.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class CreateTeamWeb extends StatefulWidget {
@@ -55,11 +56,10 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
 
-    /* if (widget.userFormData != null) {
-      listUserFormData.clear();
-      listUserFormData.add(widget.userFormData!);
-    }*/
     return BlocListener<TeamBloc, TeamState>(
       bloc: _teamBloc,
       listener: (context, teamState) {
@@ -101,21 +101,9 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                 _teamMemberBloc.add(
                   CreateTeamMemberEvent(member, teamId: createdTeamId),
                 );
-                // selectedColor.clear();
                 listUserFormData.clear();
                 nameTeamController.clear();
                 descriptionTeamController.clear();
-                /**_teamMemberBloc.add(
-                  CreateTeamMemberByEmailEvent(
-                    email: userFormData.emailController.text,
-                    teamId: createdTeamId,
-                    roleId: userFormData.roleController.text,
-                    status: status,
-                    imageFile: userFormData.avatarFile,
-                    imageBytes: userFormData.avatarBytes,
-                    fileName: userFormData.avatarFile?.path.split('/').last,
-                  ),
-                ); */
               }
             }
           }
@@ -156,77 +144,171 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
             );
           }
         },
-        child: Form(
-          key: _formKey,
+        child: Align(
+          alignment: Alignment.topLeft,
           child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 0.0,
-                vertical: 8.0,
-              ),
+            padding: const EdgeInsets.all(32),
+            child: Form(
+              key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Qui metti il form per creare un nuovo team
-                  SizedBox(height: 24),
+                  // ── Header ──
                   Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: CustomInputField(
-                          hintText: localization.teamName,
-                          controller: nameTeamController,
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF7C4DFF,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(
+                          Icons.group_add_rounded,
+                          color: Color(0xFF7C4DFF),
+                          size: 26,
                         ),
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       Expanded(
-                        child: CustomInputField(
-                          hintText: localization.teamDescription,
-                          controller: descriptionTeamController,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              localization.createTeam,
+                              style: textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Set up a new team with members and roles',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.descriptionColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
 
-                  // Aggiungi qui i campi del form (TextField, Dropdown, ecc.)
-                  const SizedBox(height: 8),
-                  Text(localization.selectedTeamcolor),
-                  SizedBox(
-                    height: 80,
+                  const SizedBox(height: 32),
+
+                  // ── Team Info Section ──
+                  _buildSectionTitle(context, localization.teamName),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.homeSecondary,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CustomInputField(
+                            hintText: localization.teamName,
+                            controller: nameTeamController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Il nome del team è obbligatorio';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: CustomInputField(
+                            hintText: localization.teamDescription,
+                            controller: descriptionTeamController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'La descrizione è obbligatoria';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Team Color Section ──
+                  _buildSectionTitle(context, localization.selectedTeamcolor),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.homeSecondary,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                      ),
+                    ),
                     child: ListCheckbox(selectedColor: selectedColor),
                   ),
 
-                  const SizedBox(height: 8),
-                  AddUserWeb(listUserFormData: listUserFormData),
+                  const SizedBox(height: 24),
 
-                  SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState?.validate() ?? false) {
-                        // TODO: sostituire con userId reale (preso da auth)
-                        const currentUserId =
-                            '7f49a0ab-d27e-462d-89d6-e10494c5b3da';
-
-                        // Crea il team
-                        final team = TeamEntity(
-                          null,
-                          selectedColor.isNotEmpty
-                              ? selectedColor.first
-                              : '0xFF513387',
-                          name: nameTeamController.text,
-                          description: descriptionTeamController.text,
-                          createdByUserId: currentUserId,
-                        );
-                        _teamBloc.add(
-                          CreateTeamEvent(team, userId: currentUserId),
-                        );
-                      }
-                    },
-                    child: Text(localization.createTeam),
+                  // ── Members Section ──
+                  _buildSectionTitle(context, localization.userList),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.homeSecondary,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: AddUserWeb(listUserFormData: listUserFormData),
                   ),
+
+                  const SizedBox(height: 32),
+
+                  // ── Create Button ──
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.icon(
+                      onPressed: _onSave,
+                      icon: const Icon(Icons.group_add_rounded, size: 20),
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        child: Text(
+                          localization.createTeam,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C4DFF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -234,5 +316,35 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
         ),
       ),
     );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+          color: theme.colorScheme.descriptionColor,
+        ),
+      ),
+    );
+  }
+
+  void _onSave() {
+    if (_formKey.currentState?.validate() ?? false) {
+      const currentUserId = '7f49a0ab-d27e-462d-89d6-e10494c5b3da';
+
+      final team = TeamEntity(
+        null,
+        selectedColor.isNotEmpty ? selectedColor.first : '0xFF513387',
+        name: nameTeamController.text,
+        description: descriptionTeamController.text,
+        createdByUserId: currentUserId,
+      );
+      _teamBloc.add(CreateTeamEvent(team, userId: currentUserId));
+    }
   }
 }
