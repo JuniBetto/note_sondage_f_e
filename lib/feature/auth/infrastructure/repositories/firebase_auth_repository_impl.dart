@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:note_sondage/core/network/token_service.dart';
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/auth_mapper.dart';
+import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
 
 /// Implementazione concreta di [AuthRepository] con Firebase Auth.
 ///
@@ -14,9 +17,34 @@ import 'package:note_sondage/feature/auth/infrastructure/data/auth_mapper.dart';
 /// - Reload utente (per background → foreground)
 class FirebaseAuthRepositoryImpl implements AuthRepository {
   final firebase.FirebaseAuth _firebaseAuth;
+  final BackendAuthDataSource _backendAuth;
+  final TokenService _tokenService;
 
-  FirebaseAuthRepositoryImpl({firebase.FirebaseAuth? firebaseAuth})
-    : _firebaseAuth = firebaseAuth ?? firebase.FirebaseAuth.instance;
+  FirebaseAuthRepositoryImpl({
+    firebase.FirebaseAuth? firebaseAuth,
+    BackendAuthDataSource? backendAuth,
+    TokenService? tokenService,
+  }) : _firebaseAuth = firebaseAuth ?? firebase.FirebaseAuth.instance,
+       _backendAuth = backendAuth ?? BackendAuthDataSource(),
+       _tokenService = tokenService ?? TokenService();
+
+  /// Scambia il Firebase ID Token con un JWT del backend.
+  /// Non lancia eccezioni: se lo scambio fallisce, logga e continua.
+  /// L'utente resta autenticato con Firebase, il JWT verrà ritentato.
+  Future<void> _exchangeTokenWithBackend(firebase.User user) async {
+    try {
+      final firebaseIdToken = await user.getIdToken();
+      if (firebaseIdToken != null) {
+        final backendJwt = await _backendAuth.exchangeToken(firebaseIdToken);
+        await _tokenService.saveToken(backendJwt);
+        debugPrint('[Auth] Backend JWT ottenuto con successo.');
+      }
+    } catch (e) {
+      debugPrint('[Auth] Scambio token con backend fallito: $e');
+      // Non blocchiamo il login: l'utente è comunque autenticato con Firebase.
+      // Il token verrà ritentato dall'AuthInterceptor al prossimo 401.
+    }
+  }
 
   @override
   Stream<AuthUserEntity> get authStateChanges {
@@ -43,6 +71,12 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         email: email,
         password: password,
       );
+
+      // Scambia il Firebase token con il backend per ottenere il JWT interno
+      if (credential.user != null) {
+        await _exchangeTokenWithBackend(credential.user!);
+      }
+
       return AuthMapper.fromFirebaseUser(credential.user);
     } on firebase.FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
@@ -65,6 +99,12 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       if (displayName != null && credential.user != null) {
         await credential.user!.updateDisplayName(displayName);
         await credential.user!.reload();
+      }
+
+      // Scambia il Firebase token con il backend per ottenere il JWT interno
+      final currentUser = _firebaseAuth.currentUser;
+      if (currentUser != null) {
+        await _exchangeTokenWithBackend(currentUser);
       }
 
       return AuthMapper.fromFirebaseUser(_firebaseAuth.currentUser);
@@ -91,6 +131,12 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       final userCredential = await _firebaseAuth.signInWithCredential(
         credential,
       );
+
+      // Scambia il Firebase token con il backend per ottenere il JWT interno
+      if (userCredential.user != null) {
+        await _exchangeTokenWithBackend(userCredential.user!);
+      }
+
       return AuthMapper.fromFirebaseUser(userCredential.user);
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
@@ -122,6 +168,9 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> signOut() async {
     try {
+      // Rimuovi il JWT del backend
+      await _tokenService.clearToken();
+
       await Future.wait([
         _firebaseAuth.signOut(),
         GoogleSignIn.instance.signOut(),

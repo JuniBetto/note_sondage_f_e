@@ -2,6 +2,8 @@ import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:note_sondage/core/network/auth_interceptor.dart';
+import 'package:note_sondage/core/network/token_service.dart';
 
 class DioClient {
   static DioClient? _instance;
@@ -17,7 +19,7 @@ class DioClient {
   /// Returns the correct base URL depending on the platform:
   /// - Web / iOS / macOS / desktop: http://127.0.0.1:8081
   /// - Android emulator:            http://10.0.2.2:8081
-  static String get baseUrl => 'http://$_host:8001';
+  static String get baseUrl => 'http://$_host:8080';
 
   /// MinIO API port for direct access (only used if bucket is public)
   static String get _minioBaseUrl => 'http://$_host:9002/bucket1';
@@ -56,6 +58,9 @@ class DioClient {
   }
 
   DioClient._(this.dio) {
+    // Interceptor per autenticazione: aggiunge il JWT del backend a ogni richiesta
+    dio.interceptors.add(AuthInterceptor(tokenService: TokenService()));
+
     // Aggiungi interceptors nel costruttore privato
     dio.interceptors.add(
       LogInterceptor(
