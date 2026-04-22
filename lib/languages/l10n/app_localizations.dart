@@ -887,6 +887,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get started by exploring your workspace'**
   String get getStarted;
+
+  /// No description provided for @logoutConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to log out?'**
+  String get logoutConfirmation;
 }
 
 class _AppLocalizationsDelegate

@@ -42,9 +42,8 @@ class RoleLocalDataSource {
         .toList();
   }
 
-  /// Legge i ruoli filtrati per teamId.
+  /// Roles are global in Spring; teamId is ignored and all roles are returned.
   Future<List<RoleEntity>> getAllByTeamId(String teamId) async {
-    final all = await getAll();
-    return all.where((r) => r.teamId == teamId).toList();
+    return getAll();
   }
 }

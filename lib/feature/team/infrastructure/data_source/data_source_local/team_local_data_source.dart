@@ -35,6 +35,7 @@ class TeamLocalDataSource {
           (m) => TeamEntity(
             m.id,
             m.color,
+            null,
             name: m.name,
             description: m.description,
             createdByUserId: m.createdByUserId,

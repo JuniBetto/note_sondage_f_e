@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +32,14 @@ void main() {
         debugPrint('[Firebase] Already initialized, skipping.');
       }
 
+      // Disabilita verifica reCAPTCHA su Android in debug
+      // (necessario finché il SHA-256 non è registrato in Firebase Console)
+      if (!kIsWeb && kDebugMode) {
+        await FirebaseAuth.instance.setSettings(
+          appVerificationDisabledForTesting: true,
+        );
+      }
+
       // 3. Setup dependency injection (sincrono — va prima delle init async)
       setup();
 
@@ -40,7 +49,14 @@ void main() {
       //    - Sentry (error logger)
       //    Questo riduce i tempi di avvio perché non si aspettano a vicenda.
       await Future.wait([
-        GoogleSignIn.instance.initialize(),
+        // serverClientId = Web client ID (client_type: 3) da google-services.json.
+        // Obbligatorio su Android per ottenere l'idToken da passare a Firebase Auth.
+        // Su web NON va passato: viene letto dal meta tag in index.html.
+        GoogleSignIn.instance.initialize(
+          serverClientId: kIsWeb
+              ? null
+              : '907402131431-pqiaudv68qea3uufo7ectug6cnst58uf.apps.googleusercontent.com',
+        ),
         HiveInitializer.initialize(),
         ErrorLogger.init(dsn: 'YOUR_DSN_HERE', enabled: !kDebugMode),
       ]);

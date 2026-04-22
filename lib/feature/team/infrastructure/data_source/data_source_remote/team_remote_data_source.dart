@@ -7,57 +7,47 @@ import 'package:note_sondage/feature/team/infrastructure/data_source/data_source
 class TeamRemoteDataSource extends CrudService<TeamEntity> {
   final TeamLocalDataSource localDataSource;
 
-  TeamRemoteDataSource(this.localDataSource) : super(DioClient().dio, '/teams');
+  TeamRemoteDataSource(this.localDataSource)
+      : super(DioClient().dio, '/api/aggregate/teams');
 
+  // CREATE
   @override
   Future<TeamEntity> create(TeamEntity item) async {
     try {
       final response = await DioClient().dio.post(
-        '$endpoint/create',
+        endpoint,
         data: TeamMapper.toJson(item),
       );
-      final data = response.data;
-      return TeamMapper.fromJson(data as Map<String, dynamic>);
+      return TeamMapper.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       throw Exception('Failed to create team: $e');
     }
   }
 
-  Future<TeamEntity> createByUser(TeamEntity item, String userId) async {
-    try {
-      final response = await DioClient().dio.post(
-        '$endpoint/create/$userId',
-        data: TeamMapper.toJson(item),
-      );
-      final data = response.data;
-      return TeamMapper.fromJson(data as Map<String, dynamic>);
-    } catch (e) {
-      throw Exception('Failed to create team: $e');
-    }
-  }
+  /// Spring identifies the owner via JWT — userId param ignored.
+  Future<TeamEntity> createByUser(TeamEntity item, String userId) => create(item);
 
+  // DELETE  /api/aggregate/teams/{id}
   @override
   Future<void> delete(String id) async {
     try {
-      await DioClient().dio.delete('$endpoint/delete/$id');
+      await DioClient().dio.delete('$endpoint/$id');
     } catch (e) {
       throw Exception('Failed to delete team: $e');
     }
   }
 
+  // GET ALL  /api/aggregate/teams/my/dashboard
+  // Response: List<TeamDashboardResponse> each with a "team" field (TeamDto)
   @override
   Future<List<TeamEntity>> getAll() async {
     try {
-      final response = await DioClient().dio.get('$endpoint/all');
-
-      if (response.data == null) {
-        return [];
-      }
-
+      final response = await DioClient().dio.get('$endpoint/my/dashboard');
+      if (response.data == null) return [];
       final data = response.data as List;
       final teams = data
-          .where((e) => e != null)
-          .map((e) => TeamMapper.fromJson(e as Map<String, dynamic>))
+          .where((e) => e != null && e['team'] != null)
+          .map((e) => TeamMapper.fromJson(e['team'] as Map<String, dynamic>))
           .toList();
       await localDataSource.saveAll(teams);
       return teams;
@@ -66,46 +56,31 @@ class TeamRemoteDataSource extends CrudService<TeamEntity> {
     }
   }
 
-  Future<List<TeamEntity>> getAllByUserId(String userId) async {
-    try {
-      final response = await DioClient().dio.get(
-        '$endpoint/all_by_user/$userId',
-      );
+  /// Spring filters by JWT — userId param ignored.
+  Future<List<TeamEntity>> getAllByUserId(String userId) => getAll();
 
-      if (response.data == null) {
-        return [];
-      }
-
-      final data = response.data as List;
-      final teams = data
-          .where((e) => e != null)
-          .map((e) => TeamMapper.fromJson(e as Map<String, dynamic>))
-          .toList();
-      await localDataSource.saveAll(teams);
-      return teams;
-    } catch (e) {
-      throw Exception('Failed to fetch teams by user ID: $e');
-    }
-  }
-
+  // GET BY ID  /api/aggregate/teams/{id}/dashboard
+  // Response: TeamDashboardResponse  with "team" field
   @override
   Future<TeamEntity> getById(String id) async {
     try {
-      final response = await DioClient().dio.get('$endpoint/$id');
-      return TeamMapper.fromJson(response.data as Map<String, dynamic>);
+      final response = await DioClient().dio.get('$endpoint/$id/dashboard');
+      final data = response.data as Map<String, dynamic>;
+      final teamData =
+          data.containsKey('team') ? data['team'] as Map<String, dynamic> : data;
+      return TeamMapper.fromJson(teamData);
     } catch (e) {
       throw Exception('Failed to fetch team: $e');
     }
   }
 
+  // UPDATE  PUT /api/aggregate/teams/{id}  body: { name, description }
   @override
   Future<TeamEntity> update(String id, TeamEntity item) async {
     try {
-      final newId = id.isEmpty ? item.id : id;
-      final jsonData = TeamMapper.toJson(item);
       final response = await DioClient().dio.put(
-        '$endpoint/update/$newId',
-        data: jsonData,
+        '$endpoint/$id',
+        data: {'name': item.name, 'description': item.description},
       );
       return TeamMapper.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
@@ -115,35 +90,20 @@ class TeamRemoteDataSource extends CrudService<TeamEntity> {
 
   Future<TeamUpdate> updateTeamUpdater(String id, TeamUpdate item) async {
     try {
-      final newId = id.isEmpty ? item.id : id;
-      final jsonData = TeamMapper.toJsonForUpdate(item);
+      final effectiveId = id.isEmpty ? item.id ?? '' : id;
       final response = await DioClient().dio.put(
-        '$endpoint/update/$newId',
-        data: jsonData,
+        '$endpoint/$effectiveId',
+        data: TeamMapper.toJsonForUpdate(item),
       );
-      return TeamMapper.fromJsonForUpdate(
-        response.data as Map<String, dynamic>,
-      );
+      return TeamMapper.fromJsonForUpdate(response.data as Map<String, dynamic>);
     } catch (e) {
       throw Exception('Failed to update team: $e');
     }
   }
 
+  /// Returns the single team as a one-element list (backwards compat).
   Future<List<TeamEntity>> getAllByTeamId(String teamId) async {
-    try {
-      final response = await DioClient().dio.get('$endpoint/team/$teamId');
-
-      if (response.data == null) {
-        return [];
-      }
-
-      final data = response.data as List;
-      return data
-          .where((e) => e != null)
-          .map((e) => TeamMapper.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to fetch teams by user ID: $e');
-    }
+    final team = await getById(teamId);
+    return [team];
   }
 }

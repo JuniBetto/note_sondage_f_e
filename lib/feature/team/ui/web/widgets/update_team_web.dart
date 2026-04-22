@@ -35,6 +35,15 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
       roleController: TextEditingController(),
     ),
   ];
+
+  /// Used by AddUserWeb (invite flow — email + role only).
+  final List<InviteFormData> listInviteFormData = [
+    InviteFormData(
+      emailController: TextEditingController(),
+      roleController: TextEditingController(),
+    ),
+  ];
+
   List<String> selectedColor = [];
   late final TeamBloc _teamBloc;
   bool _isLoading = true;
@@ -226,7 +235,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                     ),
                   ),
                   child: AddUserWeb(
-                    listUserFormData: listUserFormData,
+                    listInviteFormData: listInviteFormData,
                     teamId: widget.teamId,
                   ),
                 ),

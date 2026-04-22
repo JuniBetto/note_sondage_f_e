@@ -412,4 +412,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get getStarted => 'Inizia esplorando il tuo spazio di lavoro';
+
+  @override
+  String get logoutConfirmation => 'Sei sicuro di voler uscire?';
 }

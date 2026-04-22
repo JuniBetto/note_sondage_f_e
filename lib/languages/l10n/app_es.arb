@@ -129,5 +129,6 @@
     "totalMembers":"Miembros totales",
     "viewAll":"Ver todo",
     "noRecentActivity":"Sin actividad reciente",
-    "getStarted":"Comienza explorando tu espacio de trabajo"
+    "getStarted":"Comienza explorando tu espacio de trabajo",
+    "logoutConfirmation":"¿Estás seguro de que quieres cerrar sesión?"
 }

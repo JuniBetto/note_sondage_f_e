@@ -129,5 +129,6 @@
     "totalMembers":"Total Members",
     "viewAll":"View All",
     "noRecentActivity":"No recent activity",
-    "getStarted":"Get started by exploring your workspace"
+    "getStarted":"Get started by exploring your workspace",
+    "logoutConfirmation":"Are you sure you want to log out?"
 }

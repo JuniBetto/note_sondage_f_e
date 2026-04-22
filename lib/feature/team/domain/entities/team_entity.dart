@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/domain/entities/user_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/invite_team_member_request_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:uuid/uuid.dart';
 
@@ -10,10 +11,13 @@ class TeamEntity {
   final String createdByUserId;
   final DateTime createdAt;
   final String? color; // New field for team color
+  final List<InviteTeamMemberRequestEntity>?
+  pendingInvitations; // New field for pending invitations
 
   TeamEntity(
     this.id,
-    this.color, {
+    this.color,
+    this.pendingInvitations, {
     required this.name,
     required this.description,
     required this.createdByUserId,
@@ -66,6 +70,7 @@ class TeamUpdate extends TeamEntity {
   }) : super(
          id,
          color,
+         null, // pendingInvitations not used in update
          name: name,
          description: description,
          createdByUserId: createdByUserId ?? '',
