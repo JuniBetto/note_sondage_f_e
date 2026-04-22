@@ -35,6 +35,7 @@ class TeamMapper {
       'name': name,
       'slug': slug,
       'description': entity.description,
+      if (entity.color != null && entity.color!.isNotEmpty) 'color': entity.color,
       'organisationId': null,
       if (entity.pendingInvitations != null &&
           entity.pendingInvitations!.isNotEmpty)
@@ -45,7 +46,11 @@ class TeamMapper {
   }
 
   static Map<String, dynamic> toJsonForUpdate(TeamUpdate entity) {
-    return {'name': entity.name, 'description': entity.description};
+    return {
+      'name': entity.name,
+      'description': entity.description,
+      if (entity.color != null && entity.color!.isNotEmpty) 'color': entity.color,
+    };
   }
 
   static TeamUpdate fromJsonForUpdate(Map<String, dynamic> json) {

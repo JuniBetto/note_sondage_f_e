@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/change_language.dart';
@@ -251,7 +255,11 @@ class SettingsMobile extends StatelessWidget {
                   iconColor: colorScheme.deleteCard!,
                   title: localization.logout,
                   subtitle: '',
-                  onTap: () {},
+                  onTap: () {
+                    context.read<TeamBloc>().add(const ResetTeamCacheEvent());
+                    context.read<AuthBloc>().add(const AuthLogoutRequested());
+                    context.go(RouterPaths.login);
+                  },
                   showDivider: false,
                   isDestructive: true,
                 ),

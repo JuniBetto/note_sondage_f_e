@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
@@ -79,6 +80,7 @@ class SidebarItem extends StatelessWidget {
       lastIndexes.length > 5
           ? lastIndexes.removeAt(0)
           : null; // Mantieni solo gli ultimi 10
+      context.read<TeamBloc>().add(const ResetTeamCacheEvent());
       context.read<AuthBloc>().add(const AuthLogoutRequested());
       Navigator.of(context).pop(); // Chiudi il dialog delle settings
       context.go(RouterPaths.login);

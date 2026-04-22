@@ -52,6 +52,16 @@ class TeamMemberDeleted extends TeamMemberState {}
 
 class TeamMemberInvited extends TeamMemberState {}
 
+class TeamInvitationCancelled extends TeamMemberState {}
+
+class TeamInvitationsLoaded extends TeamMemberState {
+  final List<dynamic> invitations; // List<TeamInvitationEntity>
+  final DateTime _ts;
+  TeamInvitationsLoaded(this.invitations) : _ts = DateTime.now();
+  @override
+  List<Object?> get props => [invitations, _ts];
+}
+
 class TeamMemberError extends TeamMemberState {
   final String message;
 

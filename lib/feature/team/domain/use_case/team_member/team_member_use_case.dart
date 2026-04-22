@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_member_repository.dart';
@@ -96,6 +97,22 @@ class TeamMemberUseCase {
       return await repository.inviteMember(teamId, email, roleId);
     } catch (e) {
       throw Exception('Failed to invite team member: $e');
+    }
+  }
+
+  Future<List<TeamInvitationEntity>> getPendingInvitations(String teamId) async {
+    try {
+      return await repository.getPendingInvitations(teamId);
+    } catch (e) {
+      throw Exception('Failed to fetch invitations: $e');
+    }
+  }
+
+  Future<void> cancelInvitation(String teamId, String invitationId) async {
+    try {
+      await repository.cancelInvitation(teamId, invitationId);
+    } catch (e) {
+      throw Exception('Failed to cancel invitation: $e');
     }
   }
 

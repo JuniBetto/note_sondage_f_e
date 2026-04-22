@@ -72,6 +72,21 @@ class InviteTeamMemberEvent extends TeamMemberEvent {
   List<Object?> get props => [teamId, email, roleId];
 }
 
+class LoadTeamInvitationsEvent extends TeamMemberEvent {
+  final String teamId;
+  const LoadTeamInvitationsEvent(this.teamId);
+  @override
+  List<Object?> get props => [teamId];
+}
+
+class CancelTeamInvitationEvent extends TeamMemberEvent {
+  final String teamId;
+  final String invitationId;
+  const CancelTeamInvitationEvent({required this.teamId, required this.invitationId});
+  @override
+  List<Object?> get props => [teamId, invitationId];
+}
+
 /// Evento per creare un TeamMember usando l'email.
 /// Se l'utente non esiste, viene creato con is_active = false.
 /// Se imageFile o imageBytes sono forniti, l'immagine viene caricata dopo la creazione.

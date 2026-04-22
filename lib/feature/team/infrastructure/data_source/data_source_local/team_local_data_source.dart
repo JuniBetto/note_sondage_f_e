@@ -28,6 +28,11 @@ class TeamLocalDataSource {
     await box.addAll(models);
   }
 
+  Future<void> clearAll() async {
+    final box = await _openBox();
+    await box.clear();
+  }
+
   Future<List<TeamEntity>> getAll() async {
     final box = await _openBox();
     return box.values

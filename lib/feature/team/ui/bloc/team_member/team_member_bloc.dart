@@ -25,6 +25,8 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
     on<DeleteTeamMemberEvent>(_onDeleteMember);
     on<InviteTeamMemberEvent>(_onInviteMember);
     on<UploadTeamMemberImageEvent>(_onUploadImage);
+    on<LoadTeamInvitationsEvent>(_onLoadInvitations);
+    on<CancelTeamInvitationEvent>(_onCancelInvitation);
   }
 
   Future<void> _onLoadMembers(
@@ -214,8 +216,32 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
         fileName: event.fileName,
       );
       emit(TeamMemberUpdated(member));
-      // Ricarica la lista dopo l'aggiornamento
       add(LoadTeamMembersByTeamIdEvent(event.teamId));
+    } catch (e) {
+      emit(TeamMemberError(e.toString()));
+    }
+  }
+
+  Future<void> _onLoadInvitations(
+    LoadTeamInvitationsEvent event,
+    Emitter<TeamMemberState> emit,
+  ) async {
+    try {
+      final invitations = await teamMemberUseCase.getPendingInvitations(event.teamId);
+      emit(TeamInvitationsLoaded(invitations));
+    } catch (e) {
+      emit(TeamMemberError(e.toString()));
+    }
+  }
+
+  Future<void> _onCancelInvitation(
+    CancelTeamInvitationEvent event,
+    Emitter<TeamMemberState> emit,
+  ) async {
+    try {
+      await teamMemberUseCase.cancelInvitation(event.teamId, event.invitationId);
+      emit(TeamInvitationCancelled());
+      add(LoadTeamInvitationsEvent(event.teamId));
     } catch (e) {
       emit(TeamMemberError(e.toString()));
     }

@@ -20,14 +20,16 @@ class TeamRepositoryImpl implements TeamRepository {
   }
 
   @override
+  Future<List<TeamEntity>> getLocalOnly() async {
+    return await _local.getAll();
+  }
+
+  @override
   Future<List<TeamEntity>> getAll() async {
     try {
-      final local = await _local.getAll();
-      if (local.isNotEmpty) {
-        _remote.getAll().catchError((_) => <TeamEntity>[]);
-        return local;
-      }
-      return await _remote.getAll();
+      final remote = await _remote.getAll();
+      await _local.saveAll(remote);
+      return remote;
     } catch (e) {
       final cached = await _local.getAll();
       if (cached.isNotEmpty) return cached;
@@ -38,12 +40,9 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<List<TeamEntity>> getAllByUserId(String userId) async {
     try {
-      final local = await _local.getAll();
-      if (local.isNotEmpty) {
-        _remote.getAllByUserId(userId).catchError((_) => <TeamEntity>[]);
-        return local;
-      }
-      return await _remote.getAllByUserId(userId);
+      final remote = await _remote.getAllByUserId(userId);
+      await _local.saveAll(remote);
+      return remote;
     } catch (e) {
       final cached = await _local.getAll();
       if (cached.isNotEmpty) return cached;
@@ -56,7 +55,9 @@ class TeamRepositoryImpl implements TeamRepository {
     try {
       return await _remote.getById(id);
     } catch (e) {
-      throw Exception('Failed to fetch team: $e');
+      // Fallback: find in local cache if remote fails
+      final cached = await _local.getAll();
+      return cached.where((t) => t.id == id).firstOrNull;
     }
   }
 

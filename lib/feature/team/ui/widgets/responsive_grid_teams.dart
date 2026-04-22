@@ -37,9 +37,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
     super.initState();
     _teamBloc = getIt<TeamBloc>();
     _teamMemberBloc = getIt<TeamMemberBloc>();
-    _teamBloc.add(
-      LoadTeamsByUserIdEvent('7f49a0ab-d27e-462d-89d6-e10494c5b3da'),
-    );
+    _teamBloc.add(LoadTeamsEvent());
   }
 
   @override

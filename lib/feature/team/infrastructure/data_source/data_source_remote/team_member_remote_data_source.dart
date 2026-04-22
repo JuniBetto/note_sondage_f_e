@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/crud_service.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/team_member_mapper.dart';
@@ -46,7 +47,9 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
         '$endpoint/$teamId/members/$memberId/role',
         queryParameters: {'role': role},
       );
-      return TeamMemberMapper.fromJson(response.data as Map<String, dynamic>);
+      final memberJson = Map<String, dynamic>.from(response.data as Map<String, dynamic>);
+      memberJson['team_id'] ??= teamId;
+      return TeamMemberMapper.fromJson(memberJson);
     } catch (e) {
       throw Exception('Failed to update member role: $e');
     }
@@ -88,7 +91,12 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       final membersJson = teamData['members'] as List<dynamic>? ?? [];
       final members = membersJson
           .where((e) => e != null)
-          .map((e) => TeamMemberMapper.fromJson(e as Map<String, dynamic>))
+          .map((e) {
+            final memberJson = Map<String, dynamic>.from(e as Map<String, dynamic>);
+            // Inject team_id if the API doesn't include it per-member
+            memberJson['team_id'] ??= teamId;
+            return TeamMemberMapper.fromJson(memberJson);
+          })
           .toList();
       await localDataSource.saveAll(members);
       return members;
@@ -105,6 +113,37 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
   @override
   Future<TeamMemberEntity> update(String id, TeamMemberEntity item) async {
     return updateMemberRole(item.teamId, id, item.roleId);
+  }
+
+  // GET /api/aggregate/teams/{teamId}/invitations
+  Future<List<TeamInvitationEntity>> getPendingInvitations(String teamId) async {
+    try {
+      final response = await DioClient().dio.get('$endpoint/$teamId/invitations');
+      final list = response.data as List<dynamic>? ?? [];
+      return list.map((e) {
+        final j = e as Map<String, dynamic>;
+        return TeamInvitationEntity(
+          id: j['id']?.toString() ?? '',
+          teamId: teamId,
+          invitedEmail: j['invitedEmail']?.toString() ?? '',
+          proposedRole: j['proposedRole']?.toString() ?? '',
+          status: j['status']?.toString() ?? 'PENDING',
+          expiresAt: j['expiresAt'] != null ? DateTime.tryParse(j['expiresAt'].toString()) : null,
+          createdAt: j['createdAt'] != null ? DateTime.tryParse(j['createdAt'].toString()) : null,
+        );
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch pending invitations: $e');
+    }
+  }
+
+  // DELETE /api/aggregate/teams/{teamId}/invitations/{invitationId}
+  Future<void> cancelInvitation(String teamId, String invitationId) async {
+    try {
+      await DioClient().dio.delete('$endpoint/$teamId/invitations/$invitationId');
+    } catch (e) {
+      throw Exception('Failed to cancel invitation: $e');
+    }
   }
 
   Future<TeamMemberEntity> uploadProfileImage({

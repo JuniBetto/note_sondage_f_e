@@ -259,7 +259,10 @@ void _registerBlocs() {
 
   // Team - Singleton per condividere lo stato tra widget
   getIt.registerLazySingleton<TeamBloc>(
-    () => TeamBloc(teamUseCase: getIt<TeamUseCase>()),
+    () => TeamBloc(
+      teamUseCase: getIt<TeamUseCase>(),
+      teamLocalDataSource: getIt<TeamLocalDataSource>(),
+    ),
   );
 
   // TeamMember - Singleton per condividere lo stato tra widget

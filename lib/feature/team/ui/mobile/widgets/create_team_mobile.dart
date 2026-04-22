@@ -6,6 +6,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/add_user_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
+import 'package:note_sondage/feature/team/ui/widgets/team_members_section.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
@@ -34,11 +35,18 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
 
   List<String> selectedColor = [];
   late final TeamBloc _teamBloc;
+  bool _isLoading = false;
+
+  bool get _isEditMode => widget.teamId != null;
 
   @override
   void initState() {
     super.initState();
     _teamBloc = getIt<TeamBloc>();
+    if (_isEditMode) {
+      _isLoading = true;
+      _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
+    }
   }
 
   @override
@@ -60,7 +68,22 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
     return BlocListener<TeamBloc, TeamState>(
       bloc: _teamBloc,
       listener: (context, teamState) {
-        if (teamState is TeamCreated) {
+        if (teamState is TeamLoaded && _isEditMode) {
+          final team = teamState.team;
+          nameTeamController.text = team.name;
+          descriptionTeamController.text = team.description;
+          setState(() {
+            selectedColor = team.color != null ? [team.color!] : [];
+            _isLoading = false;
+          });
+        } else if (teamState is TeamUpdated && _isEditMode) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${localization.editTeam} ✓'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (teamState is TeamCreated) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(localization.teamCreatedSuccessfully),
@@ -82,6 +105,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             widget.onTeamCreated!();
           }
         } else if (teamState is TeamError) {
+          if (_isLoading) setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('${localization.errorPrefix} ${teamState.message}'),
@@ -92,7 +116,14 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
       },
       child: Form(
         key: _formKey,
-        child: SingleChildScrollView(
+        child: _isLoading
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(48),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            : SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           child: Column(
@@ -140,7 +171,10 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                     color: colorScheme.borderColor!.withValues(alpha: 0.3),
                   ),
                 ),
-                child: ListCheckbox(selectedColor: selectedColor),
+                child: ListCheckbox(
+                  selectedColor: selectedColor,
+                  isEditMode: _isEditMode,
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -157,10 +191,12 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                     color: colorScheme.borderColor!.withValues(alpha: 0.3),
                   ),
                 ),
-                child: AddUserMobile(
-                  listInviteFormData: listInviteFormData,
-                  teamId: widget.teamId,
-                ),
+                child: _isEditMode
+                    ? TeamMembersSection(teamId: widget.teamId!)
+                    : AddUserMobile(
+                        listInviteFormData: listInviteFormData,
+                        teamId: widget.teamId,
+                      ),
               ),
 
               const SizedBox(height: 32),
@@ -169,33 +205,15 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      const currentUserId = '7f49a0ab-d27e-462d-89d6-e10494c5b3da';
-                      final name = nameTeamController.text.trim();
-                      final slug = name.toLowerCase().replaceAll(RegExp(r'\s+'), '-');
-
-                      final pendingInvitations = listInviteFormData
-                          .where((d) => d.emailController.text.trim().isNotEmpty)
-                          .map((d) => d.toEntity())
-                          .toList();
-
-                      final team = TeamEntity(
-                        null,
-                        selectedColor.isNotEmpty ? selectedColor.first : '0xFF513387',
-                        pendingInvitations.isNotEmpty ? pendingInvitations : null,
-                        name: name,
-                        description: descriptionTeamController.text,
-                        createdByUserId: currentUserId,
-                      );
-                      _teamBloc.add(CreateTeamEvent(team, userId: currentUserId));
-                    }
-                  },
-                  icon: const Icon(Icons.check_rounded, size: 20),
+                  onPressed: _onSave,
+                  icon: Icon(
+                    _isEditMode ? Icons.save_rounded : Icons.check_rounded,
+                    size: 20,
+                  ),
                   label: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Text(
-                      localization.createTeam,
+                      _isEditMode ? localization.editTeam : localization.createTeam,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -214,6 +232,39 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         ),
       ),
     );
+  }
+
+  void _onSave() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final pendingInvitations = listInviteFormData
+        .where((d) => d.emailController.text.trim().isNotEmpty)
+        .map((d) => d.toEntity())
+        .toList();
+
+    if (_isEditMode) {
+      final team = TeamUpdate(
+        false,
+        id: widget.teamId,
+        color: selectedColor.isNotEmpty ? selectedColor.first : '0xFF513387',
+        name: nameTeamController.text.trim(),
+        description: descriptionTeamController.text.trim(),
+        createdByUserId: null,
+        listMember: [],
+      );
+      _teamBloc.add(UpdateTeamEvent(team));
+    } else {
+      const currentUserId = '7f49a0ab-d27e-462d-89d6-e10494c5b3da';
+      final team = TeamEntity(
+        null,
+        selectedColor.isNotEmpty ? selectedColor.first : '0xFF513387',
+        pendingInvitations.isNotEmpty ? pendingInvitations : null,
+        name: nameTeamController.text.trim(),
+        description: descriptionTeamController.text.trim(),
+        createdByUserId: currentUserId,
+      );
+      _teamBloc.add(CreateTeamEvent(team, userId: currentUserId));
+    }
   }
 
   Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {

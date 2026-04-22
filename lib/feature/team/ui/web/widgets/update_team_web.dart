@@ -9,6 +9,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/add_user_web.dart';
+import 'package:note_sondage/feature/team/ui/widgets/team_members_section.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
@@ -234,10 +235,12 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                       color: colorScheme.borderColor!.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: AddUserWeb(
-                    listInviteFormData: listInviteFormData,
-                    teamId: widget.teamId,
-                  ),
+                  child: widget.teamId != null
+                      ? TeamMembersSection(teamId: widget.teamId!)
+                      : AddUserWeb(
+                          listInviteFormData: listInviteFormData,
+                          teamId: widget.teamId,
+                        ),
                 ),
 
                 const SizedBox(height: 32),

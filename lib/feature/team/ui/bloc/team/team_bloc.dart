@@ -3,83 +3,106 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
 
 part 'team_event.dart';
 part 'team_state.dart';
 
 class TeamBloc extends Bloc<TeamEvent, TeamState> {
   final TeamUseCase teamUseCase;
+  final TeamLocalDataSource teamLocalDataSource;
 
-  /// Cache of loaded teams to avoid flickering on CRUD operations
+  /// In-memory cache to avoid flickering on CRUD operations
   List<TeamEntity> _cachedTeams = [];
 
-  TeamBloc({required this.teamUseCase}) : super(TeamInitial()) {
+  TeamBloc({
+    required this.teamUseCase,
+    required this.teamLocalDataSource,
+  }) : super(TeamInitial()) {
     on<LoadTeamsEvent>(_onLoadTeams);
     on<LoadTeamsByUserIdEvent>(_onLoadTeamsByUserId);
     on<LoadTeamByIdEvent>(_onLoadTeamById);
+    on<_TeamsRefreshedEvent>(_onTeamsRefreshed);
     on<CreateTeamEvent>(_onCreateTeam);
     on<UpdateTeamEvent>(_onUpdateTeam);
     on<DeleteTeamEvent>(_onDeleteTeam);
+    on<ResetTeamCacheEvent>(_onResetCache);
   }
 
   Future<void> _onLoadTeams(
     LoadTeamsEvent event,
     Emitter<TeamState> emit,
   ) async {
-    // Emit cached data instantly if available (zero delay)
+    // Phase 1: emit in-memory cache or Hive immediately (synchronous feel)
     if (_cachedTeams.isNotEmpty) {
       emit(TeamsLoaded(_cachedTeams));
     } else {
-      emit(TeamLoading());
-    }
-    try {
-      final teams = await teamUseCase.getAllTeams();
-      _cachedTeams = teams;
-      emit(TeamsLoaded(teams));
-    } catch (e) {
-      // Only show error if we have no cached data
-      if (_cachedTeams.isEmpty) {
-        emit(TeamError(e.toString()));
+      final local = await teamUseCase.getLocalTeams();
+      if (local.isNotEmpty) {
+        _cachedTeams = local;
+        emit(TeamsLoaded(local));
+      } else {
+        emit(TeamLoading());
       }
     }
+    // Phase 2: fire-and-forget — never blocks the event queue
+    teamUseCase.getAllTeams().then((remote) {
+      _cachedTeams = remote;
+      if (!isClosed) add(_TeamsRefreshedEvent(remote));
+    }).catchError((_) {});
   }
 
   Future<void> _onLoadTeamsByUserId(
     LoadTeamsByUserIdEvent event,
     Emitter<TeamState> emit,
   ) async {
-    // Emit cached data instantly if available (zero delay)
+    // Phase 1: emit in-memory cache or Hive immediately (synchronous feel)
     if (_cachedTeams.isNotEmpty) {
       emit(TeamsLoaded(_cachedTeams));
     } else {
-      emit(TeamLoading());
-    }
-    try {
-      final teams = await teamUseCase.getAllTeamsByUserId(event.userId);
-      _cachedTeams = teams;
-      emit(TeamsLoaded(teams));
-    } catch (e) {
-      // Only show error if we have no cached data
-      if (_cachedTeams.isEmpty) {
-        emit(TeamError(e.toString()));
+      final local = await teamUseCase.getLocalTeams();
+      if (local.isNotEmpty) {
+        _cachedTeams = local;
+        emit(TeamsLoaded(local));
+      } else {
+        emit(TeamLoading());
       }
     }
+    // Phase 2: fire-and-forget — never blocks the event queue
+    teamUseCase.getAllTeamsByUserId(event.userId).then((remote) {
+      _cachedTeams = remote;
+      if (!isClosed) add(_TeamsRefreshedEvent(remote));
+    }).catchError((_) {});
+  }
+
+  Future<void> _onTeamsRefreshed(
+    _TeamsRefreshedEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    emit(TeamsLoaded(event.teams));
   }
 
   Future<void> _onLoadTeamById(
     LoadTeamByIdEvent event,
     Emitter<TeamState> emit,
   ) async {
-    emit(TeamLoading());
+    // Check in-memory cache for instant display
+    final cached = _cachedTeams.where((t) => t.id == event.id).firstOrNull;
+    if (cached != null) {
+      emit(TeamLoaded(cached));
+    } else {
+      emit(TeamLoading());
+    }
+    // Always fetch fresh detail from remote
     try {
       final team = await teamUseCase.getTeamById(event.id);
       if (team != null) {
         emit(TeamLoaded(team));
       } else {
-        emit(const TeamError('Team not found'));
+        if (cached == null) emit(const TeamError('Team not found'));
       }
     } catch (e) {
-      emit(TeamError(e.toString()));
+      if (cached == null) emit(TeamError(e.toString()));
     }
   }
 
@@ -153,5 +176,14 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
         emit(TeamsLoaded(_cachedTeams));
       }
     }
+  }
+
+  Future<void> _onResetCache(
+    ResetTeamCacheEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    _cachedTeams = [];
+    await teamLocalDataSource.clearAll();
+    emit(TeamInitial());
   }
 }

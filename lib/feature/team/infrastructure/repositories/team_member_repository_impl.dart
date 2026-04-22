@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_member_repository.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_member_local_data_source.dart';
@@ -41,11 +42,6 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
   @override
   Future<List<TeamMemberEntity>> getAllByTeamId(String teamId) async {
     try {
-      final local = await _local.getAllByTeamId(teamId);
-      if (local.isNotEmpty) {
-        _remote.getAllByTeamId(teamId).catchError((_) => <TeamMemberEntity>[]);
-        return local;
-      }
       return await _remote.getAllByTeamId(teamId);
     } catch (e) {
       final cached = await _local.getAllByTeamId(teamId);
@@ -87,6 +83,24 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
       return await _remote.inviteMember(teamId, email, roleId);
     } catch (e) {
       throw Exception('Failed to invite team member: $e');
+    }
+  }
+
+  @override
+  Future<List<TeamInvitationEntity>> getPendingInvitations(String teamId) async {
+    try {
+      return await _remote.getPendingInvitations(teamId);
+    } catch (e) {
+      throw Exception('Failed to fetch invitations: $e');
+    }
+  }
+
+  @override
+  Future<void> cancelInvitation(String teamId, String invitationId) async {
+    try {
+      await _remote.cancelInvitation(teamId, invitationId);
+    } catch (e) {
+      throw Exception('Failed to cancel invitation: $e');
     }
   }
 

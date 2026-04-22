@@ -56,3 +56,16 @@ class DeleteTeamEvent extends TeamEvent {
   @override
   List<Object?> get props => [id, userId];
 }
+
+class ResetTeamCacheEvent extends TeamEvent {
+  const ResetTeamCacheEvent();
+}
+
+/// Internal event — dispatched when the background remote refresh completes.
+class _TeamsRefreshedEvent extends TeamEvent {
+  final List<TeamEntity> teams;
+  const _TeamsRefreshedEvent(this.teams);
+
+  @override
+  List<Object?> get props => [teams];
+}
