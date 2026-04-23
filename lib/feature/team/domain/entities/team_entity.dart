@@ -11,6 +11,7 @@ class TeamEntity {
   final String createdByUserId;
   final DateTime createdAt;
   final String? color; // New field for team color
+  final int memberCount;
   final List<InviteTeamMemberRequestEntity>?
   pendingInvitations; // New field for pending invitations
 
@@ -21,8 +22,16 @@ class TeamEntity {
     required this.name,
     required this.description,
     required this.createdByUserId,
+    this.memberCount = 0,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  copyWith({
+    required String name,
+    required String description,
+    String? color,
+    required String createdByUserId,
+  }) {}
 }
 
 class TeamMemberforView {
@@ -74,6 +83,7 @@ class TeamUpdate extends TeamEntity {
          name: name,
          description: description,
          createdByUserId: createdByUserId ?? '',
+          memberCount: 0,
          createdAt: createdAt ?? DateTime.now(),
        );
   TeamUpdate copyWith({

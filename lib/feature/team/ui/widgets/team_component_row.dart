@@ -17,6 +17,7 @@ class TeamComponentRow extends StatefulWidget {
     required this.teamFocus,
     required this.teamId,
     this.members,
+    this.memberCount,
     this.onDeleteTap,
   });
   final Color colorTeam;
@@ -25,6 +26,7 @@ class TeamComponentRow extends StatefulWidget {
   final String teamId;
   final bool isActive;
   final List<Map<String, dynamic>>? members;
+  final int? memberCount;
   final void Function()? onTap;
   final void Function(String id)? onDeleteTap;
 
@@ -197,6 +199,7 @@ class _TeamComponentRowState extends State<TeamComponentRow> {
                                     buildRowTeamItem(
                                       context,
                                       widget.members ?? [],
+                                      memberCount: widget.memberCount,
                                     ),
                                   ],
                                 ),
@@ -255,6 +258,7 @@ Widget buildTeamItem(List<Map<String, dynamic>> membersAvatar) {
 Widget buildRowTeamItem(
   BuildContext context,
   List<Map<String, dynamic>> members,
+  {int? memberCount}
 ) {
   final theme = Theme.of(context);
   final textTheme = theme.textTheme;
@@ -290,7 +294,7 @@ Widget buildRowTeamItem(
           ),
         ),
         Text(
-          " ${localization.member(members.length)}",
+          " ${localization.member(memberCount ?? members.length)}",
           style: textTheme.bodyLarge,
         ),
       ],

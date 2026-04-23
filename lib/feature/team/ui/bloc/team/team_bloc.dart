@@ -15,10 +15,8 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
   /// In-memory cache to avoid flickering on CRUD operations
   List<TeamEntity> _cachedTeams = [];
 
-  TeamBloc({
-    required this.teamUseCase,
-    required this.teamLocalDataSource,
-  }) : super(TeamInitial()) {
+  TeamBloc({required this.teamUseCase, required this.teamLocalDataSource})
+    : super(TeamInitial()) {
     on<LoadTeamsEvent>(_onLoadTeams);
     on<LoadTeamsByUserIdEvent>(_onLoadTeamsByUserId);
     on<LoadTeamByIdEvent>(_onLoadTeamById);
@@ -46,10 +44,13 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       }
     }
     // Phase 2: fire-and-forget — never blocks the event queue
-    teamUseCase.getAllTeams().then((remote) {
-      _cachedTeams = remote;
-      if (!isClosed) add(_TeamsRefreshedEvent(remote));
-    }).catchError((_) {});
+    teamUseCase
+        .getAllTeams()
+        .then((remote) {
+          _cachedTeams = remote;
+          if (!isClosed) add(_TeamsRefreshedEvent(remote));
+        })
+        .catchError((_) {});
   }
 
   Future<void> _onLoadTeamsByUserId(
@@ -69,10 +70,13 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       }
     }
     // Phase 2: fire-and-forget — never blocks the event queue
-    teamUseCase.getAllTeamsByUserId(event.userId).then((remote) {
-      _cachedTeams = remote;
-      if (!isClosed) add(_TeamsRefreshedEvent(remote));
-    }).catchError((_) {});
+    teamUseCase
+        .getAllTeamsByUserId(event.userId)
+        .then((remote) {
+          _cachedTeams = remote;
+          if (!isClosed) add(_TeamsRefreshedEvent(remote));
+        })
+        .catchError((_) {});
   }
 
   Future<void> _onTeamsRefreshed(

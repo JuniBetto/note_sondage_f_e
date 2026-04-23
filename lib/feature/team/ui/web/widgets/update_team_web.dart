@@ -81,6 +81,8 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
             selectedColor = team.color != null ? [team.color!] : [];
             _isLoading = false;
           });
+        } else if (teamState is TeamUpdated) {
+          context.go(RouterPaths.team, extra: widget.teamId);
         } else if (teamState is TeamError) {
           setState(() => _isLoading = false);
         }
@@ -218,6 +220,11 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                   child: ListCheckbox(
                     selectedColor: selectedColor,
                     isEditMode: true,
+                    onColorChanged: (newColor) {
+                      setState(() {
+                        selectedColor = [newColor];
+                      });
+                    },
                   ),
                 ),
 
@@ -331,7 +338,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
       );
 
       _teamBloc.add(UpdateTeamEvent(team));
-      context.go(RouterPaths.team, extra: widget.teamId);
     }
   }
 }

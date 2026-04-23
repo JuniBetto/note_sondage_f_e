@@ -30,7 +30,8 @@ class TeamMembersSection extends StatefulWidget {
 class _TeamMembersSectionState extends State<TeamMembersSection> {
   // ── Private bloc instances (NOT from singleton)
   late final TeamMemberBloc _memberBloc;
-  late final TeamMemberBloc _inviteBloc; // separate instance for invitations list
+  late final TeamMemberBloc
+  _inviteBloc; // separate instance for invitations list
   late final RoleBloc _roleBloc;
 
   final TextEditingController _emailCtrl = TextEditingController();
@@ -50,7 +51,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     // Create fresh instances so they're isolated from the singleton
     _memberBloc = TeamMemberBloc(teamMemberUseCase: getIt<TeamMemberUseCase>());
     _inviteBloc = TeamMemberBloc(teamMemberUseCase: getIt<TeamMemberUseCase>());
-    _roleBloc   = RoleBloc(roleUseCase: getIt<RoleUseCase>());
+    _roleBloc = RoleBloc(roleUseCase: getIt<RoleUseCase>());
 
     _memberBloc.add(LoadTeamMembersByTeamIdEvent(widget.teamId));
     _inviteBloc.add(LoadTeamInvitationsEvent(widget.teamId));
@@ -74,11 +75,13 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
 
   void _invite() {
     if (_formKey.currentState?.validate() ?? false) {
-      _memberBloc.add(InviteTeamMemberEvent(
-        teamId: widget.teamId,
-        email: _emailCtrl.text.trim(),
-        roleId: _roleCtrl.text.trim(),
-      ));
+      _memberBloc.add(
+        InviteTeamMemberEvent(
+          teamId: widget.teamId,
+          email: _emailCtrl.text.trim(),
+          roleId: _roleCtrl.text.trim(),
+        ),
+      );
       _emailCtrl.clear();
       _roleCtrl.clear();
       _formKey.currentState?.reset();
@@ -86,24 +89,31 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
   }
 
   void _deleteMember(String memberId) {
-    _memberBloc.add(DeleteTeamMemberEvent(
-      '${widget.teamId}/$memberId',
-      teamId: widget.teamId,
-    ));
+    _memberBloc.add(
+      DeleteTeamMemberEvent(
+        '${widget.teamId}/$memberId',
+        teamId: widget.teamId,
+      ),
+    );
   }
 
   void _saveRoleEdit(String memberId, TeamMemberEntity original) {
     if (_editingRoleId == null || _editingRoleId!.isEmpty) return;
     final updated = original.copyWith(roleId: _editingRoleId);
     _memberBloc.add(UpdateTeamMemberEvent(updated, teamId: widget.teamId));
-    setState(() { _editingMemberId = null; _editingRoleId = null; });
+    setState(() {
+      _editingMemberId = null;
+      _editingRoleId = null;
+    });
   }
 
   void _cancelInvitation(String invitationId) {
-    _inviteBloc.add(CancelTeamInvitationEvent(
-      teamId: widget.teamId,
-      invitationId: invitationId,
-    ));
+    _inviteBloc.add(
+      CancelTeamInvitationEvent(
+        teamId: widget.teamId,
+        invitationId: invitationId,
+      ),
+    );
   }
 
   @override
@@ -119,7 +129,10 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
             if (state is TeamMemberInvited) {
               _reload();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Invitation sent ✓'), backgroundColor: Colors.green),
+                const SnackBar(
+                  content: Text('Invitation sent ✓'),
+                  backgroundColor: Colors.green,
+                ),
               );
             }
             if (state is TeamMemberDeleted || state is TeamMemberUpdated) {
@@ -127,7 +140,10 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
             }
             if (state is TeamMemberError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
               );
             }
           },
@@ -136,14 +152,21 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
           bloc: _inviteBloc,
           listener: (context, state) {
             if (state is TeamInvitationsLoaded) {
-              setState(() => _invitations = List<TeamInvitationEntity>.from(state.invitations));
+              setState(
+                () => _invitations = List<TeamInvitationEntity>.from(
+                  state.invitations,
+                ),
+              );
             }
             if (state is TeamInvitationCancelled) {
               _inviteBloc.add(LoadTeamInvitationsEvent(widget.teamId));
             }
             if (state is TeamMemberError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
               );
             }
           },
@@ -164,11 +187,17 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
             builder: (context, state) {
               if (state is TeamMemberLoading && _members.isEmpty) {
                 return const Center(
-                  child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()),
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(),
+                  ),
                 );
               }
               if (_members.isEmpty) {
-                return _EmptyPlaceholder(icon: Icons.group_outlined, label: 'No active members yet');
+                return _EmptyPlaceholder(
+                  icon: Icons.group_outlined,
+                  label: 'No active members yet',
+                );
               }
               return _MembersList(
                 members: _members,
@@ -176,8 +205,14 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
                 editingMemberId: _editingMemberId,
                 editingRoleId: _editingRoleId,
                 onDelete: _deleteMember,
-                onEditStart: (m) => setState(() { _editingMemberId = m.id; _editingRoleId = m.roleId; }),
-                onEditCancel: () => setState(() { _editingMemberId = null; _editingRoleId = null; }),
+                onEditStart: (m) => setState(() {
+                  _editingMemberId = m.id;
+                  _editingRoleId = m.roleId;
+                }),
+                onEditCancel: () => setState(() {
+                  _editingMemberId = null;
+                  _editingRoleId = null;
+                }),
                 onEditSave: _saveRoleEdit,
                 onRoleChanged: (r) => setState(() => _editingRoleId = r),
               );
@@ -264,17 +299,19 @@ class _MembersList extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        ...members.map((m) => _MemberRow(
-          member: m,
-          roles: roles,
-          isEditing: editingMemberId == m.id,
-          editingRoleId: editingRoleId,
-          onDelete: () => onDelete(m.id ?? ''),
-          onEditStart: () => onEditStart(m),
-          onEditCancel: onEditCancel,
-          onEditSave: () => onEditSave(m.id ?? '', m),
-          onRoleChanged: onRoleChanged,
-        )),
+        ...members.map(
+          (m) => _MemberRow(
+            member: m,
+            roles: roles,
+            isEditing: editingMemberId == m.id,
+            editingRoleId: editingRoleId,
+            onDelete: () => onDelete(m.id ?? ''),
+            onEditStart: () => onEditStart(m),
+            onEditCancel: onEditCancel,
+            onEditSave: () => onEditSave(m.id ?? '', m),
+            onRoleChanged: onRoleChanged,
+          ),
+        ),
       ],
     );
   }
@@ -320,8 +357,9 @@ class _MemberRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final roleName = roles.where((r) => r.id == member.roleId).firstOrNull?.name
-        ?? member.roleId.toUpperCase();
+    final roleName =
+        roles.where((r) => r.id == member.roleId).firstOrNull?.name ??
+        member.roleId.toUpperCase();
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 3),
@@ -330,7 +368,10 @@ class _MemberRow extends StatelessWidget {
         color: colorScheme.tableBodyUserTeam,
         borderRadius: BorderRadius.circular(10),
         border: isEditing
-            ? Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.5), width: 1.5)
+            ? Border.all(
+                color: const Color(0xFF7C4DFF).withValues(alpha: 0.5),
+                width: 1.5,
+              )
             : null,
       ),
       child: isEditing ? _editingRow(context) : _displayRow(context, roleName),
@@ -347,7 +388,9 @@ class _MemberRow extends StatelessWidget {
           flex: 3,
           child: Text(
             member.userEmail.isEmpty ? '—' : member.userEmail,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.textInvertedColor),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colorScheme.textInvertedColor,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -355,7 +398,9 @@ class _MemberRow extends StatelessWidget {
           flex: 2,
           child: Text(
             roleName,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.textInvertedColor),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colorScheme.textInvertedColor,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -364,10 +409,20 @@ class _MemberRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (canEdit) ...[
-              _ActionIcon(icon: Icons.edit_rounded, color: const Color(0xFF7C4DFF), tooltip: 'Edit role', onTap: onEditStart),
+              _ActionIcon(
+                icon: Icons.edit_rounded,
+                color: const Color(0xFF7C4DFF),
+                tooltip: 'Edit role',
+                onTap: onEditStart,
+              ),
               const SizedBox(width: 4),
             ],
-            _ActionIcon(icon: Icons.delete_rounded, color: colorScheme.deleteCard ?? Colors.red, tooltip: 'Remove', onTap: onDelete),
+            _ActionIcon(
+              icon: Icons.delete_rounded,
+              color: colorScheme.deleteCard ?? Colors.red,
+              tooltip: 'Remove',
+              onTap: onDelete,
+            ),
           ],
         ),
       ],
@@ -382,7 +437,9 @@ class _MemberRow extends StatelessWidget {
           flex: 3,
           child: Text(
             member.userEmail.isEmpty ? '—' : member.userEmail,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.textInvertedColor),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colorScheme.textInvertedColor,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -392,7 +449,9 @@ class _MemberRow extends StatelessWidget {
             label: '',
             style: Theme.of(context).textTheme.bodySmall,
             items: roles,
-            value: roles.where((r) => r.id == (editingRoleId ?? member.roleId)).firstOrNull,
+            value: roles
+                .where((r) => r.id == (editingRoleId ?? member.roleId))
+                .firstOrNull,
             displayText: (r) => r.name,
             valueGetter: (r) => r,
             onChanged: (r) => onRoleChanged(r?.id ?? ''),
@@ -403,9 +462,19 @@ class _MemberRow extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _ActionIcon(icon: Icons.check_rounded, color: Colors.green, tooltip: 'Save', onTap: onEditSave),
+            _ActionIcon(
+              icon: Icons.check_rounded,
+              color: Colors.green,
+              tooltip: 'Save',
+              onTap: onEditSave,
+            ),
             const SizedBox(width: 4),
-            _ActionIcon(icon: Icons.close_rounded, color: Colors.grey, tooltip: 'Cancel', onTap: onEditCancel),
+            _ActionIcon(
+              icon: Icons.close_rounded,
+              color: Colors.grey,
+              tooltip: 'Cancel',
+              onTap: onEditCancel,
+            ),
           ],
         ),
       ],
@@ -420,7 +489,10 @@ class _InvitationsSection extends StatelessWidget {
   final List<TeamInvitationEntity> invitations;
   final void Function(String invitationId) onCancel;
 
-  const _InvitationsSection({required this.invitations, required this.onCancel});
+  const _InvitationsSection({
+    required this.invitations,
+    required this.onCancel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -432,7 +504,11 @@ class _InvitationsSection extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 8),
           child: Row(
             children: [
-              Icon(Icons.mail_outline_rounded, size: 14, color: colorScheme.descriptionColor),
+              Icon(
+                Icons.mail_outline_rounded,
+                size: 14,
+                color: colorScheme.descriptionColor,
+              ),
               const SizedBox(width: 6),
               Text(
                 'PENDING INVITATIONS',
@@ -461,7 +537,10 @@ class _InvitationsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        ...invitations.map((inv) => _InvitationRow(invitation: inv, onCancel: () => onCancel(inv.id))),
+        ...invitations.map(
+          (inv) =>
+              _InvitationRow(invitation: inv, onCancel: () => onCancel(inv.id)),
+        ),
       ],
     );
   }
@@ -489,7 +568,9 @@ class _InvitationRow extends StatelessWidget {
             flex: 3,
             child: Text(
               invitation.invitedEmail.isEmpty ? '—' : invitation.invitedEmail,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.textInvertedColor),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.textInvertedColor,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -497,11 +578,16 @@ class _InvitationRow extends StatelessWidget {
             flex: 2,
             child: Text(
               invitation.proposedRole.toUpperCase(),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.textInvertedColor),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.textInvertedColor,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          Expanded(flex: 2, child: _InviteStatusChip(status: invitation.status)),
+          Expanded(
+            flex: 2,
+            child: _InviteStatusChip(status: invitation.status),
+          ),
           if (invitation.isCancellable)
             _ActionIcon(
               icon: Icons.cancel_outlined,
@@ -524,10 +610,10 @@ class _InviteStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status.toUpperCase()) {
-      'ACCEPTED'             => ('Accepted',    const Color(0xFF1B8C4A)),
-      'REJECTED'             => ('Rejected',    const Color(0xFFE74C3C)),
-      'PENDING_REGISTRATION' => ('Unregistered',const Color(0xFF9B59B6)),
-      _                      => ('Pending',     const Color(0xFFE67E22)),
+      'ACCEPTED' => ('Accepted', const Color(0xFF1B8C4A)),
+      'REJECTED' => ('Rejected', const Color(0xFFE74C3C)),
+      'PENDING_REGISTRATION' => ('Unregistered', const Color(0xFF9B59B6)),
+      _ => ('Pending', const Color(0xFFE67E22)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -538,7 +624,11 @@ class _InviteStatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
         overflow: TextOverflow.ellipsis,
       ),
     );
@@ -554,7 +644,12 @@ class _ActionIcon extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
 
-  const _ActionIcon({required this.icon, required this.color, required this.tooltip, required this.onTap});
+  const _ActionIcon({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -584,11 +679,11 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      UserStatus.active      => ('Active',    const Color(0xFF1B8C4A)),
-      UserStatus.pending     => ('Invited',   const Color(0xFFE67E22)),
-      UserStatus.banned      => ('Pending',   const Color(0xFF3498DB)),
-      UserStatus.deactivated => ('Inactive',  Colors.grey),
-      UserStatus.deleted     => ('Suspended', const Color(0xFFE74C3C)),
+      UserStatus.active => ('Active', const Color(0xFF1B8C4A)),
+      UserStatus.pending => ('Invited', const Color(0xFFE67E22)),
+      UserStatus.banned => ('Pending', const Color(0xFF3498DB)),
+      UserStatus.deactivated => ('Inactive', Colors.grey),
+      UserStatus.deleted => ('Suspended', const Color(0xFFE74C3C)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -599,7 +694,11 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
         overflow: TextOverflow.ellipsis,
       ),
     );
@@ -621,7 +720,12 @@ class _EmptyPlaceholder extends StatelessWidget {
         children: [
           Icon(icon, color: colorScheme.descriptionColor, size: 20),
           const SizedBox(width: 8),
-          Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.descriptionColor)),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colorScheme.descriptionColor,
+            ),
+          ),
         ],
       ),
     );
@@ -658,7 +762,11 @@ class _InviteForm extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.person_add_rounded, size: 16, color: theme.colorScheme.descriptionColor),
+              Icon(
+                Icons.person_add_rounded,
+                size: 16,
+                color: theme.colorScheme.descriptionColor,
+              ),
               const SizedBox(width: 6),
               Text(
                 localization.addUser.toUpperCase(),
@@ -700,7 +808,9 @@ class _InviteForm extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF7C4DFF),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
@@ -710,4 +820,3 @@ class _InviteForm extends StatelessWidget {
     );
   }
 }
-

@@ -26,9 +26,11 @@ class ListCheckbox extends StatefulWidget {
     super.key,
     required this.selectedColor,
     this.isEditMode = false,
+    this.onColorChanged,
   });
   final List<String> selectedColor;
   final bool? isEditMode;
+  final ValueChanged<String>? onColorChanged;
 
   @override
   State<ListCheckbox> createState() => _ListCheckboxState();
@@ -99,6 +101,7 @@ class _ListCheckboxState extends State<ListCheckbox> {
                               final String colorString = colorOption.color
                                   .toArgbString();
                               widget.selectedColor.add(colorString);
+                              widget.onColorChanged?.call(colorString);
                             }
                           });
                         },

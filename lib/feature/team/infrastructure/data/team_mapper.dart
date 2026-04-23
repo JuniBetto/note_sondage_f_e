@@ -35,7 +35,8 @@ class TeamMapper {
       'name': name,
       'slug': slug,
       'description': entity.description,
-      if (entity.color != null && entity.color!.isNotEmpty) 'color': entity.color,
+      if (entity.color != null && entity.color!.isNotEmpty)
+        'color': entity.color,
       'organisationId': null,
       if (entity.pendingInvitations != null &&
           entity.pendingInvitations!.isNotEmpty)
@@ -49,7 +50,8 @@ class TeamMapper {
     return {
       'name': entity.name,
       'description': entity.description,
-      if (entity.color != null && entity.color!.isNotEmpty) 'color': entity.color,
+      if (entity.color != null && entity.color!.isNotEmpty)
+        'color': entity.color,
     };
   }
 

@@ -227,7 +227,9 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
     Emitter<TeamMemberState> emit,
   ) async {
     try {
-      final invitations = await teamMemberUseCase.getPendingInvitations(event.teamId);
+      final invitations = await teamMemberUseCase.getPendingInvitations(
+        event.teamId,
+      );
       emit(TeamInvitationsLoaded(invitations));
     } catch (e) {
       emit(TeamMemberError(e.toString()));
@@ -239,7 +241,10 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
     Emitter<TeamMemberState> emit,
   ) async {
     try {
-      await teamMemberUseCase.cancelInvitation(event.teamId, event.invitationId);
+      await teamMemberUseCase.cancelInvitation(
+        event.teamId,
+        event.invitationId,
+      );
       emit(TeamInvitationCancelled());
       add(LoadTeamInvitationsEvent(event.teamId));
     } catch (e) {

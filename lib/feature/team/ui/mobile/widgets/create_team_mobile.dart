@@ -24,7 +24,8 @@ class CreateTeamMobile extends StatefulWidget {
 class _CreateTeamMobileState extends State<CreateTeamMobile> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController nameTeamController = TextEditingController();
-  final TextEditingController descriptionTeamController = TextEditingController();
+  final TextEditingController descriptionTeamController =
+      TextEditingController();
 
   final List<InviteFormData> listInviteFormData = [
     InviteFormData(
@@ -124,112 +125,139 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                 ),
               )
             : SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Team Info Section ──
-              _buildSectionHeader(context, localization.teamName, Icons.info_outline_rounded),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.homeSecondary,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.borderColor!.withValues(alpha: 0.3),
-                  ),
-                ),
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CustomInputField(
-                      hintText: localization.teamName,
-                      controller: nameTeamController,
+                    // ── Team Info Section ──
+                    _buildSectionHeader(
+                      context,
+                      localization.teamName,
+                      Icons.info_outline_rounded,
                     ),
-                    const SizedBox(height: 14),
-                    CustomInputField(
-                      hintText: localization.teamDescription,
-                      controller: descriptionTeamController,
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.homeSecondary,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.borderColor!.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          CustomInputField(
+                            hintText: localization.teamName,
+                            controller: nameTeamController,
+                          ),
+                          const SizedBox(height: 14),
+                          CustomInputField(
+                            hintText: localization.teamDescription,
+                            controller: descriptionTeamController,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // ── Team Color Section ──
+                    _buildSectionHeader(
+                      context,
+                      localization.selectedTeamcolor,
+                      Icons.palette_rounded,
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.homeSecondary,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.borderColor!.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ),
+                      child: ListCheckbox(
+                        selectedColor: selectedColor,
+                        isEditMode: _isEditMode,
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // ── Members Section ──
+                    _buildSectionHeader(
+                      context,
+                      localization.userList,
+                      Icons.people_rounded,
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.homeSecondary,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.borderColor!.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ),
+                      child: _isEditMode
+                          ? TeamMembersSection(teamId: widget.teamId!)
+                          : AddUserMobile(
+                              listInviteFormData: listInviteFormData,
+                              teamId: widget.teamId,
+                            ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // ── Save / Create Button ──
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _onSave,
+                        icon: Icon(
+                          _isEditMode
+                              ? Icons.save_rounded
+                              : Icons.check_rounded,
+                          size: 20,
+                        ),
+                        label: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            _isEditMode
+                                ? localization.editTeam
+                                : localization.createTeam,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF7C4DFF),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              // ── Team Color Section ──
-              _buildSectionHeader(
-                  context, localization.selectedTeamcolor, Icons.palette_rounded),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: colorScheme.homeSecondary,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.borderColor!.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: ListCheckbox(
-                  selectedColor: selectedColor,
-                  isEditMode: _isEditMode,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ── Members Section ──
-              _buildSectionHeader(context, localization.userList, Icons.people_rounded),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.homeSecondary,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.borderColor!.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: _isEditMode
-                    ? TeamMembersSection(teamId: widget.teamId!)
-                    : AddUserMobile(
-                        listInviteFormData: listInviteFormData,
-                        teamId: widget.teamId,
-                      ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // ── Save / Create Button ──
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _onSave,
-                  icon: Icon(
-                    _isEditMode ? Icons.save_rounded : Icons.check_rounded,
-                    size: 20,
-                  ),
-                  label: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Text(
-                      _isEditMode ? localization.editTeam : localization.createTeam,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C4DFF),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -267,7 +295,11 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
     }
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    IconData icon,
+  ) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(left: 4),

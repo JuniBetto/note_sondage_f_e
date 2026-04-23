@@ -8,7 +8,7 @@ class TeamRemoteDataSource extends CrudService<TeamEntity> {
   final TeamLocalDataSource localDataSource;
 
   TeamRemoteDataSource(this.localDataSource)
-      : super(DioClient().dio, '/api/aggregate/teams');
+    : super(DioClient().dio, '/api/aggregate/teams');
 
   // CREATE
   @override
@@ -25,7 +25,8 @@ class TeamRemoteDataSource extends CrudService<TeamEntity> {
   }
 
   /// Spring identifies the owner via JWT — userId param ignored.
-  Future<TeamEntity> createByUser(TeamEntity item, String userId) => create(item);
+  Future<TeamEntity> createByUser(TeamEntity item, String userId) =>
+      create(item);
 
   // DELETE  /api/aggregate/teams/{id}
   @override
@@ -66,8 +67,9 @@ class TeamRemoteDataSource extends CrudService<TeamEntity> {
     try {
       final response = await DioClient().dio.get('$endpoint/$id/dashboard');
       final data = response.data as Map<String, dynamic>;
-      final teamData =
-          data.containsKey('team') ? data['team'] as Map<String, dynamic> : data;
+      final teamData = data.containsKey('team')
+          ? data['team'] as Map<String, dynamic>
+          : data;
       return TeamMapper.fromJson(teamData);
     } catch (e) {
       throw Exception('Failed to fetch team: $e');
@@ -95,7 +97,12 @@ class TeamRemoteDataSource extends CrudService<TeamEntity> {
         '$endpoint/$effectiveId',
         data: TeamMapper.toJsonForUpdate(item),
       );
-      return TeamMapper.fromJsonForUpdate(response.data as Map<String, dynamic>);
+      // Spring PUT may return 200 with empty body or 204 — fall back to input item
+      final data = response.data;
+      if (data != null && data is Map<String, dynamic> && data.isNotEmpty) {
+        return TeamMapper.fromJsonForUpdate(data);
+      }
+      return item.copyWith(id: effectiveId.isNotEmpty ? effectiveId : item.id);
     } catch (e) {
       throw Exception('Failed to update team: $e');
     }
