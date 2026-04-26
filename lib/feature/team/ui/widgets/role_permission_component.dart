@@ -30,6 +30,20 @@ class RolePermissionComponent extends StatelessWidget {
   final void Function(String?)? onTap;
   final void Function(String?)? onDelete;
 
+  static const Set<String> _defaultRoleCodes = {
+    'OWNER',
+    'ADMIN',
+    'MEMBER',
+    'VIEWER',
+  };
+
+  bool get _isDefaultRole {
+    final normalizedId = id?.trim().toUpperCase();
+    final normalizedCode = code.trim().toUpperCase();
+    return _defaultRoleCodes.contains(normalizedId) ||
+        _defaultRoleCodes.contains(normalizedCode);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -80,45 +94,60 @@ class RolePermissionComponent extends StatelessWidget {
                               softWrap: true,
                             ),
                           ),
+                          if (_isDefaultRole) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                'Ruolo predefinito',
+                                style: textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                    ActionOnUser(
-                      iconSize: 18,
-                      icon: Icons.edit,
-                      color: colorScheme.cursorColor!,
-                      onTap: () {
-                        print('Edit permission');
-                        // final String permissionId = const Uuid().v4();
-                        final role = RoleEntity(
-                          id,
-                          name: code,
-                          description: description,
-                          permissions: permissions ?? [],
-                          teamId: teamId!,
-                        );
-                        isMobile
-                            ? showModalBottomPermissionEdit(context, role)
-                            : CustomDialog(
-                                child: EditRoleWidget(role: role),
-                              ).show(context);
-                        /*context.go(
-                                                  RouterPaths.updateTeam,
-                                                  extra: 1,
-                                                );*/
-                      },
-                    ),
-                    SizedBox(width: 8),
-                    ActionOnUser(
-                      iconSize: 18,
-                      icon: Icons.delete_forever,
-                      color: colorScheme.deleteCard!,
-                      onTap: () {
-                        if (id != null) {
-                          onDelete?.call(id);
-                        }
-                      },
-                    ),
+                    if (!_isDefaultRole) ...[
+                      ActionOnUser(
+                        iconSize: 18,
+                        icon: Icons.edit,
+                        color: colorScheme.cursorColor!,
+                        onTap: () {
+                          final role = RoleEntity(
+                            id,
+                            name: code,
+                            description: description,
+                            permissions: permissions ?? [],
+                            teamId: teamId!,
+                          );
+                          isMobile
+                              ? showModalBottomPermissionEdit(context, role)
+                              : CustomDialog(
+                                  child: EditRoleWidget(role: role),
+                                ).show(context);
+                        },
+                      ),
+                      SizedBox(width: 8),
+                      ActionOnUser(
+                        iconSize: 18,
+                        icon: Icons.delete_forever,
+                        color: colorScheme.deleteCard!,
+                        onTap: () {
+                          if (id != null) {
+                            onDelete?.call(id);
+                          }
+                        },
+                      ),
+                    ],
                   ],
                 ),
               );

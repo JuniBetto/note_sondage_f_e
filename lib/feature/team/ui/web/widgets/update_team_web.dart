@@ -58,6 +58,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   late final TeamBloc _globalTeamBloc;
   bool _isLoading = true;
   TeamSectionPermissions _permissions = TeamSectionPermissions.readOnly();
+  String? _ownerUserId;
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   @override
@@ -119,6 +120,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
           focusTeamController.text = team.description;
           setState(() {
             selectedColor = team.color != null ? [team.color!] : [];
+            _ownerUserId = team.createdByUserId;
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated) {
@@ -291,6 +293,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                   child: widget.teamId != null
                       ? TeamMembersSection(
                           teamId: widget.teamId!,
+                          ownerUserId: _ownerUserId,
                           onPermissionsChanged: (permissions) {
                             if (!mounted) return;
                             setState(() => _permissions = permissions);

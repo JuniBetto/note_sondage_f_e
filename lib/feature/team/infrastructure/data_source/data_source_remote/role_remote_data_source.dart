@@ -16,7 +16,9 @@ class RoleRemoteDataSource extends CrudService<RoleEntity> {
   // GET /api/aggregate/teams/roles
   @override
   Future<List<RoleEntity>> getAll() async {
-    final cached = await localDataSource.getAll();
+    final cached = (await localDataSource.getAll())
+        .where((role) => role.teamId.isEmpty)
+        .toList();
     if (cached.isNotEmpty) return cached;
     return refreshRoles();
   }
@@ -55,24 +57,60 @@ class RoleRemoteDataSource extends CrudService<RoleEntity> {
     }
   }
 
-  /// Roles are global in Spring — just return all.
-  Future<List<RoleEntity>> getAllByTeamId(String teamId) => getAll();
+  Future<List<RoleEntity>> getAllByTeamId(String teamId) async {
+    try {
+      final response = await DioClient().dio.get('/api/aggregate/teams/$teamId/roles');
+      if (response.data == null) return [];
 
-  // ── CRUD stubs (roles are managed server-side) ───────────────────────────
+      final rawList = response.data is List
+          ? response.data as List
+          : ((response.data as Map<String, dynamic>)['content'] ?? []) as List;
+
+      final roles = rawList
+          .where((e) => e != null)
+          .map((e) => RoleMapper.fromJson(e as Map<String, dynamic>))
+          .toList();
+      await localDataSource.saveAll(roles);
+      return roles;
+    } catch (e) {
+      dev.log('RoleRemoteDataSource.getAllByTeamId ERROR: $e');
+      final cached = await localDataSource.getAllByTeamId(teamId);
+      if (cached.isNotEmpty) return cached;
+      throw Exception('Failed to fetch team roles: $e');
+    }
+  }
 
   @override
-  Future<RoleEntity> create(RoleEntity item) =>
-      throw UnimplementedError('Roles are managed server-side');
+  Future<RoleEntity> create(RoleEntity item) async {
+    final response = await DioClient().dio.post(
+      '/api/aggregate/teams/${item.teamId}/roles',
+      data: RoleMapper.toJson(item),
+    );
+    return RoleMapper.fromJson(response.data as Map<String, dynamic>);
+  }
 
   @override
-  Future<void> delete(String id) =>
-      throw UnimplementedError('Roles are managed server-side');
+  Future<void> delete(String id) async {
+    final roles = await localDataSource.getAll();
+    final role = roles.where((item) => item.id == id).firstOrNull;
+    if (role == null || role.teamId.isEmpty) {
+      throw Exception('Role team scope not found for delete');
+    }
+    await DioClient().dio.delete('/api/aggregate/teams/${role.teamId}/roles/$id');
+  }
 
   @override
-  Future<RoleEntity> getById(String id) =>
-      throw UnimplementedError('Use getAll() instead');
+  Future<RoleEntity> getById(String id) async {
+    final roles = await localDataSource.getAll();
+    return roles.firstWhere((role) => role.id == id);
+  }
 
   @override
-  Future<RoleEntity> update(String id, RoleEntity item) =>
-      throw UnimplementedError('Roles are managed server-side');
+  Future<RoleEntity> update(String id, RoleEntity item) async {
+    final response = await DioClient().dio.put(
+      '/api/aggregate/teams/${item.teamId}/roles/$id',
+      data: RoleMapper.toJson(item),
+    );
+    return RoleMapper.fromJson(response.data as Map<String, dynamic>);
+  }
 }

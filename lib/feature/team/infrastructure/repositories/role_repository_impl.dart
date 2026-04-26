@@ -23,7 +23,9 @@ class RoleRepositoryImpl implements RoleRepository {
   Future<List<RoleEntity>> getAll() async {
     try {
       // Return cached immediately; refresh in background if available
-      final local = await _local.getAll();
+      final local = (await _local.getAll())
+          .where((role) => role.teamId.isEmpty)
+          .toList();
       if (local.isNotEmpty) {
         _remote.refreshRoles().catchError((_) => <RoleEntity>[]);
         return local;
@@ -31,7 +33,9 @@ class RoleRepositoryImpl implements RoleRepository {
       // Cache is empty — fetch from remote and save
       return await _remote.refreshRoles();
     } catch (e) {
-      final cached = await _local.getAll();
+      final cached = (await _local.getAll())
+          .where((role) => role.teamId.isEmpty)
+          .toList();
       if (cached.isNotEmpty) return cached;
       throw Exception('Failed to fetch roles: $e');
     }
@@ -66,8 +70,18 @@ class RoleRepositoryImpl implements RoleRepository {
 
   @override
   Future<List<RoleEntity>> getAllRolesByTeamId(String teamId) async {
-    // Roles are global in Spring — just return all roles.
-    return getAll();
+    try {
+      final local = await _local.getAllByTeamId(teamId);
+      if (local.isNotEmpty) {
+        _remote.getAllByTeamId(teamId).catchError((_) => <RoleEntity>[]);
+        return local;
+      }
+      return await _remote.getAllByTeamId(teamId);
+    } catch (e) {
+      final cached = await _local.getAllByTeamId(teamId);
+      if (cached.isNotEmpty) return cached;
+      throw Exception('Failed to fetch roles by team: $e');
+    }
   }
 
   Future<void> refreshAll() async {

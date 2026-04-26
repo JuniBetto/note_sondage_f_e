@@ -14,12 +14,10 @@ const List<String> listStatusUser = [
 ];
 
 const List<String> listPermissionsUser = [
-  'Create',
   'Read',
   'Update',
-  'Write',
-  'Admin'
-      'Delete',
+  'Admin',
+  'Delete',
   'Manage',
 ];
 

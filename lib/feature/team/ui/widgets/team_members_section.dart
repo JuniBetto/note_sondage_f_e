@@ -70,10 +70,12 @@ class TeamSectionPermissions {
 ///     so it is not affected by other widgets firing LoadTeamMembersByTeamIdEvent.
 class TeamMembersSection extends StatefulWidget {
   final String teamId;
+  final String? ownerUserId;
   final ValueChanged<TeamSectionPermissions>? onPermissionsChanged;
   const TeamMembersSection({
     super.key,
     required this.teamId,
+    this.ownerUserId,
     this.onPermissionsChanged,
   });
 
@@ -111,7 +113,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
 
     _memberBloc.add(LoadTeamMembersByTeamIdEvent(widget.teamId));
     _inviteBloc.add(LoadTeamInvitationsEvent(widget.teamId));
-    _roleBloc.add(LoadRolesEvent());
+    _roleBloc.add(LoadRolesEventByTeamId(widget.teamId));
     getIt<TeamRealtimeCoordinator>().activateTeamContext(widget.teamId);
     _realtimeSubscription = getIt<RealtimeNotificationService>().stream.listen(
       _handleRealtimeNotification,
@@ -128,6 +130,14 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     _emailCtrl.dispose();
     _roleCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant TeamMembersSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.ownerUserId != widget.ownerUserId && _members.isNotEmpty) {
+      _updatePermissions(_members);
+    }
   }
 
   void _reload() {
@@ -172,13 +182,11 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
   }
 
   void _updatePermissions(List<TeamMemberEntity> members) {
-    final currentEmail = getIt<AuthBloc>().state.user.email.trim().toLowerCase();
-    final currentMember = members
-        .where((member) => member.userEmail.trim().toLowerCase() == currentEmail)
-        .firstOrNull;
-    final roleCode = (currentMember?.roleId ?? 'VIEWER').trim().toUpperCase();
-    final nextPermissions = switch (roleCode) {
-      'OWNER' => const TeamSectionPermissions(
+    final currentUserId = getIt<AuthBloc>().state.user.uid.trim();
+    if (widget.ownerUserId != null &&
+        widget.ownerUserId!.trim().isNotEmpty &&
+        widget.ownerUserId!.trim() == currentUserId) {
+      const ownerPermissions = TeamSectionPermissions(
         roleCode: 'OWNER',
         canEditTeamBasics: true,
         canEditTeamColor: true,
@@ -187,21 +195,45 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         canRemoveMembers: true,
         canChangeMemberRoles: true,
         canManageRoleDefinitions: true,
-      ),
-      'ADMIN' => const TeamSectionPermissions(
-        roleCode: 'ADMIN',
-        canEditTeamBasics: true,
-        canEditTeamColor: false,
-        canInviteMembers: false,
-        canCancelInvitations: false,
-        canRemoveMembers: true,
-        canChangeMemberRoles: false,
-        canManageRoleDefinitions: false,
-      ),
-      _ => TeamSectionPermissions.readOnly(),
-    };
+      );
+      if (!_hasSamePermissions(_permissions, ownerPermissions)) {
+        _permissions = ownerPermissions;
+        widget.onPermissionsChanged?.call(ownerPermissions);
+      }
+      return;
+    }
 
-    if (_permissions.roleCode == nextPermissions.roleCode) {
+    final currentEmail = getIt<AuthBloc>().state.user.email.trim().toLowerCase();
+    final currentMember = members
+        .where((member) => member.userEmail.trim().toLowerCase() == currentEmail)
+        .firstOrNull;
+    final roleCode = (currentMember?.roleId ?? 'VIEWER').trim().toUpperCase();
+    final role = _roles.where((item) => item.id == roleCode).firstOrNull;
+    final normalizedPermissions = _normalizePermissions(
+      roleCode,
+      role?.permissions,
+    );
+    final nextPermissions = TeamSectionPermissions(
+      roleCode: roleCode,
+      canEditTeamBasics:
+          roleCode == 'OWNER' ||
+          normalizedPermissions.contains('UPDATE') ||
+          normalizedPermissions.contains('ADMIN'),
+      canEditTeamColor: roleCode == 'OWNER',
+      canInviteMembers:
+          roleCode == 'OWNER' || normalizedPermissions.contains('ADMIN'),
+      canCancelInvitations:
+          roleCode == 'OWNER' || normalizedPermissions.contains('ADMIN'),
+      canRemoveMembers:
+          roleCode == 'OWNER' ||
+          normalizedPermissions.contains('ADMIN') ||
+          normalizedPermissions.contains('DELETE'),
+      canChangeMemberRoles:
+          roleCode == 'OWNER' || normalizedPermissions.contains('MANAGE'),
+      canManageRoleDefinitions: roleCode == 'OWNER',
+    );
+
+    if (_hasSamePermissions(_permissions, nextPermissions)) {
       return;
     }
 
@@ -287,7 +319,10 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         BlocListener<RoleBloc, RoleState>(
           bloc: _roleBloc,
           listener: (context, state) {
-            if (state is RolesLoaded) setState(() => _roles = state.roles);
+            if (state is RolesLoaded) {
+              setState(() => _roles = state.roles);
+              _updatePermissions(_members);
+            }
           },
         ),
       ],
@@ -361,16 +396,43 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
               roles: _roles,
               onInvite: _invite,
             )
-          else if (_permissions.isReadOnly || _permissions.isAdmin)
+          else
             _EmptyPlaceholder(
               icon: Icons.lock_outline_rounded,
-              label: _permissions.isAdmin
-                  ? 'Gli admin possono gestire membri esistenti ma non invitare nuovi utenti'
-                  : 'Questa sezione e\' in sola lettura per il tuo ruolo',
+              label:
+                  'Inviti e gestione membri non disponibili per il tuo ruolo',
             ),
         ],
       ),
     );
+  }
+
+  Set<String> _normalizePermissions(String roleCode, List<String>? permissions) {
+    if (permissions == null || permissions.isEmpty) {
+      return switch (roleCode) {
+        'OWNER' => {'READ', 'UPDATE', 'ADMIN', 'DELETE', 'MANAGE'},
+        'ADMIN' => {'READ', 'UPDATE', 'ADMIN', 'DELETE'},
+        _ => {'READ'},
+      };
+    }
+    return permissions
+        .map((value) => value.trim().toUpperCase())
+        .where((value) => value.isNotEmpty)
+        .toSet();
+  }
+
+  bool _hasSamePermissions(
+    TeamSectionPermissions current,
+    TeamSectionPermissions next,
+  ) {
+    return current.roleCode == next.roleCode &&
+        current.canEditTeamBasics == next.canEditTeamBasics &&
+        current.canEditTeamColor == next.canEditTeamColor &&
+        current.canInviteMembers == next.canInviteMembers &&
+        current.canCancelInvitations == next.canCancelInvitations &&
+        current.canRemoveMembers == next.canRemoveMembers &&
+        current.canChangeMemberRoles == next.canChangeMemberRoles &&
+        current.canManageRoleDefinitions == next.canManageRoleDefinitions;
   }
 }
 
@@ -509,6 +571,11 @@ class _MemberRow extends StatelessWidget {
   Widget _displayRow(BuildContext context, String roleName) {
     final colorScheme = Theme.of(context).colorScheme;
     final memberRole = member.roleId.trim().toUpperCase();
+    final targetPermissions = _permissionsForRole(memberRole);
+    final targetIsProtected =
+        memberRole == 'ADMIN' ||
+        targetPermissions.contains('ADMIN') ||
+        targetPermissions.contains('MANAGE');
     final canEdit =
         permissions.canChangeMemberRoles &&
         member.status == UserStatus.active &&
@@ -517,7 +584,7 @@ class _MemberRow extends StatelessWidget {
         permissions.canRemoveMembers &&
         member.status == UserStatus.active &&
         memberRole != 'OWNER' &&
-        (!permissions.isAdmin || memberRole == 'MEMBER' || memberRole == 'VIEWER');
+        (permissions.isOwner || !targetIsProtected);
     return Row(
       children: [
         Expanded(
@@ -616,6 +683,22 @@ class _MemberRow extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Set<String> _permissionsForRole(String roleCode) {
+    final role = roles.where((item) => item.id == roleCode).firstOrNull;
+    final permissionsList = role?.permissions ?? const <String>[];
+    if (permissionsList.isEmpty) {
+      return switch (roleCode) {
+        'OWNER' => {'READ', 'UPDATE', 'ADMIN', 'DELETE', 'MANAGE'},
+        'ADMIN' => {'READ', 'UPDATE', 'ADMIN', 'DELETE'},
+        _ => {'READ'},
+      };
+    }
+    return permissionsList
+        .map((value) => value.trim().toUpperCase())
+        .where((value) => value.isNotEmpty)
+        .toSet();
   }
 }
 

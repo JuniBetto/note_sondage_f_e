@@ -49,6 +49,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   late final TeamBloc _teamBloc;
   bool _isLoading = false;
   TeamSectionPermissions _permissions = TeamSectionPermissions.readOnly();
+  String? _ownerUserId;
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   bool get _isEditMode => widget.teamId != null;
@@ -116,6 +117,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
           descriptionTeamController.text = team.description;
           setState(() {
             selectedColor = team.color != null ? [team.color!] : [];
+            _ownerUserId = team.createdByUserId;
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated && _isEditMode) {
@@ -262,6 +264,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       child: _isEditMode
                           ? TeamMembersSection(
                               teamId: widget.teamId!,
+                              ownerUserId: _ownerUserId,
                               onPermissionsChanged: (permissions) {
                                 if (!mounted) return;
                                 setState(() => _permissions = permissions);
