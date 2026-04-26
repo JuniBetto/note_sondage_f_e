@@ -100,7 +100,9 @@ class TeamMemberUseCase {
     }
   }
 
-  Future<List<TeamInvitationEntity>> getPendingInvitations(String teamId) async {
+  Future<List<TeamInvitationEntity>> getPendingInvitations(
+    String teamId,
+  ) async {
     try {
       return await repository.getPendingInvitations(teamId);
     } catch (e) {

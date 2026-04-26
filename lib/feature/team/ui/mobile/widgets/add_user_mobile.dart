@@ -39,9 +39,8 @@ class _AddUserMobileState extends State<AddUserMobile> {
 
   @override
   void dispose() {
-    for (final data in widget.listInviteFormData) {
-      data.dispose();
-    }
+    // I controller sono posseduti dal widget padre (UpdateTeamMobile),
+    // non vanno disposti qui.
     super.dispose();
   }
 

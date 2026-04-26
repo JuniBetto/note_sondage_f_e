@@ -3,16 +3,18 @@ import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_en
 class ClockingMapper {
   static ClockingRecordEntity fromJson(Map<String, dynamic> json) {
     DateTime? clockInTime;
-    if (json['clockInTime'] != null) {
+    final rawClockIn = json['clockInTime'] ?? json['clockIn'];
+    if (rawClockIn != null) {
       try {
-        clockInTime = DateTime.parse(json['clockInTime'] as String);
+        clockInTime = DateTime.parse(rawClockIn as String);
       } catch (_) {}
     }
 
     DateTime? clockOutTime;
-    if (json['clockOutTime'] != null) {
+    final rawClockOut = json['clockOutTime'] ?? json['clockOut'];
+    if (rawClockOut != null) {
       try {
-        clockOutTime = DateTime.parse(json['clockOutTime'] as String);
+        clockOutTime = DateTime.parse(rawClockOut as String);
       } catch (_) {}
     }
 
@@ -27,21 +29,29 @@ class ClockingMapper {
 
     DateTime date;
     try {
-      date = DateTime.parse(json['date'] as String);
+      final rawDate =
+          json['date']?.toString() ??
+          clockInTime?.toIso8601String() ??
+          DateTime.now().toIso8601String();
+      date = DateTime.parse(rawDate);
     } catch (_) {
       date = DateTime.now();
     }
 
+    final statusValue =
+        json['status']?.toString() ??
+        (clockOutTime == null && clockInTime != null ? 'clockedIn' : 'clockedOut');
+
     return ClockingRecordEntity(
       id: json['id']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
-      userName: json['userName']?.toString() ?? '',
-      teamName: json['teamName']?.toString() ?? '',
+      userName: json['userName']?.toString() ?? 'Current user',
+      teamName: json['teamName']?.toString() ?? 'Team',
       teamId: json['teamId']?.toString(),
       clockInTime: clockInTime,
       clockOutTime: clockOutTime,
       timeWorked: timeWorked,
-      status: ClockingStatus.fromString(json['status']?.toString() ?? 'absent'),
+      status: ClockingStatus.fromString(statusValue),
       date: date,
       note: json['note']?.toString(),
     );

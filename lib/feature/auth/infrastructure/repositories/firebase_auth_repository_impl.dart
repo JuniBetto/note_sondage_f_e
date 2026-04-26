@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -48,9 +50,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
   @override
   Stream<AuthUserEntity> get authStateChanges {
-    return _firebaseAuth.authStateChanges().map(
-      (firebaseUser) => AuthMapper.fromFirebaseUser(firebaseUser),
-    );
+    return _firebaseAuth.authStateChanges().map((firebaseUser) {
+      if (firebaseUser != null) {
+        unawaited(_exchangeTokenWithBackend(firebaseUser));
+      } else {
+        unawaited(_tokenService.clearToken());
+      }
+      return AuthMapper.fromFirebaseUser(firebaseUser);
+    });
   }
 
   @override
@@ -88,6 +95,8 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
     String? displayName,
+    List<int>? profileImageBytes,
+    String? profileImageFileName,
   }) async {
     try {
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
@@ -105,6 +114,12 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       final currentUser = _firebaseAuth.currentUser;
       if (currentUser != null) {
         await _exchangeTokenWithBackend(currentUser);
+        await _syncBackendProfile(
+          currentUser: currentUser,
+          displayName: displayName,
+          profileImageBytes: profileImageBytes,
+          profileImageFileName: profileImageFileName,
+        );
       }
 
       return AuthMapper.fromFirebaseUser(_firebaseAuth.currentUser);
@@ -159,6 +174,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> sendPasswordResetEmail({required String email}) async {
     try {
+      await _backendAuth.requestPasswordReset(email);
       await _firebaseAuth.sendPasswordResetEmail(email: email);
     } on firebase.FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
@@ -238,6 +254,39 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           code: e.code,
           message: e.message ?? 'An authentication error occurred.',
         );
+    }
+  }
+
+  Future<void> _syncBackendProfile({
+    required firebase.User currentUser,
+    String? displayName,
+    List<int>? profileImageBytes,
+    String? profileImageFileName,
+  }) async {
+    try {
+      String? avatarPath;
+      if (profileImageBytes != null && profileImageBytes.isNotEmpty) {
+        avatarPath = await _backendAuth.uploadProfileImage(
+          firebaseUid: currentUser.uid,
+          imageBytes: profileImageBytes,
+          fileName: profileImageFileName ?? 'profile.jpg',
+        );
+      }
+
+      if ((displayName != null && displayName.trim().isNotEmpty) ||
+          (avatarPath != null && avatarPath.isNotEmpty)) {
+        await _backendAuth.updateMyProfile(
+          fullName: displayName,
+          avatarUrl: avatarPath,
+        );
+      }
+
+      if (avatarPath != null && avatarPath.isNotEmpty) {
+        await currentUser.updatePhotoURL(avatarPath);
+        await currentUser.reload();
+      }
+    } catch (e) {
+      debugPrint('[Auth] Profile sync after registration failed: $e');
     }
   }
 }

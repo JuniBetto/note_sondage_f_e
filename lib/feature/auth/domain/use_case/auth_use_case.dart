@@ -34,12 +34,16 @@ class AuthUseCase {
     required String email,
     required String password,
     String? displayName,
+    List<int>? profileImageBytes,
+    String? profileImageFileName,
   }) async {
     try {
       return await _repository.createUserWithEmailAndPassword(
         email: email,
         password: password,
         displayName: displayName,
+        profileImageBytes: profileImageBytes,
+        profileImageFileName: profileImageFileName,
       );
     } catch (e) {
       rethrow;

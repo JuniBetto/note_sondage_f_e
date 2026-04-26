@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/button_clocking.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clockin_change_view.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clocking.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class ClockingMobile extends StatefulWidget {
@@ -13,6 +16,16 @@ class ClockingMobile extends StatefulWidget {
 }
 
 class _ClockingMobileState extends State<ClockingMobile> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<ClockingBloc>().add(LoadClockingRecordsEvent());
+      context.read<TeamBloc>().add(LoadTeamsEvent());
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

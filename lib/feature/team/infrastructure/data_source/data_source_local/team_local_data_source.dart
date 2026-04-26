@@ -1,9 +1,18 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive/hive.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/hive_models/team_hive_model.dart';
 
 class TeamLocalDataSource {
-  static const String _boxName = 'teams_box';
+  static const String _boxNamePrefix = 'teams_box';
+
+  String get _boxName {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null || userId.isEmpty) {
+      return '${_boxNamePrefix}_anonymous';
+    }
+    return '${_boxNamePrefix}_$userId';
+  }
 
   Future<Box<TeamHiveModel>> _openBox() async {
     if (Hive.isBoxOpen(_boxName)) {

@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -34,6 +37,10 @@ class _AuthTabLoginState extends State<AuthTabLogin>
       TextEditingController();
   final TextEditingController _registerConfirmPasswordController =
       TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+
+  Uint8List? _registerAvatarBytes;
+  String? _registerAvatarFileName;
 
   @override
   void initState() {
@@ -63,6 +70,44 @@ class _AuthTabLoginState extends State<AuthTabLogin>
     _registerPasswordController.dispose();
     _registerConfirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickRegisterAvatar() async {
+    try {
+      final pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 90,
+      );
+
+      if (pickedFile == null) return;
+
+      final bytes = await pickedFile.readAsBytes();
+      if (!mounted) return;
+
+      setState(() {
+        _registerAvatarBytes = bytes;
+        _registerAvatarFileName = pickedFile.name;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Impossibile selezionare l\'immagine: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+    }
+  }
+
+  void _clearRegisterAvatar() {
+    setState(() {
+      _registerAvatarBytes = null;
+      _registerAvatarFileName = null;
+    });
   }
 
   @override
@@ -230,6 +275,12 @@ class _AuthTabLoginState extends State<AuthTabLogin>
             const SizedBox(height: 10),
             Text(localization.justSomeInfoToGetStarted),
             const SizedBox(height: 24),
+            _RegisterAvatarPicker(
+              imageBytes: _registerAvatarBytes,
+              onPickImage: _pickRegisterAvatar,
+              onRemoveImage: _clearRegisterAvatar,
+            ),
+            const SizedBox(height: 16),
             CustomInputField(
               key: ValueKey("register_full_name_field"),
               hintText: localization.fullName,
@@ -276,6 +327,8 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                         email: _registerEmailController.text.trim(),
                         password: _registerPasswordController.text,
                         displayName: _registerNameController.text.trim(),
+                        profileImageBytes: _registerAvatarBytes,
+                        profileImageFileName: _registerAvatarFileName,
                       ),
                     );
                   }
@@ -314,6 +367,67 @@ class _AuthTabLoginState extends State<AuthTabLogin>
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RegisterAvatarPicker extends StatelessWidget {
+  final Uint8List? imageBytes;
+  final VoidCallback onPickImage;
+  final VoidCallback onRemoveImage;
+
+  const _RegisterAvatarPicker({
+    required this.imageBytes,
+    required this.onPickImage,
+    required this.onRemoveImage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: onPickImage,
+          child: CircleAvatar(
+            radius: 34,
+            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.10),
+            backgroundImage: imageBytes != null ? MemoryImage(imageBytes!) : null,
+            child: imageBytes == null
+                ? Icon(
+                    Icons.add_a_photo_outlined,
+                    color: theme.colorScheme.primary,
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Foto profilo opzionale',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Puoi aggiungerla subito durante la registrazione.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+        TextButton(
+          onPressed: imageBytes == null ? onPickImage : onRemoveImage,
+          child: Text(imageBytes == null ? 'Scegli' : 'Rimuovi'),
+        ),
+      ],
     );
   }
 }

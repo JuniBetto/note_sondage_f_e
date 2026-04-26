@@ -71,6 +71,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
         displayName: event.displayName,
+        profileImageBytes: event.profileImageBytes,
+        profileImageFileName: event.profileImageFileName,
       );
       // Lo stream _authSubscription aggiornerà lo stato automaticamente
     } catch (e) {

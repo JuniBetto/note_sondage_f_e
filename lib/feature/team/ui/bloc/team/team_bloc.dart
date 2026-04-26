@@ -21,6 +21,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     on<LoadTeamsByUserIdEvent>(_onLoadTeamsByUserId);
     on<LoadTeamByIdEvent>(_onLoadTeamById);
     on<_TeamsRefreshedEvent>(_onTeamsRefreshed);
+    on<_TeamsRefreshFailedEvent>(_onTeamsRefreshFailed);
     on<CreateTeamEvent>(_onCreateTeam);
     on<UpdateTeamEvent>(_onUpdateTeam);
     on<DeleteTeamEvent>(_onDeleteTeam);
@@ -32,11 +33,14 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     Emitter<TeamState> emit,
   ) async {
     // Phase 1: emit in-memory cache or Hive immediately (synchronous feel)
+    var hadLocalData = false;
     if (_cachedTeams.isNotEmpty) {
+      hadLocalData = true;
       emit(TeamsLoaded(_cachedTeams));
     } else {
       final local = await teamUseCase.getLocalTeams();
       if (local.isNotEmpty) {
+        hadLocalData = true;
         _cachedTeams = local;
         emit(TeamsLoaded(local));
       } else {
@@ -50,7 +54,16 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
           _cachedTeams = remote;
           if (!isClosed) add(_TeamsRefreshedEvent(remote));
         })
-        .catchError((_) {});
+        .catchError((error) {
+          if (!isClosed) {
+            add(
+              _TeamsRefreshFailedEvent(
+                message: error.toString(),
+                hadLocalData: hadLocalData,
+              ),
+            );
+          }
+        });
   }
 
   Future<void> _onLoadTeamsByUserId(
@@ -58,11 +71,14 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     Emitter<TeamState> emit,
   ) async {
     // Phase 1: emit in-memory cache or Hive immediately (synchronous feel)
+    var hadLocalData = false;
     if (_cachedTeams.isNotEmpty) {
+      hadLocalData = true;
       emit(TeamsLoaded(_cachedTeams));
     } else {
       final local = await teamUseCase.getLocalTeams();
       if (local.isNotEmpty) {
+        hadLocalData = true;
         _cachedTeams = local;
         emit(TeamsLoaded(local));
       } else {
@@ -76,7 +92,16 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
           _cachedTeams = remote;
           if (!isClosed) add(_TeamsRefreshedEvent(remote));
         })
-        .catchError((_) {});
+        .catchError((error) {
+          if (!isClosed) {
+            add(
+              _TeamsRefreshFailedEvent(
+                message: error.toString(),
+                hadLocalData: hadLocalData,
+              ),
+            );
+          }
+        });
   }
 
   Future<void> _onTeamsRefreshed(
@@ -84,6 +109,15 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     Emitter<TeamState> emit,
   ) async {
     emit(TeamsLoaded(event.teams));
+  }
+
+  Future<void> _onTeamsRefreshFailed(
+    _TeamsRefreshFailedEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    if (!event.hadLocalData) {
+      emit(TeamError(event.message));
+    }
   }
 
   Future<void> _onLoadTeamById(
@@ -125,6 +159,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
 
       // Optimistic update: add to cache immediately
       _cachedTeams = [..._cachedTeams, team];
+      await teamLocalDataSource.saveAll(_cachedTeams);
       emit(TeamsLoaded(_cachedTeams));
     } catch (e) {
       emit(TeamError(e.toString()));
@@ -147,6 +182,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       _cachedTeams = _cachedTeams.map((t) {
         return t.id == team.id ? team : t;
       }).toList();
+      await teamLocalDataSource.saveAll(_cachedTeams);
       emit(TeamsLoaded(_cachedTeams));
     } catch (e) {
       emit(TeamError(e.toString()));
@@ -167,6 +203,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
 
         // Optimistic update: remove from cache
         _cachedTeams = _cachedTeams.where((t) => t.id != event.id).toList();
+        await teamLocalDataSource.saveAll(_cachedTeams);
         emit(TeamsLoaded(_cachedTeams));
       } else {
         emit(const TeamError('Failed to delete team'));

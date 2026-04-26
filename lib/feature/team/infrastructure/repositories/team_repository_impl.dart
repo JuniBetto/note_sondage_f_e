@@ -13,6 +13,8 @@ class TeamRepositoryImpl implements TeamRepository {
   Future<bool> delete(String id) async {
     try {
       await _remote.delete(id);
+      final cached = await _local.getAll();
+      await _local.saveAll(cached.where((team) => team.id != id).toList());
       return true;
     } catch (e) {
       throw Exception('Failed to delete team: $e');
@@ -64,7 +66,10 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<TeamEntity> create(TeamEntity team) async {
     try {
-      return await _remote.create(team);
+      final created = await _remote.create(team);
+      final cached = await _local.getAll();
+      await _local.saveAll([...cached, created]);
+      return created;
     } catch (e) {
       throw Exception('Failed to create team: $e');
     }
@@ -73,7 +78,10 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<TeamEntity> createByUser(TeamEntity team, String userId) async {
     try {
-      return await _remote.createByUser(team, userId);
+      final created = await _remote.createByUser(team, userId);
+      final cached = await _local.getAll();
+      await _local.saveAll([...cached, created]);
+      return created;
     } catch (e) {
       throw Exception('Failed to create team by user: $e');
     }
@@ -82,7 +90,25 @@ class TeamRepositoryImpl implements TeamRepository {
   @override
   Future<TeamUpdate> update(TeamUpdate team) async {
     try {
-      return await _remote.updateTeamUpdater(team.id ?? '', team);
+      final updated = await _remote.updateTeamUpdater(team.id ?? '', team);
+      final cached = await _local.getAll();
+      final next = cached
+          .map(
+            (t) => t.id == updated.id
+                ? TeamEntity(
+                    updated.id,
+                    updated.color,
+                    null,
+                    name: updated.name,
+                    description: updated.description,
+                    createdByUserId: updated.createdByUserId,
+                    createdAt: updated.createdAt,
+                  )
+                : t,
+          )
+          .toList();
+      await _local.saveAll(next);
+      return updated;
     } catch (e) {
       throw Exception('Failed to update team: $e');
     }

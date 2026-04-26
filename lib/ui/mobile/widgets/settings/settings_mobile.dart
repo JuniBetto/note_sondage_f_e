@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -11,6 +12,8 @@ import 'package:note_sondage/ui/mobile/widgets/settings/widgets/change_theme.dar
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/contact_us_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/notification_settings_mobile.dart';
 import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
+import 'package:note_sondage/ui/widgets/authenticated_user_summary_card.dart';
+import 'package:note_sondage/ui/widgets/logout_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
@@ -53,87 +56,9 @@ class SettingsMobile extends StatelessWidget {
             ),
 
             // ── User Profile Card ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colorScheme.selectItem!.withValues(alpha: 0.8),
-                      colorScheme.selectItem!.withValues(alpha: 0.6),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.selectItem!.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.person_rounded,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'User',
-                              style: textTheme.titleMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'user@example.com',
-                              style: textTheme.bodySmall?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Pro',
-                          style: textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: AuthenticatedUserSummaryCard(compact: true),
             ),
 
             const SizedBox(height: 24),
@@ -255,8 +180,12 @@ class SettingsMobile extends StatelessWidget {
                   iconColor: colorScheme.deleteCard!,
                   title: localization.logout,
                   subtitle: '',
-                  onTap: () {
-                    context.read<TeamBloc>().add(const ResetTeamCacheEvent());
+                  onTap: () async {
+                    final shouldLogout = await showLogoutConfirmationDialog(
+                      context,
+                    );
+                    if (!shouldLogout || !context.mounted) return;
+                    getIt<TeamBloc>().add(const ResetTeamCacheEvent());
                     context.read<AuthBloc>().add(const AuthLogoutRequested());
                     context.go(RouterPaths.login);
                   },

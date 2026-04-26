@@ -37,17 +37,20 @@ class ClockingUseCase {
     }
   }
 
-  Future<ClockingRecordEntity> clockIn(String userId) async {
+  Future<ClockingRecordEntity> clockIn({
+    required String teamId,
+    String? note,
+  }) async {
     try {
-      return await repository.clockIn(userId);
+      return await repository.clockIn(teamId: teamId, note: note);
     } catch (e) {
       throw Exception('Failed to clock in: $e');
     }
   }
 
-  Future<ClockingRecordEntity> clockOut(String userId) async {
+  Future<ClockingRecordEntity> clockOut({String? teamId, String? note}) async {
     try {
-      return await repository.clockOut(userId);
+      return await repository.clockOut(teamId: teamId, note: note);
     } catch (e) {
       throw Exception('Failed to clock out: $e');
     }

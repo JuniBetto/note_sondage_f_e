@@ -1,6 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
+import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
@@ -14,6 +20,49 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
+class TeamSectionPermissions {
+  const TeamSectionPermissions({
+    required this.roleCode,
+    required this.canEditTeamBasics,
+    required this.canEditTeamColor,
+    required this.canInviteMembers,
+    required this.canCancelInvitations,
+    required this.canRemoveMembers,
+    required this.canChangeMemberRoles,
+    required this.canManageRoleDefinitions,
+  });
+
+  factory TeamSectionPermissions.readOnly() {
+    return const TeamSectionPermissions(
+      roleCode: 'VIEWER',
+      canEditTeamBasics: false,
+      canEditTeamColor: false,
+      canInviteMembers: false,
+      canCancelInvitations: false,
+      canRemoveMembers: false,
+      canChangeMemberRoles: false,
+      canManageRoleDefinitions: false,
+    );
+  }
+
+  final String roleCode;
+  final bool canEditTeamBasics;
+  final bool canEditTeamColor;
+  final bool canInviteMembers;
+  final bool canCancelInvitations;
+  final bool canRemoveMembers;
+  final bool canChangeMemberRoles;
+  final bool canManageRoleDefinitions;
+
+  bool get isOwner => roleCode == 'OWNER';
+  bool get isAdmin => roleCode == 'ADMIN';
+  bool get isReadOnly =>
+      !canEditTeamBasics &&
+      !canInviteMembers &&
+      !canRemoveMembers &&
+      !canChangeMemberRoles;
+}
+
 /// Shared widget used in both mobile and web edit-team pages.
 /// Shows active members, pending invitations, and an invite form.
 ///
@@ -21,7 +70,12 @@ import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 ///     so it is not affected by other widgets firing LoadTeamMembersByTeamIdEvent.
 class TeamMembersSection extends StatefulWidget {
   final String teamId;
-  const TeamMembersSection({super.key, required this.teamId});
+  final ValueChanged<TeamSectionPermissions>? onPermissionsChanged;
+  const TeamMembersSection({
+    super.key,
+    required this.teamId,
+    this.onPermissionsChanged,
+  });
 
   @override
   State<TeamMembersSection> createState() => _TeamMembersSectionState();
@@ -41,9 +95,11 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
   List<RoleEntity> _roles = [];
   List<TeamMemberEntity> _members = [];
   List<TeamInvitationEntity> _invitations = [];
+  TeamSectionPermissions _permissions = TeamSectionPermissions.readOnly();
 
   String? _editingMemberId;
   String? _editingRoleId;
+  StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   @override
   void initState() {
@@ -56,10 +112,16 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     _memberBloc.add(LoadTeamMembersByTeamIdEvent(widget.teamId));
     _inviteBloc.add(LoadTeamInvitationsEvent(widget.teamId));
     _roleBloc.add(LoadRolesEvent());
+    getIt<TeamRealtimeCoordinator>().activateTeamContext(widget.teamId);
+    _realtimeSubscription = getIt<RealtimeNotificationService>().stream.listen(
+      _handleRealtimeNotification,
+    );
   }
 
   @override
   void dispose() {
+    _realtimeSubscription?.cancel();
+    getIt<TeamRealtimeCoordinator>().deactivateTeamContext(widget.teamId);
     _memberBloc.close();
     _inviteBloc.close();
     _roleBloc.close();
@@ -71,6 +133,18 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
   void _reload() {
     _memberBloc.add(LoadTeamMembersByTeamIdEvent(widget.teamId));
     _inviteBloc.add(LoadTeamInvitationsEvent(widget.teamId));
+  }
+
+  void _handleRealtimeNotification(RealtimeNotification notification) {
+    final decision = getIt<TeamRealtimeCoordinator>().resolveScreenDecision(
+      notification,
+      teamId: widget.teamId,
+      currentUserId: getIt<AuthBloc>().state.user.uid,
+    );
+
+    if (decision.needsReload) {
+      _reload();
+    }
   }
 
   void _invite() {
@@ -95,6 +169,44 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         teamId: widget.teamId,
       ),
     );
+  }
+
+  void _updatePermissions(List<TeamMemberEntity> members) {
+    final currentEmail = getIt<AuthBloc>().state.user.email.trim().toLowerCase();
+    final currentMember = members
+        .where((member) => member.userEmail.trim().toLowerCase() == currentEmail)
+        .firstOrNull;
+    final roleCode = (currentMember?.roleId ?? 'VIEWER').trim().toUpperCase();
+    final nextPermissions = switch (roleCode) {
+      'OWNER' => const TeamSectionPermissions(
+        roleCode: 'OWNER',
+        canEditTeamBasics: true,
+        canEditTeamColor: true,
+        canInviteMembers: true,
+        canCancelInvitations: true,
+        canRemoveMembers: true,
+        canChangeMemberRoles: true,
+        canManageRoleDefinitions: true,
+      ),
+      'ADMIN' => const TeamSectionPermissions(
+        roleCode: 'ADMIN',
+        canEditTeamBasics: true,
+        canEditTeamColor: false,
+        canInviteMembers: false,
+        canCancelInvitations: false,
+        canRemoveMembers: true,
+        canChangeMemberRoles: false,
+        canManageRoleDefinitions: false,
+      ),
+      _ => TeamSectionPermissions.readOnly(),
+    };
+
+    if (_permissions.roleCode == nextPermissions.roleCode) {
+      return;
+    }
+
+    _permissions = nextPermissions;
+    widget.onPermissionsChanged?.call(nextPermissions);
   }
 
   void _saveRoleEdit(String memberId, TeamMemberEntity original) {
@@ -125,6 +237,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
           listener: (context, state) {
             if (state is TeamMembersLoaded) {
               setState(() => _members = state.members);
+              _updatePermissions(state.members);
             }
             if (state is TeamMemberInvited) {
               _reload();
@@ -202,6 +315,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
               return _MembersList(
                 members: _members,
                 roles: _roles,
+                permissions: _permissions,
                 editingMemberId: _editingMemberId,
                 editingRoleId: _editingRoleId,
                 onDelete: _deleteMember,
@@ -228,6 +342,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
               if (_invitations.isEmpty) return const SizedBox.shrink();
               return _InvitationsSection(
                 invitations: _invitations,
+                canCancelInvitations: _permissions.canCancelInvitations,
                 onCancel: _cancelInvitation,
               );
             },
@@ -238,13 +353,21 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
           const SizedBox(height: 16),
 
           // ── Invite form ───────────────────────────────────────────────────
-          _InviteForm(
-            formKey: _formKey,
-            emailController: _emailCtrl,
-            roleController: _roleCtrl,
-            roles: _roles,
-            onInvite: _invite,
-          ),
+          if (_permissions.canInviteMembers)
+            _InviteForm(
+              formKey: _formKey,
+              emailController: _emailCtrl,
+              roleController: _roleCtrl,
+              roles: _roles,
+              onInvite: _invite,
+            )
+          else if (_permissions.isReadOnly || _permissions.isAdmin)
+            _EmptyPlaceholder(
+              icon: Icons.lock_outline_rounded,
+              label: _permissions.isAdmin
+                  ? 'Gli admin possono gestire membri esistenti ma non invitare nuovi utenti'
+                  : 'Questa sezione e\' in sola lettura per il tuo ruolo',
+            ),
         ],
       ),
     );
@@ -257,6 +380,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
 class _MembersList extends StatelessWidget {
   final List<TeamMemberEntity> members;
   final List<RoleEntity> roles;
+  final TeamSectionPermissions permissions;
   final String? editingMemberId;
   final String? editingRoleId;
   final void Function(String) onDelete;
@@ -268,6 +392,7 @@ class _MembersList extends StatelessWidget {
   const _MembersList({
     required this.members,
     required this.roles,
+    required this.permissions,
     required this.editingMemberId,
     required this.editingRoleId,
     required this.onDelete,
@@ -303,6 +428,7 @@ class _MembersList extends StatelessWidget {
           (m) => _MemberRow(
             member: m,
             roles: roles,
+            permissions: permissions,
             isEditing: editingMemberId == m.id,
             editingRoleId: editingRoleId,
             onDelete: () => onDelete(m.id ?? ''),
@@ -334,6 +460,7 @@ class _HeaderText extends StatelessWidget {
 class _MemberRow extends StatelessWidget {
   final TeamMemberEntity member;
   final List<RoleEntity> roles;
+  final TeamSectionPermissions permissions;
   final bool isEditing;
   final String? editingRoleId;
   final VoidCallback onDelete;
@@ -345,6 +472,7 @@ class _MemberRow extends StatelessWidget {
   const _MemberRow({
     required this.member,
     required this.roles,
+    required this.permissions,
     required this.isEditing,
     required this.editingRoleId,
     required this.onDelete,
@@ -380,8 +508,16 @@ class _MemberRow extends StatelessWidget {
 
   Widget _displayRow(BuildContext context, String roleName) {
     final colorScheme = Theme.of(context).colorScheme;
-    // Only allow editing if member is active
-    final canEdit = member.status == UserStatus.active;
+    final memberRole = member.roleId.trim().toUpperCase();
+    final canEdit =
+        permissions.canChangeMemberRoles &&
+        member.status == UserStatus.active &&
+        memberRole != 'OWNER';
+    final canDelete =
+        permissions.canRemoveMembers &&
+        member.status == UserStatus.active &&
+        memberRole != 'OWNER' &&
+        (!permissions.isAdmin || memberRole == 'MEMBER' || memberRole == 'VIEWER');
     return Row(
       children: [
         Expanded(
@@ -417,12 +553,13 @@ class _MemberRow extends StatelessWidget {
               ),
               const SizedBox(width: 4),
             ],
-            _ActionIcon(
-              icon: Icons.delete_rounded,
-              color: colorScheme.deleteCard ?? Colors.red,
-              tooltip: 'Remove',
-              onTap: onDelete,
-            ),
+            if (canDelete)
+              _ActionIcon(
+                icon: Icons.delete_rounded,
+                color: colorScheme.deleteCard ?? Colors.red,
+                tooltip: 'Remove',
+                onTap: onDelete,
+              ),
           ],
         ),
       ],
@@ -487,10 +624,12 @@ class _MemberRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 class _InvitationsSection extends StatelessWidget {
   final List<TeamInvitationEntity> invitations;
+  final bool canCancelInvitations;
   final void Function(String invitationId) onCancel;
 
   const _InvitationsSection({
     required this.invitations,
+    required this.canCancelInvitations,
     required this.onCancel,
   });
 
@@ -538,8 +677,11 @@ class _InvitationsSection extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         ...invitations.map(
-          (inv) =>
-              _InvitationRow(invitation: inv, onCancel: () => onCancel(inv.id)),
+          (inv) => _InvitationRow(
+            invitation: inv,
+            canCancel: canCancelInvitations,
+            onCancel: () => onCancel(inv.id),
+          ),
         ),
       ],
     );
@@ -548,9 +690,14 @@ class _InvitationsSection extends StatelessWidget {
 
 class _InvitationRow extends StatelessWidget {
   final TeamInvitationEntity invitation;
+  final bool canCancel;
   final VoidCallback onCancel;
 
-  const _InvitationRow({required this.invitation, required this.onCancel});
+  const _InvitationRow({
+    required this.invitation,
+    required this.canCancel,
+    required this.onCancel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -588,7 +735,7 @@ class _InvitationRow extends StatelessWidget {
             flex: 2,
             child: _InviteStatusChip(status: invitation.status),
           ),
-          if (invitation.isCancellable)
+          if (invitation.isCancellable && canCancel)
             _ActionIcon(
               icon: Icons.cancel_outlined,
               color: Colors.orange,

@@ -4,6 +4,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
+import 'package:note_sondage/ui/widgets/pending_notifications_card.dart';
 
 class HomeDashboardMobile extends StatelessWidget {
   const HomeDashboardMobile({super.key});
@@ -75,6 +76,12 @@ class HomeDashboardMobile extends StatelessWidget {
           // Quick actions
           // ═══════════════════════════════
           _MobileQuickActions(),
+          const SizedBox(height: 20),
+
+          // ═══════════════════════════════
+          // Pending notifications
+          // ═══════════════════════════════
+          const PendingNotificationsCard(),
           const SizedBox(height: 20),
 
           // ═══════════════════════════════

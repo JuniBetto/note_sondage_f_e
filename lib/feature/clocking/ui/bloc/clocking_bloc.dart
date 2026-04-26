@@ -86,9 +86,15 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     Emitter<ClockingState> emit,
   ) async {
     try {
-      final record = await clockingUseCase.clockIn(event.userId);
+      final record = await clockingUseCase.clockIn(
+        teamId: event.teamId,
+        note: event.note,
+      );
       emit(ClockingActionSuccess(record));
-      _cachedRecords = [..._cachedRecords, record];
+      _cachedRecords = [
+        record,
+        ..._cachedRecords.where((existing) => existing.id != record.id),
+      ];
       emit(ClockingRecordsLoaded(_cachedRecords));
     } catch (e) {
       emit(ClockingError(e.toString()));
@@ -103,13 +109,17 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     Emitter<ClockingState> emit,
   ) async {
     try {
-      final record = await clockingUseCase.clockOut(event.userId);
+      final record = await clockingUseCase.clockOut(
+        teamId: event.teamId,
+        note: event.note,
+      );
       emit(ClockingActionSuccess(record));
       _cachedRecords = _cachedRecords.map((r) {
-        return r.userId == record.userId && r.date.day == record.date.day
-            ? record
-            : r;
+        return r.id == record.id ? record : r;
       }).toList();
+      if (!_cachedRecords.any((r) => r.id == record.id)) {
+        _cachedRecords = [record, ..._cachedRecords];
+      }
       emit(ClockingRecordsLoaded(_cachedRecords));
     } catch (e) {
       emit(ClockingError(e.toString()));

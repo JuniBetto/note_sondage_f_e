@@ -1,9 +1,14 @@
 import 'package:get_it/get_it.dart';
+import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
 import 'package:note_sondage/feature/auth/infrastructure/repositories/firebase_auth_repository_impl.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/app_lifecycle_bloc.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
+import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
+import 'package:note_sondage/feature/notification/preferences/notification_preferences_cubit.dart';
+import 'package:note_sondage/feature/notification/push/push_notification_service.dart';
 import 'package:note_sondage/feature/clocking/domain/repositories/clocking_repository.dart';
 import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_local/clocking_local_data_source.dart';
@@ -14,6 +19,8 @@ import 'package:note_sondage/feature/home/domain/repositories/dashboard_reposito
 import 'package:note_sondage/feature/home/domain/use_case/dashboard_use_case.dart';
 import 'package:note_sondage/feature/home/infrastructure/repositories/dashboard_repository_impl.dart';
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
+import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/sondage/domain/repositories/sondage_repository.dart';
 import 'package:note_sondage/feature/sondage/domain/use_case/sondage_use_case.dart';
 import 'package:note_sondage/feature/sondage/infrastructure/data_source/data_source_local/sondage_local_data_source.dart';
@@ -64,9 +71,13 @@ Future<void> setup() async {
 // ==================== AUTH (Firebase) ====================
 
 void _registerAuth() {
+  getIt.registerLazySingleton<BackendAuthDataSource>(() => BackendAuthDataSource());
+
   // Repository
   getIt.registerLazySingleton<AuthRepository>(
-    () => FirebaseAuthRepositoryImpl(),
+    () => FirebaseAuthRepositoryImpl(
+      backendAuth: getIt<BackendAuthDataSource>(),
+    ),
   );
 
   // Use Case
@@ -82,6 +93,29 @@ void _registerAuth() {
   // App Lifecycle BLoC — gestisce background/foreground
   getIt.registerLazySingleton<AppLifecycleBloc>(
     () => AppLifecycleBloc(authBloc: getIt<AuthBloc>()),
+  );
+
+  getIt.registerLazySingleton<PushNotificationService>(
+    () => PushNotificationService(
+      backendAuth: getIt<BackendAuthDataSource>(),
+      localNotifications: getIt<LocalNotificationService>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<LocalNotificationService>(
+    () => LocalNotificationService(),
+  );
+
+  getIt.registerLazySingleton<NotificationPreferencesCubit>(
+    () => NotificationPreferencesCubit(
+      backendAuth: getIt<BackendAuthDataSource>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<NotificationCenterCubit>(
+    () => NotificationCenterCubit(
+      backendAuth: getIt<BackendAuthDataSource>(),
+    ),
   );
 }
 
@@ -107,6 +141,14 @@ void _registerDataSources() {
   // Clocking local data source
   getIt.registerLazySingleton<ClockingLocalDataSource>(
     () => ClockingLocalDataSource(),
+  );
+
+  // Realtime notifications
+  getIt.registerLazySingleton<RealtimeNotificationService>(
+    () => RealtimeNotificationService(),
+  );
+  getIt.registerLazySingleton<TeamRealtimeCoordinator>(
+    () => TeamRealtimeCoordinator(),
   );
 
   // Remote data sources (inject local data source for caching)

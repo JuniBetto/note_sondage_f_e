@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_entity.dart';
+import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
@@ -13,63 +16,80 @@ class StatusClocking extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    final items = [
-      _StatusItem(
-        icon: Icons.login_rounded,
-        label: localization.clockedInAt,
-        time: '9:00 AM',
-        color: Colors.green,
-      ),
-      _StatusItem(
-        icon: Icons.coffee_rounded,
-        label: localization.startBreakAt,
-        time: '12:30 PM',
-        color: Colors.orange,
-      ),
-      _StatusItem(
-        icon: Icons.play_circle_outline,
-        label: localization.endBreakAt,
-        time: '1:00 PM',
-        color: Colors.blue,
-      ),
-      _StatusItem(
-        icon: Icons.logout_rounded,
-        label: localization.clockedOutAt,
-        time: '5:00 PM',
-        color: Colors.red,
-      ),
-    ];
+    return BlocBuilder<ClockingBloc, ClockingState>(
+      builder: (context, state) {
+        final records = state is ClockingRecordsLoaded ? state.records : const <ClockingRecordEntity>[];
+        final latestRecord = records.isNotEmpty ? records.first : null;
+        ClockingRecordEntity? openRecord;
+        for (final record in records) {
+          if (record.status == ClockingStatus.clockedIn &&
+              record.clockOutTime == null) {
+            openRecord = record;
+            break;
+          }
+        }
 
-    if (isCompact) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: items
-            .map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: _StatusTile(
+        final items = [
+          _StatusItem(
+            icon: Icons.login_rounded,
+            label: localization.clockedInAt,
+            time: latestRecord?.clockInFormatted ?? '--:--',
+            color: Colors.green,
+          ),
+          _StatusItem(
+            icon: Icons.coffee_rounded,
+            label: localization.startBreakAt,
+            time: '--:--',
+            color: Colors.orange,
+          ),
+          _StatusItem(
+            icon: Icons.play_circle_outline,
+            label: localization.endBreakAt,
+            time: '--:--',
+            color: Colors.blue,
+          ),
+          _StatusItem(
+            icon: Icons.logout_rounded,
+            label: localization.clockedOutAt,
+            time: openRecord != null
+                ? '--:--'
+                : (latestRecord?.clockOutFormatted ?? '--:--'),
+            color: Colors.red,
+          ),
+        ];
+
+        if (isCompact) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: items
+                .map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: _StatusTile(
+                      item: item,
+                      colorScheme: colorScheme,
+                      textTheme: textTheme,
+                    ),
+                  ),
+                )
+                .toList(),
+          );
+        }
+
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: items
+              .map(
+                (item) => _StatusTile(
                   item: item,
                   colorScheme: colorScheme,
                   textTheme: textTheme,
                 ),
-              ),
-            )
-            .toList(),
-      );
-    }
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: items
-          .map(
-            (item) => _StatusTile(
-              item: item,
-              colorScheme: colorScheme,
-              textTheme: textTheme,
-            ),
-          )
-          .toList(),
+              )
+              .toList(),
+        );
+      },
     );
   }
 }

@@ -36,9 +36,8 @@ class _AddUserWebState extends State<AddUserWeb> {
 
   @override
   void dispose() {
-    for (final data in widget.listInviteFormData) {
-      data.dispose();
-    }
+    // I controller in listInviteFormData sono creati e posseduti da UpdateTeamWeb:
+    // non vanno disposti qui altrimenti crashano quando AddUserWeb viene rimontato.
     super.dispose();
   }
 

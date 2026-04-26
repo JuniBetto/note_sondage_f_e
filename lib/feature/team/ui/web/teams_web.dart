@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/create_team_web.dart';
 import 'package:note_sondage/feature/team/ui/widgets/responsive_grid_teams.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
@@ -17,6 +18,10 @@ class TeamsWeb extends StatefulWidget {
 
 class _TeamsWebState extends State<TeamsWeb> {
   int isGridView = 1;
+
+  void _handleTeamCreated() {
+    getIt<TeamBloc>().add(LoadTeamsEvent());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +53,7 @@ class _TeamsWebState extends State<TeamsWeb> {
                         CustomDialog(
                           title: widget.title,
                           width: 700,
-                          child: CreateTeamWeb(),
+                          child: CreateTeamWeb(onTeamCreated: _handleTeamCreated),
                         ).show(context);
                       },
                       icon: const Icon(Icons.group_add_rounded, size: 20),
@@ -125,7 +130,7 @@ class _TeamsWebState extends State<TeamsWeb> {
                         ],
                       ),
                       child: ResponsiveGridTeams(
-                        items: teamsList,
+                        items: const <Map<String, dynamic>>[],
                         isRow: isGridView == 1,
                       ),
                     ),

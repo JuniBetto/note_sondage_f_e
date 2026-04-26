@@ -10,10 +10,12 @@ class ClockInTrack extends StatelessWidget {
     super.key,
     required this.title,
     required this.isTeamWithUsers,
+    required this.dataTable,
     this.isMobile = false,
   });
   final String title;
   final bool isTeamWithUsers;
+  final List<UserClockInfo> dataTable;
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +35,13 @@ class ClockInTrack extends StatelessWidget {
             ? _buildByTeam(
                 context,
                 isMobile,
-                listUserClockInfo,
+                dataTable,
                 listheaderTable,
               )
             : _buildAllUsers(
                 context,
                 isMobile,
-                listUserClockInfo,
+                dataTable,
                 listheaderTable,
                 localization.allUsers,
               ),
@@ -59,6 +61,10 @@ Widget _buildAllUsers(
   List<String> headerTable,
   String allUsersLabel,
 ) {
+  if (dataTable.isEmpty) {
+    return const _EmptyClockingState();
+  }
+
   if (isMobile) {
     return _MobileTeamSection(teamName: allUsersLabel, users: dataTable);
   }
@@ -87,6 +93,10 @@ Widget _buildByTeam(
   List<UserClockInfo> dataTable,
   List<String> headerTable,
 ) {
+  if (dataTable.isEmpty) {
+    return const _EmptyClockingState();
+  }
+
   final teams = dataTable.map((u) => u.teamName).toSet().toList();
 
   final List<List<UserClockInfo>> teamsData = teams
@@ -134,6 +144,34 @@ Widget _buildByTeam(
       );
     }).toList(),
   );
+}
+
+class _EmptyClockingState extends StatelessWidget {
+  const _EmptyClockingState();
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.grey.withValues(alpha: 0.05),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.schedule_outlined, color: Colors.grey[500], size: 28),
+          const SizedBox(height: 8),
+          Text(
+            'Nessuna timbratura disponibile per il filtro corrente.',
+            style: textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -459,87 +497,10 @@ Color _teamColor(String teamName) {
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  MOCK DATA
-// ════════════════════════════════════════════════════════════════
-
 final List<String> listheaderTable = [
   "User",
   "Clock in",
   "Clock out",
   "Time worked",
   "Team",
-];
-
-final List<UserClockInfo> listUserClockInfo = [
-  UserClockInfo(
-    clockInTime: "09:00 AM",
-    clockOutTime: "05:00 PM",
-    teamName: "Developper",
-    user: "User 1",
-    timeWorked: "8 hours",
-  ),
-  UserClockInfo(
-    clockInTime: "09:12 AM",
-    clockOutTime: "05:00 PM",
-    teamName: "Developper",
-    user: "User 2",
-    timeWorked: "8 hours",
-  ),
-  UserClockInfo(
-    clockInTime: "09:12 AM",
-    clockOutTime: "05:00 PM",
-    teamName: "Manager",
-    user: "User 3",
-    timeWorked: "8 hours",
-  ),
-  UserClockInfo(
-    clockInTime: "09:12 AM",
-    clockOutTime: "05:00 PM",
-    teamName: "Commercial",
-    user: "User 4",
-    timeWorked: "8 hours",
-  ),
-  UserClockInfo(
-    clockInTime: "09:12 AM",
-    clockOutTime: "05:00 PM",
-    teamName: "Developper",
-    user: "User 5",
-    timeWorked: "8 hours",
-  ),
-  UserClockInfo(
-    clockInTime: "09:12 AM",
-    clockOutTime: "05:00 PM",
-    teamName: "Manager",
-    user: "User 6",
-    timeWorked: "8 hours",
-  ),
-  UserClockInfo(
-    user: "User 7",
-    clockInTime: "09:12 AM",
-    clockOutTime: "05:00 PM",
-    timeWorked: "8 hours",
-    teamName: "Developper",
-  ),
-  UserClockInfo(
-    user: "User 8",
-    clockInTime: "09:12 AM",
-    clockOutTime: "05:00 PM",
-    timeWorked: "8 hours",
-    teamName: "Manager",
-  ),
-  UserClockInfo(
-    user: "User 9",
-    clockInTime: "09:12 AM",
-    clockOutTime: "05:00 PM",
-    timeWorked: "8 hours",
-    teamName: "Mobile",
-  ),
-  UserClockInfo(
-    user: "User 10",
-    clockInTime: "09:12 AM",
-    clockOutTime: "05:00 PM",
-    timeWorked: "8 hours",
-    teamName: "Mobile",
-  ),
 ];

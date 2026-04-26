@@ -1,6 +1,15 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
+import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
@@ -9,6 +18,8 @@ import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_members_section.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
+import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class CreateTeamMobile extends StatefulWidget {
@@ -37,6 +48,8 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   List<String> selectedColor = [];
   late final TeamBloc _teamBloc;
   bool _isLoading = false;
+  TeamSectionPermissions _permissions = TeamSectionPermissions.readOnly();
+  StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   bool get _isEditMode => widget.teamId != null;
 
@@ -47,17 +60,45 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
     if (_isEditMode) {
       _isLoading = true;
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
+      getIt<TeamRealtimeCoordinator>().activateTeamContext(widget.teamId!);
+      _realtimeSubscription = getIt<RealtimeNotificationService>().stream.listen(
+        _handleRealtimeNotification,
+      );
     }
   }
 
   @override
   void dispose() {
+    _realtimeSubscription?.cancel();
+    if (_isEditMode) {
+      getIt<TeamRealtimeCoordinator>().deactivateTeamContext(widget.teamId!);
+    }
     nameTeamController.dispose();
     descriptionTeamController.dispose();
     for (final d in listInviteFormData) {
       d.dispose();
     }
     super.dispose();
+  }
+
+  void _handleRealtimeNotification(RealtimeNotification notification) {
+    if (!_isEditMode) return;
+    final decision = getIt<TeamRealtimeCoordinator>().resolveScreenDecision(
+      notification,
+      teamId: widget.teamId!,
+      currentUserId: getIt<AuthBloc>().state.user.uid,
+    );
+
+    if (decision.shouldLeaveCurrentTeam) {
+      if (!mounted) return;
+      context.read<NavigationBloc>().add(NavigationPositionChanged(1));
+      context.go(RouterPaths.home);
+      return;
+    }
+
+    if (decision.refreshTeam) {
+      _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
+    }
   }
 
   @override
@@ -78,13 +119,11 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated && _isEditMode) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${localization.editTeam} ✓'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          _teamBloc.add(LoadTeamsEvent());
+          context.read<NavigationBloc>().add(NavigationPositionChanged(1));
+          context.go(RouterPaths.home);
         } else if (teamState is TeamCreated) {
+          _teamBloc.add(LoadTeamsEvent());
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(localization.teamCreatedSuccessfully),
@@ -153,44 +192,52 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                           CustomInputField(
                             hintText: localization.teamName,
                             controller: nameTeamController,
+                            enabled:
+                                !_isEditMode || _permissions.canEditTeamBasics,
                           ),
                           const SizedBox(height: 14),
                           CustomInputField(
                             hintText: localization.teamDescription,
                             controller: descriptionTeamController,
+                            enabled:
+                                !_isEditMode || _permissions.canEditTeamBasics,
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    if (!_isEditMode || _permissions.canEditTeamColor) ...[
+                      const SizedBox(height: 24),
 
-                    // ── Team Color Section ──
-                    _buildSectionHeader(
-                      context,
-                      localization.selectedTeamcolor,
-                      Icons.palette_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                      // ── Team Color Section ──
+                      _buildSectionHeader(
+                        context,
+                        localization.selectedTeamcolor,
+                        Icons.palette_rounded,
                       ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.homeSecondary,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.borderColor!.withValues(
-                            alpha: 0.3,
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.homeSecondary,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.borderColor!.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
+                        child: ListCheckbox(
+                          selectedColor: selectedColor,
+                          isEditMode: _isEditMode,
+                          enabled:
+                              !_isEditMode || _permissions.canEditTeamColor,
+                        ),
                       ),
-                      child: ListCheckbox(
-                        selectedColor: selectedColor,
-                        isEditMode: _isEditMode,
-                      ),
-                    ),
+                    ],
 
                     const SizedBox(height: 24),
 
@@ -213,7 +260,13 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                         ),
                       ),
                       child: _isEditMode
-                          ? TeamMembersSection(teamId: widget.teamId!)
+                          ? TeamMembersSection(
+                              teamId: widget.teamId!,
+                              onPermissionsChanged: (permissions) {
+                                if (!mounted) return;
+                                setState(() => _permissions = permissions);
+                              },
+                            )
                           : AddUserMobile(
                               listInviteFormData: listInviteFormData,
                               teamId: widget.teamId,
@@ -223,38 +276,39 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                     const SizedBox(height: 32),
 
                     // ── Save / Create Button ──
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _onSave,
-                        icon: Icon(
-                          _isEditMode
-                              ? Icons.save_rounded
-                              : Icons.check_rounded,
-                          size: 20,
-                        ),
-                        label: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Text(
+                    if (!_isEditMode || _permissions.canEditTeamBasics)
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _onSave,
+                          icon: Icon(
                             _isEditMode
-                                ? localization.editTeam
-                                : localization.createTeam,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                                ? Icons.save_rounded
+                                : Icons.check_rounded,
+                            size: 20,
+                          ),
+                          label: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              _isEditMode
+                                  ? localization.editTeam
+                                  : localization.createTeam,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF7C4DFF),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF7C4DFF),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -263,6 +317,9 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   }
 
   void _onSave() {
+    if (_isEditMode && !_permissions.canEditTeamBasics) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final pendingInvitations = listInviteFormData
@@ -282,7 +339,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
       );
       _teamBloc.add(UpdateTeamEvent(team));
     } else {
-      const currentUserId = '7f49a0ab-d27e-462d-89d6-e10494c5b3da';
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
       final team = TeamEntity(
         null,
         selectedColor.isNotEmpty ? selectedColor.first : '0xFF513387',

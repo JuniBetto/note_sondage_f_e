@@ -14,6 +14,7 @@ import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 import 'package:note_sondage/ui/web/widgets/full_sidebar.dart';
 import 'package:note_sondage/ui/web/widgets/home/left_home_section.dart';
 import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
+import 'package:note_sondage/ui/widgets/authenticated_user_summary_card.dart';
 
 class SettingsWeb extends StatelessWidget {
   const SettingsWeb({super.key, this.child});
@@ -32,98 +33,109 @@ class SettingsWeb extends StatelessWidget {
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
 
-    return FullSidebar(
-      leftSectionBuilder: (isExpanded, onToggle, lastIndexes) {
-        return LeftHomeSection(
-          title: Row(
-            children: [
-              Icon(
-                Icons.settings,
-                color: colorScheme.selectItem,
-                size: isExpanded ? 28 : 42,
-              ),
-              if (isExpanded) ...[
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    localizations.settings,
-                    style: textTheme.headlineSmall!.copyWith(
-                      fontWeight: FontWeight.w400,
-                      color: colorScheme.selectItem,
-                    ),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const AuthenticatedUserSummaryCard(),
+          const SizedBox(height: 16),
+          Expanded(
+            child: FullSidebar(
+              leftSectionBuilder: (isExpanded, onToggle, lastIndexes) {
+                return LeftHomeSection(
+                  title: Row(
+                    children: [
+                      Icon(
+                        Icons.settings,
+                        color: colorScheme.selectItem,
+                        size: isExpanded ? 28 : 42,
+                      ),
+                      if (isExpanded) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            localizations.settings,
+                            style: textTheme.headlineSmall!.copyWith(
+                              fontWeight: FontWeight.w400,
+                              color: colorScheme.selectItem,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ),
-              ],
-            ],
+                  isSmallScreen: isExpanded,
+                  onPressedResizeSidebar: onToggle,
+                  listSidebarItem: [
+                    SidebarItem(
+                      isSettings: true,
+                      key: const ValueKey(0),
+                      icon: Icons.language,
+                      label: localizations.language,
+                      index: 0,
+                      isSmallScreen: isExpanded,
+                      lastIndexes: lastIndexes,
+                    ),
+                    SidebarItem(
+                      isSettings: true,
+                      key: const ValueKey(1),
+                      icon: Icons.notifications,
+                      label: localizations.notification,
+                      index: 1,
+                      isSmallScreen: isExpanded,
+                      lastIndexes: lastIndexes,
+                    ),
+                    SidebarItem(
+                      isSettings: true,
+                      key: const ValueKey(2),
+                      icon: Icons.contacts,
+                      label: localizations.contactUs,
+                      index: 2,
+                      isSmallScreen: isExpanded,
+                      lastIndexes: lastIndexes,
+                    ),
+                    const Spacer(),
+                    SidebarItem(
+                      isSettings: true,
+                      key: const ValueKey(3),
+                      icon: Icons.privacy_tip,
+                      label: localizations.privacy,
+                      index: 3,
+                      isSmallScreen: isExpanded,
+                      lastIndexes: lastIndexes,
+                    ),
+                    SidebarItem(
+                      isSettings: true,
+                      key: const ValueKey(4),
+                      icon: Icons.logout_outlined,
+                      label: localizations.logout,
+                      index: 4,
+                      isSmallScreen: isExpanded,
+                      lastIndexes: lastIndexes,
+                    ),
+                  ],
+                );
+              },
+              rightSection:
+                  child ??
+                  Container(
+                    color: Colors.transparent,
+                    child: switch (navBarItem) {
+                      0 => const SettingsLanguageWeb(),
+                      1 => const SettingsNotificationWeb(),
+                      2 => const SettingsContactUsWeb(),
+                      3 => const SettingsPrivacyWeb(),
+                      4 => const LoginWeb(),
+                      int() => const SettingsLanguageWeb(),
+                    },
+                  ),
+              expandedWidth: 200,
+              collapsedWidth: 60,
+              breakpoint: 400,
+            ),
           ),
-          isSmallScreen: isExpanded,
-          onPressedResizeSidebar: onToggle,
-          listSidebarItem: [
-            SidebarItem(
-              isSettings: true,
-              key: const ValueKey(0),
-              icon: Icons.language,
-              label: localizations.language,
-              index: 0,
-              isSmallScreen: isExpanded,
-              lastIndexes: lastIndexes,
-            ),
-            SidebarItem(
-              isSettings: true,
-              key: const ValueKey(1),
-              icon: Icons.notifications,
-              label: localizations.notification,
-              index: 1,
-              isSmallScreen: isExpanded,
-              lastIndexes: lastIndexes,
-            ),
-            SidebarItem(
-              isSettings: true,
-              key: const ValueKey(2),
-              icon: Icons.contacts,
-              label: localizations.contactUs,
-              index: 2,
-              isSmallScreen: isExpanded,
-              lastIndexes: lastIndexes,
-            ),
-            const Spacer(),
-            SidebarItem(
-              isSettings: true,
-              key: const ValueKey(3),
-              icon: Icons.privacy_tip,
-              label: localizations.privacy,
-              index: 3,
-              isSmallScreen: isExpanded,
-              lastIndexes: lastIndexes,
-            ),
-            SidebarItem(
-              isSettings: true,
-              key: const ValueKey(4),
-              icon: Icons.logout_outlined,
-              label: localizations.logout,
-              index: 4,
-              isSmallScreen: isExpanded,
-              lastIndexes: lastIndexes,
-            ),
-          ],
-        );
-      },
-      rightSection:
-          child ??
-          Container(
-            color: Colors.transparent,
-            child: switch (navBarItem) {
-              0 => const SettingsLanguageWeb(),
-              1 => const SettingsNotificationWeb(),
-              2 => const SettingsContactUsWeb(),
-              3 => const SettingsPrivacyWeb(),
-              4 => const LoginWeb(),
-              int() => const SettingsLanguageWeb(),
-            },
-          ),
-      expandedWidth: 200,
-      collapsedWidth: 60,
-      breakpoint: 400,
+        ],
+      ),
     );
   }
 }

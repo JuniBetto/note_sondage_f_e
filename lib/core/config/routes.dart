@@ -27,12 +27,13 @@ import 'package:note_sondage/ui/web/settings/settings_language_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_notification_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_web.dart';
+import 'package:note_sondage/ui/app_keys.dart';
 import 'package:note_sondage/ui/widgets/about_page.dart';
 import 'package:note_sondage/ui/widgets/splash_screen/splash_sreen_begin.dart';
 
 //String currentAppPath = RouterPaths.splashScreen;
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _rootNavigatorKey = navigatorKey;
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Mappa il path URL all'indice dell'IndexedStack nel NavigationBloc.

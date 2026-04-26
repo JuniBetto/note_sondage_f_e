@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
+import 'package:note_sondage/feature/notification/preferences/notification_preferences_entity.dart';
 
 /// Data source per scambiare il Firebase ID Token con un JWT del backend.
 ///
@@ -12,9 +14,23 @@ import 'package:note_sondage/core/network/setup_dio.dart';
 ///    e ritorna un JWT con ruoli e info dell'app.
 class BackendAuthDataSource {
   final Dio _dio;
+  final Dio _authenticatedDio;
 
   BackendAuthDataSource({Dio? dio})
-    : _dio = dio ?? Dio(BaseOptions(baseUrl: DioClient.baseUrl));
+    : _dio = dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: DioClient.baseUrl,
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+              sendTimeout: const Duration(seconds: 10),
+              headers: const {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+            ),
+          ),
+      _authenticatedDio = DioClient().dio;
 
   /// Scambia il [firebaseIdToken] con un JWT del backend.
   ///
@@ -45,6 +61,191 @@ class BackendAuthDataSource {
       debugPrint('[BackendAuth] Token exchange failed: ${e.message}');
       throw Exception(
         'Failed to exchange Firebase token with backend: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<void> requestPasswordReset(String email) async {
+    try {
+      await _dio.post(
+        '/public/api/password-reset/request',
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Password reset request failed: ${e.message}');
+      throw Exception(
+        'Failed to register password reset request: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<String> uploadProfileImage({
+    required String firebaseUid,
+    required List<int> imageBytes,
+    required String fileName,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(imageBytes, filename: fileName),
+      });
+
+      final response = await _authenticatedDio.post(
+        '/api/storage/profile-image/user/$firebaseUid',
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['path'] != null) {
+        return data['path'].toString();
+      }
+
+      throw Exception('Invalid response from profile image upload');
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Profile image upload failed: ${e.message}');
+      throw Exception(
+        'Failed to upload profile image: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<void> updateMyProfile({String? fullName, String? avatarUrl}) async {
+    try {
+      await _authenticatedDio.patch(
+        '/api/users/me',
+        queryParameters: {
+          if (fullName != null && fullName.trim().isNotEmpty)
+            'fullName': fullName.trim(),
+          if (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+            'avatarUrl': avatarUrl.trim(),
+        },
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Profile update failed: ${e.message}');
+      throw Exception(
+        'Failed to update user profile: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<NotificationPreferencesEntity> getNotificationPreferences() async {
+    try {
+      final response = await _authenticatedDio.get(
+        '/api/users/me/notification-preferences',
+      );
+      return NotificationPreferencesEntity.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Notification preferences fetch failed: ${e.message}');
+      throw Exception(
+        'Failed to fetch notification preferences: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<NotificationPreferencesEntity> updateNotificationPreferences(
+    NotificationPreferencesEntity preferences,
+  ) async {
+    try {
+      final response = await _authenticatedDio.patch(
+        '/api/users/me/notification-preferences',
+        data: preferences.toJson(),
+      );
+      return NotificationPreferencesEntity.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Notification preferences update failed: ${e.message}');
+      throw Exception(
+        'Failed to update notification preferences: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<void> registerCurrentDevice({
+    required String deviceFingerprint,
+    String? deviceName,
+    String? platform,
+    String? clientApp,
+    String? pushProvider,
+    String? pushToken,
+  }) async {
+    try {
+      await _authenticatedDio.post(
+        '/api/users/me/devices',
+        data: {
+          'deviceFingerprint': deviceFingerprint,
+          if (deviceName != null && deviceName.isNotEmpty)
+            'deviceName': deviceName,
+          if (platform != null && platform.isNotEmpty) 'platform': platform,
+          if (clientApp != null && clientApp.isNotEmpty) 'clientApp': clientApp,
+          if (pushProvider != null && pushProvider.isNotEmpty)
+            'pushProvider': pushProvider,
+          if (pushToken != null && pushToken.isNotEmpty) 'pushToken': pushToken,
+        },
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Device registration failed: ${e.message}');
+      throw Exception(
+        'Failed to register current device: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<List<NotificationCenterItem>> getMyNotifications({int limit = 30}) async {
+    try {
+      final response = await _authenticatedDio.get(
+        '/api/aggregate/notifications/me',
+        queryParameters: {'limit': limit},
+      );
+      final list = response.data as List<dynamic>? ?? [];
+      return list
+          .map(
+            (entry) => NotificationCenterItem.fromJson(
+              Map<String, dynamic>.from(entry as Map<String, dynamic>),
+            ),
+          )
+          .toList();
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Notifications fetch failed: ${e.message}');
+      throw Exception(
+        'Failed to fetch notifications: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<void> acceptTeamInvitationById(String invitationId) async {
+    try {
+      await _authenticatedDio.patch(
+        '/api/aggregate/teams/invitations/$invitationId/accept-self',
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Accept invitation failed: ${e.message}');
+      throw Exception(
+        'Failed to accept invitation: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<void> rejectTeamInvitationById(String invitationId) async {
+    try {
+      await _authenticatedDio.patch(
+        '/api/aggregate/teams/invitations/$invitationId/reject-self',
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Reject invitation failed: ${e.message}');
+      throw Exception(
+        'Failed to reject invitation: '
         '${e.response?.statusCode ?? 'no status'} – ${e.message}',
       );
     }

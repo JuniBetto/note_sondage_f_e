@@ -9,9 +9,19 @@ class DioClient {
   static DioClient? _instance;
   final Dio dio;
 
+  static String get _scheme {
+    if (kIsWeb) {
+      return Uri.base.scheme == 'https' ? 'https' : 'http';
+    }
+    return 'http';
+  }
+
   /// The host to use depending on platform
   static String get _host {
-    if (kIsWeb) return '127.0.0.1';
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      return host.isNotEmpty ? host : '127.0.0.1';
+    }
     if (Platform.isAndroid) return '10.0.2.2';
     return '127.0.0.1';
   }
@@ -19,7 +29,7 @@ class DioClient {
   /// Returns the correct base URL depending on the platform:
   /// - Web / iOS / macOS / desktop: http://127.0.0.1:8081
   /// - Android emulator:            http://10.0.2.2:8081
-  static String get baseUrl => 'http://$_host:8080';
+  static String get baseUrl => '$_scheme://$_host:8080';
 
   /// MinIO API port for direct access (only used if bucket is public)
   static String get _minioBaseUrl => 'http://$_host:9002/bucket1';

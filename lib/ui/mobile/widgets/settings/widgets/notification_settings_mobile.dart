@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/feature/notification/preferences/notification_preferences_cubit.dart';
+import 'package:note_sondage/feature/notification/preferences/notification_preferences_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
@@ -12,11 +15,14 @@ class NotificationSettingsMobile extends StatefulWidget {
 
 class _NotificationSettingsMobileState
     extends State<NotificationSettingsMobile> {
-  bool _emailNotifications = true;
-  bool _pushNotifications = false;
-  bool _surveyReminders = true;
-  bool _teamUpdates = true;
-  bool _clockingAlerts = false;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<NotificationPreferencesCubit>().loadPreferences();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,11 +31,15 @@ class _NotificationSettingsMobileState
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return BlocBuilder<NotificationPreferencesCubit, NotificationPreferencesState>(
+      builder: (context, state) {
+        final preferences = state.effectivePreferences;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // ── Header ──
           Row(
             children: [
@@ -91,8 +101,11 @@ class _NotificationSettingsMobileState
                   iconColor: const Color(0xFF2196F3),
                   title: 'Email Notifications',
                   subtitle: 'Receive updates via email',
-                  value: _emailNotifications,
-                  onChanged: (v) => setState(() => _emailNotifications = v),
+                  value: preferences.emailEnabled,
+                  onChanged: (v) => _updatePreferences(
+                    context,
+                    preferences.copyWith(emailEnabled: v),
+                  ),
                   showDivider: true,
                 ),
                 _buildSwitchTile(
@@ -101,8 +114,11 @@ class _NotificationSettingsMobileState
                   iconColor: const Color(0xFF4CAF50),
                   title: 'Push Notifications',
                   subtitle: 'Receive push notifications on your device',
-                  value: _pushNotifications,
-                  onChanged: (v) => setState(() => _pushNotifications = v),
+                  value: preferences.pushEnabled,
+                  onChanged: (v) => _updatePreferences(
+                    context,
+                    preferences.copyWith(pushEnabled: v),
+                  ),
                   showDivider: false,
                 ),
               ],
@@ -130,8 +146,11 @@ class _NotificationSettingsMobileState
                   iconColor: const Color(0xFF9C27B0),
                   title: 'Survey Reminders',
                   subtitle: 'Get reminded about pending surveys',
-                  value: _surveyReminders,
-                  onChanged: (v) => setState(() => _surveyReminders = v),
+                  value: preferences.surveyRemindersEnabled,
+                  onChanged: (v) => _updatePreferences(
+                    context,
+                    preferences.copyWith(surveyRemindersEnabled: v),
+                  ),
                   showDivider: true,
                 ),
                 _buildSwitchTile(
@@ -140,8 +159,11 @@ class _NotificationSettingsMobileState
                   iconColor: const Color(0xFF00BCD4),
                   title: 'Team Updates',
                   subtitle: 'Notifications about team changes',
-                  value: _teamUpdates,
-                  onChanged: (v) => setState(() => _teamUpdates = v),
+                  value: preferences.teamUpdatesEnabled,
+                  onChanged: (v) => _updatePreferences(
+                    context,
+                    preferences.copyWith(teamUpdatesEnabled: v),
+                  ),
                   showDivider: true,
                 ),
                 _buildSwitchTile(
@@ -150,16 +172,28 @@ class _NotificationSettingsMobileState
                   iconColor: const Color(0xFFE91E63),
                   title: 'Clocking Alerts',
                   subtitle: 'Reminders to clock in and out',
-                  value: _clockingAlerts,
-                  onChanged: (v) => setState(() => _clockingAlerts = v),
+                  value: preferences.clockingAlertsEnabled,
+                  onChanged: (v) => _updatePreferences(
+                    context,
+                    preferences.copyWith(clockingAlertsEnabled: v),
+                  ),
                   showDivider: false,
                 ),
               ],
             ),
           ),
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
+  }
+
+  void _updatePreferences(
+    BuildContext context,
+    NotificationPreferencesEntity preferences,
+  ) {
+    context.read<NotificationPreferencesCubit>().updatePreferences(preferences);
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {

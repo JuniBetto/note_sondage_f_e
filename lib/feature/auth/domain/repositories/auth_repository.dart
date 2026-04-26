@@ -20,6 +20,8 @@ abstract class AuthRepository {
     required String email,
     required String password,
     String? displayName,
+    List<int>? profileImageBytes,
+    String? profileImageFileName,
   });
 
   /// Login con Google SSO.

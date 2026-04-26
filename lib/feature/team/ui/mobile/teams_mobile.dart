@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/team_display.dart';
 import 'package:note_sondage/theme/color_palette.dart';
@@ -17,13 +19,13 @@ class _TeamsMobileState extends State<TeamsMobile>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
   int currentViewType = 1;
-  List<Map<String, dynamic>> teams = teamsList ?? []; // La tua lista di team
 
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 2, vsync: this);
     tabController.addListener(_handleTabChange);
+    getIt<TeamBloc>().add(LoadTeamsEvent());
   }
 
   void _handleTabChange() {
@@ -42,12 +44,7 @@ class _TeamsMobileState extends State<TeamsMobile>
   }
 
   void _handleTeamCreated() {
-    // Logica per aggiornare la lista dei team
-    // Potresti qui fare una chiamata API e poi cambiare tab
-    setState(() {
-      // Aggiorna la lista dei team
-    });
-
+    getIt<TeamBloc>().add(LoadTeamsEvent());
     // Torna alla tab dei team selezionati
     tabController.animateTo(0);
   }
@@ -103,7 +100,7 @@ class _TeamsMobileState extends State<TeamsMobile>
                 children: [
                   // Prima tab: Visualizzazione team
                   TeamsDisplay(
-                    teams: teams,
+                    teams: const <Map<String, dynamic>>[],
                     onViewChanged: _handleViewTypeChanged,
                     initialViewType: currentViewType,
                   ),

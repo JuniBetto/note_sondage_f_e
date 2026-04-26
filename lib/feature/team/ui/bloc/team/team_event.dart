@@ -69,3 +69,16 @@ class _TeamsRefreshedEvent extends TeamEvent {
   @override
   List<Object?> get props => [teams];
 }
+
+class _TeamsRefreshFailedEvent extends TeamEvent {
+  final String message;
+  final bool hadLocalData;
+
+  const _TeamsRefreshFailedEvent({
+    required this.message,
+    required this.hadLocalData,
+  });
+
+  @override
+  List<Object?> get props => [message, hadLocalData];
+}

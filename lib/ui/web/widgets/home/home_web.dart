@@ -4,6 +4,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
+import 'package:note_sondage/ui/widgets/pending_notifications_card.dart';
 
 class HomeWeb extends StatelessWidget {
   const HomeWeb({super.key});
@@ -117,6 +118,12 @@ class HomeWeb extends StatelessWidget {
                         ),
                       ],
                     ),
+              const SizedBox(height: 24),
+
+              // ═══════════════════════════════
+              // Pending notifications
+              // ═══════════════════════════════
+              const PendingNotificationsCard(maxItems: 5),
               const SizedBox(height: 24),
 
               // ═══════════════════════════════

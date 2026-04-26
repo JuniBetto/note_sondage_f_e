@@ -87,7 +87,9 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
   }
 
   @override
-  Future<List<TeamInvitationEntity>> getPendingInvitations(String teamId) async {
+  Future<List<TeamInvitationEntity>> getPendingInvitations(
+    String teamId,
+  ) async {
     try {
       return await _remote.getPendingInvitations(teamId);
     } catch (e) {

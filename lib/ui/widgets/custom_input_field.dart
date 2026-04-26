@@ -21,6 +21,7 @@ class CustomInputField extends StatefulWidget {
   final bool isNumber;
   final int? minLines;
   final int? maxLines;
+  final bool enabled;
   final String? Function(String?)? validator; // Funzione di validazione
   final void Function()? onSearchPressed; // Callback per il pulsante di ricerca
 
@@ -32,6 +33,7 @@ class CustomInputField extends StatefulWidget {
     this.isPassword = false, // Default: false
     this.isSearch = false, // Default: false
     this.isNumber = false, // Default: false
+    this.enabled = true,
     this.validator,
     this.minLines,
     this.maxLines = 1,
@@ -51,6 +53,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
     final colorScheme = theme.colorScheme;
 
     return TextFormField(
+      enabled: widget.enabled,
       maxLines: widget.maxLines,
       minLines: widget.minLines,
       controller: widget.controller,

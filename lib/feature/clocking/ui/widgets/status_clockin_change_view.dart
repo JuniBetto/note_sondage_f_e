@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/utils/app_constant.dart';
+import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_entity.dart';
+import 'package:note_sondage/feature/clocking/domain/entities/user_clock_info.dart';
+import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
 import 'package:note_sondage/feature/clocking/ui/widgets/clockin_track.dart';
 import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -23,6 +27,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _searchController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -88,23 +95,45 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           const SizedBox(height: 16),
 
           // ── Table / Cards ──
-          if (widget.isMobile)
-            // Su mobile: niente Expanded, layout scrollabile gestito dal parent
-            ClockInTrack(
-              isTeamWithUsers: isClockedTeamWithUsers,
-              title: '',
-              isMobile: true,
-            )
-          else
-            Expanded(
-              child: SingleChildScrollView(
-                child: ClockInTrack(
+          BlocBuilder<ClockingBloc, ClockingState>(
+            builder: (context, state) {
+              final records = state is ClockingRecordsLoaded
+                  ? state.records
+                  : const <ClockingRecordEntity>[];
+              final filteredRecords = _filterRecords(records);
+              final tableRows = filteredRecords
+                  .map(
+                    (record) => UserClockInfo(
+                      user: record.userName,
+                      clockInTime: record.clockInFormatted,
+                      clockOutTime: record.clockOutFormatted,
+                      timeWorked: record.timeWorkedFormatted,
+                      teamName: record.teamName,
+                    ),
+                  )
+                  .toList();
+
+              if (widget.isMobile) {
+                return ClockInTrack(
                   isTeamWithUsers: isClockedTeamWithUsers,
                   title: '',
-                  isMobile: false,
+                  isMobile: true,
+                  dataTable: tableRows,
+                );
+              }
+
+              return Expanded(
+                child: SingleChildScrollView(
+                  child: ClockInTrack(
+                    isTeamWithUsers: isClockedTeamWithUsers,
+                    title: '',
+                    isMobile: false,
+                    dataTable: tableRows,
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -137,11 +166,8 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
         CustomInputField(
           hintText: "Email or team name",
           controller: _searchController,
-          validator: emailValidator,
           isSearch: true,
-          onSearchPressed: () {
-            // Handle search action
-          },
+          onSearchPressed: () => setState(() {}),
         ),
       ],
     );
@@ -196,5 +222,15 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
         ),
       ],
     );
+  }
+
+  List<ClockingRecordEntity> _filterRecords(List<ClockingRecordEntity> records) {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return records;
+
+    return records.where((record) {
+      return record.userName.toLowerCase().contains(query) ||
+          record.teamName.toLowerCase().contains(query);
+    }).toList();
   }
 }

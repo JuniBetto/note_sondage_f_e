@@ -9,6 +9,7 @@ import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/web/widgets/home/home_web.dart';
 import 'package:note_sondage/ui/web/widgets/full_sidebar.dart';
 import 'package:note_sondage/ui/web/widgets/home/left_home_section.dart';
+import 'package:note_sondage/ui/web/widgets/notification_center_button.dart';
 import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_event.dart';
@@ -115,18 +116,31 @@ class MainWeb extends StatelessWidget {
             ],
           );
         },
-        // Se un child è passato (es. da GoRouter per rolePage / updateTeam),
-        // mostralo direttamente. Altrimenti usa IndexedStack per le pagine
-        // principali — zero rebuild al cambio tab.
-        rightSection:
-            child ??
+        // Teniamo SEMPRE montato l'IndexedStack per evitare ricostruzioni
+        // costose quando si entra/esce da route secondarie (es. updateTeam).
+        rightSection: Stack(
+          fit: StackFit.expand,
+          children: [
             BlocBuilder<NavigationBloc, int>(
               builder: (context, navIndex) {
-                // Clamp index per evitare out-of-range
                 final safeIndex = navIndex.clamp(0, _pages.length - 1);
                 return IndexedStack(index: safeIndex, children: _pages);
               },
             ),
+            if (child != null)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: colorScheme.homePrimary ?? colorScheme.surface,
+                  child: child!,
+                ),
+              ),
+            const Positioned(
+              top: 20,
+              right: 20,
+              child: NotificationCenterButton(),
+            ),
+          ],
+        ),
       ),
     );
   }

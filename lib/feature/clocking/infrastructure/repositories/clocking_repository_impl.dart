@@ -53,18 +53,21 @@ class ClockingRepositoryImpl implements ClockingRepository {
   }
 
   @override
-  Future<ClockingRecordEntity> clockIn(String userId) async {
+  Future<ClockingRecordEntity> clockIn({
+    required String teamId,
+    String? note,
+  }) async {
     try {
-      return await _remote.clockIn(userId);
+      return await _remote.clockIn(teamId: teamId, note: note);
     } catch (e) {
       throw Exception('Failed to clock in: $e');
     }
   }
 
   @override
-  Future<ClockingRecordEntity> clockOut(String userId) async {
+  Future<ClockingRecordEntity> clockOut({String? teamId, String? note}) async {
     try {
-      return await _remote.clockOut(userId);
+      return await _remote.clockOut(teamId: teamId, note: note);
     } catch (e) {
       throw Exception('Failed to clock out: $e');
     }

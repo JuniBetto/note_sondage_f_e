@@ -34,15 +34,25 @@ final class AuthRegisterRequested extends AuthEvent {
   final String email;
   final String password;
   final String? displayName;
+  final List<int>? profileImageBytes;
+  final String? profileImageFileName;
 
   const AuthRegisterRequested({
     required this.email,
     required this.password,
     this.displayName,
+    this.profileImageBytes,
+    this.profileImageFileName,
   });
 
   @override
-  List<Object?> get props => [email, password, displayName];
+  List<Object?> get props => [
+    email,
+    password,
+    displayName,
+    profileImageBytes,
+    profileImageFileName,
+  ];
 }
 
 /// L'utente vuole fare login con Google.

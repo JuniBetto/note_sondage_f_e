@@ -37,21 +37,23 @@ class LoadClockingByTeamIdEvent extends ClockingEvent {
 }
 
 class ClockInEvent extends ClockingEvent {
-  final String userId;
+  final String teamId;
+  final String? note;
 
-  const ClockInEvent(this.userId);
+  const ClockInEvent({required this.teamId, this.note});
 
   @override
-  List<Object?> get props => [userId];
+  List<Object?> get props => [teamId, note];
 }
 
 class ClockOutEvent extends ClockingEvent {
-  final String userId;
+  final String? teamId;
+  final String? note;
 
-  const ClockOutEvent(this.userId);
+  const ClockOutEvent({this.teamId, this.note});
 
   @override
-  List<Object?> get props => [userId];
+  List<Object?> get props => [teamId, note];
 }
 
 class DeleteClockingRecordEvent extends ClockingEvent {

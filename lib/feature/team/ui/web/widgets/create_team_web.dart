@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
@@ -11,7 +12,9 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class CreateTeamWeb extends StatefulWidget {
-  const CreateTeamWeb({super.key});
+  const CreateTeamWeb({super.key, this.onTeamCreated});
+
+  final VoidCallback? onTeamCreated;
 
   @override
   State<CreateTeamWeb> createState() => _CreateTeamWebState();
@@ -76,6 +79,11 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
             nameTeamController.clear();
             descriptionTeamController.clear();
           });
+          widget.onTeamCreated?.call();
+          _teamBloc.add(LoadTeamsEvent());
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
         } else if (teamState is TeamError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -263,7 +271,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
 
   void _onSave() {
     if (_formKey.currentState?.validate() ?? false) {
-      const currentUserId = '7f49a0ab-d27e-462d-89d6-e10494c5b3da';
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
       final name = nameTeamController.text.trim();
 
       final pendingInvitations = listInviteFormData
