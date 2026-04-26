@@ -9,6 +9,7 @@ import 'package:note_sondage/feature/notification/inbox/notification_center_cubi
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/notification/preferences/notification_preferences_cubit.dart';
 import 'package:note_sondage/feature/notification/push/push_notification_service.dart';
+import 'package:note_sondage/feature/notification/realtime/clocking_realtime_coordinator.dart';
 import 'package:note_sondage/feature/clocking/domain/repositories/clocking_repository.dart';
 import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_local/clocking_local_data_source.dart';
@@ -149,6 +150,9 @@ void _registerDataSources() {
   );
   getIt.registerLazySingleton<TeamRealtimeCoordinator>(
     () => TeamRealtimeCoordinator(),
+  );
+  getIt.registerLazySingleton<ClockingRealtimeCoordinator>(
+    () => ClockingRealtimeCoordinator(),
   );
 
   // Remote data sources (inject local data source for caching)

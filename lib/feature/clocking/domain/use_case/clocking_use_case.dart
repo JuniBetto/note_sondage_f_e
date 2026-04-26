@@ -56,11 +56,63 @@ class ClockingUseCase {
     }
   }
 
+  Future<ClockingRecordEntity> startBreak({String? teamId, String? note}) async {
+    try {
+      return await repository.startBreak(teamId: teamId, note: note);
+    } catch (e) {
+      throw Exception('Failed to start break: $e');
+    }
+  }
+
+  Future<ClockingRecordEntity> stopBreak({String? teamId, String? note}) async {
+    try {
+      return await repository.stopBreak(teamId: teamId, note: note);
+    } catch (e) {
+      throw Exception('Failed to stop break: $e');
+    }
+  }
+
   Future<bool> deleteRecord(String id) async {
     try {
       return await repository.delete(id);
     } catch (e) {
       throw Exception('Failed to delete clocking record: $e');
+    }
+  }
+
+  Future<ClockingRecordEntity> updateTeamRecord({
+    required String id,
+    DateTime? clockInAt,
+    DateTime? clockOutAt,
+    int? totalBreakMinutes,
+    String? note,
+  }) async {
+    try {
+      return await repository.updateTeamRecord(
+        id: id,
+        clockInAt: clockInAt,
+        clockOutAt: clockOutAt,
+        totalBreakMinutes: totalBreakMinutes,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to update team clocking record: $e');
+    }
+  }
+
+  Future<ClockingRecordEntity> decommitTeamRecord(String id) async {
+    try {
+      return await repository.decommitTeamRecord(id);
+    } catch (e) {
+      throw Exception('Failed to decommit team clocking record: $e');
+    }
+  }
+
+  Future<ClockingRecordEntity> commitTeamRecord(String id) async {
+    try {
+      return await repository.commitTeamRecord(id);
+    } catch (e) {
+      throw Exception('Failed to commit team clocking record: $e');
     }
   }
 }

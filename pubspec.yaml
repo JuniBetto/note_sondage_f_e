@@ -61,6 +61,8 @@ dependencies:
   firebase_messaging: ^15.2.10
   flutter_local_notifications: 18.0.1
   google_sign_in: ^7.2.0
+  pdf: ^3.11.3
+  printing: ^5.14.2
   #notification websocket
   stomp_dart_client: ^2.1.3
 

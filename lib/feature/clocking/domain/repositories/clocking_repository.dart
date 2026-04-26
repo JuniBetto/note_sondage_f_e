@@ -19,9 +19,30 @@ abstract class ClockingRepository {
   /// Effettua il clock-out
   Future<ClockingRecordEntity> clockOut({String? teamId, String? note});
 
+  /// Avvia una pausa sulla timbratura attiva
+  Future<ClockingRecordEntity> startBreak({String? teamId, String? note});
+
+  /// Termina una pausa sulla timbratura attiva
+  Future<ClockingRecordEntity> stopBreak({String? teamId, String? note});
+
   /// Ottiene un record per ID
   Future<ClockingRecordEntity?> getById(String id);
 
   /// Cancella un record
   Future<bool> delete(String id);
+
+  /// Aggiorna una timbratura del team gia decommittata
+  Future<ClockingRecordEntity> updateTeamRecord({
+    required String id,
+    DateTime? clockInAt,
+    DateTime? clockOutAt,
+    int? totalBreakMinutes,
+    String? note,
+  });
+
+  /// Decommitta una timbratura del team
+  Future<ClockingRecordEntity> decommitTeamRecord(String id);
+
+  /// Commita nuovamente una timbratura del team
+  Future<ClockingRecordEntity> commitTeamRecord(String id);
 }

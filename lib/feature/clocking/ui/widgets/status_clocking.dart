@@ -6,8 +6,9 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class StatusClocking extends StatelessWidget {
-  const StatusClocking({super.key, this.isCompact = false});
+  const StatusClocking({super.key, this.isCompact = false, this.selectedTeamId});
   final bool isCompact;
+  final String? selectedTeamId;
 
   @override
   Widget build(BuildContext context) {
@@ -18,16 +19,20 @@ class StatusClocking extends StatelessWidget {
 
     return BlocBuilder<ClockingBloc, ClockingState>(
       builder: (context, state) {
-        final records = state is ClockingRecordsLoaded ? state.records : const <ClockingRecordEntity>[];
-        final latestRecord = records.isNotEmpty ? records.first : null;
-        ClockingRecordEntity? openRecord;
+        final records = switch (state) {
+          ClockingRecordsLoaded(:final myRecords) => myRecords,
+          ClockingActionInProgress(:final myRecords) => myRecords,
+          ClockingActionSuccess(:final myRecords) => myRecords,
+          _ => const <ClockingRecordEntity>[],
+        };
+        ClockingRecordEntity? activeRecord;
         for (final record in records) {
-          if (record.status == ClockingStatus.clockedIn &&
-              record.clockOutTime == null) {
-            openRecord = record;
+          if (record.isActive) {
+            activeRecord = record;
             break;
           }
         }
+        final latestRecord = activeRecord ?? (records.isNotEmpty ? records.first : null);
 
         final items = [
           _StatusItem(
@@ -39,19 +44,21 @@ class StatusClocking extends StatelessWidget {
           _StatusItem(
             icon: Icons.coffee_rounded,
             label: localization.startBreakAt,
-            time: '--:--',
+            time: _formatTime(
+              activeRecord?.currentBreakStartedAt ?? latestRecord?.lastBreakStartedAt,
+            ),
             color: Colors.orange,
           ),
           _StatusItem(
             icon: Icons.play_circle_outline,
             label: localization.endBreakAt,
-            time: '--:--',
+            time: _formatTime(latestRecord?.lastBreakEndedAt),
             color: Colors.blue,
           ),
           _StatusItem(
             icon: Icons.logout_rounded,
             label: localization.clockedOutAt,
-            time: openRecord != null
+            time: activeRecord != null
                 ? '--:--'
                 : (latestRecord?.clockOutFormatted ?? '--:--'),
             color: Colors.red,
@@ -91,6 +98,13 @@ class StatusClocking extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _formatTime(DateTime? value) {
+    if (value == null) return '--:--';
+    final h = value.hour.toString().padLeft(2, '0');
+    final m = value.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 }
 

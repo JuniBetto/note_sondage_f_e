@@ -18,6 +18,15 @@ class ClockingMapper {
       } catch (_) {}
     }
 
+    DateTime? _parseDateTime(dynamic value) {
+      if (value == null) return null;
+      try {
+        return DateTime.parse(value.toString());
+      } catch (_) {
+        return null;
+      }
+    }
+
     Duration? timeWorked;
     if (json['timeWorkedMinutes'] != null) {
       timeWorked = Duration(
@@ -54,6 +63,15 @@ class ClockingMapper {
       status: ClockingStatus.fromString(statusValue),
       date: date,
       note: json['note']?.toString(),
+      totalBreakMinutes: (json['totalBreakMinutes'] as num?)?.toInt(),
+      currentBreakStartedAt: _parseDateTime(json['currentBreakStartedAt']),
+      lastBreakStartedAt: _parseDateTime(json['lastBreakStartedAt']),
+      lastBreakEndedAt: _parseDateTime(json['lastBreakEndedAt']),
+      committedAt: _parseDateTime(json['committedAt']),
+      decommittedAt: _parseDateTime(json['decommittedAt']),
+      ownerEditable: json['ownerEditable'] == true,
+      canDecommit: json['canDecommit'] == true,
+      canCommit: json['canCommit'] == true,
     );
   }
 
@@ -73,6 +91,21 @@ class ClockingMapper {
       'status': entity.status.name,
       'date': entity.date.toIso8601String(),
       if (entity.note != null) 'note': entity.note,
+      if (entity.totalBreakMinutes != null)
+        'totalBreakMinutes': entity.totalBreakMinutes,
+      if (entity.currentBreakStartedAt != null)
+        'currentBreakStartedAt': entity.currentBreakStartedAt!.toIso8601String(),
+      if (entity.lastBreakStartedAt != null)
+        'lastBreakStartedAt': entity.lastBreakStartedAt!.toIso8601String(),
+      if (entity.lastBreakEndedAt != null)
+        'lastBreakEndedAt': entity.lastBreakEndedAt!.toIso8601String(),
+      if (entity.committedAt != null)
+        'committedAt': entity.committedAt!.toIso8601String(),
+      if (entity.decommittedAt != null)
+        'decommittedAt': entity.decommittedAt!.toIso8601String(),
+      'ownerEditable': entity.ownerEditable,
+      'canDecommit': entity.canDecommit,
+      'canCommit': entity.canCommit,
     };
   }
 }

@@ -17,6 +17,7 @@ import 'package:note_sondage/feature/notification/local/local_notification_servi
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/preferences/notification_preferences_cubit.dart';
 import 'package:note_sondage/feature/notification/push/push_notification_service.dart';
+import 'package:note_sondage/feature/notification/realtime/clocking_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
@@ -84,27 +85,48 @@ class _MainAppState extends State<MainApp> {
       return;
     }
 
-    final decision = getIt<TeamRealtimeCoordinator>().resolveGlobalDecision(
+    final currentUserId = getIt<AuthBloc>().state.user.uid;
+    final teamDecision = getIt<TeamRealtimeCoordinator>().resolveGlobalDecision(
       notification,
-      currentUserId: getIt<AuthBloc>().state.user.uid,
+      currentUserId: currentUserId,
+    );
+    final selectedClockingTeamId = _selectedClockingTeamId(
+      getIt<ClockingBloc>().state,
+    );
+    final clockingDecision = getIt<ClockingRealtimeCoordinator>().resolveDecision(
+      notification,
+      currentUserId: currentUserId,
+      selectedTeamId: selectedClockingTeamId,
     );
     getIt<NotificationCenterCubit>().ingestRealtimeNotification(notification);
 
-    if (!decision.hasWork) return;
+    if (!teamDecision.hasWork && !clockingDecision.refreshClocking) return;
 
-    if (decision.refreshTeams) {
+    if (teamDecision.refreshTeams) {
       getIt<TeamBloc>().add(LoadTeamsEvent());
     }
-    if (decision.refreshDashboard) {
+    if (teamDecision.refreshDashboard) {
       getIt<DashboardBloc>().add(RefreshDashboardEvent());
     }
-    if (decision.showSnackBar && decision.snackBarMessage != null) {
+    if (clockingDecision.refreshClocking) {
+      getIt<ClockingBloc>().add(
+        LoadClockingRecordsEvent(teamId: selectedClockingTeamId),
+      );
+    }
+    if (teamDecision.showSnackBar && teamDecision.snackBarMessage != null) {
       final messenger = scaffoldMessengerKey.currentState;
       messenger?.hideCurrentSnackBar();
       messenger?.showSnackBar(
-        SnackBar(content: Text(decision.snackBarMessage!)),
+        SnackBar(content: Text(teamDecision.snackBarMessage!)),
       );
     }
+  }
+
+  String? _selectedClockingTeamId(ClockingState state) {
+    if (state is ClockingRecordsLoaded) return state.selectedTeamId;
+    if (state is ClockingActionInProgress) return state.selectedTeamId;
+    if (state is ClockingActionSuccess) return state.selectedTeamId;
+    return null;
   }
 
   bool _isDuplicateNotification(String notificationId) {

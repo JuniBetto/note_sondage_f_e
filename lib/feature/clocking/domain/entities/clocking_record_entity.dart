@@ -1,19 +1,38 @@
 /// Stato di un record di clocking
 enum ClockingStatus {
   clockedIn,
-  clockedOut,
+  onBreak,
+  committed,
+  decommitted,
   absent,
   late;
 
   factory ClockingStatus.fromString(String value) {
+    final normalized = value.trim();
+    switch (normalized) {
+      case 'CLOCKED_IN':
+      case 'clockedIn':
+        return ClockingStatus.clockedIn;
+      case 'ON_BREAK':
+      case 'onBreak':
+        return ClockingStatus.onBreak;
+      case 'COMMITTED':
+      case 'committed':
+      case 'clockedOut':
+        return ClockingStatus.committed;
+      case 'DECOMMITTED':
+      case 'decommitted':
+        return ClockingStatus.decommitted;
+    }
+
     return ClockingStatus.values.firstWhere(
-      (s) => s.name == value.toLowerCase(),
+      (s) => s.name == normalized.toLowerCase(),
       orElse: () => ClockingStatus.absent,
     );
   }
 }
 
-/// Entità singolo record di clock-in/out
+/// Entita singolo record di clock-in/out
 class ClockingRecordEntity {
   final String id;
   final String userId;
@@ -26,6 +45,15 @@ class ClockingRecordEntity {
   final ClockingStatus status;
   final DateTime date;
   final String? note;
+  final int? totalBreakMinutes;
+  final DateTime? currentBreakStartedAt;
+  final DateTime? lastBreakStartedAt;
+  final DateTime? lastBreakEndedAt;
+  final DateTime? committedAt;
+  final DateTime? decommittedAt;
+  final bool ownerEditable;
+  final bool canDecommit;
+  final bool canCommit;
 
   const ClockingRecordEntity({
     required this.id,
@@ -39,6 +67,15 @@ class ClockingRecordEntity {
     required this.status,
     required this.date,
     this.note,
+    this.totalBreakMinutes,
+    this.currentBreakStartedAt,
+    this.lastBreakStartedAt,
+    this.lastBreakEndedAt,
+    this.committedAt,
+    this.decommittedAt,
+    this.ownerEditable = false,
+    this.canDecommit = false,
+    this.canCommit = false,
   });
 
   ClockingRecordEntity copyWith({
@@ -53,6 +90,15 @@ class ClockingRecordEntity {
     ClockingStatus? status,
     DateTime? date,
     String? note,
+    int? totalBreakMinutes,
+    DateTime? currentBreakStartedAt,
+    DateTime? lastBreakStartedAt,
+    DateTime? lastBreakEndedAt,
+    DateTime? committedAt,
+    DateTime? decommittedAt,
+    bool? ownerEditable,
+    bool? canDecommit,
+    bool? canCommit,
   }) {
     return ClockingRecordEntity(
       id: id ?? this.id,
@@ -66,10 +112,28 @@ class ClockingRecordEntity {
       status: status ?? this.status,
       date: date ?? this.date,
       note: note ?? this.note,
+      totalBreakMinutes: totalBreakMinutes ?? this.totalBreakMinutes,
+      currentBreakStartedAt: currentBreakStartedAt ?? this.currentBreakStartedAt,
+      lastBreakStartedAt: lastBreakStartedAt ?? this.lastBreakStartedAt,
+      lastBreakEndedAt: lastBreakEndedAt ?? this.lastBreakEndedAt,
+      committedAt: committedAt ?? this.committedAt,
+      decommittedAt: decommittedAt ?? this.decommittedAt,
+      ownerEditable: ownerEditable ?? this.ownerEditable,
+      canDecommit: canDecommit ?? this.canDecommit,
+      canCommit: canCommit ?? this.canCommit,
     );
   }
 
-  /// Formatta l'ora di clock-in come stringa
+  bool get isActive =>
+      clockOutTime == null &&
+      (status == ClockingStatus.clockedIn || status == ClockingStatus.onBreak);
+
+  bool get isOnBreak => status == ClockingStatus.onBreak;
+
+  bool get isCommitted => status == ClockingStatus.committed;
+
+  bool get isDecommitted => status == ClockingStatus.decommitted;
+
   String get clockInFormatted {
     if (clockInTime == null) return '--:--';
     final h = clockInTime!.hour.toString().padLeft(2, '0');
@@ -77,7 +141,6 @@ class ClockingRecordEntity {
     return '$h:$m';
   }
 
-  /// Formatta l'ora di clock-out come stringa
   String get clockOutFormatted {
     if (clockOutTime == null) return '--:--';
     final h = clockOutTime!.hour.toString().padLeft(2, '0');
@@ -85,7 +148,6 @@ class ClockingRecordEntity {
     return '$h:$m';
   }
 
-  /// Durata lavorata formattata
   String get timeWorkedFormatted {
     if (timeWorked == null) return '0h 0m';
     final hours = timeWorked!.inHours;
@@ -93,14 +155,27 @@ class ClockingRecordEntity {
     return '${hours}h ${minutes}m';
   }
 
-  /// Converte in UserClockInfo legacy per compatibilità con i widget esistenti
-  // UserClockInfo toUserClockInfo() {
-  //   return UserClockInfo(
-  //     user: userName,
-  //     clockInTime: clockInFormatted,
-  //     clockOutTime: clockOutFormatted,
-  //     timeWorked: timeWorkedFormatted,
-  //     teamName: teamName,
-  //   );
-  // }
+  String get breakWorkedFormatted {
+    final minutes = totalBreakMinutes ?? 0;
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    return '${hours}h ${remainingMinutes}m';
+  }
+
+  String get statusLabel {
+    switch (status) {
+      case ClockingStatus.clockedIn:
+        return 'Clocked in';
+      case ClockingStatus.onBreak:
+        return 'On break';
+      case ClockingStatus.committed:
+        return 'Committed';
+      case ClockingStatus.decommitted:
+        return 'Decommitted';
+      case ClockingStatus.absent:
+        return 'Absent';
+      case ClockingStatus.late:
+        return 'Late';
+    }
+  }
 }

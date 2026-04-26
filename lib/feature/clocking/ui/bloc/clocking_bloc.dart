@@ -9,8 +9,9 @@ part 'clocking_state.dart';
 class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
   final ClockingUseCase clockingUseCase;
 
-  /// Cache dei record per evitare flickering
-  List<ClockingRecordEntity> _cachedRecords = [];
+  List<ClockingRecordEntity> _cachedMyRecords = [];
+  List<ClockingRecordEntity> _cachedTeamRecords = [];
+  String? _selectedTeamId;
 
   ClockingBloc({required this.clockingUseCase}) : super(ClockingInitial()) {
     on<LoadClockingRecordsEvent>(_onLoadRecords);
@@ -19,6 +20,11 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     on<LoadClockingByTeamIdEvent>(_onLoadByTeamId);
     on<ClockInEvent>(_onClockIn);
     on<ClockOutEvent>(_onClockOut);
+    on<StartBreakEvent>(_onStartBreak);
+    on<StopBreakEvent>(_onStopBreak);
+    on<UpdateClockingRecordEvent>(_onUpdateRecord);
+    on<DecommitClockingRecordEvent>(_onDecommitRecord);
+    on<CommitClockingRecordEvent>(_onCommitRecord);
     on<DeleteClockingRecordEvent>(_onDelete);
   }
 
@@ -26,17 +32,18 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     LoadClockingRecordsEvent event,
     Emitter<ClockingState> emit,
   ) async {
-    if (_cachedRecords.isNotEmpty) {
-      emit(ClockingRecordsLoaded(_cachedRecords));
+    _selectedTeamId = event.teamId ?? _selectedTeamId;
+    if (_cachedMyRecords.isNotEmpty || _cachedTeamRecords.isNotEmpty) {
+      emit(_loadedState());
     } else {
       emit(ClockingLoading());
     }
+
     try {
-      final records = await clockingUseCase.getAllRecords();
-      _cachedRecords = records;
-      emit(ClockingRecordsLoaded(records));
+      await _reloadDashboard();
+      emit(_loadedState());
     } catch (e) {
-      if (_cachedRecords.isEmpty) {
+      if (_cachedMyRecords.isEmpty && _cachedTeamRecords.isEmpty) {
         emit(ClockingError(e.toString()));
       }
     }
@@ -48,8 +55,9 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
   ) async {
     emit(ClockingLoading());
     try {
-      final records = await clockingUseCase.getRecordsByDate(event.date);
-      emit(ClockingRecordsLoaded(records));
+      _cachedMyRecords = await clockingUseCase.getRecordsByDate(event.date);
+      _cachedTeamRecords = [];
+      emit(_loadedState());
     } catch (e) {
       emit(ClockingError(e.toString()));
     }
@@ -61,8 +69,9 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
   ) async {
     emit(ClockingLoading());
     try {
-      final records = await clockingUseCase.getRecordsByUserId(event.userId);
-      emit(ClockingRecordsLoaded(records));
+      _cachedMyRecords = await clockingUseCase.getRecordsByUserId(event.userId);
+      _cachedTeamRecords = [];
+      emit(_loadedState());
     } catch (e) {
       emit(ClockingError(e.toString()));
     }
@@ -72,10 +81,11 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     LoadClockingByTeamIdEvent event,
     Emitter<ClockingState> emit,
   ) async {
+    _selectedTeamId = event.teamId;
     emit(ClockingLoading());
     try {
-      final records = await clockingUseCase.getRecordsByTeamId(event.teamId);
-      emit(ClockingRecordsLoaded(records));
+      _cachedTeamRecords = await clockingUseCase.getRecordsByTeamId(event.teamId);
+      emit(_loadedState());
     } catch (e) {
       emit(ClockingError(e.toString()));
     }
@@ -85,48 +95,76 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     ClockInEvent event,
     Emitter<ClockingState> emit,
   ) async {
-    try {
-      final record = await clockingUseCase.clockIn(
-        teamId: event.teamId,
-        note: event.note,
-      );
-      emit(ClockingActionSuccess(record));
-      _cachedRecords = [
-        record,
-        ..._cachedRecords.where((existing) => existing.id != record.id),
-      ];
-      emit(ClockingRecordsLoaded(_cachedRecords));
-    } catch (e) {
-      emit(ClockingError(e.toString()));
-      if (_cachedRecords.isNotEmpty) {
-        emit(ClockingRecordsLoaded(_cachedRecords));
-      }
-    }
+    await _performAction(
+      emit,
+      () => clockingUseCase.clockIn(teamId: event.teamId, note: event.note),
+    );
   }
 
   Future<void> _onClockOut(
     ClockOutEvent event,
     Emitter<ClockingState> emit,
   ) async {
-    try {
-      final record = await clockingUseCase.clockOut(
-        teamId: event.teamId,
+    await _performAction(
+      emit,
+      () => clockingUseCase.clockOut(teamId: event.teamId, note: event.note),
+    );
+  }
+
+  Future<void> _onStartBreak(
+    StartBreakEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    await _performAction(
+      emit,
+      () => clockingUseCase.startBreak(teamId: event.teamId, note: event.note),
+    );
+  }
+
+  Future<void> _onStopBreak(
+    StopBreakEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    await _performAction(
+      emit,
+      () => clockingUseCase.stopBreak(teamId: event.teamId, note: event.note),
+    );
+  }
+
+  Future<void> _onUpdateRecord(
+    UpdateClockingRecordEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    await _performAction(
+      emit,
+      () => clockingUseCase.updateTeamRecord(
+        id: event.id,
+        clockInAt: event.clockInAt,
+        clockOutAt: event.clockOutAt,
+        totalBreakMinutes: event.totalBreakMinutes,
         note: event.note,
-      );
-      emit(ClockingActionSuccess(record));
-      _cachedRecords = _cachedRecords.map((r) {
-        return r.id == record.id ? record : r;
-      }).toList();
-      if (!_cachedRecords.any((r) => r.id == record.id)) {
-        _cachedRecords = [record, ..._cachedRecords];
-      }
-      emit(ClockingRecordsLoaded(_cachedRecords));
-    } catch (e) {
-      emit(ClockingError(e.toString()));
-      if (_cachedRecords.isNotEmpty) {
-        emit(ClockingRecordsLoaded(_cachedRecords));
-      }
-    }
+      ),
+    );
+  }
+
+  Future<void> _onDecommitRecord(
+    DecommitClockingRecordEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    await _performAction(
+      emit,
+      () => clockingUseCase.decommitTeamRecord(event.id),
+    );
+  }
+
+  Future<void> _onCommitRecord(
+    CommitClockingRecordEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    await _performAction(
+      emit,
+      () => clockingUseCase.commitTeamRecord(event.id),
+    );
   }
 
   Future<void> _onDelete(
@@ -134,15 +172,71 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     Emitter<ClockingState> emit,
   ) async {
     try {
+      emit(_inProgressState());
       await clockingUseCase.deleteRecord(event.id);
       emit(ClockingDeleted());
-      _cachedRecords = _cachedRecords.where((r) => r.id != event.id).toList();
-      emit(ClockingRecordsLoaded(_cachedRecords));
+      await _reloadDashboard();
+      emit(_loadedState());
     } catch (e) {
       emit(ClockingError(e.toString()));
-      if (_cachedRecords.isNotEmpty) {
-        emit(ClockingRecordsLoaded(_cachedRecords));
+      if (_cachedMyRecords.isNotEmpty || _cachedTeamRecords.isNotEmpty) {
+        emit(_loadedState());
       }
     }
+  }
+
+  Future<void> _performAction(
+    Emitter<ClockingState> emit,
+    Future<ClockingRecordEntity> Function() action,
+  ) async {
+    try {
+      emit(_inProgressState());
+      final record = await action();
+      await _reloadDashboard();
+      emit(
+        ClockingActionSuccess(
+          record: record,
+          myRecords: List<ClockingRecordEntity>.from(_cachedMyRecords),
+          teamRecords: List<ClockingRecordEntity>.from(_cachedTeamRecords),
+          selectedTeamId: _selectedTeamId,
+        ),
+      );
+      emit(_loadedState());
+    } catch (e) {
+      emit(ClockingError(e.toString()));
+      try {
+        await _reloadDashboard();
+      } catch (_) {}
+      if (_cachedMyRecords.isNotEmpty || _cachedTeamRecords.isNotEmpty) {
+        emit(_loadedState());
+      }
+    }
+  }
+
+  Future<void> _reloadDashboard() async {
+    _cachedMyRecords = await clockingUseCase.getAllRecords();
+    if (_selectedTeamId != null && _selectedTeamId!.isNotEmpty) {
+      _cachedTeamRecords = await clockingUseCase.getRecordsByTeamId(
+        _selectedTeamId!,
+      );
+    } else {
+      _cachedTeamRecords = [];
+    }
+  }
+
+  ClockingRecordsLoaded _loadedState() {
+    return ClockingRecordsLoaded(
+      myRecords: List<ClockingRecordEntity>.from(_cachedMyRecords),
+      teamRecords: List<ClockingRecordEntity>.from(_cachedTeamRecords),
+      selectedTeamId: _selectedTeamId,
+    );
+  }
+
+  ClockingActionInProgress _inProgressState() {
+    return ClockingActionInProgress(
+      myRecords: List<ClockingRecordEntity>.from(_cachedMyRecords),
+      teamRecords: List<ClockingRecordEntity>.from(_cachedTeamRecords),
+      selectedTeamId: _selectedTeamId,
+    );
   }
 }

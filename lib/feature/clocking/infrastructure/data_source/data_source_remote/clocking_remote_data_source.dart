@@ -50,7 +50,7 @@ class ClockingRemoteDataSource {
   Future<List<ClockingRecordEntity>> getByTeamId(String teamId) async {
     try {
       final response = await _dio.get(
-        '/api/aggregate/clocking/my-records',
+        '/api/aggregate/clocking/team-records',
         queryParameters: {'teamId': teamId},
       );
       final data = response.data as List<dynamic>? ?? const [];
@@ -107,7 +107,88 @@ class ClockingRemoteDataSource {
     }
   }
 
+  Future<ClockingRecordEntity> startBreak({String? teamId, String? note}) async {
+    try {
+      final response = await _dio.post(
+        '/api/aggregate/clocking/start-break',
+        data: {
+          if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return ClockingMapper.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } catch (e) {
+      throw Exception('Failed to start break: $e');
+    }
+  }
+
+  Future<ClockingRecordEntity> stopBreak({String? teamId, String? note}) async {
+    try {
+      final response = await _dio.post(
+        '/api/aggregate/clocking/stop-break',
+        data: {
+          if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return ClockingMapper.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } catch (e) {
+      throw Exception('Failed to stop break: $e');
+    }
+  }
+
   Future<void> delete(String id) async {
     throw UnsupportedError('Clocking delete is not supported by the backend');
+  }
+
+  Future<ClockingRecordEntity> updateTeamRecord({
+    required String id,
+    DateTime? clockInAt,
+    DateTime? clockOutAt,
+    int? totalBreakMinutes,
+    String? note,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        '/api/aggregate/clocking/records/$id',
+        data: {
+          if (clockInAt != null) 'clockInAt': clockInAt.toIso8601String(),
+          if (clockOutAt != null) 'clockOutAt': clockOutAt.toIso8601String(),
+          if (totalBreakMinutes != null) 'totalBreakMinutes': totalBreakMinutes,
+          if (note != null) 'note': note,
+        },
+      );
+      return ClockingMapper.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } catch (e) {
+      throw Exception('Failed to update team clocking record: $e');
+    }
+  }
+
+  Future<ClockingRecordEntity> decommitTeamRecord(String id) async {
+    try {
+      final response = await _dio.post('/api/aggregate/clocking/records/$id/decommit');
+      return ClockingMapper.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } catch (e) {
+      throw Exception('Failed to decommit team clocking record: $e');
+    }
+  }
+
+  Future<ClockingRecordEntity> commitTeamRecord(String id) async {
+    try {
+      final response = await _dio.post('/api/aggregate/clocking/records/$id/commit');
+      return ClockingMapper.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } catch (e) {
+      throw Exception('Failed to commit team clocking record: $e');
+    }
   }
 }

@@ -16,12 +16,14 @@ class ClockingMobile extends StatefulWidget {
 }
 
 class _ClockingMobileState extends State<ClockingMobile> {
+  String? _selectedTeamId;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<ClockingBloc>().add(LoadClockingRecordsEvent());
+      context.read<ClockingBloc>().add(const LoadClockingRecordsEvent());
       context.read<TeamBloc>().add(LoadTeamsEvent());
     });
   }
@@ -83,7 +85,10 @@ class _ClockingMobileState extends State<ClockingMobile> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                StatusClocking(isCompact: true),
+                StatusClocking(
+                  isCompact: true,
+                  selectedTeamId: _selectedTeamId,
+                ),
               ],
             ),
           ),
@@ -92,14 +97,29 @@ class _ClockingMobileState extends State<ClockingMobile> {
           // ═══════════════════════════════
           // Action buttons — centered
           // ═══════════════════════════════
-          const Center(child: ButtonClocking(isCompact: true)),
+          Center(
+            child: ButtonClocking(
+              isCompact: true,
+              selectedTeamId: _selectedTeamId,
+              onSelectedTeamChanged: (value) {
+                if (!mounted) return;
+                setState(() => _selectedTeamId = value);
+                context.read<ClockingBloc>().add(
+                  LoadClockingRecordsEvent(teamId: value),
+                );
+              },
+            ),
+          ),
 
           const SizedBox(height: 16),
 
           // ═══════════════════════════════
           // Tracking section
           // ═══════════════════════════════
-          StatusClockInChangeView(isMobile: true),
+          StatusClockInChangeView(
+            isMobile: true,
+            selectedTeamId: _selectedTeamId,
+          ),
         ],
       ),
     );

@@ -11,23 +11,52 @@ class ClockingInitial extends ClockingState {}
 
 class ClockingLoading extends ClockingState {}
 
-class ClockingRecordsLoaded extends ClockingState {
-  final List<ClockingRecordEntity> records;
-  final DateTime _timestamp;
+class ClockingActionInProgress extends ClockingState {
+  final List<ClockingRecordEntity> myRecords;
+  final List<ClockingRecordEntity> teamRecords;
+  final String? selectedTeamId;
 
-  ClockingRecordsLoaded(this.records) : _timestamp = DateTime.now();
+  const ClockingActionInProgress({
+    required this.myRecords,
+    required this.teamRecords,
+    required this.selectedTeamId,
+  });
 
   @override
-  List<Object?> get props => [records, _timestamp];
+  List<Object?> get props => [myRecords, teamRecords, selectedTeamId];
+}
+
+class ClockingRecordsLoaded extends ClockingState {
+  final List<ClockingRecordEntity> myRecords;
+  final List<ClockingRecordEntity> teamRecords;
+  final String? selectedTeamId;
+  final DateTime _timestamp;
+
+  ClockingRecordsLoaded({
+    required this.myRecords,
+    required this.teamRecords,
+    required this.selectedTeamId,
+  }) : _timestamp = DateTime.now();
+
+  @override
+  List<Object?> get props => [myRecords, teamRecords, selectedTeamId, _timestamp];
 }
 
 class ClockingActionSuccess extends ClockingState {
   final ClockingRecordEntity record;
+  final List<ClockingRecordEntity> myRecords;
+  final List<ClockingRecordEntity> teamRecords;
+  final String? selectedTeamId;
 
-  const ClockingActionSuccess(this.record);
+  const ClockingActionSuccess({
+    required this.record,
+    required this.myRecords,
+    required this.teamRecords,
+    required this.selectedTeamId,
+  });
 
   @override
-  List<Object?> get props => [record];
+  List<Object?> get props => [record, myRecords, teamRecords, selectedTeamId];
 }
 
 class ClockingDeleted extends ClockingState {}

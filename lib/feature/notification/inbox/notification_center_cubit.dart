@@ -25,7 +25,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
 
     emit(state.copyWith(status: NotificationCenterStatus.loading));
     try {
-      final notifications = await _backendAuth.getMyNotifications();
+      final notifications = (await _backendAuth.getMyNotifications())
+          .where((item) => !_isRealtimeOnlyMetadata(item.metadata))
+          .toList();
       emit(
         state.copyWith(
           status: NotificationCenterStatus.loaded,
@@ -47,7 +49,8 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
 
   void ingestRealtimeNotification(RealtimeNotification notification) {
     if (notification.notificationId.isEmpty ||
-        notification.eventType.startsWith('SYSTEM_')) {
+        notification.eventType.startsWith('SYSTEM_') ||
+        _isRealtimeOnlyMetadata(notification.metadata)) {
       return;
     }
 
@@ -136,6 +139,10 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
 
   void reset() {
     emit(const NotificationCenterState());
+  }
+
+  bool _isRealtimeOnlyMetadata(Map<String, String> metadata) {
+    return metadata['realtimeOnly']?.toLowerCase() == 'true';
   }
 
   Future<void> _performAction(

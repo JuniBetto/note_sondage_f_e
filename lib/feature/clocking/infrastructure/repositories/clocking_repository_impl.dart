@@ -12,11 +12,6 @@ class ClockingRepositoryImpl implements ClockingRepository {
   @override
   Future<List<ClockingRecordEntity>> getAll() async {
     try {
-      final local = await _local.getAll();
-      if (local.isNotEmpty) {
-        _remote.getAll().catchError((_) => <ClockingRecordEntity>[]);
-        return local;
-      }
       return await _remote.getAll();
     } catch (e) {
       final cached = await _local.getAll();
@@ -89,6 +84,63 @@ class ClockingRepositoryImpl implements ClockingRepository {
       return true;
     } catch (e) {
       throw Exception('Failed to delete clocking record: $e');
+    }
+  }
+
+  @override
+  Future<ClockingRecordEntity> startBreak({String? teamId, String? note}) async {
+    try {
+      return await _remote.startBreak(teamId: teamId, note: note);
+    } catch (e) {
+      throw Exception('Failed to start break: $e');
+    }
+  }
+
+  @override
+  Future<ClockingRecordEntity> stopBreak({String? teamId, String? note}) async {
+    try {
+      return await _remote.stopBreak(teamId: teamId, note: note);
+    } catch (e) {
+      throw Exception('Failed to stop break: $e');
+    }
+  }
+
+  @override
+  Future<ClockingRecordEntity> updateTeamRecord({
+    required String id,
+    DateTime? clockInAt,
+    DateTime? clockOutAt,
+    int? totalBreakMinutes,
+    String? note,
+  }) async {
+    try {
+      return await _remote.updateTeamRecord(
+        id: id,
+        clockInAt: clockInAt,
+        clockOutAt: clockOutAt,
+        totalBreakMinutes: totalBreakMinutes,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to update team clocking record: $e');
+    }
+  }
+
+  @override
+  Future<ClockingRecordEntity> decommitTeamRecord(String id) async {
+    try {
+      return await _remote.decommitTeamRecord(id);
+    } catch (e) {
+      throw Exception('Failed to decommit team clocking record: $e');
+    }
+  }
+
+  @override
+  Future<ClockingRecordEntity> commitTeamRecord(String id) async {
+    try {
+      return await _remote.commitTeamRecord(id);
+    } catch (e) {
+      throw Exception('Failed to commit team clocking record: $e');
     }
   }
 }

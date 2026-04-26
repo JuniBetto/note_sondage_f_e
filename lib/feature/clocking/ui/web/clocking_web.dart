@@ -16,12 +16,14 @@ class ClockingWeb extends StatefulWidget {
 }
 
 class _ClockingWebState extends State<ClockingWeb> {
+  String? _selectedTeamId;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<ClockingBloc>().add(LoadClockingRecordsEvent());
+      context.read<ClockingBloc>().add(const LoadClockingRecordsEvent());
       context.read<TeamBloc>().add(LoadTeamsEvent());
     });
   }
@@ -125,16 +127,45 @@ class _ClockingWebState extends State<ClockingWeb> {
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          StatusClocking(isCompact: true),
+                          StatusClocking(
+                            isCompact: true,
+                            selectedTeamId: _selectedTeamId,
+                          ),
                           const SizedBox(height: 16),
-                          const Center(child: ButtonClocking(isCompact: true)),
+                          Center(
+                            child: ButtonClocking(
+                              isCompact: true,
+                              selectedTeamId: _selectedTeamId,
+                              onSelectedTeamChanged: (value) {
+                                if (!mounted) return;
+                                setState(() => _selectedTeamId = value);
+                                context.read<ClockingBloc>().add(
+                                  LoadClockingRecordsEvent(teamId: value),
+                                );
+                              },
+                            ),
+                          ),
                         ],
                       )
                     : Row(
                         children: [
-                          Expanded(child: StatusClocking(isCompact: false)),
+                          Expanded(
+                            child: StatusClocking(
+                              isCompact: false,
+                              selectedTeamId: _selectedTeamId,
+                            ),
+                          ),
                           const SizedBox(width: 20),
-                          const ButtonClocking(),
+                          ButtonClocking(
+                            selectedTeamId: _selectedTeamId,
+                            onSelectedTeamChanged: (value) {
+                              if (!mounted) return;
+                              setState(() => _selectedTeamId = value);
+                              context.read<ClockingBloc>().add(
+                                LoadClockingRecordsEvent(teamId: value),
+                              );
+                            },
+                          ),
                         ],
                       ),
               ),
@@ -143,7 +174,7 @@ class _ClockingWebState extends State<ClockingWeb> {
               // ═══════════════════════════════
               // Tracking table section
               // ═══════════════════════════════
-              const StatusClockInChangeView(),
+              StatusClockInChangeView(selectedTeamId: _selectedTeamId),
             ],
           ),
         );

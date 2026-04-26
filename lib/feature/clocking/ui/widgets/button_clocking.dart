@@ -8,16 +8,21 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class ButtonClocking extends StatefulWidget {
-  const ButtonClocking({super.key, this.isCompact = false});
+  const ButtonClocking({
+    super.key,
+    this.isCompact = false,
+    this.selectedTeamId,
+    this.onSelectedTeamChanged,
+  });
   final bool isCompact;
+  final String? selectedTeamId;
+  final ValueChanged<String?>? onSelectedTeamChanged;
 
   @override
   State<ButtonClocking> createState() => _ButtonClockingState();
 }
 
 class _ButtonClockingState extends State<ButtonClocking> {
-  String? _selectedTeamId;
-
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
@@ -42,11 +47,19 @@ class _ButtonClockingState extends State<ButtonClocking> {
 
           return BlocBuilder<ClockingBloc, ClockingState>(
             builder: (context, clockingState) {
-              final records = _extractRecords(clockingState);
-              final activeRecord = _selectedTeamActiveRecord(records);
+              final records = _extractMyRecords(clockingState);
+              final activeRecord = _activeRecord(records);
               final hasTeams = teams.isNotEmpty;
+              final isBusy = clockingState is ClockingActionInProgress;
+              final isClockingReady =
+                  clockingState is ClockingRecordsLoaded ||
+                  clockingState is ClockingActionInProgress ||
+                  clockingState is ClockingActionSuccess;
 
               final clockColor = activeRecord != null ? Colors.red : Colors.green;
+              final breakColor = activeRecord?.isOnBreak == true
+                  ? Colors.orange
+                  : Colors.blue;
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
@@ -54,17 +67,17 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   _ClockingTeamSelector(
                     isCompact: widget.isCompact,
                     teams: teams,
-                    selectedTeamId: _selectedTeamId,
-                    onChanged: (value) {
-                      setState(() => _selectedTeamId = value);
-                    },
+                    selectedTeamId: widget.selectedTeamId,
+                    onChanged: widget.onSelectedTeamChanged ?? (_) {},
                   ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _ClockActionButton(
-                        onTap: hasTeams ? () => _onClockAction(activeRecord) : null,
+                        onTap: hasTeams && !isBusy && isClockingReady
+                            ? () => _onClockAction(activeRecord)
+                            : null,
                         color: clockColor,
                         icon: activeRecord != null
                             ? Icons.stop_rounded
@@ -73,20 +86,33 @@ class _ButtonClockingState extends State<ButtonClocking> {
                             ? localization.clockedOutAt.replaceAll(':', '').trim()
                             : localization.clockedInAt.replaceAll(':', '').trim(),
                         subtitle: activeRecord != null
-                            ? 'Chiudi il turno del team selezionato'
-                            : 'Apri il turno del team selezionato',
+                            ? 'Turno attivo su ${activeRecord.teamName}'
+                            : (isClockingReady
+                                  ? 'Apri il tuo turno sul team selezionato'
+                                  : 'Caricamento stato timbratura...'),
                         isCompact: widget.isCompact,
-                        isDisabled: !hasTeams,
+                        isDisabled: !hasTeams || isBusy || !isClockingReady,
                       ),
                       const SizedBox(width: 12),
                       _ClockActionButton(
-                        onTap: null,
-                        color: Colors.grey[500]!,
+                        onTap: activeRecord != null && !isBusy && isClockingReady
+                            ? () => _onBreakAction(activeRecord)
+                            : null,
+                        color: breakColor,
                         icon: Icons.coffee_rounded,
-                        label: localization.startBreakAt.replaceAll(':', '').trim(),
-                        subtitle: 'Break non ancora collegato al backend',
+                        label: (activeRecord?.isOnBreak == true
+                                ? localization.endBreakAt
+                                : localization.startBreakAt)
+                            .replaceAll(':', '')
+                            .trim(),
+                        subtitle: activeRecord == null
+                            ? 'Serve prima un clock-in attivo'
+                            : (activeRecord.isOnBreak
+                                  ? 'Chiudi la pausa del turno attivo'
+                                  : 'Avvia una pausa sul turno attivo'),
                         isCompact: widget.isCompact,
-                        isDisabled: true,
+                        isDisabled:
+                            activeRecord == null || isBusy || !isClockingReady,
                       ),
                     ],
                   ),
@@ -101,36 +127,45 @@ class _ButtonClockingState extends State<ButtonClocking> {
 
   void _ensureSelectedTeam(List<TeamEntity> teams) {
     if (teams.isEmpty) {
-      _selectedTeamId = null;
+      if (widget.selectedTeamId != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          widget.onSelectedTeamChanged?.call(null);
+        });
+      }
       return;
     }
 
     final teamIds = teams.map((team) => team.id).whereType<String>().toSet();
-    if (_selectedTeamId == null || !teamIds.contains(_selectedTeamId)) {
+    if (widget.selectedTeamId == null || !teamIds.contains(widget.selectedTeamId)) {
+      String? firstTeamId;
       for (final team in teams) {
         if (team.id != null) {
-          _selectedTeamId = team.id;
+          firstTeamId = team.id;
           break;
         }
+      }
+      if (firstTeamId != widget.selectedTeamId) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          widget.onSelectedTeamChanged?.call(firstTeamId);
+        });
       }
     }
   }
 
-  List<ClockingRecordEntity> _extractRecords(ClockingState state) {
-    if (state is ClockingRecordsLoaded) return state.records;
+  List<ClockingRecordEntity> _extractMyRecords(ClockingState state) {
+    if (state is ClockingRecordsLoaded) return state.myRecords;
+    if (state is ClockingActionInProgress) return state.myRecords;
+    if (state is ClockingActionSuccess) return state.myRecords;
     return const [];
   }
 
-  ClockingRecordEntity? _selectedTeamActiveRecord(
+  ClockingRecordEntity? _activeRecord(
     List<ClockingRecordEntity> records,
   ) {
-    final selectedTeamId = _selectedTeamId;
-    if (selectedTeamId == null) return null;
-
     for (final record in records) {
-      if (record.teamId == selectedTeamId &&
-          record.status == ClockingStatus.clockedIn &&
-          record.clockOutTime == null) {
+      if (record.isActive) {
         return record;
       }
     }
@@ -138,7 +173,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }
 
   void _onClockAction(ClockingRecordEntity? activeRecord) {
-    final selectedTeamId = _selectedTeamId;
+    final selectedTeamId = widget.selectedTeamId;
     if (selectedTeamId == null) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -156,7 +191,21 @@ class _ButtonClockingState extends State<ButtonClocking> {
       return;
     }
 
-    context.read<ClockingBloc>().add(ClockOutEvent(teamId: selectedTeamId));
+    context.read<ClockingBloc>().add(
+      ClockOutEvent(teamId: activeRecord.teamId),
+    );
+  }
+
+  void _onBreakAction(ClockingRecordEntity activeRecord) {
+    if (activeRecord.isOnBreak) {
+      context.read<ClockingBloc>().add(
+        StopBreakEvent(teamId: activeRecord.teamId),
+      );
+      return;
+    }
+    context.read<ClockingBloc>().add(
+      StartBreakEvent(teamId: activeRecord.teamId),
+    );
   }
 }
 
@@ -295,7 +344,7 @@ class _ClockActionButtonState extends State<_ClockActionButton> {
               Text(
                 widget.label,
                 style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.iconLabel?.withValues(alpha: opacity),
+                  color: widget.color.withValues(alpha: opacity),
                   fontWeight: FontWeight.w700,
                   fontSize: widget.isCompact ? 12 : 14,
                 ),
@@ -307,7 +356,9 @@ class _ClockActionButtonState extends State<_ClockActionButton> {
                 child: Text(
                   widget.subtitle,
                   style: textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500]?.withValues(alpha: opacity),
+                    color: widget.color.withValues(
+                      alpha: widget.isDisabled ? 0.45 : 0.75,
+                    ),
                     fontSize: widget.isCompact ? 10 : 11,
                   ),
                   textAlign: TextAlign.center,
