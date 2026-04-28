@@ -20,15 +20,14 @@ class ShiftRepositoryImpl implements ShiftRepository {
     required bool overnight,
     required List<int> alarmOffsets,
     String? color,
-  }) =>
-      _remote.createProfile(
-        name: name,
-        startTime: startTime,
-        endTime: endTime,
-        overnight: overnight,
-        alarmOffsets: alarmOffsets,
-        color: color,
-      );
+  }) => _remote.createProfile(
+    name: name,
+    startTime: startTime,
+    endTime: endTime,
+    overnight: overnight,
+    alarmOffsets: alarmOffsets,
+    color: color,
+  );
 
   @override
   Future<ShiftProfileEntity> updateProfile(
@@ -39,26 +38,25 @@ class ShiftRepositoryImpl implements ShiftRepository {
     required bool overnight,
     required List<int> alarmOffsets,
     String? color,
-  }) =>
-      _remote.updateProfile(
-        profileId,
-        name: name,
-        startTime: startTime,
-        endTime: endTime,
-        overnight: overnight,
-        alarmOffsets: alarmOffsets,
-        color: color,
-      );
+  }) => _remote.updateProfile(
+    profileId,
+    name: name,
+    startTime: startTime,
+    endTime: endTime,
+    overnight: overnight,
+    alarmOffsets: alarmOffsets,
+    color: color,
+  );
 
   @override
-  Future<void> deleteProfile(String profileId) => _remote.deleteProfile(profileId);
+  Future<void> deleteProfile(String profileId) =>
+      _remote.deleteProfile(profileId);
 
   @override
   Future<List<ShiftAssignmentEntity>> getAssignments({
     required DateTime from,
     required DateTime to,
-  }) =>
-      _remote.getAssignments(from: from, to: to);
+  }) => _remote.getAssignments(from: from, to: to);
 
   @override
   Future<ShiftAssignmentEntity> assign({
@@ -69,16 +67,15 @@ class ShiftRepositoryImpl implements ShiftRepository {
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
-  }) =>
-      _remote.assign(
-        shiftDate: shiftDate,
-        profileId: profileId,
-        startTime: startTime,
-        endTime: endTime,
-        overnight: overnight,
-        note: note,
-        alarmOffsets: alarmOffsets,
-      );
+  }) => _remote.assign(
+    shiftDate: shiftDate,
+    profileId: profileId,
+    startTime: startTime,
+    endTime: endTime,
+    overnight: overnight,
+    note: note,
+    alarmOffsets: alarmOffsets,
+  );
 
   @override
   Future<ShiftAssignmentEntity> updateAssignment(
@@ -89,16 +86,15 @@ class ShiftRepositoryImpl implements ShiftRepository {
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
-  }) =>
-      _remote.updateAssignment(
-        assignmentId,
-        profileId: profileId,
-        startTime: startTime,
-        endTime: endTime,
-        overnight: overnight,
-        note: note,
-        alarmOffsets: alarmOffsets,
-      );
+  }) => _remote.updateAssignment(
+    assignmentId,
+    profileId: profileId,
+    startTime: startTime,
+    endTime: endTime,
+    overnight: overnight,
+    note: note,
+    alarmOffsets: alarmOffsets,
+  );
 
   @override
   Future<void> deleteAssignment(String assignmentId) =>

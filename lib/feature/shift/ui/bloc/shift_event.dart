@@ -30,7 +30,14 @@ class CreateShiftProfileEvent extends ShiftEvent {
   });
 
   @override
-  List<Object?> get props => [name, startTime, endTime, overnight, alarmOffsets, color];
+  List<Object?> get props => [
+    name,
+    startTime,
+    endTime,
+    overnight,
+    alarmOffsets,
+    color,
+  ];
 }
 
 class UpdateShiftProfileEvent extends ShiftEvent {

@@ -167,19 +167,16 @@ class _CreateSondageMobileState extends State<CreateSondageMobile> {
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
                     children: [
-                      ListTile(
-                        leading: Checkbox(
-                          value: isFixedTime,
-                          onChanged: (value) {
-                            setState(() {
-                              isFixedTime = value!;
-                            });
-                          },
-                          activeColor: colorScheme.selectionColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
+                      CheckboxListTile(
+                        value: isFixedTime,
+                        onChanged: (value) {
+                          setState(() {
+                            isFixedTime = value!;
+                          });
+                        },
+                        activeColor: colorScheme.selectionColor,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
                         title: Text(localization.setExpiry),
                       ),
                       TimeRangePicker(

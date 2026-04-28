@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/utils/extention_color.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
@@ -177,11 +178,13 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
             );
 
             // Convert teamsWithMembers to the format expected by viewScrollWebMobile
+            final currentUserId = getIt<AuthBloc>().state.user.uid;
             final items = teamsWithMembers.map((teamView) {
               return {
                 "teamName": teamView.team.name,
                 "teamFocus": teamView.team.description,
                 "teamId": teamView.team.id ?? '',
+                "ownerUserId": teamView.team.createdByUserId,
                 "members": teamView.members
                     .map(
                       (m) => {
@@ -210,6 +213,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
               widget.isRow,
               widget.isSelectionMode,
               widget.onTeamSelected,
+              currentUserId: currentUserId,
             );
           },
         );
@@ -223,8 +227,9 @@ Widget viewScrollWebMobile(
   List<Map<String, dynamic>> items,
   bool isRow,
   bool isSelectionMode,
-  void Function(Map<String, dynamic> selectedTeam)? onTeamSelected,
-) {
+  void Function(Map<String, dynamic> selectedTeam)? onTeamSelected, {
+  String currentUserId = '',
+}) {
   return Padding(
     padding: const EdgeInsets.all(0.0),
     child: SingleChildScrollView(
@@ -236,6 +241,8 @@ Widget viewScrollWebMobile(
         children: items.asMap().entries.map((entry) {
           final item = entry.value;
           final teamId = item["teamId"] as String;
+          final ownerUserId = (item["ownerUserId"] as String?) ?? '';
+          final isOwner = currentUserId.isNotEmpty && currentUserId == ownerUserId;
 
           return isRow
               ? TeamComponentCard(
@@ -245,6 +252,7 @@ Widget viewScrollWebMobile(
                   teamFocus: item["teamFocus"],
                   teamId: teamId,
                   members: item["members"],
+                  isOwner: isOwner,
                   onTap: isSelectionMode
                       ? () => onTeamSelected?.call(item)
                       : () {},
@@ -261,6 +269,7 @@ Widget viewScrollWebMobile(
                   teamName: item["teamName"],
                   teamFocus: item["teamFocus"],
                   members: item["members"],
+                  isOwner: isOwner,
                   onTap: isSelectionMode
                       ? () => onTeamSelected?.call(item)
                       : () {},

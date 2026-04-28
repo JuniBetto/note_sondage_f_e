@@ -89,9 +89,9 @@ class _SondageMobileState extends State<SondageMobile>
       child: BlocListener<SondageBloc, SondageState>(
         listener: (context, state) {
           if (state is SondageError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         child: Padding(

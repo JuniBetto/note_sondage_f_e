@@ -203,19 +203,22 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
       return;
     }
 
-    final currentEmail = getIt<AuthBloc>().state.user.email.trim().toLowerCase();
-    final currentMember = members
-        .where(
-          (member) =>
-              (member.userId?.trim().isNotEmpty ?? false) &&
-              member.userId!.trim() == currentUserId,
-        )
-        .firstOrNull ??
+    final currentEmail = getIt<AuthBloc>().state.user.email
+        .trim()
+        .toLowerCase();
+    final currentMember =
+        members
+            .where(
+              (member) =>
+                  (member.userId?.trim().isNotEmpty ?? false) &&
+                  member.userId!.trim() == currentUserId,
+            )
+            .firstOrNull ??
         members
             .where(
               (member) => member.userEmail.trim().toLowerCase() == currentEmail,
             )
-        .firstOrNull;
+            .firstOrNull;
     final roleCode = (currentMember?.roleId ?? 'VIEWER').trim().toUpperCase();
     final role = _roles.where((item) => item.id == roleCode).firstOrNull;
     final normalizedPermissions = _normalizePermissions(
@@ -416,7 +419,10 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     );
   }
 
-  Set<String> _normalizePermissions(String roleCode, List<String>? permissions) {
+  Set<String> _normalizePermissions(
+    String roleCode,
+    List<String>? permissions,
+  ) {
     if (permissions == null || permissions.isEmpty) {
       return switch (roleCode) {
         'OWNER' => {'READ', 'UPDATE', 'ADMIN', 'DELETE', 'MANAGE'},
@@ -862,7 +868,10 @@ class _InviteStatusChip extends StatelessWidget {
     final (label, color) = switch (status.toUpperCase()) {
       'ACCEPTED' => (loc.inviteStatusAccepted, const Color(0xFF1B8C4A)),
       'REJECTED' => (loc.inviteStatusRejected, const Color(0xFFE74C3C)),
-      'PENDING_REGISTRATION' => (loc.inviteStatusUnregistered, const Color(0xFF9B59B6)),
+      'PENDING_REGISTRATION' => (
+        loc.inviteStatusUnregistered,
+        const Color(0xFF9B59B6),
+      ),
       _ => (loc.inviteStatusPending, const Color(0xFFE67E22)),
     };
     return Container(
@@ -934,7 +943,10 @@ class _StatusChip extends StatelessWidget {
       UserStatus.pending => (loc.memberStatusInvited, const Color(0xFFE67E22)),
       UserStatus.banned => (loc.inviteStatusPending, const Color(0xFF3498DB)),
       UserStatus.deactivated => (loc.memberStatusInactive, Colors.grey),
-      UserStatus.deleted => (loc.memberStatusSuspended, const Color(0xFFE74C3C)),
+      UserStatus.deleted => (
+        loc.memberStatusSuspended,
+        const Color(0xFFE74C3C),
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

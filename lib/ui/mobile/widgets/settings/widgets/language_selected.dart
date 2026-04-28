@@ -111,12 +111,17 @@ class _LanguageSelectorState extends State<LanguageSelector> {
         ),
       ),
       child: ListTile(
-        leading: Checkbox(
-          value: isSelected,
-          onChanged: (value) => _toggleLanguage(language['code']),
-          activeColor: Colors.blue,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+        leading: SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: isSelected,
+            onChanged: (value) => _toggleLanguage(language['code']),
+            activeColor: Colors.blue,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
           ),
         ),
         title: Text(

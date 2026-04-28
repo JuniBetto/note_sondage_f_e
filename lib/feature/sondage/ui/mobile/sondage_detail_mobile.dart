@@ -70,9 +70,9 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
         listenWhen: (_, state) => state is SondageError,
         listener: (context, state) {
           if (state is SondageError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         buildWhen: (_, state) =>
@@ -124,12 +124,14 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
               backgroundColor: colorScheme.bgNavbarSurface,
               elevation: 0,
               leading: IconButton(
-                icon: Icon(Icons.arrow_back_ios_new_rounded,
-                    color: colorScheme.iconLabel),
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: colorScheme.iconLabel,
+                ),
                 onPressed: () {
-                  context
-                      .read<NavigationBloc>()
-                      .add(NavigationPositionChanged(4));
+                  context.read<NavigationBloc>().add(
+                    NavigationPositionChanged(4),
+                  );
                   context.go(RouterPaths.home);
                 },
               ),
@@ -233,20 +235,22 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                           child: LinearProgressIndicator(
                             value: sondage.options.isNotEmpty
                                 ? (sondage.responses /
-                                        (sondage.options.length * 10))
-                                    .clamp(0.0, 1.0)
+                                          (sondage.options.length * 10))
+                                      .clamp(0.0, 1.0)
                                 : 0,
                             minHeight: 10,
                             backgroundColor: Colors.grey[300],
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(sondageColor),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              sondageColor,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${sondage.responses} ${localization.responses}',
-                          style: textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey[600]),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
                         ),
                       ],
                     ),
@@ -272,24 +276,27 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                         if (sondage.options.isEmpty)
                           Text(
                             localization.noOptionsAvailable,
-                            style: textTheme.bodyMedium
-                                ?.copyWith(color: Colors.grey[600]),
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[600],
+                            ),
                           )
                         else
                           ...sondage.options.map((option) {
                             final isSelected =
                                 sondage.currentUserOptionId == option.id;
-                            final totalVotes =
-                                sondage.responses > 0 ? sondage.responses : 1;
-                            final votePercent =
-                                (option.voteCount / totalVotes).clamp(0.0, 1.0);
+                            final totalVotes = sondage.responses > 0
+                                ? sondage.responses
+                                : 1;
+                            final votePercent = (option.voteCount / totalVotes)
+                                .clamp(0.0, 1.0);
 
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: InkWell(
                                 onTap: sondage.canVote
                                     ? () => _bloc.add(
-                                        VoteSondageEvent(sondage.id, option.id))
+                                        VoteSondageEvent(sondage.id, option.id),
+                                      )
                                     : null,
                                 borderRadius: BorderRadius.circular(10),
                                 child: AnimatedContainer(
@@ -315,9 +322,8 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                                         children: [
                                           CircleAvatar(
                                             radius: 14,
-                                            backgroundColor:
-                                                sondageColor.withValues(
-                                                    alpha: 0.2),
+                                            backgroundColor: sondageColor
+                                                .withValues(alpha: 0.2),
                                             child: Text(
                                               '${option.sortOrder + 1}',
                                               style: TextStyle(
@@ -333,22 +339,29 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                                               option.label,
                                               style: textTheme.bodyMedium
                                                   ?.copyWith(
-                                                color: colorScheme.iconLabel,
-                                                fontWeight: isSelected
-                                                    ? FontWeight.bold
-                                                    : FontWeight.normal,
-                                              ),
+                                                    color:
+                                                        colorScheme.iconLabel,
+                                                    fontWeight: isSelected
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
+                                                  ),
                                             ),
                                           ),
                                           if (isSelected)
-                                            Icon(Icons.check_circle_rounded,
-                                                color: sondageColor, size: 20),
+                                            Icon(
+                                              Icons.check_circle_rounded,
+                                              color: sondageColor,
+                                              size: 20,
+                                            ),
                                           const SizedBox(width: 8),
                                           Text(
-                                            localization.votes(option.voteCount),
+                                            localization.votes(
+                                              option.voteCount,
+                                            ),
                                             style: textTheme.bodySmall
                                                 ?.copyWith(
-                                                    color: Colors.grey[600]),
+                                                  color: Colors.grey[600],
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -361,7 +374,8 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                                           backgroundColor: Colors.grey[200],
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                                  sondageColor),
+                                                sondageColor,
+                                              ),
                                         ),
                                       ),
                                     ],

@@ -27,9 +27,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
   @override
   Widget build(BuildContext context) {
     if (widget.items.isEmpty) {
-      return const Center(
-        child: Text('Nessun sondaggio disponibile'),
-      );
+      return const Center(child: Text('Nessun sondaggio disponibile'));
     }
 
     return Padding(

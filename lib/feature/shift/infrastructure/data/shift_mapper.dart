@@ -6,10 +6,7 @@ class ShiftMapper {
   static TimeOfDay _parseTime(String raw) {
     // Format: "HH:mm:ss" or "HH:mm"
     final parts = raw.split(':');
-    return TimeOfDay(
-      hour: int.parse(parts[0]),
-      minute: int.parse(parts[1]),
-    );
+    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
   static ShiftProfileEntity profileFromJson(Map<String, dynamic> json) {
@@ -59,8 +56,10 @@ class ShiftMapper {
     return {
       'name': name,
       'color': color,
-      'startTime': '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}:00',
-      'endTime': '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}:00',
+      'startTime':
+          '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}:00',
+      'endTime':
+          '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}:00',
       'overnight': overnight,
       'alarmOffsets': alarmOffsets,
     };

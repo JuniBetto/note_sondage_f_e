@@ -27,10 +27,8 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
     ShiftProfileEntity? existing,
   }) async {
     final loc = AppLocalizations.of(context)!;
-    final nameCtrl =
-        TextEditingController(text: existing?.name ?? '');
-    final colorCtrl =
-        TextEditingController(text: existing?.color ?? '#4A90D9');
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    final colorCtrl = TextEditingController(text: existing?.color ?? '#4A90D9');
     TimeOfDay startTime = existing != null
         ? TimeOfDay(
             hour: existing.startTime.hour,
@@ -113,27 +111,27 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                 if (name.isEmpty) return;
                 if (existing == null) {
                   context.read<ShiftBloc>().add(
-                        CreateShiftProfileEvent(
-                          name: name,
-                          color: colorCtrl.text.trim(),
-                          startTime: startTime,
-                          endTime: endTime,
-                          overnight: overnight,
-                          alarmOffsets: const [],
-                        ),
-                      );
+                    CreateShiftProfileEvent(
+                      name: name,
+                      color: colorCtrl.text.trim(),
+                      startTime: startTime,
+                      endTime: endTime,
+                      overnight: overnight,
+                      alarmOffsets: const [],
+                    ),
+                  );
                 } else {
                   context.read<ShiftBloc>().add(
-                        UpdateShiftProfileEvent(
-                          profileId: existing.id,
-                          name: name,
-                          color: colorCtrl.text.trim(),
-                          startTime: startTime,
-                          endTime: endTime,
-                          overnight: overnight,
-                          alarmOffsets: const [],
-                        ),
-                      );
+                    UpdateShiftProfileEvent(
+                      profileId: existing.id,
+                      name: name,
+                      color: colorCtrl.text.trim(),
+                      startTime: startTime,
+                      endTime: endTime,
+                      overnight: overnight,
+                      alarmOffsets: const [],
+                    ),
+                  );
                 }
                 Navigator.pop(ctx);
               },
@@ -167,34 +165,27 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
       ),
     );
     if (confirmed == true) {
-      context
-          .read<ShiftBloc>()
-          .add(DeleteShiftProfileEvent(profile.id));
+      context.read<ShiftBloc>().add(DeleteShiftProfileEvent(profile.id));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final systemProfiles =
-        widget.profiles.where((p) => p.isSystem).toList();
-    final customProfiles =
-        widget.profiles.where((p) => !p.isSystem).toList();
+    final systemProfiles = widget.profiles.where((p) => p.isSystem).toList();
+    final customProfiles = widget.profiles.where((p) => !p.isSystem).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           loc.shiftProfile,
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w700),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
-        ...systemProfiles.map(
-          (p) => _ProfileTile(profile: p, isSystem: true),
-        ),
+        ...systemProfiles.map((p) => _ProfileTile(profile: p, isSystem: true)),
         const Divider(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -217,9 +208,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
             child: Text(
               loc.noShiftsThisMonth,
               style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .descriptionColor,
+                color: Theme.of(context).colorScheme.descriptionColor,
                 fontSize: 13,
               ),
             ),

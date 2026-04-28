@@ -12,7 +12,8 @@ class TeamMemberMapper {
       teamId: (json['teamId'] ?? json['team_id'])?.toString() ?? '',
       status: UserStatus.values.firstWhere(
         (e) => e.value == json['status'],
-        orElse: () => UserStatus.active, // Spring backend implies active if member
+        orElse: () =>
+            UserStatus.active, // Spring backend implies active if member
       ),
       roleId: (json['role_id'] ?? json['role'])?.toString() ?? '',
       imageUrl: (json['image_url'] ?? json['avatarUrl'])?.toString(),

@@ -63,9 +63,9 @@ class ColorPalette {
   static const info = Color(0xFF3B82F6);
 
   // Sondage Status Colors
-  static const statusActive = Color(0xFF22C55E);   // green
-  static const statusDraft = Color(0xFFFB923C);    // orange
-  static const statusClosed = Color(0xFFEF4444);   // red
+  static const statusActive = Color(0xFF22C55E); // green
+  static const statusDraft = Color(0xFFFB923C); // orange
+  static const statusClosed = Color(0xFFEF4444); // red
   static const statusCompleted = Color(0xFF3B82F6); // blue
   static const statusPublished = Color(0xFF8B5CF6); // violet
 

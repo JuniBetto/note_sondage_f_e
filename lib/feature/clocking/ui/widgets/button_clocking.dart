@@ -42,7 +42,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
       },
       child: BlocBuilder<TeamBloc, TeamState>(
         builder: (context, teamState) {
-          final teams = teamState is TeamsLoaded ? teamState.teams : <TeamEntity>[];
+          final teams = teamState is TeamsLoaded
+              ? teamState.teams
+              : <TeamEntity>[];
           _ensureSelectedTeam(teams);
 
           return BlocBuilder<ClockingBloc, ClockingState>(
@@ -56,7 +58,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   clockingState is ClockingActionInProgress ||
                   clockingState is ClockingActionSuccess;
 
-              final clockColor = activeRecord != null ? Colors.red : Colors.green;
+              final clockColor = activeRecord != null
+                  ? Colors.red
+                  : Colors.green;
               final breakColor = activeRecord?.isOnBreak == true
                   ? Colors.orange
                   : Colors.blue;
@@ -83,8 +87,12 @@ class _ButtonClockingState extends State<ButtonClocking> {
                             ? Icons.stop_rounded
                             : Icons.play_arrow_rounded,
                         label: activeRecord != null
-                            ? localization.clockedOutAt.replaceAll(':', '').trim()
-                            : localization.clockedInAt.replaceAll(':', '').trim(),
+                            ? localization.clockedOutAt
+                                  .replaceAll(':', '')
+                                  .trim()
+                            : localization.clockedInAt
+                                  .replaceAll(':', '')
+                                  .trim(),
                         subtitle: activeRecord != null
                             ? localization.activeTurnOn(activeRecord.teamName)
                             : (isClockingReady
@@ -95,16 +103,18 @@ class _ButtonClockingState extends State<ButtonClocking> {
                       ),
                       const SizedBox(width: 12),
                       _ClockActionButton(
-                        onTap: activeRecord != null && !isBusy && isClockingReady
+                        onTap:
+                            activeRecord != null && !isBusy && isClockingReady
                             ? () => _onBreakAction(activeRecord)
                             : null,
                         color: breakColor,
                         icon: Icons.coffee_rounded,
-                        label: (activeRecord?.isOnBreak == true
-                                ? localization.endBreakAt
-                                : localization.startBreakAt)
-                            .replaceAll(':', '')
-                            .trim(),
+                        label:
+                            (activeRecord?.isOnBreak == true
+                                    ? localization.endBreakAt
+                                    : localization.startBreakAt)
+                                .replaceAll(':', '')
+                                .trim(),
                         subtitle: activeRecord == null
                             ? localization.clockInRequiredForBreak
                             : (activeRecord.isOnBreak
@@ -137,7 +147,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
     }
 
     final teamIds = teams.map((team) => team.id).whereType<String>().toSet();
-    if (widget.selectedTeamId == null || !teamIds.contains(widget.selectedTeamId)) {
+    if (widget.selectedTeamId == null ||
+        !teamIds.contains(widget.selectedTeamId)) {
       String? firstTeamId;
       for (final team in teams) {
         if (team.id != null) {
@@ -161,9 +172,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
     return const [];
   }
 
-  ClockingRecordEntity? _activeRecord(
-    List<ClockingRecordEntity> records,
-  ) {
+  ClockingRecordEntity? _activeRecord(List<ClockingRecordEntity> records) {
     for (final record in records) {
       if (record.isActive) {
         return record;
@@ -235,24 +244,21 @@ class _ClockingTeamSelector extends StatelessWidget {
         border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
       ),
       child: DropdownButtonFormField<String>(
-        value: teams.any((team) => team.id == selectedTeamId) ? selectedTeamId : null,
+        value: teams.any((team) => team.id == selectedTeamId)
+            ? selectedTeamId
+            : null,
         decoration: const InputDecoration(
           border: InputBorder.none,
           isDense: true,
           labelText: 'Team',
         ),
-        items: teams
-            .where((team) => team.id != null)
-            .map(
-              (team) {
-                final teamId = team.id!;
-                return DropdownMenuItem<String>(
-                value: teamId,
-                child: Text(team.name),
-              );
-              },
-            )
-            .toList(),
+        items: teams.where((team) => team.id != null).map((team) {
+          final teamId = team.id!;
+          return DropdownMenuItem<String>(
+            value: teamId,
+            child: Text(team.name),
+          );
+        }).toList(),
         onChanged: teams.isEmpty ? null : onChanged,
       ),
     );

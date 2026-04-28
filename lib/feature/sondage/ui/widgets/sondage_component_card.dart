@@ -61,10 +61,7 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
             color: colorScheme.bgNavbarSurface,
             borderRadius: BorderRadius.circular(16),
             border: (widget.isActive || _isHovered)
-                ? Border.all(
-                    color: colorScheme.selectionColor!,
-                    width: 3,
-                  )
+                ? Border.all(color: colorScheme.selectionColor!, width: 3)
                 : null,
             boxShadow: _isHovered
                 ? [
@@ -157,7 +154,10 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                           Flexible(
                             child: Text(
                               '${widget.responses} ${localization.responses}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -174,7 +174,10 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                           Flexible(
                             child: Text(
                               '${widget.totalQuestions} ${localization.questions}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

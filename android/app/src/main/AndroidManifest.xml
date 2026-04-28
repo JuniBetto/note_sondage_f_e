@@ -32,6 +32,17 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Canale usato da FCM per le notifiche mostrate automaticamente
+             quando l'app è in background (notification block nel payload).
+             DEVE corrispondere al canale creato da LocalNotificationService. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="team_updates" />
+        <!-- Icona piccola usata da FCM per le notifiche in background.
+             Su Android 5+ deve essere bianca su sfondo trasparente (monochrome). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
         <meta-data
             android:name="com.dexterous.flutterlocalnotifications.defaultIcon"
             android:resource="@mipmap/ic_launcher" />

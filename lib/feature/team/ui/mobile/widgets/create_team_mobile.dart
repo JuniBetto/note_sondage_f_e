@@ -58,9 +58,8 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
     if (_isEditMode) {
       _isLoading = true;
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
-      _realtimeSubscription = getIt<RealtimeNotificationService>().stream.listen(
-        _handleRealtimeNotification,
-      );
+      _realtimeSubscription = getIt<RealtimeNotificationService>().stream
+          .listen(_handleRealtimeNotification);
     }
   }
 

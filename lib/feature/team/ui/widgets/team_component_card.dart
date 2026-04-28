@@ -18,6 +18,7 @@ class TeamComponentCard extends StatefulWidget {
     this.members,
     this.memberCount,
     this.onDeleteTap,
+    this.isOwner = false,
   });
   final Color colorTeam;
   final String teamName;
@@ -28,6 +29,7 @@ class TeamComponentCard extends StatefulWidget {
   final int? memberCount;
   final void Function()? onTap;
   final void Function(String id)? onDeleteTap;
+  final bool isOwner;
 
   @override
   State<TeamComponentCard> createState() => _TeamComponentCardState();
@@ -35,6 +37,32 @@ class TeamComponentCard extends StatefulWidget {
 
 class _TeamComponentCardState extends State<TeamComponentCard> {
   bool _isHovered = false;
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Elimina team'),
+        content: const Text(
+          'Sei sicuro di voler eliminare questo team? L\'azione è irreversibile.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(context);
+              widget.onDeleteTap?.call(widget.teamId);
+            },
+            child: const Text('Elimina'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,17 +158,16 @@ class _TeamComponentCardState extends State<TeamComponentCard> {
                                                 );
                                               },
                                             ),
-                                            ActionOnUser(
-                                              iconSize: 18,
-                                              icon:
-                                                  Icons.delete_forever_outlined,
-                                              color: colorScheme.deleteCard!,
-                                              onTap: () {
-                                                widget.onDeleteTap?.call(
-                                                  widget.teamId,
-                                                );
-                                              },
-                                            ),
+                                            if (widget.isOwner)
+                                              ActionOnUser(
+                                                iconSize: 18,
+                                                icon:
+                                                    Icons.delete_forever_outlined,
+                                                color: colorScheme.deleteCard!,
+                                                onTap: () {
+                                                  _confirmDelete(context);
+                                                },
+                                              ),
                                           ],
                                         ),
                                       ),

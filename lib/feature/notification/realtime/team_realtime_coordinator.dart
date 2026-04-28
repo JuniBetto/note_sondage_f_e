@@ -129,7 +129,11 @@ class TeamRealtimeCoordinator {
         return 'Sei stato rimosso da un team.';
       }
       if (notification.metadata['deleted'] == 'true') {
-        return 'Un team e\' stato eliminato.';
+        final teamName = notification.metadata['teamName'];
+        if (teamName != null && teamName.isNotEmpty) {
+          return "Il team '$teamName' è stato eliminato.";
+        }
+        return "Un team è stato eliminato.";
       }
     }
 

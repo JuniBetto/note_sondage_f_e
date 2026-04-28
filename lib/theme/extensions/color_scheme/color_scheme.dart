@@ -116,8 +116,6 @@ extension AppColorScheme on ColorScheme {
       ? ColorPalette.gray[4]
       : ColorPalette.gray[2];
 
-
-
   Color? get cursorColor => brightness == Brightness.light
       ? ColorPalette.primary[4]
       : ColorPalette.primary[3];

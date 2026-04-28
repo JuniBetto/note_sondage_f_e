@@ -96,7 +96,8 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                   ),
                   const SizedBox(width: 12),
                   OutlinedButton.icon(
-                    onPressed: widget.selectedTeamId != null &&
+                    onPressed:
+                        widget.selectedTeamId != null &&
                             filteredRecords.isNotEmpty
                         ? () => _exportPdf(filteredRecords, selectedTeam)
                         : null,
@@ -157,10 +158,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           child: _buildDateFilterButton(theme, dateFilterLabel),
                         ),
                         const SizedBox(width: 16),
-                        Expanded(
-                          flex: 3,
-                          child: _buildStatusFilters(theme),
-                        ),
+                        Expanded(flex: 3, child: _buildStatusFilters(theme)),
                         if (_hasActiveFilters) ...[
                           const SizedBox(width: 16),
                           TextButton.icon(
@@ -173,13 +171,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                     ),
               const SizedBox(height: 16),
               if (widget.selectedTeamId == null)
-                _InfoState(
-                  message: localization.selectTeamToViewClockings,
-                )
+                _InfoState(message: localization.selectTeamToViewClockings)
               else if (filteredRecords.isEmpty)
-                _InfoState(
-                  message: localization.noClockingsForTeam,
-                )
+                _InfoState(message: localization.noClockingsForTeam)
               else if (widget.isMobile)
                 Column(
                   children: filteredRecords
@@ -243,7 +237,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     return null;
   }
 
-  List<ClockingRecordEntity> _filterRecords(List<ClockingRecordEntity> records) {
+  List<ClockingRecordEntity> _filterRecords(
+    List<ClockingRecordEntity> records,
+  ) {
     var filtered = records;
 
     if (_selectedDateFilter != null) {
@@ -294,8 +290,16 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        _statusFilterChip(theme, ClockingStatus.committed, localization.committed),
-        _statusFilterChip(theme, ClockingStatus.decommitted, localization.decommitted),
+        _statusFilterChip(
+          theme,
+          ClockingStatus.committed,
+          localization.committed,
+        ),
+        _statusFilterChip(
+          theme,
+          ClockingStatus.decommitted,
+          localization.decommitted,
+        ),
       ],
     );
   }
@@ -398,9 +402,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                 TextField(
                   controller: breakMinutesController,
                   keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: loc.breakMinutes,
-                  ),
+                  decoration: InputDecoration(labelText: loc.breakMinutes),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -469,9 +471,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: color),
-      );
+      ..showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   Future<void> _exportPdf(
@@ -479,7 +479,10 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     TeamEntity? selectedTeam,
   ) async {
     if (records.isEmpty) {
-      _showSnackBar(AppLocalizations.of(context)!.noClockingsToExport, Colors.orange);
+      _showSnackBar(
+        AppLocalizations.of(context)!.noClockingsToExport,
+        Colors.orange,
+      );
       return;
     }
 
@@ -493,7 +496,10 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       );
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar(AppLocalizations.of(context)!.exportPdfError(e.toString()), Colors.red);
+      _showSnackBar(
+        AppLocalizations.of(context)!.exportPdfError(e.toString()),
+        Colors.red,
+      );
     }
   }
 }
@@ -552,10 +558,7 @@ class _WebRecordRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 2,
-            child: _RecordSummary(record: record),
-          ),
+          Expanded(flex: 2, child: _RecordSummary(record: record)),
           Expanded(
             child: _RecordTimeColumn(
               label: 'Date',
@@ -677,7 +680,9 @@ class _RecordSummary extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: _statusColor(record.status).withValues(alpha: 0.12),
+              backgroundColor: _statusColor(
+                record.status,
+              ).withValues(alpha: 0.12),
               child: Text(
                 _initials(record.userName),
                 style: theme.textTheme.labelSmall?.copyWith(
@@ -756,37 +761,28 @@ class _OwnerActions extends StatelessWidget {
     if (!isOwner) {
       return Text(
         AppLocalizations.of(context)!.ownerOnly,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Colors.grey[500],
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
       );
     }
 
     final loc = AppLocalizations.of(context)!;
     final buttons = <Widget>[
       if (record.canDecommit)
-        OutlinedButton(
-          onPressed: onDecommit,
-          child: Text(loc.decommit),
-        ),
+        OutlinedButton(onPressed: onDecommit, child: Text(loc.decommit)),
       if (record.canCommit)
-        FilledButton.tonal(
-          onPressed: onCommit,
-          child: Text(loc.commit),
-        ),
+        FilledButton.tonal(onPressed: onCommit, child: Text(loc.commit)),
       if (record.ownerEditable)
-        FilledButton(
-          onPressed: onEdit,
-          child: Text(loc.editAction),
-        ),
+        FilledButton(onPressed: onEdit, child: Text(loc.editAction)),
     ];
 
     if (buttons.isEmpty) {
       return Text(
         loc.noActionAvailable,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Colors.grey[500],
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
       );
     }
 
@@ -850,7 +846,9 @@ class _MiniInfo extends StatelessWidget {
         children: [
           Text(
             label,
-            style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey[600]),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: Colors.grey[600],
+            ),
           ),
           const SizedBox(height: 2),
           Text(
@@ -908,7 +906,11 @@ Color _statusColor(ClockingStatus status) {
 }
 
 String _initials(String name) {
-  final parts = name.trim().split(' ').where((part) => part.isNotEmpty).toList();
+  final parts = name
+      .trim()
+      .split(' ')
+      .where((part) => part.isNotEmpty)
+      .toList();
   if (parts.length >= 2) {
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }

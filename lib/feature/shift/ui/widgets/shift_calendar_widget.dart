@@ -34,14 +34,16 @@ class ShiftCalendarWidget extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final firstDay = DateTime(focusedMonth.year, focusedMonth.month, 1);
-    final daysInMonth =
-        DateTime(focusedMonth.year, focusedMonth.month + 1, 0).day;
+    final daysInMonth = DateTime(
+      focusedMonth.year,
+      focusedMonth.month + 1,
+      0,
+    ).day;
 
     // Map date → assignment for O(1) lookup
     final assignMap = <String, ShiftAssignmentEntity>{};
     for (final a in assignments) {
-      final key =
-          '${a.shiftDate.year}-${a.shiftDate.month}-${a.shiftDate.day}';
+      final key = '${a.shiftDate.year}-${a.shiftDate.month}-${a.shiftDate.day}';
       assignMap[key] = a;
     }
 
@@ -67,8 +69,9 @@ class ShiftCalendarWidget extends StatelessWidget {
                 child: Text(
                   _monthLabel(context, focusedMonth),
                   textAlign: TextAlign.center,
-                  style: textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               IconButton(
@@ -145,15 +148,31 @@ class ShiftCalendarWidget extends StatelessWidget {
 
   String _monthLabel(BuildContext context, DateTime date) {
     const months = [
-      'Gennaio', 'Febbraio', 'Marzo', 'Aprile',
-      'Maggio', 'Giugno', 'Luglio', 'Agosto',
-      'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
+      'Gennaio',
+      'Febbraio',
+      'Marzo',
+      'Aprile',
+      'Maggio',
+      'Giugno',
+      'Luglio',
+      'Agosto',
+      'Settembre',
+      'Ottobre',
+      'Novembre',
+      'Dicembre',
     ];
     return '${months[date.month - 1]} ${date.year}';
   }
 
-  List<String> _weekdayLabels(BuildContext context) =>
-      ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+  List<String> _weekdayLabels(BuildContext context) => [
+    'Lun',
+    'Mar',
+    'Mer',
+    'Gio',
+    'Ven',
+    'Sab',
+    'Dom',
+  ];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -189,8 +208,8 @@ class _DayCell extends StatelessWidget {
             color: isToday
                 ? Theme.of(context).colorScheme.primary
                 : shiftColor != null
-                    ? shiftColor.withValues(alpha: 0.4)
-                    : colorScheme.outlineVariant.withValues(alpha: 0.3),
+                ? shiftColor.withValues(alpha: 0.4)
+                : colorScheme.outlineVariant.withValues(alpha: 0.3),
             width: isToday ? 2 : 1,
           ),
         ),
@@ -202,8 +221,7 @@ class _DayCell extends StatelessWidget {
               Text(
                 '$day',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight:
-                      isToday ? FontWeight.w800 : FontWeight.w500,
+                  fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
                   color: isToday
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context).colorScheme.onSurface,

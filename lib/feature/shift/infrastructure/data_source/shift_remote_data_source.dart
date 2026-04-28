@@ -39,7 +39,9 @@ class ShiftRemoteDataSource {
         color: color,
       ),
     );
-    return ShiftMapper.profileFromJson(Map<String, dynamic>.from(response.data));
+    return ShiftMapper.profileFromJson(
+      Map<String, dynamic>.from(response.data),
+    );
   }
 
   Future<ShiftProfileEntity> updateProfile(
@@ -62,7 +64,9 @@ class ShiftRemoteDataSource {
         color: color,
       ),
     );
-    return ShiftMapper.profileFromJson(Map<String, dynamic>.from(response.data));
+    return ShiftMapper.profileFromJson(
+      Map<String, dynamic>.from(response.data),
+    );
   }
 
   Future<void> deleteProfile(String profileId) async {
@@ -84,7 +88,9 @@ class ShiftRemoteDataSource {
     );
     final data = response.data as List<dynamic>? ?? const [];
     return data
-        .map((e) => ShiftMapper.assignmentFromJson(Map<String, dynamic>.from(e)))
+        .map(
+          (e) => ShiftMapper.assignmentFromJson(Map<String, dynamic>.from(e)),
+        )
         .toList();
   }
 
@@ -109,7 +115,9 @@ class ShiftRemoteDataSource {
         alarmOffsets: alarmOffsets,
       ),
     );
-    return ShiftMapper.assignmentFromJson(Map<String, dynamic>.from(response.data));
+    return ShiftMapper.assignmentFromJson(
+      Map<String, dynamic>.from(response.data),
+    );
   }
 
   Future<ShiftAssignmentEntity> updateAssignment(
@@ -133,7 +141,9 @@ class ShiftRemoteDataSource {
         alarmOffsets: alarmOffsets,
       ),
     );
-    return ShiftMapper.assignmentFromJson(Map<String, dynamic>.from(response.data));
+    return ShiftMapper.assignmentFromJson(
+      Map<String, dynamic>.from(response.data),
+    );
   }
 
   Future<void> deleteAssignment(String assignmentId) async {

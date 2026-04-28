@@ -48,7 +48,9 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
         '$endpoint/$teamId/members/$memberId/role',
         queryParameters: {'role': role},
       );
-      final memberJson = Map<String, dynamic>.from(response.data as Map<String, dynamic>);
+      final memberJson = Map<String, dynamic>.from(
+        response.data as Map<String, dynamic>,
+      );
       memberJson['team_id'] ??= teamId;
       return TeamMemberMapper.fromJson(memberJson);
     } catch (e) {
@@ -90,15 +92,12 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       final data = response.data as Map<String, dynamic>;
       final teamData = data['team'] as Map<String, dynamic>? ?? {};
       final membersJson = teamData['members'] as List<dynamic>? ?? [];
-      final members = membersJson
-          .where((e) => e != null)
-          .map((e) {
-            final memberJson = Map<String, dynamic>.from(e as Map<String, dynamic>);
-            // Inject team_id if the API doesn't include it per-member
-            memberJson['team_id'] ??= teamId;
-            return TeamMemberMapper.fromJson(memberJson);
-          })
-          .toList();
+      final members = membersJson.where((e) => e != null).map((e) {
+        final memberJson = Map<String, dynamic>.from(e as Map<String, dynamic>);
+        // Inject team_id if the API doesn't include it per-member
+        memberJson['team_id'] ??= teamId;
+        return TeamMemberMapper.fromJson(memberJson);
+      }).toList();
       final deduplicatedMembers = _deduplicateMembers(members);
       await localDataSource.saveAll(deduplicatedMembers);
       return deduplicatedMembers;
@@ -118,9 +117,13 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
   }
 
   // GET /api/aggregate/teams/{teamId}/invitations
-  Future<List<TeamInvitationEntity>> getPendingInvitations(String teamId) async {
+  Future<List<TeamInvitationEntity>> getPendingInvitations(
+    String teamId,
+  ) async {
     try {
-      final response = await DioClient().dio.get('$endpoint/$teamId/invitations');
+      final response = await DioClient().dio.get(
+        '$endpoint/$teamId/invitations',
+      );
       final list = response.data as List<dynamic>? ?? [];
       return list.map((e) {
         final j = e as Map<String, dynamic>;
@@ -130,8 +133,12 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
           invitedEmail: j['invitedEmail']?.toString() ?? '',
           proposedRole: j['proposedRole']?.toString() ?? '',
           status: j['status']?.toString() ?? 'PENDING',
-          expiresAt: j['expiresAt'] != null ? DateTime.tryParse(j['expiresAt'].toString()) : null,
-          createdAt: j['createdAt'] != null ? DateTime.tryParse(j['createdAt'].toString()) : null,
+          expiresAt: j['expiresAt'] != null
+              ? DateTime.tryParse(j['expiresAt'].toString())
+              : null,
+          createdAt: j['createdAt'] != null
+              ? DateTime.tryParse(j['createdAt'].toString())
+              : null,
         );
       }).toList();
     } catch (e) {
@@ -142,7 +149,9 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
   // DELETE /api/aggregate/teams/{teamId}/invitations/{invitationId}
   Future<void> cancelInvitation(String teamId, String invitationId) async {
     try {
-      await DioClient().dio.delete('$endpoint/$teamId/invitations/$invitationId');
+      await DioClient().dio.delete(
+        '$endpoint/$teamId/invitations/$invitationId',
+      );
     } catch (e) {
       throw Exception('Failed to cancel invitation: $e');
     }

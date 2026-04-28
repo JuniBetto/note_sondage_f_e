@@ -73,7 +73,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get attendance => 'Frequenza';
 
   @override
-  String get clockingInOut => 'La timbratura';
+  String get clockingInOut => 'Timbratura';
 
   @override
   String get explorer => 'esploratore';

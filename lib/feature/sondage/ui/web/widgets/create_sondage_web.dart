@@ -98,13 +98,7 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
   DateTime? _resolveExpiryDate() {
     if (!_hasExpiry) return null;
     final now = DateTime.now();
-    var date = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      _end.hour,
-      _end.minute,
-    );
+    var date = DateTime(now.year, now.month, now.day, _end.hour, _end.minute);
     if (date.isBefore(now)) {
       date = date.add(const Duration(days: 1));
     }
@@ -121,9 +115,13 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
   void _submit() {
     final options = _normalizedOptions();
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_selectedTeamId == null || _selectedTeamId!.isEmpty || options.length < 2) {
+    if (_selectedTeamId == null ||
+        _selectedTeamId!.isEmpty ||
+        options.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Seleziona un team e aggiungi almeno 2 opzioni.')),
+        const SnackBar(
+          content: Text('Seleziona un team e aggiungi almeno 2 opzioni.'),
+        ),
       );
       return;
     }
@@ -193,7 +191,8 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
         color: colorScheme.bgNavbarSurface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: colorScheme.borderColor?.withValues(alpha: 0.75) ??
+          color:
+              colorScheme.borderColor?.withValues(alpha: 0.75) ??
               Colors.grey.withValues(alpha: 0.2),
         ),
       ),
@@ -229,13 +228,17 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
 
   Future<List<TeamEntity>> _loadCreatableTeams() async {
     try {
-      final response = await DioClient().dio.get('/api/sondage/creatable-teams');
+      final response = await DioClient().dio.get(
+        '/api/sondage/creatable-teams',
+      );
       if (response.data is! List) {
         return const <TeamEntity>[];
       }
       return (response.data as List)
           .whereType<Map>()
-          .map((item) => item.map((key, value) => MapEntry(key.toString(), value)))
+          .map(
+            (item) => item.map((key, value) => MapEntry(key.toString(), value)),
+          )
           .map(TeamMapper.fromJson)
           .toList();
     } catch (e) {
@@ -337,7 +340,9 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                         Text(
                           'L’ultimo campo crea automaticamente una nuova opzione.',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.iconLabel?.withValues(alpha: 0.7),
+                            color: colorScheme.iconLabel?.withValues(
+                              alpha: 0.7,
+                            ),
                           ),
                         ),
                       ],
@@ -359,7 +364,8 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                             ? _selectedTeamId
                             : null;
 
-                        if (snapshot.connectionState == ConnectionState.waiting &&
+                        if (snapshot.connectionState ==
+                                ConnectionState.waiting &&
                             teams.isEmpty) {
                           return const LinearProgressIndicator(minHeight: 2);
                         }
@@ -448,8 +454,7 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
                               end: _end,
                               onStartChanged: (val) =>
                                   setState(() => _start = val),
-                              onEndChanged: (val) =>
-                                  setState(() => _end = val),
+                              onEndChanged: (val) => setState(() => _end = val),
                             ),
                           ),
                         ),

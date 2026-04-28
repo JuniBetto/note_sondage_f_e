@@ -25,20 +25,18 @@ class ShiftRealtimeCoordinator {
 
     // Shift events are personal: only the owner needs to refresh.
     // The actorUserId stored in metadata by the realtime publisher.
-    final targetUserId = notification.metadata['actorUserId']?.trim() ??
+    final targetUserId =
+        notification.metadata['actorUserId']?.trim() ??
         notification.metadata['userId']?.trim() ??
         '';
-    final isOwner =
-        currentUserId.isNotEmpty && targetUserId == currentUserId;
+    final isOwner = currentUserId.isNotEmpty && targetUserId == currentUserId;
 
     final isAlarm = notification.eventType == 'SHIFT_ALARM_REMINDER';
 
     return ShiftRealtimeDecision(
       refreshCalendar: isOwner,
       showAlarmBanner: isOwner && isAlarm,
-      alarmShiftDate: isAlarm
-          ? notification.metadata['shiftDate'] ?? ''
-          : null,
+      alarmShiftDate: isAlarm ? notification.metadata['shiftDate'] ?? '' : null,
       alarmProfileName: isAlarm
           ? notification.metadata['profileName'] ?? ''
           : null,

@@ -36,11 +36,8 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _ShiftDaySheet(
-      date: date,
-      profiles: profiles,
-      existing: existing,
-    ),
+    builder: (_) =>
+        _ShiftDaySheet(date: date, profiles: profiles, existing: existing),
   );
 }
 
@@ -109,7 +106,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
-    final dateLabel = '${widget.date.day}/${widget.date.month}/${widget.date.year}';
+    final dateLabel =
+        '${widget.date.day}/${widget.date.month}/${widget.date.year}';
 
     return Container(
       margin: const EdgeInsets.all(12),
@@ -136,8 +134,9 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                     widget.existing != null
                         ? '${loc.editAction} – $dateLabel'
                         : '${loc.addShift} – $dateLabel',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 if (widget.existing != null)
@@ -159,11 +158,13 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
             const SizedBox(height: 16),
 
             // ── Profile selector ──────────────────────────────────────────
-            Text(loc.shiftProfile,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.descriptionColor,
-                )),
+            Text(
+              loc.shiftProfile,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.descriptionColor,
+              ),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -174,7 +175,9 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                   onTap: () => _applyProfile(p),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: selected
                           ? p.displayColor.withValues(alpha: 0.2)
@@ -199,12 +202,14 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(p.name,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w400,
-                            )),
+                        Text(
+                          p.name,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -238,18 +243,19 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
             // ── Overnight toggle ──────────────────────────────────────────
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
-              title: Text(loc.overnightShift,
-                  style: theme.textTheme.bodySmall),
+              title: Text(loc.overnightShift, style: theme.textTheme.bodySmall),
               value: _overnight,
               onChanged: (v) => setState(() => _overnight = v),
             ),
 
             // ── Alarm offsets ─────────────────────────────────────────────
-            Text(loc.alarms,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.descriptionColor,
-                )),
+            Text(
+              loc.alarms,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.descriptionColor,
+              ),
+            ),
             const SizedBox(height: 6),
             _AlarmOffsetEditor(
               offsets: _alarmOffsets,
@@ -338,10 +344,12 @@ class _TimePicker extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                )),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 2),
             Row(
               children: [
@@ -349,8 +357,9 @@ class _TimePicker extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   value.format(context),
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -364,10 +373,7 @@ class _TimePicker extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _AlarmOffsetEditor extends StatelessWidget {
-  const _AlarmOffsetEditor({
-    required this.offsets,
-    required this.onChanged,
-  });
+  const _AlarmOffsetEditor({required this.offsets, required this.onChanged});
 
   final List<int> offsets;
   final ValueChanged<List<int>> onChanged;

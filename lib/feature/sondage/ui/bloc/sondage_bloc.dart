@@ -194,7 +194,9 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
   }
 
   void _upsertCache(SondageEntity sondage) {
-    final existingIndex = _cachedSondages.indexWhere((item) => item.id == sondage.id);
+    final existingIndex = _cachedSondages.indexWhere(
+      (item) => item.id == sondage.id,
+    );
     if (existingIndex == -1) {
       _cachedSondages = [sondage, ..._cachedSondages];
       return;

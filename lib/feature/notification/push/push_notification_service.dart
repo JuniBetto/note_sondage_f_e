@@ -1,16 +1,95 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/firebase_options.dart';
 
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
+/// Gestisce i messaggi FCM quando l'app è in background o terminata.
+///
+/// REGOLE OBBLIGATORIE:
+/// - Deve essere una funzione top-level (non un metodo di classe).
+/// - Deve avere `@pragma('vm:entry-point')` altrimenti il tree-shaker
+///   di Dart la rimuove in release mode e le notifiche background spariscono.
+/// - NON può usare `getIt` (il DI non è inizializzato in questo isolate).
+/// - Deve inizializzare Firebase e flutter_local_notifications
+///   autonomamente prima di usarli.
+///
+/// QUANDO VIENE CHIAMATO:
+/// - Messaggi data-only (nessun blocco `notification` nel payload FCM).
+///   I messaggi con blocco `notification` vengono mostrati direttamente
+///   dall'OS senza passare per questo handler.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // 1. Firebase deve essere inizializzato anche in questo isolate separato.
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 2. Legge title/body dal payload data o dal blocco notification (fallback).
+  final data = message.data;
+  final title =
+      data['title']?.toString().isNotEmpty == true
+          ? data['title']!
+          : message.notification?.title ?? 'Notifica';
+  final body =
+      data['body']?.toString().isNotEmpty == true
+          ? data['body']!
+          : message.notification?.body ?? '';
+
+  // Nessun testo = niente da mostrare (es. silent sync messages).
+  if (title.isEmpty && body.isEmpty) return;
+
+  // 3. Inizializza flutter_local_notifications standalone.
+  final plugin = FlutterLocalNotificationsPlugin();
+  const androidSettings = AndroidInitializationSettings('ic_launcher');
+  const darwinSettings = DarwinInitializationSettings();
+  await plugin.initialize(
+    const InitializationSettings(
+      android: androidSettings,
+      iOS: darwinSettings,
+    ),
+    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+  );
+
+  // 4. Assicura che il canale Android esista.
+  const channel = AndroidNotificationChannel(
+    'team_updates',
+    'Team updates',
+    description: 'Realtime updates about teams and invitations',
+    importance: Importance.max,
+  );
+  await plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(channel);
+
+  // 5. Mostra la notifica.
+  const notificationDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'team_updates',
+      'Team updates',
+      channelDescription: 'Realtime updates about teams and invitations',
+      importance: Importance.max,
+      priority: Priority.high,
+    ),
+    iOS: DarwinNotificationDetails(),
+  );
+
+  await plugin.show(
+    message.messageId.hashCode,
+    title,
+    body,
+    notificationDetails,
+  );
+}
 
 class PushNotificationService {
   PushNotificationService({

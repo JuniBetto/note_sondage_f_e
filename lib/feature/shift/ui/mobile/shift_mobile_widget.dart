@@ -36,8 +36,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     final first = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     final last = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
     context.read<ShiftBloc>().add(
-          LoadShiftAssignmentsEvent(from: first, to: last),
-        );
+      LoadShiftAssignmentsEvent(from: first, to: last),
+    );
   }
 
   void _onMonthChanged(DateTime month) {
@@ -45,10 +45,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     _loadAssignments();
   }
 
-  Future<void> _onDayTap(
-    DateTime date,
-    ShiftAssignmentEntity? existing,
-  ) async {
+  Future<void> _onDayTap(DateTime date, ShiftAssignmentEntity? existing) async {
     final result = await showShiftDayDialog(
       context: context,
       date: date,
@@ -58,33 +55,31 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     if (result == null) return;
 
     if (result.deleted && existing != null) {
-      context
-          .read<ShiftBloc>()
-          .add(DeleteShiftAssignmentEvent(existing.id));
+      context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(existing.id));
     } else if (existing != null) {
       context.read<ShiftBloc>().add(
-            UpdateShiftAssignmentEvent(
-              assignmentId: existing.id,
-              profileId: result.profileId,
-              startTime: result.startTime,
-              endTime: result.endTime,
-              overnight: result.overnight,
-              note: result.note,
-              alarmOffsets: result.alarmOffsets,
-            ),
-          );
+        UpdateShiftAssignmentEvent(
+          assignmentId: existing.id,
+          profileId: result.profileId,
+          startTime: result.startTime,
+          endTime: result.endTime,
+          overnight: result.overnight,
+          note: result.note,
+          alarmOffsets: result.alarmOffsets,
+        ),
+      );
     } else {
       context.read<ShiftBloc>().add(
-            AssignShiftEvent(
-              shiftDate: date,
-              profileId: result.profileId,
-              startTime: result.startTime,
-              endTime: result.endTime,
-              overnight: result.overnight,
-              note: result.note,
-              alarmOffsets: result.alarmOffsets,
-            ),
-          );
+        AssignShiftEvent(
+          shiftDate: date,
+          profileId: result.profileId,
+          startTime: result.startTime,
+          endTime: result.endTime,
+          overnight: result.overnight,
+          note: result.note,
+          alarmOffsets: result.alarmOffsets,
+        ),
+      );
     }
   }
 
@@ -108,10 +103,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         }
         if (state is ShiftError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         }
       },
@@ -130,9 +122,9 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                 const SizedBox(width: 8),
                 Text(
                   loc.myShifts,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),

@@ -34,8 +34,8 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     final first = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     final last = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
     context.read<ShiftBloc>().add(
-          LoadShiftAssignmentsEvent(from: first, to: last),
-        );
+      LoadShiftAssignmentsEvent(from: first, to: last),
+    );
   }
 
   void _onMonthChanged(DateTime month) {
@@ -43,10 +43,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     _loadAssignments();
   }
 
-  Future<void> _onDayTap(
-    DateTime date,
-    ShiftAssignmentEntity? existing,
-  ) async {
+  Future<void> _onDayTap(DateTime date, ShiftAssignmentEntity? existing) async {
     final result = await showShiftDayDialog(
       context: context,
       date: date,
@@ -56,33 +53,31 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     if (result == null) return;
 
     if (result.deleted && existing != null) {
-      context
-          .read<ShiftBloc>()
-          .add(DeleteShiftAssignmentEvent(existing.id));
+      context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(existing.id));
     } else if (existing != null) {
       context.read<ShiftBloc>().add(
-            UpdateShiftAssignmentEvent(
-              assignmentId: existing.id,
-              profileId: result.profileId,
-              startTime: result.startTime,
-              endTime: result.endTime,
-              overnight: result.overnight,
-              note: result.note,
-              alarmOffsets: result.alarmOffsets,
-            ),
-          );
+        UpdateShiftAssignmentEvent(
+          assignmentId: existing.id,
+          profileId: result.profileId,
+          startTime: result.startTime,
+          endTime: result.endTime,
+          overnight: result.overnight,
+          note: result.note,
+          alarmOffsets: result.alarmOffsets,
+        ),
+      );
     } else {
       context.read<ShiftBloc>().add(
-            AssignShiftEvent(
-              shiftDate: date,
-              profileId: result.profileId,
-              startTime: result.startTime,
-              endTime: result.endTime,
-              overnight: result.overnight,
-              note: result.note,
-              alarmOffsets: result.alarmOffsets,
-            ),
-          );
+        AssignShiftEvent(
+          shiftDate: date,
+          profileId: result.profileId,
+          startTime: result.startTime,
+          endTime: result.endTime,
+          overnight: result.overnight,
+          note: result.note,
+          alarmOffsets: result.alarmOffsets,
+        ),
+      );
     }
   }
 
@@ -110,18 +105,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         }
         if (state is ShiftError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(loc.shiftCalendar),
-          elevation: 0,
-        ),
+        appBar: AppBar(title: Text(loc.shiftCalendar), elevation: 0),
         body: Padding(
           padding: const EdgeInsets.all(24),
           child: Row(

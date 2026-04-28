@@ -74,7 +74,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get attendance => 'Asistencia';
 
   @override
-  String get clockingInOut => 'El fichaje';
+  String get clockingInOut => 'Fichaje';
 
   @override
   String get explorer => 'explorador';

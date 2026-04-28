@@ -32,12 +32,7 @@ class ClockInTrack extends StatelessWidget {
           const SizedBox(height: 8),
         ],
         isTeamWithUsers
-            ? _buildByTeam(
-                context,
-                isMobile,
-                dataTable,
-                listheaderTable,
-              )
+            ? _buildByTeam(context, isMobile, dataTable, listheaderTable)
             : _buildAllUsers(
                 context,
                 isMobile,

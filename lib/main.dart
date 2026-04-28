@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:note_sondage/core/database/hive_initializer.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/error/error_logger.dart';
@@ -21,6 +22,11 @@ void main() {
     () async {
       // 1. Inizializza Flutter binding DENTRO la zona
       WidgetsFlutterBinding.ensureInitialized();
+
+      // Inizializza i dati di locale per il pacchetto intl.
+      // Necessario su Android: senza questo, DateFormat con locale non-English
+      // lancia MissingLocaleDataException. Su iOS funziona tramite sistema.
+      await initializeDateFormatting();
 
       // 2. Inizializza Firebase (necessario per FirebaseAuth)
       //    Su Android il plugin nativo può già aver inizializzato l'app,

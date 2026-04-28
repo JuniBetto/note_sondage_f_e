@@ -72,7 +72,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get attendance => 'Presence';
 
   @override
-  String get clockingInOut => 'Le pointage';
+  String get clockingInOut => 'Pointage';
 
   @override
   String get explorer => 'explorateur';

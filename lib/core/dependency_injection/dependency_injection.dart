@@ -332,9 +332,7 @@ void _registerBlocs() {
     ),
   );
   getIt.registerLazySingleton<NotificationCenterCubit>(
-    () => NotificationCenterCubit(
-      backendAuth: getIt<BackendAuthDataSource>(),
-    ),
+    () => NotificationCenterCubit(backendAuth: getIt<BackendAuthDataSource>()),
   );
   getIt.registerLazySingleton<TeamRealtimeCoordinator>(
     () => TeamRealtimeCoordinator(),
@@ -359,7 +357,5 @@ void _registerShift() {
   getIt.registerLazySingleton<ShiftRepository>(
     () => ShiftRepositoryImpl(getIt<ShiftRemoteDataSource>()),
   );
-  getIt.registerFactory<ShiftBloc>(
-    () => ShiftBloc(getIt<ShiftRepository>()),
-  );
+  getIt.registerFactory<ShiftBloc>(() => ShiftBloc(getIt<ShiftRepository>()));
 }
