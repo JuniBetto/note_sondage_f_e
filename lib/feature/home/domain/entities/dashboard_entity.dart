@@ -4,6 +4,7 @@ class DashboardStats {
   final int totalMembers;
   final int activeSurveys;
   final int todayClocking;
+  final int todayShifts;
   final int completedSurveys;
   final int pendingInvitations;
 
@@ -12,6 +13,7 @@ class DashboardStats {
     this.totalMembers = 0,
     this.activeSurveys = 0,
     this.todayClocking = 0,
+    this.todayShifts = 0,
     this.completedSurveys = 0,
     this.pendingInvitations = 0,
   });
@@ -21,6 +23,7 @@ class DashboardStats {
     int? totalMembers,
     int? activeSurveys,
     int? todayClocking,
+    int? todayShifts,
     int? completedSurveys,
     int? pendingInvitations,
   }) {
@@ -29,6 +32,7 @@ class DashboardStats {
       totalMembers: totalMembers ?? this.totalMembers,
       activeSurveys: activeSurveys ?? this.activeSurveys,
       todayClocking: todayClocking ?? this.todayClocking,
+      todayShifts: todayShifts ?? this.todayShifts,
       completedSurveys: completedSurveys ?? this.completedSurveys,
       pendingInvitations: pendingInvitations ?? this.pendingInvitations,
     );
@@ -59,4 +63,5 @@ enum RecentActivityType {
   sondageCompleted,
   clockIn,
   clockOut,
+  shiftAssigned,
 }

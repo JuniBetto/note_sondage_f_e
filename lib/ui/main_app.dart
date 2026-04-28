@@ -20,6 +20,7 @@ import 'package:note_sondage/feature/notification/push/push_notification_service
 import 'package:note_sondage/feature/notification/realtime/clocking_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/sondage_realtime_coordinator.dart';
+import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
@@ -107,12 +108,18 @@ class _MainAppState extends State<MainApp> {
     );
     final sondageDecision =
         getIt<SondageRealtimeCoordinator>().resolveDecision(notification);
+    final shiftDecision = getIt<ShiftRealtimeCoordinator>().resolveDecision(
+      notification,
+      currentUserId: currentUserId,
+    );
     getIt<NotificationCenterCubit>().ingestRealtimeNotification(notification);
 
     if (!teamDecision.hasWork &&
         !clockingDecision.refreshClocking &&
+        !clockingDecision.refreshDashboard &&
         !sondageDecision.refreshSondages &&
-        !sondageDecision.refreshDashboard) {
+        !sondageDecision.refreshDashboard &&
+        !shiftDecision.refreshCalendar) {
       return;
     }
 
@@ -127,10 +134,16 @@ class _MainAppState extends State<MainApp> {
         LoadClockingRecordsEvent(teamId: selectedClockingTeamId),
       );
     }
+    if (clockingDecision.refreshDashboard) {
+      getIt<DashboardBloc>().add(RefreshDashboardEvent());
+    }
     if (sondageDecision.refreshSondages) {
       getIt<SondageBloc>().add(LoadSondagesEvent());
     }
     if (sondageDecision.refreshDashboard) {
+      getIt<DashboardBloc>().add(RefreshDashboardEvent());
+    }
+    if (shiftDecision.refreshCalendar) {
       getIt<DashboardBloc>().add(RefreshDashboardEvent());
     }
     if (teamDecision.showSnackBar && teamDecision.snackBarMessage != null) {

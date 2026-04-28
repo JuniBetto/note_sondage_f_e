@@ -35,16 +35,26 @@ class ClockingRealtimeCoordinator {
     final refreshCurrentUser =
         currentUserId.isNotEmpty && targetUserId == currentUserId;
 
+    // Clock-in / clock-out events change the todayClocking counter on dashboard
+    final refreshDashboard =
+        notification.eventType == 'CLOCKING_CLOCKED_IN' ||
+        notification.eventType == 'CLOCKING_CLOCKED_OUT';
+
     return ClockingRealtimeDecision(
       refreshClocking: refreshCurrentTeam || refreshCurrentUser,
+      refreshDashboard: refreshDashboard,
     );
   }
 }
 
 class ClockingRealtimeDecision {
   final bool refreshClocking;
+  final bool refreshDashboard;
 
-  const ClockingRealtimeDecision({this.refreshClocking = false});
+  const ClockingRealtimeDecision({
+    this.refreshClocking = false,
+    this.refreshDashboard = false,
+  });
 
   static const none = ClockingRealtimeDecision();
 }

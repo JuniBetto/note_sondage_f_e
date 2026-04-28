@@ -218,7 +218,13 @@ void _registerRepositories() {
 
   // Dashboard
   getIt.registerLazySingleton<DashboardRepository>(
-    () => DashboardRepositoryImpl(),
+    () => DashboardRepositoryImpl(
+      teamRemote: getIt<TeamRemoteDataSource>(),
+      teamMemberRemote: getIt<TeamMemberRemoteDataSource>(),
+      sondageRemote: getIt<SondageRemoteDataSource>(),
+      clockingRemote: getIt<ClockingRemoteDataSource>(),
+      shiftRemote: getIt<ShiftRemoteDataSource>(),
+    ),
   );
 }
 

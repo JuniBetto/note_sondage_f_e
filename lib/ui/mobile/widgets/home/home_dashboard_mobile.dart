@@ -1,98 +1,150 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/feature/home/domain/entities/dashboard_entity.dart';
+import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/widgets/pending_notifications_card.dart';
 
-class HomeDashboardMobile extends StatelessWidget {
+class HomeDashboardMobile extends StatefulWidget {
   const HomeDashboardMobile({super.key});
+
+  @override
+  State<HomeDashboardMobile> createState() => _HomeDashboardMobileState();
+}
+
+class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<DashboardBloc>().add(LoadDashboardEvent());
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ═══════════════════════════════
-          // Welcome banner
-          // ═══════════════════════════════
-          _MobileWelcomeBanner(),
-          const SizedBox(height: 20),
+    return BlocBuilder<DashboardBloc, DashboardState>(
+      builder: (context, state) {
+        final stats = state is DashboardLoaded ? state.stats : null;
+        final activities =
+            state is DashboardLoaded ? state.activities : <RecentActivity>[];
+        final isLoading = state is DashboardLoading || state is DashboardInitial;
 
-          // ═══════════════════════════════
-          // Stats grid 2×2
-          // ═══════════════════════════════
-          Row(
-            children: [
-              Expanded(
-                child: _MobileStatCard(
-                  icon: Icons.group_rounded,
-                  label: l.activeTeams,
-                  value: '4',
-                  color: Colors.indigo,
+        return RefreshIndicator(
+          onRefresh: () async {
+            context.read<DashboardBloc>().add(RefreshDashboardEvent());
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ═══════════════════════════════
+                // Welcome banner
+                // ═══════════════════════════════
+                _MobileWelcomeBanner(),
+                const SizedBox(height: 20),
+
+                // ═══════════════════════════════
+                // Stats grid 2×2 + 1 riga shift
+                // ═══════════════════════════════
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MobileStatCard(
+                        icon: Icons.group_rounded,
+                        label: l.activeTeams,
+                        value: isLoading ? null : '${stats?.activeTeams ?? 0}',
+                        color: Colors.indigo,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _MobileStatCard(
+                        icon: Icons.people_rounded,
+                        label: l.totalMembers,
+                        value:
+                            isLoading ? null : '${stats?.totalMembers ?? 0}',
+                        color: Colors.teal,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _MobileStatCard(
-                  icon: Icons.people_rounded,
-                  label: l.totalMembers,
-                  value: '24',
-                  color: Colors.teal,
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MobileStatCard(
+                        icon: Icons.checklist_rounded,
+                        label: l.activeSurveys,
+                        value:
+                            isLoading ? null : '${stats?.activeSurveys ?? 0}',
+                        color: Colors.orange,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _MobileStatCard(
+                        icon: Icons.timer_rounded,
+                        label: l.todayClocking,
+                        value:
+                            isLoading ? null : '${stats?.todayClocking ?? 0}',
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MobileStatCard(
+                        icon: Icons.calendar_month_rounded,
+                        label: l.myShifts,
+                        value:
+                            isLoading ? null : '${stats?.todayShifts ?? 0}',
+                        color: Colors.purple,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Spazio vuoto a destra per mantenere la griglia bilanciata
+                    const Expanded(child: SizedBox()),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // ═══════════════════════════════
+                // Quick actions
+                // ═══════════════════════════════
+                _MobileQuickActions(),
+                const SizedBox(height: 20),
+
+                // ═══════════════════════════════
+                // Pending notifications
+                // ═══════════════════════════════
+                const PendingNotificationsCard(),
+                const SizedBox(height: 20),
+
+                // ═══════════════════════════════
+                // Recent activity
+                // ═══════════════════════════════
+                _MobileRecentActivity(
+                  activities: activities,
+                  isLoading: isLoading,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _MobileStatCard(
-                  icon: Icons.checklist_rounded,
-                  label: l.activeSurveys,
-                  value: '3',
-                  color: Colors.orange,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _MobileStatCard(
-                  icon: Icons.timer_rounded,
-                  label: l.todayClocking,
-                  value: '18',
-                  color: Colors.blue,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // ═══════════════════════════════
-          // Quick actions
-          // ═══════════════════════════════
-          _MobileQuickActions(),
-          const SizedBox(height: 20),
-
-          // ═══════════════════════════════
-          // Pending notifications
-          // ═══════════════════════════════
-          const PendingNotificationsCard(),
-          const SizedBox(height: 20),
-
-          // ═══════════════════════════════
-          // Recent activity
-          // ═══════════════════════════════
-          _MobileRecentActivity(),
-        ],
-      ),
+        );
+      },
     );
   }
 }
+
 
 // ════════════════════════════════════════════════════════════════
 //  WELCOME BANNER (MOBILE)
@@ -188,7 +240,7 @@ class _MobileStatCard extends StatelessWidget {
   });
   final IconData icon;
   final String label;
-  final String value;
+  final String? value;
   final Color color;
 
   @override
@@ -223,13 +275,19 @@ class _MobileStatCard extends StatelessWidget {
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.textColor,
-            ),
-          ),
+          value == null
+              ? const SizedBox(
+                  height: 28,
+                  width: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(
+                  value!,
+                  style: textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.textColor,
+                  ),
+                ),
           const SizedBox(height: 2),
           Text(
             label,
@@ -319,6 +377,15 @@ class _MobileQuickActions extends StatelessWidget {
                   onTap: () => navBloc.add(NavigationPositionChanged(4)),
                 ),
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QuickActionButton(
+                  icon: Icons.calendar_month_rounded,
+                  label: l.myShifts,
+                  color: Colors.purple,
+                  onTap: () => navBloc.add(NavigationPositionChanged(3)),
+                ),
+              ),
             ],
           ),
         ],
@@ -386,7 +453,58 @@ class _QuickActionButton extends StatelessWidget {
 // ════════════════════════════════════════════════════════════════
 
 class _MobileRecentActivity extends StatelessWidget {
-  const _MobileRecentActivity();
+  const _MobileRecentActivity({
+    required this.activities,
+    required this.isLoading,
+  });
+
+  final List<RecentActivity> activities;
+  final bool isLoading;
+
+  IconData _iconFor(RecentActivityType type) {
+    switch (type) {
+      case RecentActivityType.clockIn:
+        return Icons.login_rounded;
+      case RecentActivityType.clockOut:
+        return Icons.logout_rounded;
+      case RecentActivityType.teamCreated:
+        return Icons.group_rounded;
+      case RecentActivityType.memberJoined:
+        return Icons.group_add_rounded;
+      case RecentActivityType.sondageCreated:
+        return Icons.checklist_rounded;
+      case RecentActivityType.sondageCompleted:
+        return Icons.check_circle_outline_rounded;
+      case RecentActivityType.shiftAssigned:
+        return Icons.calendar_month_rounded;
+    }
+  }
+
+  Color _colorFor(RecentActivityType type) {
+    switch (type) {
+      case RecentActivityType.clockIn:
+        return Colors.green;
+      case RecentActivityType.clockOut:
+        return Colors.red;
+      case RecentActivityType.teamCreated:
+      case RecentActivityType.memberJoined:
+        return Colors.indigo;
+      case RecentActivityType.sondageCreated:
+        return Colors.orange;
+      case RecentActivityType.sondageCompleted:
+        return Colors.teal;
+      case RecentActivityType.shiftAssigned:
+        return Colors.purple;
+    }
+  }
+
+  String _formatTime(DateTime ts) {
+    final diff = DateTime.now().difference(ts);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    return '${diff.inDays}d';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -394,8 +512,6 @@ class _MobileRecentActivity extends StatelessWidget {
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
     final l = AppLocalizations.of(context)!;
-
-    final activities = _mockActivities(l);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -428,102 +544,78 @@ class _MobileRecentActivity extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          ...activities.map(
-            (a) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: a.color.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(a.icon, size: 14, color: a.color),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          a.title,
-                          style: textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.textColor,
-                          ),
-                        ),
-                        Text(
-                          a.subtitle,
-                          style: textTheme.labelSmall?.copyWith(
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    a.time,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: Colors.grey[400],
-                    ),
-                  ),
-                ],
+          if (isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: CircularProgressIndicator(),
               ),
+            )
+          else if (activities.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  l.noRecentActivity,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ),
+            )
+          else
+            ...activities.map(
+              (a) {
+                final icon = _iconFor(a.type);
+                final color = _colorFor(a.type);
+                final time = _formatTime(a.timestamp);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(icon, size: 14, color: color),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              a.title,
+                              style: textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.textColor,
+                              ),
+                            ),
+                            Text(
+                              a.subtitle,
+                              style: textTheme.labelSmall?.copyWith(
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        time,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
         ],
       ),
     );
   }
 }
-
-// ── Mock data ──
-
-class _Activity {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String time;
-  final Color color;
-
-  const _Activity({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.color,
-  });
-}
-
-List<_Activity> _mockActivities(AppLocalizations l) => [
-  _Activity(
-    icon: Icons.login_rounded,
-    title: 'User 3 clocked in',
-    subtitle: 'Manager team',
-    time: '2 min',
-    color: Colors.green,
-  ),
-  _Activity(
-    icon: Icons.group_add_rounded,
-    title: 'New member added',
-    subtitle: 'User 10 → Mobile team',
-    time: '15 min',
-    color: Colors.indigo,
-  ),
-  _Activity(
-    icon: Icons.checklist_rounded,
-    title: 'Survey "Q1 Feedback" created',
-    subtitle: '5 ${l.questions} • 2 ${l.team}',
-    time: '1h',
-    color: Colors.orange,
-  ),
-  _Activity(
-    icon: Icons.logout_rounded,
-    title: 'User 1 clocked out',
-    subtitle: 'Developper team • 8h worked',
-    time: '2h',
-    color: Colors.red,
-  ),
-];
