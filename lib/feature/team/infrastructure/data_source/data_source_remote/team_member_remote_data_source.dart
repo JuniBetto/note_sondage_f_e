@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:collection';
 
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
@@ -98,8 +99,9 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
             return TeamMemberMapper.fromJson(memberJson);
           })
           .toList();
-      await localDataSource.saveAll(members);
-      return members;
+      final deduplicatedMembers = _deduplicateMembers(members);
+      await localDataSource.saveAll(deduplicatedMembers);
+      return deduplicatedMembers;
     } catch (e) {
       throw Exception('Failed to fetch team members by team ID: $e');
     }
@@ -155,5 +157,45 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
     throw UnimplementedError(
       'Profile image upload is not supported by the Spring aggregator',
     );
+  }
+
+  List<TeamMemberEntity> _deduplicateMembers(List<TeamMemberEntity> members) {
+    final uniqueMembers = LinkedHashMap<String, TeamMemberEntity>();
+    for (final member in members) {
+      final key = _memberKey(member);
+      final existing = uniqueMembers[key];
+      // Prefer the record that has a userId set (more complete data)
+      if (existing == null || _isPreferred(member, existing)) {
+        uniqueMembers[key] = member;
+      }
+    }
+    return uniqueMembers.values.toList();
+  }
+
+  /// Returns true if [candidate] is a better record than [current].
+  /// Prefer records that have a non-empty userId (fully resolved identity).
+  bool _isPreferred(TeamMemberEntity candidate, TeamMemberEntity current) {
+    final candidateHasUserId =
+        candidate.userId != null && candidate.userId!.trim().isNotEmpty;
+    final currentHasUserId =
+        current.userId != null && current.userId!.trim().isNotEmpty;
+    if (candidateHasUserId && !currentHasUserId) return true;
+    return false;
+  }
+
+  /// Canonical key: always use email (lowercased) as the primary identity
+  /// so that two records for the same user — one with userId set, one without —
+  /// collapse to a single entry.  Falls back to userId, then memberId.
+  String _memberKey(TeamMemberEntity member) {
+    if (member.userEmail.trim().isNotEmpty) {
+      return '${member.teamId}:${member.userEmail.trim().toLowerCase()}';
+    }
+    if (member.userId != null && member.userId!.trim().isNotEmpty) {
+      return '${member.teamId}:${member.userId!.trim()}';
+    }
+    if (member.id != null && member.id!.isNotEmpty) {
+      return '${member.teamId}:${member.id!}';
+    }
+    return '${member.teamId}:unknown';
   }
 }

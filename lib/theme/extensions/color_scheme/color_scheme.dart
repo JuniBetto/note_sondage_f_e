@@ -191,4 +191,39 @@ extension AppColorScheme on ColorScheme {
   Color? get deleteCard => brightness == Brightness.light
       ? ColorPalette.error.withValues(alpha: 0.6)
       : ColorPalette.error.withValues(alpha: 0.9);
+
+  // ── Sondage status ──
+  Color get sondageStatusActive => ColorPalette.statusActive;
+  Color get sondageStatusDraft => ColorPalette.statusDraft;
+  Color get sondageStatusClosed => ColorPalette.statusClosed;
+  Color get sondageStatusCompleted => ColorPalette.statusCompleted;
+  Color get sondageStatusPublished => ColorPalette.statusPublished;
+
+  Color sondageStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return sondageStatusActive;
+      case 'draft':
+        return sondageStatusDraft;
+      case 'closed':
+        return sondageStatusClosed;
+      case 'completed':
+        return sondageStatusCompleted;
+      case 'published':
+        return sondageStatusPublished;
+      default:
+        return ColorPalette.gray[4];
+    }
+  }
+
+  // ── Semantic shortcuts ──
+  Color get successColor => ColorPalette.success;
+  Color get warningColor => ColorPalette.warning;
+  Color get errorColor => ColorPalette.error;
+  Color get infoColor => ColorPalette.info;
+
+  // ── Vote progress ──
+  Color? get voteBarBackground => brightness == Brightness.light
+      ? ColorPalette.gray[2]
+      : ColorPalette.gray[6];
 }

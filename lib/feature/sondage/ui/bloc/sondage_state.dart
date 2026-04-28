@@ -50,6 +50,15 @@ class SondageUpdated extends SondageState {
 
 class SondageDeleted extends SondageState {}
 
+class SondageActionSuccess extends SondageState {
+  final SondageEntity sondage;
+
+  const SondageActionSuccess(this.sondage);
+
+  @override
+  List<Object?> get props => [sondage];
+}
+
 class SondageError extends SondageState {
   final String message;
 

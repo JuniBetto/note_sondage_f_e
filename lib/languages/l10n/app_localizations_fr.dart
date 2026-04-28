@@ -415,4 +415,237 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logoutConfirmation => 'Êtes-vous sûr de vouloir vous déconnecter?';
+
+  @override
+  String get clockInRequiredForBreak => 'Pointage requis pour la pause';
+
+  @override
+  String get endActiveBreak => 'Terminer la pause';
+
+  @override
+  String get startActiveBreak => 'Commencer la pause';
+
+  @override
+  String get selectTeamToClockIn =>
+      'Veuillez sélectionner une équipe pour pointer';
+
+  @override
+  String get allDates => 'Toutes les dates';
+
+  @override
+  String get teamClockings => 'Pointages d\'équipe';
+
+  @override
+  String get downloadPdf => 'Télécharger le PDF';
+
+  @override
+  String get clockingOwnerHint => 'Propriétaire du pointage';
+
+  @override
+  String get searchByNameOrTeam => 'Rechercher par nom ou équipe...';
+
+  @override
+  String get resetFilters => 'Réinitialiser les filtres';
+
+  @override
+  String get reset => 'Réinitialiser';
+
+  @override
+  String get selectTeamToViewClockings =>
+      'Veuillez sélectionner une équipe per voir les pointages';
+
+  @override
+  String get noClockingsForTeam => 'Aucun pointage trouvé pour cette équipe';
+
+  @override
+  String get committed => 'Confirmé';
+
+  @override
+  String get decommitted => 'Annulé';
+
+  @override
+  String get editClocking => 'Modifier le pointage';
+
+  @override
+  String get breakMinutes => 'Pause (minutes)';
+
+  @override
+  String get note => 'Note';
+
+  @override
+  String get invalidDateFormat => 'Format de date invalide';
+
+  @override
+  String get noClockingsToExport =>
+      'Aucun pointage disponible pour l\'exportation';
+
+  @override
+  String get ownerOnly => 'Propriétaire uniquement';
+
+  @override
+  String get decommit => 'Annuler';
+
+  @override
+  String get commit => 'Confirmer';
+
+  @override
+  String get editAction => 'Modifier';
+
+  @override
+  String get noActionAvailable => 'Aucune action disponible';
+
+  @override
+  String get setExpiry => 'Définir la date d\'expiration';
+
+  @override
+  String get invitationSent => 'Invitation envoyée avec succès';
+
+  @override
+  String get noActiveMembersYet => 'Aucun membre actif pour le moment';
+
+  @override
+  String get editRoleTooltip => 'Modifier le rôle';
+
+  @override
+  String get removeAction => 'Supprimer';
+
+  @override
+  String get selectRole => 'Sélectionner un rôle';
+
+  @override
+  String get pendingInvitations => 'Invitations en attente';
+
+  @override
+  String get cancelInvitation => 'Annuler l\'invitation';
+
+  @override
+  String get inviteStatusAccepted => 'Acceptée';
+
+  @override
+  String get inviteStatusRejected => 'Refusée';
+
+  @override
+  String get inviteStatusUnregistered => 'En attente d\'inscription';
+
+  @override
+  String get inviteStatusPending => 'En attente';
+
+  @override
+  String get memberStatusInvited => 'Invité';
+
+  @override
+  String get memberStatusInactive => 'Inactif';
+
+  @override
+  String get memberStatusSuspended => 'Suspendu';
+
+  @override
+  String exportPdfError(Object error) {
+    return 'Erreur lors de l\'exportation du PDF: $error';
+  }
+
+  @override
+  String get surveyNotFound => 'Sondage non trouvé';
+
+  @override
+  String get focus => 'Focus';
+
+  @override
+  String get noOptionsAvailable => 'Aucune option disponible';
+
+  @override
+  String get alreadyVoted => 'Vous avez déjà voté';
+
+  @override
+  String get cannotVote => 'Vous ne pouvez pas voter';
+
+  @override
+  String get publish => 'Publier';
+
+  @override
+  String get closeSurvey => 'Fermer le Sondage';
+
+  @override
+  String get statusActive => 'Actif';
+
+  @override
+  String get statusDraft => 'Brouillon';
+
+  @override
+  String get statusClosed => 'Fermé';
+
+  @override
+  String get statusCompleted => 'Terminé';
+
+  @override
+  String get statusPublished => 'Publié';
+
+  @override
+  String votes(int count) {
+    return '$count votes';
+  }
+
+  @override
+  String activeTurnOn(String teamName) {
+    return 'Tour actif sur $teamName';
+  }
+
+  @override
+  String get openYourTurn => 'Ouvrir votre tour';
+
+  @override
+  String get loadingClockingState => 'Chargement de l\'état de pointage...';
+
+  @override
+  String get noClockingsForFilter =>
+      'Aucun pointage trouvé pour les filtres sélectionnés';
+
+  @override
+  String get myShifts => 'Mes quarts';
+
+  @override
+  String get shiftCalendar => 'Calendrier des quarts';
+
+  @override
+  String get addShift => 'Ajouter un quart';
+
+  @override
+  String get shiftProfile => 'Profil de quart';
+
+  @override
+  String get shiftStart => 'Début';
+
+  @override
+  String get shiftEnd => 'Fin';
+
+  @override
+  String get overnightShift => 'Quart de nuit';
+
+  @override
+  String get alarms => 'Alarmes';
+
+  @override
+  String get createCustomProfile => 'Créer un profil personnalisé';
+
+  @override
+  String get editShiftProfile => 'Modifier le profil';
+
+  @override
+  String get shiftProfileName => 'Nom du profil';
+
+  @override
+  String get shiftColor => 'Couleur';
+
+  @override
+  String get deleteShiftProfileConfirm =>
+      'Voulez-vous vraiment supprimer ce profil ?';
+
+  @override
+  String get customProfile => 'Profils personnalisés';
+
+  @override
+  String get noShiftsThisMonth => 'Aucun quart ce mois-ci';
+
+  @override
+  String get systemProfile => 'Profils système';
 }

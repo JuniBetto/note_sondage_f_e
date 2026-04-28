@@ -152,6 +152,7 @@ class _EmptyClockingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final localization = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -164,7 +165,7 @@ class _EmptyClockingState extends StatelessWidget {
           Icon(Icons.schedule_outlined, color: Colors.grey[500], size: 28),
           const SizedBox(height: 8),
           Text(
-            'Nessuna timbratura disponibile per il filtro corrente.',
+            localization.noClockingsForFilter,
             style: textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
@@ -219,7 +220,7 @@ class _WebTeamHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
-              '$count members',
+              AppLocalizations.of(context)!.member(count),
               style: textTheme.labelSmall?.copyWith(
                 color: teamColor,
                 fontWeight: FontWeight.w600,

@@ -52,4 +52,28 @@ class SondageUseCase {
       throw Exception('Failed to delete sondage: $e');
     }
   }
+
+  Future<SondageEntity> publishSondage(String id) async {
+    try {
+      return await repository.publish(id);
+    } catch (e) {
+      throw Exception('Failed to publish sondage: $e');
+    }
+  }
+
+  Future<SondageEntity> closeSondage(String id) async {
+    try {
+      return await repository.close(id);
+    } catch (e) {
+      throw Exception('Failed to close sondage: $e');
+    }
+  }
+
+  Future<SondageEntity> voteSondage(String sondageId, String optionId) async {
+    try {
+      return await repository.vote(sondageId, optionId);
+    } catch (e) {
+      throw Exception('Failed to vote sondage: $e');
+    }
+  }
 }

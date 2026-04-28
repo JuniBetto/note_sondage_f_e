@@ -19,6 +19,7 @@ class TeamMemberLocalDataSource {
     final models = members.map(
       (e) => TeamMemberHiveModel(
         id: e.id,
+        userId: e.userId,
         userEmail: e.userEmail,
         teamId: e.teamId,
         status: e.status.value,
@@ -45,6 +46,7 @@ class TeamMemberLocalDataSource {
   TeamMemberEntity _fromModel(TeamMemberHiveModel m) {
     return TeamMemberEntity(
       id: m.id,
+      userId: m.userId,
       userEmail: m.userEmail,
       teamId: m.teamId,
       status: UserStatus.values.firstWhere(

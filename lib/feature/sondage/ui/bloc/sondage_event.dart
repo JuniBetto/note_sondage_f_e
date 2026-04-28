@@ -53,3 +53,35 @@ class DeleteSondageEvent extends SondageEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class PublishSondageEvent extends SondageEvent {
+  final String id;
+
+  const PublishSondageEvent(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class CloseSondageEvent extends SondageEvent {
+  final String id;
+
+  const CloseSondageEvent(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class VoteSondageEvent extends SondageEvent {
+  final String sondageId;
+  final String optionId;
+
+  const VoteSondageEvent(this.sondageId, this.optionId);
+
+  @override
+  List<Object?> get props => [sondageId, optionId];
+}
+
+class ResetSondageCacheEvent extends SondageEvent {
+  const ResetSondageCacheEvent();
+}

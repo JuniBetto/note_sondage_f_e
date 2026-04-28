@@ -417,4 +417,237 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get logoutConfirmation =>
       '¿Estás seguro de que quieres cerrar sesión?';
+
+  @override
+  String get clockInRequiredForBreak => 'Fichaje requerido para el descanso';
+
+  @override
+  String get endActiveBreak => 'Finalizar descanso';
+
+  @override
+  String get startActiveBreak => 'Iniciar descanso';
+
+  @override
+  String get selectTeamToClockIn =>
+      'Por favor, seleccione un equipo para fichar';
+
+  @override
+  String get allDates => 'Todas las fechas';
+
+  @override
+  String get teamClockings => 'Fichajes del equipo';
+
+  @override
+  String get downloadPdf => 'Descargar PDF';
+
+  @override
+  String get clockingOwnerHint => 'Propietario del fichaje';
+
+  @override
+  String get searchByNameOrTeam => 'Buscar por nombre o equipo...';
+
+  @override
+  String get resetFilters => 'Restablecer filtros';
+
+  @override
+  String get reset => 'Restablecer';
+
+  @override
+  String get selectTeamToViewClockings =>
+      'Por favor, seleccione un equipo para ver los fichajes';
+
+  @override
+  String get noClockingsForTeam =>
+      'No se han encontrado fichajes para este equipo';
+
+  @override
+  String get committed => 'Confirmado';
+
+  @override
+  String get decommitted => 'Anulado';
+
+  @override
+  String get editClocking => 'Editar fichaje';
+
+  @override
+  String get breakMinutes => 'Descanso (minutos)';
+
+  @override
+  String get note => 'Nota';
+
+  @override
+  String get invalidDateFormat => 'Formato de fecha inválido';
+
+  @override
+  String get noClockingsToExport => 'No hay fichajes disponibles para exportar';
+
+  @override
+  String get ownerOnly => 'Solo propietario';
+
+  @override
+  String get decommit => 'Anular';
+
+  @override
+  String get commit => 'Confirmar';
+
+  @override
+  String get editAction => 'Editar';
+
+  @override
+  String get noActionAvailable => 'Ninguna acción disponible';
+
+  @override
+  String get setExpiry => 'Establecer fecha de caducidad';
+
+  @override
+  String get invitationSent => 'Invitación enviada con éxito';
+
+  @override
+  String get noActiveMembersYet => 'Aún no hay miembros activos';
+
+  @override
+  String get editRoleTooltip => 'Editar rol';
+
+  @override
+  String get removeAction => 'Eliminar';
+
+  @override
+  String get selectRole => 'Seleccionar un rol';
+
+  @override
+  String get pendingInvitations => 'Invitaciones pendientes';
+
+  @override
+  String get cancelInvitation => 'Cancelar invitación';
+
+  @override
+  String get inviteStatusAccepted => 'Aceptada';
+
+  @override
+  String get inviteStatusRejected => 'Rechazada';
+
+  @override
+  String get inviteStatusUnregistered => 'Registro pendiente';
+
+  @override
+  String get inviteStatusPending => 'Pendiente';
+
+  @override
+  String get memberStatusInvited => 'Invitado';
+
+  @override
+  String get memberStatusInactive => 'Inactivo';
+
+  @override
+  String get memberStatusSuspended => 'Suspendido';
+
+  @override
+  String exportPdfError(Object error) {
+    return 'Error al exportar PDF: $error';
+  }
+
+  @override
+  String get surveyNotFound => 'Encuesta no encontrada';
+
+  @override
+  String get focus => 'Enfoque';
+
+  @override
+  String get noOptionsAvailable => 'No hay opciones disponibles';
+
+  @override
+  String get alreadyVoted => 'Ya has votado';
+
+  @override
+  String get cannotVote => 'No puedes votar';
+
+  @override
+  String get publish => 'Publicar';
+
+  @override
+  String get closeSurvey => 'Cerrar Encuesta';
+
+  @override
+  String get statusActive => 'Activo';
+
+  @override
+  String get statusDraft => 'Borrador';
+
+  @override
+  String get statusClosed => 'Cerrado';
+
+  @override
+  String get statusCompleted => 'Completado';
+
+  @override
+  String get statusPublished => 'Publicado';
+
+  @override
+  String votes(int count) {
+    return '$count votos';
+  }
+
+  @override
+  String activeTurnOn(String teamName) {
+    return 'Turno activo en $teamName';
+  }
+
+  @override
+  String get openYourTurn => 'Abrir tu turno';
+
+  @override
+  String get loadingClockingState => 'Cargando estado de fichaje...';
+
+  @override
+  String get noClockingsForFilter =>
+      'No se encontraron fichajes para los filtros seleccionados';
+
+  @override
+  String get myShifts => 'Mis turnos';
+
+  @override
+  String get shiftCalendar => 'Calendario de turnos';
+
+  @override
+  String get addShift => 'Agregar turno';
+
+  @override
+  String get shiftProfile => 'Perfil de turno';
+
+  @override
+  String get shiftStart => 'Inicio';
+
+  @override
+  String get shiftEnd => 'Fin';
+
+  @override
+  String get overnightShift => 'Turno nocturno';
+
+  @override
+  String get alarms => 'Alarmas';
+
+  @override
+  String get createCustomProfile => 'Crear perfil personalizado';
+
+  @override
+  String get editShiftProfile => 'Editar perfil';
+
+  @override
+  String get shiftProfileName => 'Nombre del perfil';
+
+  @override
+  String get shiftColor => 'Color';
+
+  @override
+  String get deleteShiftProfileConfirm =>
+      '¿Estás seguro de que quieres eliminar este perfil?';
+
+  @override
+  String get customProfile => 'Perfiles personalizados';
+
+  @override
+  String get noShiftsThisMonth => 'Sin turnos este mes';
+
+  @override
+  String get systemProfile => 'Perfiles del sistema';
 }

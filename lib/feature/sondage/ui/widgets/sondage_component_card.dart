@@ -10,9 +10,10 @@ class SondageComponentCard extends StatefulWidget {
   final int responses;
   final int totalQuestions;
   final DateTime createdDate;
-  final DateTime expiryDate;
+  final DateTime? expiryDate;
   final Color colorSondage;
   final bool isActive;
+  final bool canDelete;
   final VoidCallback onTap;
   final Function(String) onDeleteTap;
 
@@ -28,6 +29,7 @@ class SondageComponentCard extends StatefulWidget {
     required this.expiryDate,
     required this.colorSondage,
     this.isActive = false,
+    this.canDelete = false,
     required this.onTap,
     required this.onDeleteTap,
   });
@@ -46,8 +48,6 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    final showBorder = widget.isActive || _isHovered;
-
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
@@ -56,17 +56,16 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: 320,
-          height: 200,
+          constraints: const BoxConstraints(minHeight: 170),
           decoration: BoxDecoration(
             color: colorScheme.bgNavbarSurface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: showBorder
-                  ? colorScheme.selectionColor!
-                  : widget.colorSondage,
-              width: showBorder ? 3 : 2,
-            ),
+            border: (widget.isActive || _isHovered)
+                ? Border.all(
+                    color: colorScheme.selectionColor!,
+                    width: 3,
+                  )
+                : null,
             boxShadow: _isHovered
                 ? [
                     BoxShadow(
@@ -104,12 +103,13 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => widget.onDeleteTap(widget.sondageId),
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                    ),
+                    if (widget.canDelete)
+                      IconButton(
+                        icon: Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () => widget.onDeleteTap(widget.sondageId),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(),
+                      ),
                   ],
                 ),
                 SizedBox(height: 8),
@@ -147,27 +147,39 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
 
                 // Footer con info
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.people, size: 16, color: Colors.grey),
-                        SizedBox(width: 4),
-                        Text(
-                          '${widget.responses} ${localization.responses}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.people, size: 16, color: Colors.grey),
+                          SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '${widget.responses} ${localization.responses}',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Row(
-                      children: [
-                        Icon(Icons.quiz, size: 16, color: Colors.grey),
-                        SizedBox(width: 4),
-                        Text(
-                          '${widget.totalQuestions} ${localization.questions}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.quiz, size: 16, color: Colors.grey),
+                          SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '${widget.totalQuestions} ${localization.questions}',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -183,6 +195,7 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
     switch (status.toLowerCase()) {
       case 'active':
         return Colors.green;
+      case 'completed':
       case 'closed':
         return Colors.red;
       case 'draft':

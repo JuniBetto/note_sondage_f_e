@@ -205,7 +205,16 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
 
     final currentEmail = getIt<AuthBloc>().state.user.email.trim().toLowerCase();
     final currentMember = members
-        .where((member) => member.userEmail.trim().toLowerCase() == currentEmail)
+        .where(
+          (member) =>
+              (member.userId?.trim().isNotEmpty ?? false) &&
+              member.userId!.trim() == currentUserId,
+        )
+        .firstOrNull ??
+        members
+            .where(
+              (member) => member.userEmail.trim().toLowerCase() == currentEmail,
+            )
         .firstOrNull;
     final roleCode = (currentMember?.roleId ?? 'VIEWER').trim().toUpperCase();
     final role = _roles.where((item) => item.id == roleCode).firstOrNull;
@@ -274,8 +283,8 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
             if (state is TeamMemberInvited) {
               _reload();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Invitation sent ✓'),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context)!.invitationSent),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -344,7 +353,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
               if (_members.isEmpty) {
                 return _EmptyPlaceholder(
                   icon: Icons.group_outlined,
-                  label: 'No active members yet',
+                  label: AppLocalizations.of(context)!.noActiveMembersYet,
                 );
               }
               return _MembersList(
@@ -476,13 +485,18 @@ class _MembersList extends StatelessWidget {
             color: colorScheme.tableHeaderUserTeam,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Row(
-            children: [
-              Expanded(flex: 3, child: _HeaderText('Email')),
-              Expanded(flex: 2, child: _HeaderText('Role')),
-              Expanded(flex: 2, child: _HeaderText('Status')),
-              SizedBox(width: 72),
-            ],
+          child: Builder(
+            builder: (context) {
+              final loc = AppLocalizations.of(context)!;
+              return Row(
+                children: [
+                  Expanded(flex: 3, child: _HeaderText(loc.email)),
+                  Expanded(flex: 2, child: _HeaderText(loc.role)),
+                  Expanded(flex: 2, child: _HeaderText(loc.status)),
+                  const SizedBox(width: 72),
+                ],
+              );
+            },
           ),
         ),
         const SizedBox(height: 4),
@@ -615,7 +629,7 @@ class _MemberRow extends StatelessWidget {
               _ActionIcon(
                 icon: Icons.edit_rounded,
                 color: const Color(0xFF7C4DFF),
-                tooltip: 'Edit role',
+                tooltip: AppLocalizations.of(context)!.editRoleTooltip,
                 onTap: onEditStart,
               ),
               const SizedBox(width: 4),
@@ -624,7 +638,7 @@ class _MemberRow extends StatelessWidget {
               _ActionIcon(
                 icon: Icons.delete_rounded,
                 color: colorScheme.deleteCard ?? Colors.red,
-                tooltip: 'Remove',
+                tooltip: AppLocalizations.of(context)!.removeAction,
                 onTap: onDelete,
               ),
           ],
@@ -659,7 +673,7 @@ class _MemberRow extends StatelessWidget {
             displayText: (r) => r.name,
             valueGetter: (r) => r,
             onChanged: (r) => onRoleChanged(r?.id ?? ''),
-            hintText: 'Select role',
+            hintText: AppLocalizations.of(context)!.selectRole,
           ),
         ),
         const SizedBox(width: 8),
@@ -669,14 +683,14 @@ class _MemberRow extends StatelessWidget {
             _ActionIcon(
               icon: Icons.check_rounded,
               color: Colors.green,
-              tooltip: 'Save',
+              tooltip: AppLocalizations.of(context)!.save,
               onTap: onEditSave,
             ),
             const SizedBox(width: 4),
             _ActionIcon(
               icon: Icons.close_rounded,
               color: Colors.grey,
-              tooltip: 'Cancel',
+              tooltip: AppLocalizations.of(context)!.cancel,
               onTap: onEditCancel,
             ),
           ],
@@ -733,7 +747,7 @@ class _InvitationsSection extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'PENDING INVITATIONS',
+                AppLocalizations.of(context)!.pendingInvitations.toUpperCase(),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.0,
@@ -749,13 +763,18 @@ class _InvitationsSection extends StatelessWidget {
             color: colorScheme.tableHeaderUserTeam,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Row(
-            children: [
-              Expanded(flex: 3, child: _HeaderText('Email')),
-              Expanded(flex: 2, child: _HeaderText('Role')),
-              Expanded(flex: 2, child: _HeaderText('Status')),
-              SizedBox(width: 40),
-            ],
+          child: Builder(
+            builder: (context) {
+              final loc = AppLocalizations.of(context)!;
+              return Row(
+                children: [
+                  Expanded(flex: 3, child: _HeaderText(loc.email)),
+                  Expanded(flex: 2, child: _HeaderText(loc.role)),
+                  Expanded(flex: 2, child: _HeaderText(loc.status)),
+                  const SizedBox(width: 40),
+                ],
+              );
+            },
           ),
         ),
         const SizedBox(height: 4),
@@ -822,7 +841,7 @@ class _InvitationRow extends StatelessWidget {
             _ActionIcon(
               icon: Icons.cancel_outlined,
               color: Colors.orange,
-              tooltip: 'Cancel invitation',
+              tooltip: AppLocalizations.of(context)!.cancelInvitation,
               onTap: onCancel,
             )
           else
@@ -839,11 +858,12 @@ class _InviteStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final (label, color) = switch (status.toUpperCase()) {
-      'ACCEPTED' => ('Accepted', const Color(0xFF1B8C4A)),
-      'REJECTED' => ('Rejected', const Color(0xFFE74C3C)),
-      'PENDING_REGISTRATION' => ('Unregistered', const Color(0xFF9B59B6)),
-      _ => ('Pending', const Color(0xFFE67E22)),
+      'ACCEPTED' => (loc.inviteStatusAccepted, const Color(0xFF1B8C4A)),
+      'REJECTED' => (loc.inviteStatusRejected, const Color(0xFFE74C3C)),
+      'PENDING_REGISTRATION' => (loc.inviteStatusUnregistered, const Color(0xFF9B59B6)),
+      _ => (loc.inviteStatusPending, const Color(0xFFE67E22)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -908,12 +928,13 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final (label, color) = switch (status) {
-      UserStatus.active => ('Active', const Color(0xFF1B8C4A)),
-      UserStatus.pending => ('Invited', const Color(0xFFE67E22)),
-      UserStatus.banned => ('Pending', const Color(0xFF3498DB)),
-      UserStatus.deactivated => ('Inactive', Colors.grey),
-      UserStatus.deleted => ('Suspended', const Color(0xFFE74C3C)),
+      UserStatus.active => (loc.statusActive, const Color(0xFF1B8C4A)),
+      UserStatus.pending => (loc.memberStatusInvited, const Color(0xFFE67E22)),
+      UserStatus.banned => (loc.inviteStatusPending, const Color(0xFF3498DB)),
+      UserStatus.deactivated => (loc.memberStatusInactive, Colors.grey),
+      UserStatus.deleted => (loc.memberStatusSuspended, const Color(0xFFE74C3C)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

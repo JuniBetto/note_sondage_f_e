@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/responsive_grid_sondages.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class SondageDisplay extends StatefulWidget {
-  final List<Map<String, dynamic>> sondages;
+  final List<SondageEntity> sondages;
   final Function(int) onViewChanged;
   final int initialViewType;
+  final ValueChanged<String> onDeleteTap;
 
   const SondageDisplay({
     Key? key,
     required this.sondages,
     required this.onViewChanged,
+    required this.onDeleteTap,
     this.initialViewType = 1,
   }) : super(key: key);
 
@@ -79,6 +82,7 @@ class _TeamsDisplaySectionState extends State<SondageDisplay> {
               child: ResponsiveGridSondages(
                 items: widget.sondages,
                 isRow: isGridView == 1,
+                onDeleteTap: widget.onDeleteTap,
               ),
             ),
           ),

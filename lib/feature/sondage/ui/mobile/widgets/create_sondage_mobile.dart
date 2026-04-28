@@ -80,7 +80,6 @@ class _CreateSondageMobileState extends State<CreateSondageMobile> {
     final localization = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
 
     return Form(
       key: _formKey,
@@ -181,7 +180,7 @@ class _CreateSondageMobileState extends State<CreateSondageMobile> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
-                        title: Text("imposta tempo di risposta"),
+                        title: Text(localization.setExpiry),
                       ),
                       TimeRangePicker(
                         start: start,

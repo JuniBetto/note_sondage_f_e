@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 
 class ColorPalette {
   // Primary Colors - Purple scale
@@ -63,9 +62,18 @@ class ColorPalette {
   static const error = Color(0xFFEF4444);
   static const info = Color(0xFF3B82F6);
 
+  // Sondage Status Colors
+  static const statusActive = Color(0xFF22C55E);   // green
+  static const statusDraft = Color(0xFFFB923C);    // orange
+  static const statusClosed = Color(0xFFEF4444);   // red
+  static const statusCompleted = Color(0xFF3B82F6); // blue
+  static const statusPublished = Color(0xFF8B5CF6); // violet
+
   // Surface Colors
   static const surface = Color(0xFFFFFFFF);
+  static const surfaceDark = Color(0xFF1E1E2E);
   static const background = Color(0xFFF5F5F1);
+  static const backgroundDark = Color(0xFF15202B);
   static const overlay = Color(0x80000000);
 
   // Text Colors

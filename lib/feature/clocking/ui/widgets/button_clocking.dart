@@ -86,10 +86,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
                             ? localization.clockedOutAt.replaceAll(':', '').trim()
                             : localization.clockedInAt.replaceAll(':', '').trim(),
                         subtitle: activeRecord != null
-                            ? 'Turno attivo su ${activeRecord.teamName}'
+                            ? localization.activeTurnOn(activeRecord.teamName)
                             : (isClockingReady
-                                  ? 'Apri il tuo turno sul team selezionato'
-                                  : 'Caricamento stato timbratura...'),
+                                  ? localization.openYourTurn
+                                  : localization.loadingClockingState),
                         isCompact: widget.isCompact,
                         isDisabled: !hasTeams || isBusy || !isClockingReady,
                       ),
@@ -106,10 +106,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
                             .replaceAll(':', '')
                             .trim(),
                         subtitle: activeRecord == null
-                            ? 'Serve prima un clock-in attivo'
+                            ? localization.clockInRequiredForBreak
                             : (activeRecord.isOnBreak
-                                  ? 'Chiudi la pausa del turno attivo'
-                                  : 'Avvia una pausa sul turno attivo'),
+                                  ? localization.endActiveBreak
+                                  : localization.startActiveBreak),
                         isCompact: widget.isCompact,
                         isDisabled:
                             activeRecord == null || isBusy || !isClockingReady,
@@ -178,8 +178,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Seleziona prima un team per timbrare.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.selectTeamToClockIn),
             backgroundColor: Colors.orange,
           ),
         );

@@ -2,23 +2,32 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/domain/use_case/sondage_use_case.dart';
+import 'package:note_sondage/feature/sondage/infrastructure/data_source/data_source_local/sondage_local_data_source.dart';
 
 part 'sondage_event.dart';
 part 'sondage_state.dart';
 
 class SondageBloc extends Bloc<SondageEvent, SondageState> {
   final SondageUseCase sondageUseCase;
+  final SondageLocalDataSource sondageLocalDataSource;
 
   /// Cache dei sondaggi caricati per evitare flickering
   List<SondageEntity> _cachedSondages = [];
 
-  SondageBloc({required this.sondageUseCase}) : super(SondageInitial()) {
+  SondageBloc({
+    required this.sondageUseCase,
+    required this.sondageLocalDataSource,
+  }) : super(SondageInitial()) {
     on<LoadSondagesEvent>(_onLoadSondages);
     on<LoadSondagesByUserIdEvent>(_onLoadSondagesByUserId);
     on<LoadSondageByIdEvent>(_onLoadSondageById);
     on<CreateSondageEvent>(_onCreateSondage);
     on<UpdateSondageEvent>(_onUpdateSondage);
     on<DeleteSondageEvent>(_onDeleteSondage);
+    on<PublishSondageEvent>(_onPublishSondage);
+    on<CloseSondageEvent>(_onCloseSondage);
+    on<VoteSondageEvent>(_onVoteSondage);
+    on<ResetSondageCacheEvent>(_onResetCache);
   }
 
   Future<void> _onLoadSondages(
@@ -86,8 +95,11 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
   ) async {
     try {
       final sondage = await sondageUseCase.createSondage(event.sondage);
-      emit(SondageCreated(sondage));
       _cachedSondages = [..._cachedSondages, sondage];
+      emit(SondageCreated(sondage));
+      // SondagesLoaded viene emesso con un piccolo delay
+      // per non interrompere l'animazione tab nel listener
+      await Future.delayed(const Duration(milliseconds: 350));
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
       emit(SondageError(e.toString()));
@@ -131,5 +143,72 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
         emit(SondagesLoaded(_cachedSondages));
       }
     }
+  }
+
+  Future<void> _onPublishSondage(
+    PublishSondageEvent event,
+    Emitter<SondageState> emit,
+  ) async {
+    try {
+      final sondage = await sondageUseCase.publishSondage(event.id);
+      _upsertCache(sondage);
+      emit(SondageActionSuccess(sondage));
+      emit(SondagesLoaded(_cachedSondages));
+    } catch (e) {
+      emit(SondageError(e.toString()));
+      if (_cachedSondages.isNotEmpty) emit(SondagesLoaded(_cachedSondages));
+    }
+  }
+
+  Future<void> _onCloseSondage(
+    CloseSondageEvent event,
+    Emitter<SondageState> emit,
+  ) async {
+    try {
+      final sondage = await sondageUseCase.closeSondage(event.id);
+      _upsertCache(sondage);
+      emit(SondageActionSuccess(sondage));
+      emit(SondagesLoaded(_cachedSondages));
+    } catch (e) {
+      emit(SondageError(e.toString()));
+      if (_cachedSondages.isNotEmpty) emit(SondagesLoaded(_cachedSondages));
+    }
+  }
+
+  Future<void> _onVoteSondage(
+    VoteSondageEvent event,
+    Emitter<SondageState> emit,
+  ) async {
+    try {
+      final sondage = await sondageUseCase.voteSondage(
+        event.sondageId,
+        event.optionId,
+      );
+      _upsertCache(sondage);
+      emit(SondageActionSuccess(sondage));
+      emit(SondagesLoaded(_cachedSondages));
+    } catch (e) {
+      emit(SondageError(e.toString()));
+      if (_cachedSondages.isNotEmpty) emit(SondagesLoaded(_cachedSondages));
+    }
+  }
+
+  void _upsertCache(SondageEntity sondage) {
+    final existingIndex = _cachedSondages.indexWhere((item) => item.id == sondage.id);
+    if (existingIndex == -1) {
+      _cachedSondages = [sondage, ..._cachedSondages];
+      return;
+    }
+    _cachedSondages = List<SondageEntity>.from(_cachedSondages)
+      ..[existingIndex] = sondage;
+  }
+
+  Future<void> _onResetCache(
+    ResetSondageCacheEvent event,
+    Emitter<SondageState> emit,
+  ) async {
+    _cachedSondages = [];
+    await sondageLocalDataSource.clearAll();
+    emit(SondageInitial());
   }
 }

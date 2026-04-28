@@ -8,11 +8,33 @@ enum SondageStatus {
   archived;
 
   factory SondageStatus.fromString(String value) {
-    return SondageStatus.values.firstWhere(
-      (s) => s.name == value.toLowerCase(),
-      orElse: () => SondageStatus.draft,
-    );
+    switch (value.toLowerCase()) {
+      case 'published':
+      case 'active':
+        return SondageStatus.active;
+      case 'closed':
+      case 'completed':
+        return SondageStatus.completed;
+      case 'archived':
+        return SondageStatus.archived;
+      default:
+        return SondageStatus.draft;
+    }
   }
+}
+
+class SondageOptionEntity {
+  final String id;
+  final String label;
+  final int sortOrder;
+  final int voteCount;
+
+  const SondageOptionEntity({
+    required this.id,
+    required this.label,
+    required this.sortOrder,
+    this.voteCount = 0,
+  });
 }
 
 /// Entità Sondage — dominio puro, nessuna dipendenza infrastrutturale
@@ -28,7 +50,15 @@ class SondageEntity {
   final Color color;
   final String? createdByUserId;
   final String? teamId;
+  final String? teamName;
   final String? description;
+  final List<SondageOptionEntity> options;
+  final String? currentUserOptionId;
+  final bool canEdit;
+  final bool canDelete;
+  final bool canPublish;
+  final bool canVote;
+  final bool canClose;
 
   const SondageEntity({
     required this.id,
@@ -42,7 +72,15 @@ class SondageEntity {
     this.color = Colors.blue,
     this.createdByUserId,
     this.teamId,
+    this.teamName,
     this.description,
+    this.options = const [],
+    this.currentUserOptionId,
+    this.canEdit = false,
+    this.canDelete = false,
+    this.canPublish = false,
+    this.canVote = false,
+    this.canClose = false,
   });
 
   SondageEntity copyWith({
@@ -57,7 +95,15 @@ class SondageEntity {
     Color? color,
     String? createdByUserId,
     String? teamId,
+    String? teamName,
     String? description,
+    List<SondageOptionEntity>? options,
+    String? currentUserOptionId,
+    bool? canEdit,
+    bool? canDelete,
+    bool? canPublish,
+    bool? canVote,
+    bool? canClose,
   }) {
     return SondageEntity(
       id: id ?? this.id,
@@ -71,7 +117,15 @@ class SondageEntity {
       color: color ?? this.color,
       createdByUserId: createdByUserId ?? this.createdByUserId,
       teamId: teamId ?? this.teamId,
+      teamName: teamName ?? this.teamName,
       description: description ?? this.description,
+      options: options ?? this.options,
+      currentUserOptionId: currentUserOptionId ?? this.currentUserOptionId,
+      canEdit: canEdit ?? this.canEdit,
+      canDelete: canDelete ?? this.canDelete,
+      canPublish: canPublish ?? this.canPublish,
+      canVote: canVote ?? this.canVote,
+      canClose: canClose ?? this.canClose,
     );
   }
 

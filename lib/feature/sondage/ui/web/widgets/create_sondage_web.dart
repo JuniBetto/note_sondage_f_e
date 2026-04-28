@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/sondage/ui/mobile/widgets/toggle_tile.dart';
-import 'package:note_sondage/feature/team/ui/mobile/widgets/select_team_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
+import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/feature/team/infrastructure/data/team_mapper.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
@@ -12,7 +16,7 @@ class CreateSondageWeb extends StatefulWidget {
   final String? sondageId;
   final Function()? onsondageCreated;
 
-  const CreateSondageWeb({super.key, this.onsondageCreated, this.sondageId});
+  const CreateSondageWeb({super.key, this.sondageId, this.onsondageCreated});
 
   @override
   State<CreateSondageWeb> createState() => _CreateSondageWebState();
@@ -20,58 +24,224 @@ class CreateSondageWeb extends StatefulWidget {
 
 class _CreateSondageWebState extends State<CreateSondageWeb> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController namesondageController = TextEditingController();
-  final TextEditingController descriptionsondageController =
-      TextEditingController();
-  bool isFixedTime = false;
-  TimeOfDay start = const TimeOfDay(hour: 9, minute: 0);
-  TimeOfDay end = const TimeOfDay(hour: 9, minute: 0);
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  late final List<TextEditingController> _optionControllers;
+  bool _isSyncingOptions = false;
 
-  bool isEnabled = false;
-
-  // Team selezionato
-  Map<String, dynamic>? selectedTeam;
-
-  // Lista delle opzioni
-  late List<TextEditingController> items;
+  bool _hasExpiry = false;
+  TimeOfDay _start = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _end = const TimeOfDay(hour: 18, minute: 0);
+  String? _selectedTeamId;
+  late Future<List<TeamEntity>> _teamsFuture;
 
   @override
   void initState() {
     super.initState();
-    items = [TextEditingController(text: "")];
+    _optionControllers = [_buildOptionController(), _buildOptionController()];
+    _teamsFuture = _loadCreatableTeams();
   }
 
   @override
   void dispose() {
-    namesondageController.dispose();
-    descriptionsondageController.dispose();
-    for (var controller in items) {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    for (final controller in _optionControllers) {
       controller.dispose();
     }
-    items.clear();
     super.dispose();
   }
 
-  void _onReorder(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) newIndex--;
+  TextEditingController _buildOptionController([String text = '']) {
+    final controller = TextEditingController(text: text);
+    controller.addListener(_syncOptionControllers);
+    return controller;
+  }
 
-      final item = items.removeAt(oldIndex);
-      items.insert(newIndex, item);
+  void _syncOptionControllers() {
+    if (_isSyncingOptions || !mounted) return;
+    _isSyncingOptions = true;
+    var changed = false;
+
+    if (_optionControllers.isNotEmpty &&
+        _optionControllers.last.text.trim().isNotEmpty &&
+        _optionControllers.length < 10) {
+      _optionControllers.add(_buildOptionController());
+      changed = true;
+    }
+
+    while (_optionControllers.length > 2 &&
+        _optionControllers.last.text.trim().isEmpty &&
+        _optionControllers[_optionControllers.length - 2].text.trim().isEmpty) {
+      final removed = _optionControllers.removeLast();
+      removed.removeListener(_syncOptionControllers);
+      removed.dispose();
+      changed = true;
+    }
+
+    _isSyncingOptions = false;
+    if (changed) {
+      setState(() {});
+    }
+  }
+
+  void _removeOption(int index) {
+    if (_optionControllers.length <= 2) return;
+    setState(() {
+      _optionControllers[index].removeListener(_syncOptionControllers);
+      _optionControllers[index].dispose();
+      _optionControllers.removeAt(index);
+      _syncOptionControllers();
     });
   }
 
-  void _addItem() {
+  DateTime? _resolveExpiryDate() {
+    if (!_hasExpiry) return null;
+    final now = DateTime.now();
+    var date = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      _end.hour,
+      _end.minute,
+    );
+    if (date.isBefore(now)) {
+      date = date.add(const Duration(days: 1));
+    }
+    return date;
+  }
+
+  List<String> _normalizedOptions() {
+    return _optionControllers
+        .map((controller) => controller.text.trim())
+        .where((value) => value.isNotEmpty)
+        .toList();
+  }
+
+  void _submit() {
+    final options = _normalizedOptions();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_selectedTeamId == null || _selectedTeamId!.isEmpty || options.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleziona un team e aggiungi almeno 2 opzioni.')),
+      );
+      return;
+    }
+
+    context.read<SondageBloc>().add(
+      CreateSondageEvent(
+        SondageEntity(
+          id: '',
+          name: _titleController.text.trim(),
+          focus: _descriptionController.text.trim(),
+          status: SondageStatus.draft,
+          createdDate: DateTime.now(),
+          expiryDate: _resolveExpiryDate(),
+          teamId: _selectedTeamId,
+          description: _descriptionController.text.trim(),
+          options: List.generate(
+            options.length,
+            (index) => SondageOptionEntity(
+              id: '',
+              label: options[index],
+              sortOrder: index,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _reloadTeams() {
     setState(() {
-      items.add(TextEditingController(text: ""));
+      _selectedTeamId = null;
+      _teamsFuture = _loadCreatableTeams();
     });
   }
 
-  void _removeItem(int index) {
+  void _resetForm() {
+    _titleController.clear();
+    _descriptionController.clear();
+    _resetOptionControllers();
     setState(() {
-      items[index].dispose();
-      items.removeAt(index);
+      _selectedTeamId = null;
+      _hasExpiry = false;
     });
+  }
+
+  void _resetOptionControllers() {
+    for (final controller in _optionControllers) {
+      controller.removeListener(_syncOptionControllers);
+      controller.dispose();
+    }
+    _optionControllers
+      ..clear()
+      ..add(_buildOptionController())
+      ..add(_buildOptionController());
+  }
+
+  Widget _buildSectionCard({
+    required BuildContext context,
+    required Widget child,
+    String? title,
+    IconData? icon,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.bgNavbarSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.borderColor?.withValues(alpha: 0.75) ??
+              Colors.grey.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title != null) ...[
+              Row(
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, color: colorScheme.selectionColor, size: 18),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    title,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colorScheme.iconLabel,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+            ],
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<List<TeamEntity>> _loadCreatableTeams() async {
+    try {
+      final response = await DioClient().dio.get('/api/sondage/creatable-teams');
+      if (response.data is! List) {
+        return const <TeamEntity>[];
+      }
+      return (response.data as List)
+          .whereType<Map>()
+          .map((item) => item.map((key, value) => MapEntry(key.toString(), value)))
+          .map(TeamMapper.fromJson)
+          .toList();
+    } catch (e) {
+      debugPrint('[CreateSondage] Errore caricamento team: $e');
+      rethrow;
+    }
   }
 
   @override
@@ -80,236 +250,246 @@ class _CreateSondageWebState extends State<CreateSondageWeb> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: _kMaxWidth),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
+    return BlocListener<SondageBloc, SondageState>(
+      listenWhen: (previous, current) => current is SondageCreated,
+      listener: (context, state) {
+        if (state is SondageCreated) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localization.surveyCreatedSuccessfully),
+              backgroundColor: colorScheme.secondary,
+            ),
+          );
+          _resetForm();
+          widget.onsondageCreated?.call();
+          Navigator.of(context).maybePop();
+        }
+      },
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _kMaxWidth),
+          child: Form(
+            key: _formKey,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildSectionCard(
+                    context: context,
+                    title: localization.sondage,
+                    icon: Icons.poll_rounded,
+                    child: Column(
+                      children: [
+                        CustomTextFieldImmersive(
+                          hintText: localization.askQuestion,
+                          maxLines: 2,
+                          controller: _titleController,
+                        ),
+                        const SizedBox(height: 12),
+                        CustomTextFieldImmersive(
+                          hintText: 'Descrizione',
+                          maxLines: 3,
+                          controller: _descriptionController,
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Campo domanda
-                      CustomTextFieldImmersive(
-                        hintText: localization.askQuestion,
-                        maxLines: 3,
-                        controller: namesondageController,
-                      ),
-                      SizedBox(height: 16),
-
-                      // Lista delle opzioni con drag & drop
-                      ReorderableListView.builder(
-                        itemCount: items.length,
-                        onReorder: _onReorder,
-                        buildDefaultDragHandles: false,
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
+                  const SizedBox(height: 16),
+                  _buildSectionCard(
+                    context: context,
+                    title: localization.options,
+                    icon: Icons.format_list_bulleted_rounded,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...List.generate(_optionControllers.length, (index) {
+                          final isTrailingEmpty =
+                              index == _optionControllers.length - 1 &&
+                              _optionControllers[index].text.trim().isEmpty;
                           return Padding(
-                            key: ValueKey(index),
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: CustomTextFieldImmersive(
-                              controller: items[index],
-                              hintText: '${localization.option} ${index + 1}',
-                              suffixIcon: ReorderableDragStartListener(
-                                index: index,
-                                child: Icon(Icons.drag_handle),
-                              ),
-                              onChanged: (value) {
-                                setState(() {
-                                  int emptyCount = items
-                                      .where(
-                                        (controller) => controller.text.isEmpty,
-                                      )
-                                      .length;
-
-                                  if (value.isNotEmpty && emptyCount == 0) {
-                                    _addItem();
-                                  } else if (emptyCount > 1) {
-                                    for (
-                                      int i = items.length - 2;
-                                      i >= 0;
-                                      i--
-                                    ) {
-                                      if (items[i].text.isEmpty &&
-                                          emptyCount > 1) {
-                                        _removeItem(i);
-                                        emptyCount--;
-                                      }
-                                    }
-                                  }
-                                });
-                              },
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: CustomTextFieldImmersive(
+                                    controller: _optionControllers[index],
+                                    hintText: isTrailingEmpty
+                                        ? '${localization.option} ${index + 1} - continua a scrivere per aggiungerne un’altra'
+                                        : '${localization.option} ${index + 1}',
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (_optionControllers.length > 2 &&
+                                    !isTrailingEmpty)
+                                  IconButton(
+                                    onPressed: () => _removeOption(index),
+                                    icon: Icon(
+                                      Icons.close_rounded,
+                                      color: colorScheme.selectionColor,
+                                    ),
+                                  ),
+                              ],
                             ),
                           );
-                        },
-                      ),
-
-                      SizedBox(height: 16),
-
-                      // Toggle per rendere anonimo
-                      ToggleTile(
-                        title: localization.makeResponsesAnonymous,
-                        value: isEnabled,
-                        onChanged: (val) => setState(() => isEnabled = val),
-                      ),
-                      SizedBox(height: 16),
-
-                      // Time Range Picker
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colorScheme.homeSecondary!,
-                          borderRadius: BorderRadius.circular(18.0),
+                        }),
+                        Text(
+                          'L’ultimo campo crea automaticamente una nuova opzione.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.iconLabel?.withValues(alpha: 0.7),
+                          ),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildSectionCard(
+                    context: context,
+                    title: 'Team',
+                    icon: Icons.groups_rounded,
+                    child: FutureBuilder<List<TeamEntity>>(
+                      future: _teamsFuture,
+                      builder: (context, snapshot) {
+                        final teams = snapshot.data ?? const <TeamEntity>[];
+                        final selectedStillExists = teams.any(
+                          (team) => team.id == _selectedTeamId,
+                        );
+                        final dropdownValue = selectedStillExists
+                            ? _selectedTeamId
+                            : null;
+
+                        if (snapshot.connectionState == ConnectionState.waiting &&
+                            teams.isEmpty) {
+                          return const LinearProgressIndicator(minHeight: 2);
+                        }
+
+                        if (snapshot.hasError) {
+                          return Row(
                             children: [
-                              ListTile(
-                                leading: Checkbox(
-                                  value: isFixedTime,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      isFixedTime = value!;
-                                    });
-                                  },
-                                  activeColor: colorScheme.selectionColor,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
+                              const Expanded(
+                                child: Text(
+                                  'Impossibile caricare i team disponibili.',
                                 ),
-                                title: Text("imposta tempo di risposta"),
                               ),
-                              IgnorePointer(
-                                ignoring: !isFixedTime,
-                                child: TimeRangePicker(
-                                  start: start,
-                                  end: end,
-                                  onStartChanged: (val) =>
-                                      setState(() => start = val),
-                                  onEndChanged: (val) =>
-                                      setState(() => end = val),
-                                ),
+                              TextButton(
+                                onPressed: _reloadTeams,
+                                child: const Text('Riprova'),
                               ),
                             ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 32),
+                          );
+                        }
 
-                      // Bottone per selezionare team
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          FilledButton.tonalIcon(
-                            onPressed: () async {
-                              final result =
-                                  await Navigator.push<Map<String, dynamic>>(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const SelectTeamPage(),
-                                    ),
-                                  );
-
-                              if (result != null) {
-                                setState(() {
-                                  selectedTeam = result;
-                                });
-                              }
-                            },
-                            icon: Icon(
-                              selectedTeam == null
-                                  ? Icons.group_rounded
-                                  : Icons.check_circle_rounded,
-                              size: 20,
-                            ),
-                            label: Text(
-                              selectedTeam == null
-                                  ? localization.selectTeam
-                                  : "${localization.teamLabel} ${selectedTeam!['teamName']}",
-                            ),
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-
-                      // Bottone di creazione
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            if (_formKey.currentState?.validate() ?? false) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    localization.surveyCreatedSuccessfully,
-                                  ),
-                                  backgroundColor: Colors.green,
+                        if (teams.isEmpty) {
+                          return Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'Non hai ancora un team in cui puoi creare un sondaggio.',
                                 ),
-                              );
-
-                              if (widget.onsondageCreated != null) {
-                                widget.onsondageCreated!();
-                              }
-
-                              namesondageController.clear();
-                              descriptionsondageController.clear();
-                            }
-                          },
-                          icon: const Icon(Icons.send_rounded, size: 20),
-                          label: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            child: Text(
-                              '${localization.create} ${localization.sondage}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
                               ),
+                              TextButton(
+                                onPressed: _reloadTeams,
+                                child: const Text('Ricarica'),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return DropdownButtonFormField<String>(
+                          value: dropdownValue,
+                          decoration: InputDecoration(
+                            labelText: 'Team',
+                            filled: true,
+                            fillColor: colorScheme.homeSecondary,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
                             ),
                           ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF7C4DFF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 16,
+                          items: teams
+                              .where((team) => (team.id ?? '').isNotEmpty)
+                              .map(
+                                (team) => DropdownMenuItem<String>(
+                                  value: team.id,
+                                  child: Text(team.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() => _selectedTeamId = value);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSectionCard(
+                    context: context,
+                    title: 'Scadenza',
+                    icon: Icons.schedule_rounded,
+                    child: Column(
+                      children: [
+                        SwitchListTile(
+                          activeThumbColor: colorScheme.selectionColor,
+                          value: _hasExpiry,
+                          onChanged: (value) {
+                            setState(() => _hasExpiry = value);
+                          },
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Imposta scadenza'),
+                        ),
+                        IgnorePointer(
+                          ignoring: !_hasExpiry,
+                          child: Opacity(
+                            opacity: _hasExpiry ? 1 : 0.4,
+                            child: TimeRangePicker(
+                              start: _start,
+                              end: _end,
+                              onStartChanged: (val) =>
+                                  setState(() => _start = val),
+                              onEndChanged: (val) =>
+                                  setState(() => _end = val),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 24),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colorScheme.secondary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: _submit,
+                      icon: const Icon(Icons.send_rounded, size: 20),
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        child: Text(
+                          '${localization.create} ${localization.sondage}',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

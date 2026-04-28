@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/clocking/ui/web/clocking_web.dart';
+import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
+import 'package:note_sondage/feature/shift/ui/web/shift_web_page.dart';
 import 'package:note_sondage/feature/sondage/ui/web/sondage_web.dart';
 import 'package:note_sondage/feature/team/ui/web/teams_web.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -19,13 +22,6 @@ import 'package:note_sondage/ui/widgets/theme_config/custom_toggle_switch.dart';
 /// Le 4 pagine principali, pre-costruite una sola volta.
 /// IndexedStack le tiene tutte in memoria e mostra solo quella attiva
 /// → cambio istantaneo senza ricostruire nulla.
-const _pages = <Widget>[
-  HomeWeb(), // index 0
-  TeamsWeb(), // index 1
-  SizedBox.shrink(), // index 2 (settings = dialog, niente pagina)
-  ClockingWeb(), // index 3
-  SondageWeb(), // index 4
-];
 
 class MainWeb extends StatelessWidget {
   const MainWeb({super.key, this.child});
@@ -79,6 +75,14 @@ class MainWeb extends StatelessWidget {
                 isSmallScreen: isExpanded,
                 lastIndexes: lastIndexes,
               ),
+              SidebarItem(
+                key: const ValueKey(5),
+                icon: Icons.calendar_month_rounded,
+                label: localizations.myShifts,
+                index: 5,
+                isSmallScreen: isExpanded,
+                lastIndexes: lastIndexes,
+              ),
               const Spacer(),
               Row(
                 children: [
@@ -118,28 +122,43 @@ class MainWeb extends StatelessWidget {
         },
         // Teniamo SEMPRE montato l'IndexedStack per evitare ricostruzioni
         // costose quando si entra/esce da route secondarie (es. updateTeam).
-        rightSection: Stack(
-          fit: StackFit.expand,
-          children: [
-            BlocBuilder<NavigationBloc, int>(
-              builder: (context, navIndex) {
-                final safeIndex = navIndex.clamp(0, _pages.length - 1);
-                return IndexedStack(index: safeIndex, children: _pages);
-              },
-            ),
-            if (child != null)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: colorScheme.homePrimary ?? colorScheme.surface,
-                  child: child!,
-                ),
+        rightSection: Builder(
+          builder: (context) {
+            final pages = <Widget>[
+              const HomeWeb(), // index 0
+              const TeamsWeb(), // index 1
+              const SizedBox.shrink(), // index 2 (settings = dialog)
+              const ClockingWeb(), // index 3
+              const SondageWeb(), // index 4
+              BlocProvider<ShiftBloc>( // index 5
+                create: (_) => GetIt.instance<ShiftBloc>(),
+                child: const ShiftWebPage(),
               ),
-            const Positioned(
-              top: 20,
-              right: 20,
-              child: NotificationCenterButton(),
-            ),
-          ],
+            ];
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                BlocBuilder<NavigationBloc, int>(
+                  builder: (context, navIndex) {
+                    final safeIndex = navIndex.clamp(0, pages.length - 1);
+                    return IndexedStack(index: safeIndex, children: pages);
+                  },
+                ),
+                if (child != null)
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color: colorScheme.homePrimary ?? colorScheme.surface,
+                      child: child!,
+                    ),
+                  ),
+                const Positioned(
+                  top: 20,
+                  right: 20,
+                  child: NotificationCenterButton(),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

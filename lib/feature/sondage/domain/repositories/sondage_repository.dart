@@ -12,4 +12,10 @@ abstract class SondageRepository {
   Future<SondageEntity> update(SondageEntity sondage);
 
   Future<bool> delete(String id);
+
+  Future<SondageEntity> publish(String id);
+
+  Future<SondageEntity> close(String id);
+
+  Future<SondageEntity> vote(String sondageId, String optionId);
 }

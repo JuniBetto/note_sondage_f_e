@@ -178,7 +178,6 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
 
             // Convert teamsWithMembers to the format expected by viewScrollWebMobile
             final items = teamsWithMembers.map((teamView) {
-              final rawColor = teamView.team.color?.trim();
               return {
                 "teamName": teamView.team.name,
                 "teamFocus": teamView.team.description,
@@ -196,9 +195,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
                       },
                     )
                     .toList(),
-                "color": rawColor == null || rawColor.isEmpty
-                    ? Colors.blue
-                    : rawColor.toColor(),
+                "color": teamView.team.color?.toColor() ?? Colors.blue,
               };
             }).toList();
 

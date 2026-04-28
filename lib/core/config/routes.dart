@@ -48,6 +48,8 @@ int _pathToNavIndex(String path) {
       return 3;
     case RouterPaths.sondage:
       return 4;
+    case RouterPaths.shifts:
+      return 5;
     default:
       return 0;
   }
@@ -76,7 +78,8 @@ GoRouter createRouter(BuildContext context) {
                 path == RouterPaths.home ||
                 path == RouterPaths.team ||
                 path == RouterPaths.clocking ||
-                path == RouterPaths.sondage;
+                path == RouterPaths.sondage ||
+                path == RouterPaths.shifts;
 
             // ═══ Sincronizza il NavigationBloc con l'URL corrente ═══
             // Fondamentale per i pulsanti back/forward del browser:
@@ -119,6 +122,12 @@ GoRouter createRouter(BuildContext context) {
             GoRoute(
               path: RouterPaths.sondage,
               name: RouterPaths.sondage,
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage<void>(child: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: RouterPaths.shifts,
+              name: RouterPaths.shifts,
               pageBuilder: (context, state) =>
                   const NoTransitionPage<void>(child: SizedBox.shrink()),
             ),
@@ -398,6 +407,7 @@ abstract class RouterPaths {
   static const settingsContactUs = '/settings/contact_us';
   static const clocking = '/clocking';
   static const sondage = '/sondage';
+  static const shifts = '/shifts';
   static const createTeam = '/create_team';
   static const updateTeam = '/update_team';
   static const permissionPage = '/permission_page';

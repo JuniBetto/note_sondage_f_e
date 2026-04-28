@@ -19,6 +19,7 @@ import 'package:note_sondage/feature/notification/preferences/notification_prefe
 import 'package:note_sondage/feature/notification/push/push_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/clocking_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
+import 'package:note_sondage/feature/notification/realtime/sondage_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
@@ -70,6 +71,12 @@ class _MainAppState extends State<MainApp> {
       getIt<TeamBloc>().add(LoadTeamsEvent());
       getIt<DashboardBloc>().add(RefreshDashboardEvent());
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncServicesForAuthState(
+        getIt<AuthBloc>().state,
+        resetCaches: true,
+      );
+    });
   }
 
   @override
@@ -98,9 +105,16 @@ class _MainAppState extends State<MainApp> {
       currentUserId: currentUserId,
       selectedTeamId: selectedClockingTeamId,
     );
+    final sondageDecision =
+        getIt<SondageRealtimeCoordinator>().resolveDecision(notification);
     getIt<NotificationCenterCubit>().ingestRealtimeNotification(notification);
 
-    if (!teamDecision.hasWork && !clockingDecision.refreshClocking) return;
+    if (!teamDecision.hasWork &&
+        !clockingDecision.refreshClocking &&
+        !sondageDecision.refreshSondages &&
+        !sondageDecision.refreshDashboard) {
+      return;
+    }
 
     if (teamDecision.refreshTeams) {
       getIt<TeamBloc>().add(LoadTeamsEvent());
@@ -113,12 +127,53 @@ class _MainAppState extends State<MainApp> {
         LoadClockingRecordsEvent(teamId: selectedClockingTeamId),
       );
     }
+    if (sondageDecision.refreshSondages) {
+      getIt<SondageBloc>().add(LoadSondagesEvent());
+    }
+    if (sondageDecision.refreshDashboard) {
+      getIt<DashboardBloc>().add(RefreshDashboardEvent());
+    }
     if (teamDecision.showSnackBar && teamDecision.snackBarMessage != null) {
       final messenger = scaffoldMessengerKey.currentState;
       messenger?.hideCurrentSnackBar();
       messenger?.showSnackBar(
         SnackBar(content: Text(teamDecision.snackBarMessage!)),
       );
+    }
+  }
+
+  void _syncServicesForAuthState(
+    AuthState state, {
+    bool resetCaches = false,
+  }) {
+    final realtimeService = getIt<RealtimeNotificationService>();
+    final pushNotificationService = getIt<PushNotificationService>();
+    final teamBloc = getIt<TeamBloc>();
+    final sondageBloc = getIt<SondageBloc>();
+    final notificationPreferencesCubit =
+        getIt<NotificationPreferencesCubit>();
+    final notificationCenterCubit = getIt<NotificationCenterCubit>();
+
+    if (state.status == AuthStatus.authenticated && state.user.uid.isNotEmpty) {
+      realtimeService.connect(state.user.uid);
+      unawaited(pushNotificationService.syncDeviceRegistration());
+      unawaited(notificationPreferencesCubit.loadPreferences());
+      unawaited(notificationCenterCubit.loadNotifications(force: true));
+      if (resetCaches) {
+        _processedNotificationIds.clear();
+        teamBloc.add(const ResetTeamCacheEvent());
+        sondageBloc.add(const ResetSondageCacheEvent());
+      }
+      return;
+    }
+
+    if (state.status == AuthStatus.unauthenticated) {
+      realtimeService.disconnect();
+      notificationPreferencesCubit.reset();
+      notificationCenterCubit.reset();
+      _processedNotificationIds.clear();
+      teamBloc.add(const ResetTeamCacheEvent());
+      sondageBloc.add(const ResetSondageCacheEvent());
     }
   }
 
@@ -180,26 +235,7 @@ class _MainAppState extends State<MainApp> {
                     previous.status != current.status ||
                     previous.user.uid != current.user.uid,
                 listener: (context, state) {
-                  final realtimeService = getIt<RealtimeNotificationService>();
-                  final pushNotificationService = getIt<PushNotificationService>();
-                  final teamBloc = getIt<TeamBloc>();
-                  final notificationPreferencesCubit =
-                      getIt<NotificationPreferencesCubit>();
-                  final notificationCenterCubit = getIt<NotificationCenterCubit>();
-                  if (state.status == AuthStatus.authenticated &&
-                      state.user.uid.isNotEmpty) {
-                    realtimeService.connect(state.user.uid);
-                    unawaited(pushNotificationService.syncDeviceRegistration());
-                    unawaited(notificationPreferencesCubit.loadPreferences());
-                    unawaited(notificationCenterCubit.loadNotifications(force: true));
-                    // Reset team cache so the new user loads their own teams
-                    teamBloc.add(const ResetTeamCacheEvent());
-                  } else if (state.status == AuthStatus.unauthenticated) {
-                    realtimeService.disconnect();
-                    notificationPreferencesCubit.reset();
-                    notificationCenterCubit.reset();
-                    teamBloc.add(const ResetTeamCacheEvent());
-                  }
+                  _syncServicesForAuthState(state, resetCaches: true);
                 },
                 child: MaterialApp.router(
                   title: 'Flutter Demo',

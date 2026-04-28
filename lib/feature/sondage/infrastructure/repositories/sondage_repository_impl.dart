@@ -12,11 +12,6 @@ class SondageRepositoryImpl implements SondageRepository {
   @override
   Future<List<SondageEntity>> getAll() async {
     try {
-      final local = await _local.getAll();
-      if (local.isNotEmpty) {
-        _remote.getAll().catchError((_) => <SondageEntity>[]);
-        return local;
-      }
       return await _remote.getAll();
     } catch (e) {
       final cached = await _local.getAll();
@@ -28,11 +23,6 @@ class SondageRepositoryImpl implements SondageRepository {
   @override
   Future<List<SondageEntity>> getAllByUserId(String userId) async {
     try {
-      final local = await _local.getAll();
-      if (local.isNotEmpty) {
-        _remote.getAllByUserId(userId).catchError((_) => <SondageEntity>[]);
-        return local;
-      }
       return await _remote.getAllByUserId(userId);
     } catch (e) {
       final cached = await _local.getAll();
@@ -75,6 +65,33 @@ class SondageRepositoryImpl implements SondageRepository {
       return true;
     } catch (e) {
       throw Exception('Failed to delete sondage: $e');
+    }
+  }
+
+  @override
+  Future<SondageEntity> publish(String id) async {
+    try {
+      return await _remote.publish(id);
+    } catch (e) {
+      throw Exception('Failed to publish sondage: $e');
+    }
+  }
+
+  @override
+  Future<SondageEntity> close(String id) async {
+    try {
+      return await _remote.close(id);
+    } catch (e) {
+      throw Exception('Failed to close sondage: $e');
+    }
+  }
+
+  @override
+  Future<SondageEntity> vote(String sondageId, String optionId) async {
+    try {
+      return await _remote.vote(sondageId, optionId);
+    } catch (e) {
+      throw Exception('Failed to vote sondage: $e');
     }
   }
 }

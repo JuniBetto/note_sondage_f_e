@@ -80,7 +80,7 @@ class AppTheme {
         ),
       ),
       fontFamily: AppTypography.fontFamily,
-      //textTheme: AppTypography.textTheme(isDark),
+      textTheme: AppTypography.textTheme(!isDark),
     );
   }
 }

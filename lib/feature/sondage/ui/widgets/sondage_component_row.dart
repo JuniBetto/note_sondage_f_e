@@ -10,9 +10,10 @@ class SondageComponentRow extends StatefulWidget {
   final int responses;
   final int totalQuestions;
   final DateTime createdDate;
-  final DateTime expiryDate;
+  final DateTime? expiryDate;
   final Color colorSondage;
   final bool isActive;
+  final bool canDelete;
   final VoidCallback onTap;
   final Function(String) onDeleteTap;
 
@@ -28,6 +29,7 @@ class SondageComponentRow extends StatefulWidget {
     required this.expiryDate,
     required this.colorSondage,
     this.isActive = false,
+    this.canDelete = false,
     required this.onTap,
     required this.onDeleteTap,
   });
@@ -146,44 +148,57 @@ class _SondageComponentRowState extends State<SondageComponentRow> {
                 SizedBox(width: 16),
 
                 // Info risposte
-                Row(
-                  children: [
-                    Icon(Icons.people, size: 18, color: Colors.grey),
-                    SizedBox(width: 4),
-                    Text(
-                      '${widget.responses} ${localization.responses}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w500,
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.people, size: 18, color: Colors.grey),
+                      SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          '${widget.responses} ${localization.responses}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                SizedBox(width: 20),
+                SizedBox(width: 12),
 
                 // Info domande
-                Row(
-                  children: [
-                    Icon(Icons.quiz, size: 18, color: Colors.grey),
-                    SizedBox(width: 4),
-                    Text(
-                      '${widget.totalQuestions} ${localization.questions}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w500,
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.quiz, size: 18, color: Colors.grey),
+                      SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          '${widget.totalQuestions} ${localization.questions}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 SizedBox(width: 16),
 
                 // Bottone delete
-                IconButton(
-                  icon: Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () => widget.onDeleteTap(widget.sondageId),
-                ),
+                if (widget.canDelete)
+                  IconButton(
+                    icon: Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () => widget.onDeleteTap(widget.sondageId),
+                  ),
               ],
             ),
           ),
@@ -196,6 +211,7 @@ class _SondageComponentRowState extends State<SondageComponentRow> {
     switch (status.toLowerCase()) {
       case 'active':
         return Colors.green;
+      case 'completed':
       case 'closed':
         return Colors.red;
       case 'draft':

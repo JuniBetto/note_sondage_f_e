@@ -72,7 +72,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attendance => 'Attendance';
 
   @override
-  String get clockingInOut => 'Clocking in/out';
+  String get clockingInOut => 'Clock in/out';
 
   @override
   String get explorer => 'Explorer';
@@ -274,7 +274,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get personalStatusClockingActions =>
-      'Personal status clocking actions';
+      'Personal status clock in actions';
 
   @override
   String get clockedInAt => 'Clocked in at:';
@@ -413,4 +413,235 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logoutConfirmation => 'Are you sure you want to log out?';
+
+  @override
+  String get clockInRequiredForBreak => 'Clock in required for break';
+
+  @override
+  String get endActiveBreak => 'End Break';
+
+  @override
+  String get startActiveBreak => 'Start Break';
+
+  @override
+  String get selectTeamToClockIn => 'Please select a team to clock in';
+
+  @override
+  String get allDates => 'All Dates';
+
+  @override
+  String get teamClockings => 'Team Clockings';
+
+  @override
+  String get downloadPdf => 'Download PDF';
+
+  @override
+  String get clockingOwnerHint => 'Clock in Owner';
+
+  @override
+  String get searchByNameOrTeam => 'Search by name or team...';
+
+  @override
+  String get resetFilters => 'Reset Filters';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String get selectTeamToViewClockings =>
+      'Please select a team to view clockings';
+
+  @override
+  String get noClockingsForTeam => 'No clockings found for this team';
+
+  @override
+  String get committed => 'Committed';
+
+  @override
+  String get decommitted => 'Decommitted';
+
+  @override
+  String get editClocking => 'Edit Clocking';
+
+  @override
+  String get breakMinutes => 'Break (minutes)';
+
+  @override
+  String get note => 'Note';
+
+  @override
+  String get invalidDateFormat => 'Invalid date format';
+
+  @override
+  String get noClockingsToExport => 'No clockings available to export';
+
+  @override
+  String get ownerOnly => 'Owner Only';
+
+  @override
+  String get decommit => 'Decommit';
+
+  @override
+  String get commit => 'Commit';
+
+  @override
+  String get editAction => 'Edit';
+
+  @override
+  String get noActionAvailable => 'No action available';
+
+  @override
+  String get setExpiry => 'Set Expiry Date';
+
+  @override
+  String get invitationSent => 'Invitation sent successfully';
+
+  @override
+  String get noActiveMembersYet => 'No active members yet';
+
+  @override
+  String get editRoleTooltip => 'Edit Role';
+
+  @override
+  String get removeAction => 'Remove';
+
+  @override
+  String get selectRole => 'Select a role';
+
+  @override
+  String get pendingInvitations => 'Pending Invitations';
+
+  @override
+  String get cancelInvitation => 'Cancel Invitation';
+
+  @override
+  String get inviteStatusAccepted => 'Accepted';
+
+  @override
+  String get inviteStatusRejected => 'Rejected';
+
+  @override
+  String get inviteStatusUnregistered => 'Pending Registration';
+
+  @override
+  String get inviteStatusPending => 'Pending';
+
+  @override
+  String get memberStatusInvited => 'Invited';
+
+  @override
+  String get memberStatusInactive => 'Inactive';
+
+  @override
+  String get memberStatusSuspended => 'Suspended';
+
+  @override
+  String exportPdfError(Object error) {
+    return 'Error exporting PDF: $error';
+  }
+
+  @override
+  String get surveyNotFound => 'Survey not found';
+
+  @override
+  String get focus => 'Focus';
+
+  @override
+  String get noOptionsAvailable => 'No options available';
+
+  @override
+  String get alreadyVoted => 'You have already voted';
+
+  @override
+  String get cannotVote => 'You cannot vote';
+
+  @override
+  String get publish => 'Publish';
+
+  @override
+  String get closeSurvey => 'Close Survey';
+
+  @override
+  String get statusActive => 'Active';
+
+  @override
+  String get statusDraft => 'Draft';
+
+  @override
+  String get statusClosed => 'Closed';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusPublished => 'Published';
+
+  @override
+  String votes(int count) {
+    return '$count votes';
+  }
+
+  @override
+  String activeTurnOn(String teamName) {
+    return 'Active turn on $teamName';
+  }
+
+  @override
+  String get openYourTurn => 'Open your turn';
+
+  @override
+  String get loadingClockingState => 'Loading clock in state...';
+
+  @override
+  String get noClockingsForFilter =>
+      'No clockings found for the selected filters';
+
+  @override
+  String get myShifts => 'My Shifts';
+
+  @override
+  String get shiftCalendar => 'Shift Calendar';
+
+  @override
+  String get addShift => 'Add Shift';
+
+  @override
+  String get shiftProfile => 'Shift Profile';
+
+  @override
+  String get shiftStart => 'Start';
+
+  @override
+  String get shiftEnd => 'End';
+
+  @override
+  String get overnightShift => 'Overnight Shift';
+
+  @override
+  String get alarms => 'Alarms';
+
+  @override
+  String get createCustomProfile => 'Create Custom Profile';
+
+  @override
+  String get editShiftProfile => 'Edit Profile';
+
+  @override
+  String get shiftProfileName => 'Profile Name';
+
+  @override
+  String get shiftColor => 'Color';
+
+  @override
+  String get deleteShiftProfileConfirm =>
+      'Are you sure you want to delete this profile?';
+
+  @override
+  String get customProfile => 'Custom Profiles';
+
+  @override
+  String get noShiftsThisMonth => 'No shifts this month';
+
+  @override
+  String get systemProfile => 'System Profiles';
 }

@@ -153,8 +153,7 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
     try {
       final member = await teamMemberUseCase.updateMember(event.member);
       emit(TeamMemberUpdated(member));
-      // Ricarica la lista dopo l'aggiornamento
-      add(LoadTeamMembersByTeamIdEvent(event.teamId));
+      // Reload is triggered by the BlocListener in the UI on TeamMemberUpdated
     } catch (e) {
       emit(TeamMemberError(e.toString()));
     }

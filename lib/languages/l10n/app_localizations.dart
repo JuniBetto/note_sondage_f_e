@@ -231,7 +231,7 @@ abstract class AppLocalizations {
   /// No description provided for @clockingInOut.
   ///
   /// In en, this message translates to:
-  /// **'Clocking in/out'**
+  /// **'Clock in/out'**
   String get clockingInOut;
 
   /// No description provided for @explorer.
@@ -615,7 +615,7 @@ abstract class AppLocalizations {
   /// No description provided for @personalStatusClockingActions.
   ///
   /// In en, this message translates to:
-  /// **'Personal status clocking actions'**
+  /// **'Personal status clock in actions'**
   String get personalStatusClockingActions;
 
   /// No description provided for @clockedInAt.
@@ -893,6 +893,450 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to log out?'**
   String get logoutConfirmation;
+
+  /// No description provided for @clockInRequiredForBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock in required for break'**
+  String get clockInRequiredForBreak;
+
+  /// No description provided for @endActiveBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'End Break'**
+  String get endActiveBreak;
+
+  /// No description provided for @startActiveBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Break'**
+  String get startActiveBreak;
+
+  /// No description provided for @selectTeamToClockIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a team to clock in'**
+  String get selectTeamToClockIn;
+
+  /// No description provided for @allDates.
+  ///
+  /// In en, this message translates to:
+  /// **'All Dates'**
+  String get allDates;
+
+  /// No description provided for @teamClockings.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Clockings'**
+  String get teamClockings;
+
+  /// No description provided for @downloadPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Download PDF'**
+  String get downloadPdf;
+
+  /// No description provided for @clockingOwnerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock in Owner'**
+  String get clockingOwnerHint;
+
+  /// No description provided for @searchByNameOrTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or team...'**
+  String get searchByNameOrTeam;
+
+  /// No description provided for @resetFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Filters'**
+  String get resetFilters;
+
+  /// No description provided for @reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
+
+  /// No description provided for @selectTeamToViewClockings.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a team to view clockings'**
+  String get selectTeamToViewClockings;
+
+  /// No description provided for @noClockingsForTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'No clockings found for this team'**
+  String get noClockingsForTeam;
+
+  /// No description provided for @committed.
+  ///
+  /// In en, this message translates to:
+  /// **'Committed'**
+  String get committed;
+
+  /// No description provided for @decommitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Decommitted'**
+  String get decommitted;
+
+  /// No description provided for @editClocking.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Clocking'**
+  String get editClocking;
+
+  /// No description provided for @breakMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Break (minutes)'**
+  String get breakMinutes;
+
+  /// No description provided for @note.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get note;
+
+  /// No description provided for @invalidDateFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid date format'**
+  String get invalidDateFormat;
+
+  /// No description provided for @noClockingsToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'No clockings available to export'**
+  String get noClockingsToExport;
+
+  /// No description provided for @ownerOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner Only'**
+  String get ownerOnly;
+
+  /// No description provided for @decommit.
+  ///
+  /// In en, this message translates to:
+  /// **'Decommit'**
+  String get decommit;
+
+  /// No description provided for @commit.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit'**
+  String get commit;
+
+  /// No description provided for @editAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editAction;
+
+  /// No description provided for @noActionAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No action available'**
+  String get noActionAvailable;
+
+  /// No description provided for @setExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Expiry Date'**
+  String get setExpiry;
+
+  /// No description provided for @invitationSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent successfully'**
+  String get invitationSent;
+
+  /// No description provided for @noActiveMembersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No active members yet'**
+  String get noActiveMembersYet;
+
+  /// No description provided for @editRoleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Role'**
+  String get editRoleTooltip;
+
+  /// No description provided for @removeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeAction;
+
+  /// No description provided for @selectRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a role'**
+  String get selectRole;
+
+  /// No description provided for @pendingInvitations.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Invitations'**
+  String get pendingInvitations;
+
+  /// No description provided for @cancelInvitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Invitation'**
+  String get cancelInvitation;
+
+  /// No description provided for @inviteStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get inviteStatusAccepted;
+
+  /// No description provided for @inviteStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get inviteStatusRejected;
+
+  /// No description provided for @inviteStatusUnregistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Registration'**
+  String get inviteStatusUnregistered;
+
+  /// No description provided for @inviteStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get inviteStatusPending;
+
+  /// No description provided for @memberStatusInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited'**
+  String get memberStatusInvited;
+
+  /// No description provided for @memberStatusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get memberStatusInactive;
+
+  /// No description provided for @memberStatusSuspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get memberStatusSuspended;
+
+  /// No description provided for @exportPdfError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error exporting PDF: {error}'**
+  String exportPdfError(Object error);
+
+  /// No description provided for @surveyNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey not found'**
+  String get surveyNotFound;
+
+  /// No description provided for @focus.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus'**
+  String get focus;
+
+  /// No description provided for @noOptionsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No options available'**
+  String get noOptionsAvailable;
+
+  /// No description provided for @alreadyVoted.
+  ///
+  /// In en, this message translates to:
+  /// **'You have already voted'**
+  String get alreadyVoted;
+
+  /// No description provided for @cannotVote.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot vote'**
+  String get cannotVote;
+
+  /// No description provided for @publish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get publish;
+
+  /// No description provided for @closeSurvey.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Survey'**
+  String get closeSurvey;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get statusActive;
+
+  /// No description provided for @statusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get statusDraft;
+
+  /// No description provided for @statusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get statusClosed;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Published'**
+  String get statusPublished;
+
+  /// Number of votes for an option
+  ///
+  /// In en, this message translates to:
+  /// **'{count} votes'**
+  String votes(int count);
+
+  /// Message showing active turn on a team
+  ///
+  /// In en, this message translates to:
+  /// **'Active turn on {teamName}'**
+  String activeTurnOn(String teamName);
+
+  /// No description provided for @openYourTurn.
+  ///
+  /// In en, this message translates to:
+  /// **'Open your turn'**
+  String get openYourTurn;
+
+  /// No description provided for @loadingClockingState.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading clock in state...'**
+  String get loadingClockingState;
+
+  /// No description provided for @noClockingsForFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No clockings found for the selected filters'**
+  String get noClockingsForFilter;
+
+  /// No description provided for @myShifts.
+  ///
+  /// In en, this message translates to:
+  /// **'My Shifts'**
+  String get myShifts;
+
+  /// No description provided for @shiftCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift Calendar'**
+  String get shiftCalendar;
+
+  /// No description provided for @addShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Shift'**
+  String get addShift;
+
+  /// No description provided for @shiftProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift Profile'**
+  String get shiftProfile;
+
+  /// No description provided for @shiftStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get shiftStart;
+
+  /// No description provided for @shiftEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get shiftEnd;
+
+  /// No description provided for @overnightShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Overnight Shift'**
+  String get overnightShift;
+
+  /// No description provided for @alarms.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarms'**
+  String get alarms;
+
+  /// No description provided for @createCustomProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Custom Profile'**
+  String get createCustomProfile;
+
+  /// No description provided for @editShiftProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile'**
+  String get editShiftProfile;
+
+  /// No description provided for @shiftProfileName.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Name'**
+  String get shiftProfileName;
+
+  /// No description provided for @shiftColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get shiftColor;
+
+  /// No description provided for @deleteShiftProfileConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this profile?'**
+  String get deleteShiftProfileConfirm;
+
+  /// No description provided for @customProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Profiles'**
+  String get customProfile;
+
+  /// No description provided for @noShiftsThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts this month'**
+  String get noShiftsThisMonth;
+
+  /// No description provided for @systemProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'System Profiles'**
+  String get systemProfile;
 }
 
 class _AppLocalizationsDelegate

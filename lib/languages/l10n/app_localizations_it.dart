@@ -415,4 +415,236 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get logoutConfirmation => 'Sei sicuro di voler uscire?';
+
+  @override
+  String get clockInRequiredForBreak => 'Timbratura richiesta per la pausa';
+
+  @override
+  String get endActiveBreak => 'Termina Pausa';
+
+  @override
+  String get startActiveBreak => 'Inizia Pausa';
+
+  @override
+  String get selectTeamToClockIn => 'Seleziona un team per timbrare';
+
+  @override
+  String get allDates => 'Tutte le date';
+
+  @override
+  String get teamClockings => 'Timbrature del Team';
+
+  @override
+  String get downloadPdf => 'Scarica PDF';
+
+  @override
+  String get clockingOwnerHint => 'Proprietario Timbratura';
+
+  @override
+  String get searchByNameOrTeam => 'Cerca per nome o team...';
+
+  @override
+  String get resetFilters => 'Resetta Filtri';
+
+  @override
+  String get reset => 'Resetta';
+
+  @override
+  String get selectTeamToViewClockings =>
+      'Seleziona un team per vedere le timbrature';
+
+  @override
+  String get noClockingsForTeam => 'Nessuna timbratura trovata per questo team';
+
+  @override
+  String get committed => 'Confermato';
+
+  @override
+  String get decommitted => 'Annullato';
+
+  @override
+  String get editClocking => 'Modifica Timbratura';
+
+  @override
+  String get breakMinutes => 'Pausa (minuti)';
+
+  @override
+  String get note => 'Nota';
+
+  @override
+  String get invalidDateFormat => 'Formato data non valido';
+
+  @override
+  String get noClockingsToExport =>
+      'Nessuna timbratura disponibile da esportare';
+
+  @override
+  String get ownerOnly => 'Solo Proprietario';
+
+  @override
+  String get decommit => 'Annulla';
+
+  @override
+  String get commit => 'Conferma';
+
+  @override
+  String get editAction => 'Modifica';
+
+  @override
+  String get noActionAvailable => 'Nessuna azione disponibile';
+
+  @override
+  String get setExpiry => 'Imposta data di scadenza';
+
+  @override
+  String get invitationSent => 'Invitazione inviata con successo';
+
+  @override
+  String get noActiveMembersYet => 'Nessun membro attivo al momento';
+
+  @override
+  String get editRoleTooltip => 'Modifica Ruolo';
+
+  @override
+  String get removeAction => 'Rimuovi';
+
+  @override
+  String get selectRole => 'Seleziona un ruolo';
+
+  @override
+  String get pendingInvitations => 'Inviti in attesa';
+
+  @override
+  String get cancelInvitation => 'Annulla Invito';
+
+  @override
+  String get inviteStatusAccepted => 'Accettato';
+
+  @override
+  String get inviteStatusRejected => 'Rifiutato';
+
+  @override
+  String get inviteStatusUnregistered => 'Registrazione in attesa';
+
+  @override
+  String get inviteStatusPending => 'In attesa';
+
+  @override
+  String get memberStatusInvited => 'Invitato';
+
+  @override
+  String get memberStatusInactive => 'Inattivo';
+
+  @override
+  String get memberStatusSuspended => 'Sospeso';
+
+  @override
+  String exportPdfError(Object error) {
+    return 'Errore esportazione PDF: $error';
+  }
+
+  @override
+  String get surveyNotFound => 'Sondaggio non trovato';
+
+  @override
+  String get focus => 'Focus';
+
+  @override
+  String get noOptionsAvailable => 'Nessuna opzione disponibile';
+
+  @override
+  String get alreadyVoted => 'Hai già votato';
+
+  @override
+  String get cannotVote => 'Non puoi votare';
+
+  @override
+  String get publish => 'Pubblica';
+
+  @override
+  String get closeSurvey => 'Chiudi Sondaggio';
+
+  @override
+  String get statusActive => 'Attivo';
+
+  @override
+  String get statusDraft => 'Bozza';
+
+  @override
+  String get statusClosed => 'Chiuso';
+
+  @override
+  String get statusCompleted => 'Completato';
+
+  @override
+  String get statusPublished => 'Pubblicato';
+
+  @override
+  String votes(int count) {
+    return '$count voti';
+  }
+
+  @override
+  String activeTurnOn(String teamName) {
+    return 'Turno attivo su $teamName';
+  }
+
+  @override
+  String get openYourTurn => 'Apri il tuo turno';
+
+  @override
+  String get loadingClockingState => 'Caricamento stato timbratura...';
+
+  @override
+  String get noClockingsForFilter =>
+      'Nessuna timbratura trovata per i filtri selezionati';
+
+  @override
+  String get myShifts => 'I miei turni';
+
+  @override
+  String get shiftCalendar => 'Calendario turni';
+
+  @override
+  String get addShift => 'Aggiungi turno';
+
+  @override
+  String get shiftProfile => 'Profilo turno';
+
+  @override
+  String get shiftStart => 'Inizio';
+
+  @override
+  String get shiftEnd => 'Fine';
+
+  @override
+  String get overnightShift => 'Turno notturno';
+
+  @override
+  String get alarms => 'Allarmi';
+
+  @override
+  String get createCustomProfile => 'Crea profilo personalizzato';
+
+  @override
+  String get editShiftProfile => 'Modifica profilo';
+
+  @override
+  String get shiftProfileName => 'Nome profilo';
+
+  @override
+  String get shiftColor => 'Colore';
+
+  @override
+  String get deleteShiftProfileConfirm =>
+      'Sei sicuro di voler eliminare questo profilo?';
+
+  @override
+  String get customProfile => 'Profili personalizzati';
+
+  @override
+  String get noShiftsThisMonth => 'Nessun turno questo mese';
+
+  @override
+  String get systemProfile => 'Profili di sistema';
 }

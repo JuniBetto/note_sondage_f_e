@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
 import 'package:note_sondage/feature/clocking/ui/utils/clocking_pdf_export_service.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
@@ -49,8 +50,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final localization = AppLocalizations.of(context)!;
     final dateFilterLabel = _selectedDateFilter == null
-        ? 'Tutte le date'
+        ? localization.allDates
         : DateFormat('dd/MM/yyyy').format(_selectedDateFilter!);
 
     final content = Container(
@@ -85,7 +87,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Timbrature del team',
+                      localization.teamClockings,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: colorScheme.iconLabel,
@@ -99,13 +101,13 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                         ? () => _exportPdf(filteredRecords, selectedTeam)
                         : null,
                     icon: const Icon(Icons.download_rounded),
-                    label: const Text('Scarica PDF'),
+                    label: Text(localization.downloadPdf),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
               Text(
-                'Ogni membro gestisce la propria timbratura dal suo dispositivo. L\'owner puo decommitare e correggere ore e pause.',
+                localization.clockingOwnerHint,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: Colors.grey[600],
                 ),
@@ -115,7 +117,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                   ? Column(
                       children: [
                         CustomInputField(
-                          hintText: 'Cerca per nome utente o team',
+                          hintText: localization.searchByNameOrTeam,
                           controller: _searchController,
                           isSearch: true,
                           onSearchPressed: () => setState(() {}),
@@ -131,7 +133,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                             child: TextButton.icon(
                               onPressed: _clearFilters,
                               icon: const Icon(Icons.restart_alt_rounded),
-                              label: const Text('Reset filtri'),
+                              label: Text(localization.resetFilters),
                             ),
                           ),
                         ],
@@ -143,7 +145,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                         Expanded(
                           flex: 4,
                           child: CustomInputField(
-                            hintText: 'Cerca per nome utente o team',
+                            hintText: localization.searchByNameOrTeam,
                             controller: _searchController,
                             isSearch: true,
                             onSearchPressed: () => setState(() {}),
@@ -164,21 +166,19 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           TextButton.icon(
                             onPressed: _clearFilters,
                             icon: const Icon(Icons.restart_alt_rounded),
-                            label: const Text('Reset'),
+                            label: Text(localization.reset),
                           ),
                         ],
                       ],
                     ),
               const SizedBox(height: 16),
               if (widget.selectedTeamId == null)
-                const _InfoState(
-                  message:
-                      'Seleziona un team per vedere le timbrature dei membri.',
+                _InfoState(
+                  message: localization.selectTeamToViewClockings,
                 )
               else if (filteredRecords.isEmpty)
-                const _InfoState(
-                  message:
-                      'Nessuna timbratura disponibile per il team selezionato.',
+                _InfoState(
+                  message: localization.noClockingsForTeam,
                 )
               else if (widget.isMobile)
                 Column(
@@ -289,12 +289,13 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   }
 
   Widget _buildStatusFilters(ThemeData theme) {
+    final localization = AppLocalizations.of(context)!;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        _statusFilterChip(theme, ClockingStatus.committed, 'Committed'),
-        _statusFilterChip(theme, ClockingStatus.decommitted, 'Decommitted'),
+        _statusFilterChip(theme, ClockingStatus.committed, localization.committed),
+        _statusFilterChip(theme, ClockingStatus.decommitted, localization.decommitted),
       ],
     );
   }
@@ -373,8 +374,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     final updated = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
+        final loc = AppLocalizations.of(dialogContext)!;
         return AlertDialog(
-          title: const Text('Modifica timbratura'),
+          title: Text(loc.editClocking),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -396,15 +398,15 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                 TextField(
                   controller: breakMinutesController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Minuti di pausa',
+                  decoration: InputDecoration(
+                    labelText: loc.breakMinutes,
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: noteController,
                   maxLines: 3,
-                  decoration: const InputDecoration(labelText: 'Nota'),
+                  decoration: InputDecoration(labelText: loc.note),
                 ),
               ],
             ),
@@ -412,11 +414,11 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Annulla'),
+              child: Text(loc.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Salva'),
+              child: Text(loc.save),
             ),
           ],
         );
@@ -431,7 +433,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
 
     if (parsedClockIn == null || parsedClockOut == null) {
       _showSnackBar(
-        'Formato data non valido. Usa YYYY-MM-DD HH:MM',
+        AppLocalizations.of(context)!.invalidDateFormat,
         Colors.orange,
       );
       return;
@@ -477,7 +479,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     TeamEntity? selectedTeam,
   ) async {
     if (records.isEmpty) {
-      _showSnackBar('Nessuna timbratura da esportare.', Colors.orange);
+      _showSnackBar(AppLocalizations.of(context)!.noClockingsToExport, Colors.orange);
       return;
     }
 
@@ -491,7 +493,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       );
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar('Errore export PDF: $e', Colors.red);
+      _showSnackBar(AppLocalizations.of(context)!.exportPdfError(e.toString()), Colors.red);
     }
   }
 }
@@ -722,7 +724,7 @@ class _RecordSummary extends StatelessWidget {
             ),
             if (record.note != null && record.note!.trim().isNotEmpty)
               _StatusBadge(
-                label: 'Nota presente',
+                label: AppLocalizations.of(context)!.note,
                 color: Colors.blueGrey,
               ),
           ],
@@ -753,34 +755,35 @@ class _OwnerActions extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!isOwner) {
       return Text(
-        'Solo owner',
+        AppLocalizations.of(context)!.ownerOnly,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: Colors.grey[500],
         ),
       );
     }
 
+    final loc = AppLocalizations.of(context)!;
     final buttons = <Widget>[
       if (record.canDecommit)
         OutlinedButton(
           onPressed: onDecommit,
-          child: const Text('Decommit'),
+          child: Text(loc.decommit),
         ),
       if (record.canCommit)
         FilledButton.tonal(
           onPressed: onCommit,
-          child: const Text('Commit'),
+          child: Text(loc.commit),
         ),
       if (record.ownerEditable)
         FilledButton(
           onPressed: onEdit,
-          child: const Text('Modifica'),
+          child: Text(loc.editAction),
         ),
     ];
 
     if (buttons.isEmpty) {
       return Text(
-        'Nessuna azione disponibile',
+        loc.noActionAvailable,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: Colors.grey[500],
         ),

@@ -1,10 +1,19 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/infrastructure/data/hive_models/sondage_hive_model.dart';
 
 class SondageLocalDataSource {
-  static const String _boxName = 'sondages_box';
+  static const String _boxNamePrefix = 'sondages_box_v2';
+
+  String get _boxName {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null || userId.isEmpty) {
+      return '${_boxNamePrefix}_anonymous';
+    }
+    return '${_boxNamePrefix}_$userId';
+  }
 
   Future<Box<SondageHiveModel>> _openBox() async {
     if (Hive.isBoxOpen(_boxName)) {
@@ -57,5 +66,10 @@ class SondageLocalDataSource {
           ),
         )
         .toList();
+  }
+
+  Future<void> clearAll() async {
+    final box = await _openBox();
+    await box.clear();
   }
 }

@@ -7,6 +7,7 @@ class TeamMemberMapper {
   static TeamMemberEntity fromJson(Map<String, dynamic> json) {
     return TeamMemberEntity(
       id: (json['id'] ?? json['memberId'])?.toString(),
+      userId: (json['userId'] ?? json['user_id'])?.toString(),
       userEmail: (json['user_email'] ?? json['email'])?.toString() ?? '',
       teamId: (json['teamId'] ?? json['team_id'])?.toString() ?? '',
       status: UserStatus.values.firstWhere(
@@ -25,6 +26,7 @@ class TeamMemberMapper {
   static Map<String, dynamic> toJson(TeamMemberEntity member) {
     return {
       if (member.id != null) 'id': member.id,
+      if (member.userId != null) 'user_id': member.userId,
       'user_email': member.userEmail,
       'team_id': member.teamId,
       'status': member.status.value,

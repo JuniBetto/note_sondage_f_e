@@ -1,0 +1,199 @@
+import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+
+// ── Events ────────────────────────────────────────────────────────────────────
+
+abstract class ShiftEvent extends Equatable {
+  @override
+  List<Object?> get props => [];
+}
+
+class LoadShiftProfilesEvent extends ShiftEvent {}
+
+class CreateShiftProfileEvent extends ShiftEvent {
+  final String name;
+  final TimeOfDay startTime;
+  final TimeOfDay endTime;
+  final bool overnight;
+  final List<int> alarmOffsets;
+  final String? color;
+
+  CreateShiftProfileEvent({
+    required this.name,
+    required this.startTime,
+    required this.endTime,
+    required this.overnight,
+    required this.alarmOffsets,
+    this.color,
+  });
+
+  @override
+  List<Object?> get props => [name, startTime, endTime, overnight, alarmOffsets, color];
+}
+
+class UpdateShiftProfileEvent extends ShiftEvent {
+  final String profileId;
+  final String name;
+  final TimeOfDay startTime;
+  final TimeOfDay endTime;
+  final bool overnight;
+  final List<int> alarmOffsets;
+  final String? color;
+
+  UpdateShiftProfileEvent({
+    required this.profileId,
+    required this.name,
+    required this.startTime,
+    required this.endTime,
+    required this.overnight,
+    required this.alarmOffsets,
+    this.color,
+  });
+
+  @override
+  List<Object?> get props => [profileId, name];
+}
+
+class DeleteShiftProfileEvent extends ShiftEvent {
+  final String profileId;
+  DeleteShiftProfileEvent(this.profileId);
+
+  @override
+  List<Object?> get props => [profileId];
+}
+
+class LoadShiftAssignmentsEvent extends ShiftEvent {
+  final DateTime from;
+  final DateTime to;
+  LoadShiftAssignmentsEvent({required this.from, required this.to});
+
+  @override
+  List<Object?> get props => [from, to];
+}
+
+class AssignShiftEvent extends ShiftEvent {
+  final DateTime shiftDate;
+  final String? profileId;
+  final TimeOfDay? startTime;
+  final TimeOfDay? endTime;
+  final bool? overnight;
+  final String? note;
+  final List<int>? alarmOffsets;
+
+  AssignShiftEvent({
+    required this.shiftDate,
+    this.profileId,
+    this.startTime,
+    this.endTime,
+    this.overnight,
+    this.note,
+    this.alarmOffsets,
+  });
+
+  @override
+  List<Object?> get props => [shiftDate, profileId];
+}
+
+class UpdateShiftAssignmentEvent extends ShiftEvent {
+  final String assignmentId;
+  final String? profileId;
+  final TimeOfDay? startTime;
+  final TimeOfDay? endTime;
+  final bool? overnight;
+  final String? note;
+  final List<int>? alarmOffsets;
+
+  UpdateShiftAssignmentEvent({
+    required this.assignmentId,
+    this.profileId,
+    this.startTime,
+    this.endTime,
+    this.overnight,
+    this.note,
+    this.alarmOffsets,
+  });
+
+  @override
+  List<Object?> get props => [assignmentId];
+}
+
+class DeleteShiftAssignmentEvent extends ShiftEvent {
+  final String assignmentId;
+  DeleteShiftAssignmentEvent(this.assignmentId);
+
+  @override
+  List<Object?> get props => [assignmentId];
+}
+
+// ── States ────────────────────────────────────────────────────────────────────
+
+abstract class ShiftState extends Equatable {
+  @override
+  List<Object?> get props => [];
+}
+
+class ShiftInitial extends ShiftState {}
+
+class ShiftLoading extends ShiftState {}
+
+class ShiftProfilesLoaded extends ShiftState {
+  final List<ShiftProfileEntity> profiles;
+  ShiftProfilesLoaded(this.profiles);
+
+  @override
+  List<Object?> get props => [profiles];
+}
+
+class ShiftProfileCreated extends ShiftState {
+  final ShiftProfileEntity profile;
+  ShiftProfileCreated(this.profile);
+
+  @override
+  List<Object?> get props => [profile];
+}
+
+class ShiftProfileUpdated extends ShiftState {
+  final ShiftProfileEntity profile;
+  ShiftProfileUpdated(this.profile);
+
+  @override
+  List<Object?> get props => [profile];
+}
+
+class ShiftProfileDeleted extends ShiftState {}
+
+class ShiftAssignmentsLoaded extends ShiftState {
+  final List<ShiftAssignmentEntity> assignments;
+  ShiftAssignmentsLoaded(this.assignments);
+
+  @override
+  List<Object?> get props => [assignments];
+}
+
+class ShiftAssigned extends ShiftState {
+  final ShiftAssignmentEntity assignment;
+  ShiftAssigned(this.assignment);
+
+  @override
+  List<Object?> get props => [assignment];
+}
+
+class ShiftAssignmentUpdated extends ShiftState {
+  final ShiftAssignmentEntity assignment;
+  ShiftAssignmentUpdated(this.assignment);
+
+  @override
+  List<Object?> get props => [assignment];
+}
+
+class ShiftAssignmentDeleted extends ShiftState {}
+
+class ShiftError extends ShiftState {
+  final String message;
+  ShiftError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}

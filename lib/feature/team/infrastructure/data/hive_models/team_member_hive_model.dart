@@ -28,6 +28,9 @@ class TeamMemberHiveModel extends HiveObject {
   @HiveField(7)
   final String? initialName;
 
+  @HiveField(8)
+  final String? userId;
+
   TeamMemberHiveModel({
     required this.id,
     required this.userEmail,
@@ -37,5 +40,6 @@ class TeamMemberHiveModel extends HiveObject {
     this.imageUrl,
     this.fileName,
     this.initialName,
+    this.userId,
   });
 }

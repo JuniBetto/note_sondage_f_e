@@ -5,14 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
-import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
-import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
-import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
@@ -57,7 +55,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   late final TeamBloc _teamBloc;
   late final TeamBloc _globalTeamBloc;
   bool _isLoading = true;
-  TeamSectionPermissions _permissions = TeamSectionPermissions.readOnly();
   String? _ownerUserId;
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
@@ -70,7 +67,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
     );
     _globalTeamBloc = getIt<TeamBloc>();
     _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
-    getIt<TeamRealtimeCoordinator>().activateTeamContext(widget.teamId!);
     _realtimeSubscription = getIt<RealtimeNotificationService>().stream.listen(
       _handleRealtimeNotification,
     );
@@ -79,7 +75,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   @override
   void dispose() {
     _realtimeSubscription?.cancel();
-    getIt<TeamRealtimeCoordinator>().deactivateTeamContext(widget.teamId!);
     _teamBloc.close();
     nameTeamController.dispose();
     focusTeamController.dispose();
@@ -87,19 +82,15 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   }
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
-    final decision = getIt<TeamRealtimeCoordinator>().resolveScreenDecision(
-      notification,
-      teamId: widget.teamId!,
-      currentUserId: getIt<AuthBloc>().state.user.uid,
-    );
+    if (notification.sourceService != 'team-service') return;
+    if (notification.metadata['teamId'] != widget.teamId) return;
 
-    if (decision.shouldLeaveCurrentTeam) {
-      if (!mounted) return;
-      context.go(RouterPaths.team);
-      return;
-    }
-
-    if (decision.refreshTeam) {
+    if (notification.eventType == 'TEAM_UPDATED' ||
+        notification.eventType == 'TEAM_MEMBER_JOINED' ||
+        notification.eventType == 'TEAM_MEMBER_REMOVED' ||
+        notification.eventType == 'TEAM_MEMBER_ROLE_UPDATED' ||
+        notification.eventType == 'TEAM_MEMBER_INVITED' ||
+        notification.eventType == 'TEAM_INVITATION_CANCELLED') {
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
     }
   }
@@ -177,8 +168,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                       ),
                     ),
                     // Role Manager button
-                    if (widget.teamId != null &&
-                        _permissions.canManageRoleDefinitions)
+                    if (widget.teamId != null)
                       FilledButton.tonalIcon(
                         onPressed: () {
                           context.go(
@@ -222,7 +212,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                               child: CustomInputField(
                                 hintText: localization.teamName,
                                 controller: nameTeamController,
-                                enabled: _permissions.canEditTeamBasics,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Il nome del team è obbligatorio';
@@ -236,7 +225,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                               child: CustomInputField(
                                 hintText: localization.teamDescription,
                                 controller: focusTeamController,
-                                enabled: _permissions.canEditTeamBasics,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'La descrizione è obbligatoria';
@@ -252,31 +240,29 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                 const SizedBox(height: 24),
 
                 // ── Team Color Section ──
-                if (_permissions.canEditTeamColor) ...[
-                  _buildSectionTitle(context, localization.selectedTeamcolor),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.homeSecondary,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: ListCheckbox(
-                      selectedColor: selectedColor,
-                      isEditMode: true,
-                      enabled: _permissions.canEditTeamColor,
-                      onColorChanged: (newColor) {
-                        setState(() {
-                          selectedColor = [newColor];
-                        });
-                      },
+                _buildSectionTitle(context, localization.selectedTeamcolor),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                ],
+                  child: ListCheckbox(
+                    selectedColor: selectedColor,
+                    isEditMode: true,
+                    onColorChanged: (newColor) {
+                      setState(() {
+                        selectedColor = [newColor];
+                      });
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 24),
 
                 // ── Members Section ──
                 _buildSectionTitle(context, localization.userList),
@@ -294,10 +280,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                       ? TeamMembersSection(
                           teamId: widget.teamId!,
                           ownerUserId: _ownerUserId,
-                          onPermissionsChanged: (permissions) {
-                            if (!mounted) return;
-                            setState(() => _permissions = permissions);
-                          },
                         )
                       : AddUserWeb(
                           listInviteFormData: listInviteFormData,
@@ -308,38 +290,37 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                 const SizedBox(height: 32),
 
                 // ── Save Button ──
-                if (_permissions.canEditTeamBasics)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton.icon(
-                      onPressed: _onSave,
-                      icon: const Icon(Icons.save_rounded, size: 20),
-                      label: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        child: Text(
-                          localization.editTeam,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: _onSave,
+                    icon: const Icon(Icons.save_rounded, size: 20),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
                       ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF7C4DFF),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
+                      child: Text(
+                        localization.editTeam,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF7C4DFF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                    ),
                   ),
+                ),
                 const SizedBox(height: 32),
               ],
             ),
@@ -365,9 +346,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   }
 
   void _onSave() {
-    if (!_permissions.canEditTeamBasics) {
-      return;
-    }
     if (_formKey.currentState?.validate() ?? false) {
       final listteamMember = <TeamMemberUpdateTeam>[];
       final dataToSave = listUserFormData.length > 1
