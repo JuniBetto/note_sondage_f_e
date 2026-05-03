@@ -71,23 +71,19 @@ class SidebarItem extends StatelessWidget {
   }
 
   void _onTapSettings(BuildContext context, int index) {
+    if (index == 4) {
+      getIt<TeamBloc>().add(const ResetTeamCacheEvent());
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      context.read<AuthBloc>().add(const AuthLogoutRequested());
+      return;
+    }
+
     // 1. Invoca il Cubit per aggiornare la posizione
     context.read<SettingNavigationBloc>().add(
       SettingNavigationPositionChanged(index),
     );
-
-    if (index == 4) {
-      lastIndexes.add(index);
-      lastIndexes.length > 5
-          ? lastIndexes.removeAt(0)
-          : null; // Mantieni solo gli ultimi 10
-      getIt<TeamBloc>().add(const ResetTeamCacheEvent());
-      context.read<AuthBloc>().add(const AuthLogoutRequested());
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      GoRouter.of(context).go(RouterPaths.login);
-    }
 
     // 2. NON navigare con GoRouter quando siamo nel dialog delle settings
     // Il cambio di stato del bloc farà aggiornare la rightSection automaticamente

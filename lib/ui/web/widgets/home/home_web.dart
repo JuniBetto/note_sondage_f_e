@@ -1,83 +1,162 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/home/domain/entities/dashboard_entity.dart';
+import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/widgets/pending_notifications_card.dart';
 
-class HomeWeb extends StatelessWidget {
+class HomeWeb extends StatefulWidget {
   const HomeWeb({super.key});
+
+  @override
+  State<HomeWeb> createState() => _HomeWebState();
+}
+
+class _HomeWebState extends State<HomeWeb> {
+  StreamSubscription<RealtimeNotification>? _realtimeSub;
+
+  // Services that contribute to the Recent Activity feed.
+  static const _activitySources = {
+    'team-service',
+    'clocking-service',
+    'sondage-service',
+    'shift-service',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<DashboardBloc>().add(LoadDashboardEvent());
+
+    _realtimeSub = getIt<RealtimeNotificationService>().stream.listen(
+      _onRealtimeNotification,
+    );
+  }
+
+  void _onRealtimeNotification(RealtimeNotification notification) {
+    if (!mounted) return;
+    if (_activitySources.contains(notification.sourceService)) {
+      context.read<DashboardBloc>().add(RefreshDashboardEvent());
+    }
+  }
+
+  @override
+  void dispose() {
+    _realtimeSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 800;
+    return BlocBuilder<DashboardBloc, DashboardState>(
+      builder: (context, dashState) {
+        final stats = dashState is DashboardLoaded ? dashState.stats : null;
+        final activities = dashState is DashboardLoaded
+            ? dashState.activities
+            : <RecentActivity>[];
+        final isLoading =
+            dashState is DashboardLoading || dashState is DashboardInitial;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ═══════════════════════════════
-              // Welcome banner
-              // ═══════════════════════════════
-              _WelcomeBanner(isNarrow: isNarrow),
-              const SizedBox(height: 24),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 800;
 
-              // ═══════════════════════════════
-              // Stats row
-              // ═══════════════════════════════
-              isNarrow
-                  ? Column(
-                      children: [
-                        Row(
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ═══════════════════════════════
+                  // Welcome banner
+                  // ═══════════════════════════════
+                  _WelcomeBanner(isNarrow: isNarrow),
+                  const SizedBox(height: 24),
+
+                  // ═══════════════════════════════
+                  // Stats row
+                  // ═══════════════════════════════
+                  isNarrow
+                      ? Column(
                           children: [
-                            Expanded(
-                              child: _StatCard(
-                                icon: Icons.group_rounded,
-                                label: l.activeTeams,
-                                value: '4',
-                                color: Colors.indigo,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _StatCard(
+                                    icon: Icons.group_rounded,
+                                    label: l.activeTeams,
+                                    value: isLoading
+                                        ? null
+                                        : '${stats?.activeTeams ?? 0}',
+                                    color: Colors.indigo,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: _StatCard(
+                                    icon: Icons.people_rounded,
+                                    label: l.totalMembers,
+                                    value: isLoading
+                                        ? null
+                                        : '${stats?.totalMembers ?? 0}',
+                                    color: Colors.teal,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: _StatCard(
-                                icon: Icons.people_rounded,
-                                label: l.totalMembers,
-                                value: '24',
-                                color: Colors.teal,
-                              ),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _StatCard(
+                                    icon: Icons.checklist_rounded,
+                                    label: l.activeSurveys,
+                                    value: isLoading
+                                        ? null
+                                        : '${stats?.activeSurveys ?? 0}',
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: _StatCard(
+                                    icon: Icons.timer_rounded,
+                                    label: l.todayClocking,
+                                    value: isLoading
+                                        ? null
+                                        : '${stats?.todayClocking ?? 0}',
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _StatCard(
+                                    icon: Icons.calendar_month_rounded,
+                                    label: l.myShifts,
+                                    value: isLoading
+                                        ? null
+                                        : '${stats?.todayShifts ?? 0}',
+                                    color: Colors.purple,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                const Expanded(child: SizedBox()),
+                              ],
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _StatCard(
-                                icon: Icons.checklist_rounded,
-                                label: l.activeSurveys,
-                                value: '3',
-                                color: Colors.orange,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: _StatCard(
-                                icon: Icons.timer_rounded,
-                                label: l.todayClocking,
-                                value: '18',
-                                color: Colors.blue,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     )
                   : Row(
                       children: [
@@ -94,7 +173,9 @@ class HomeWeb extends StatelessWidget {
                           child: _StatCard(
                             icon: Icons.people_rounded,
                             label: l.totalMembers,
-                            value: '24',
+                            value: isLoading
+                                ? null
+                                : '${stats?.totalMembers ?? 0}',
                             color: Colors.teal,
                           ),
                         ),
@@ -103,7 +184,9 @@ class HomeWeb extends StatelessWidget {
                           child: _StatCard(
                             icon: Icons.checklist_rounded,
                             label: l.activeSurveys,
-                            value: '3',
+                            value: isLoading
+                                ? null
+                                : '${stats?.activeSurveys ?? 0}',
                             color: Colors.orange,
                           ),
                         ),
@@ -112,41 +195,65 @@ class HomeWeb extends StatelessWidget {
                           child: _StatCard(
                             icon: Icons.timer_rounded,
                             label: l.todayClocking,
-                            value: '18',
+                            value: isLoading
+                                ? null
+                                : '${stats?.todayClocking ?? 0}',
                             color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _StatCard(
+                            icon: Icons.calendar_month_rounded,
+                            label: l.myShifts,
+                            value: isLoading
+                                ? null
+                                : '${stats?.todayShifts ?? 0}',
+                            color: Colors.purple,
                           ),
                         ),
                       ],
                     ),
-              const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-              // ═══════════════════════════════
-              // Pending notifications
-              // ═══════════════════════════════
-              const PendingNotificationsCard(maxItems: 5),
-              const SizedBox(height: 24),
+                  // ═══════════════════════════════
+                  // Pending notifications
+                  // ═══════════════════════════════
+                  const PendingNotificationsCard(maxItems: 5),
+                  const SizedBox(height: 24),
 
-              // ═══════════════════════════════
-              // Quick actions + Recent activity
-              // ═══════════════════════════════
-              isNarrow
-                  ? Column(
-                      children: [
-                        _QuickActionsCard(),
-                        const SizedBox(height: 16),
-                        _RecentActivityCard(),
-                      ],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 2, child: _QuickActionsCard()),
-                        const SizedBox(width: 20),
-                        Expanded(flex: 3, child: _RecentActivityCard()),
-                      ],
-                    ),
-            ],
-          ),
+                  // ═══════════════════════════════
+                  // Quick actions + Recent activity
+                  // ═══════════════════════════════
+                  isNarrow
+                      ? Column(
+                          children: [
+                            _QuickActionsCard(),
+                            const SizedBox(height: 16),
+                            _RecentActivityCard(
+                              activities: activities,
+                              isLoading: isLoading,
+                            ),
+                          ],
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 2, child: _QuickActionsCard()),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              flex: 3,
+                              child: _RecentActivityCard(
+                                activities: activities,
+                                isLoading: isLoading,
+                              ),
+                            ),
+                          ],
+                        ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -250,7 +357,7 @@ class _StatCard extends StatefulWidget {
   });
   final IconData icon;
   final String label;
-  final String value;
+  final String? value;
   final Color color;
 
   @override
@@ -309,13 +416,19 @@ class _StatCardState extends State<_StatCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.value,
-                    style: textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.textColor,
-                    ),
-                  ),
+                  widget.value == null
+                      ? const SizedBox(
+                          height: 28,
+                          width: 28,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          widget.value!,
+                          style: textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.textColor,
+                          ),
+                        ),
                   const SizedBox(height: 2),
                   Text(
                     widget.label,
@@ -403,6 +516,14 @@ class _QuickActionsCard extends StatelessWidget {
             subtitle: l.create,
             color: Colors.orange,
             onTap: () => navBloc.add(NavigationPositionChanged(4)),
+          ),
+          const SizedBox(height: 8),
+          _ActionTile(
+            icon: Icons.calendar_month_rounded,
+            label: l.myShifts,
+            subtitle: l.shiftCalendar,
+            color: Colors.purple,
+            onTap: () => navBloc.add(NavigationPositionChanged(5)),
           ),
         ],
       ),
@@ -507,7 +628,58 @@ class _ActionTileState extends State<_ActionTile> {
 // ════════════════════════════════════════════════════════════════
 
 class _RecentActivityCard extends StatelessWidget {
-  const _RecentActivityCard();
+  const _RecentActivityCard({
+    required this.activities,
+    required this.isLoading,
+  });
+
+  final List<RecentActivity> activities;
+  final bool isLoading;
+
+  IconData _iconFor(RecentActivityType type) {
+    switch (type) {
+      case RecentActivityType.clockIn:
+        return Icons.login_rounded;
+      case RecentActivityType.clockOut:
+        return Icons.logout_rounded;
+      case RecentActivityType.teamCreated:
+        return Icons.group_rounded;
+      case RecentActivityType.memberJoined:
+        return Icons.group_add_rounded;
+      case RecentActivityType.sondageCreated:
+        return Icons.checklist_rounded;
+      case RecentActivityType.sondageCompleted:
+        return Icons.check_circle_outline_rounded;
+      case RecentActivityType.shiftAssigned:
+        return Icons.calendar_month_rounded;
+    }
+  }
+
+  Color _colorFor(RecentActivityType type) {
+    switch (type) {
+      case RecentActivityType.clockIn:
+        return Colors.green;
+      case RecentActivityType.clockOut:
+        return Colors.red;
+      case RecentActivityType.teamCreated:
+      case RecentActivityType.memberJoined:
+        return Colors.indigo;
+      case RecentActivityType.sondageCreated:
+        return Colors.orange;
+      case RecentActivityType.sondageCompleted:
+        return Colors.teal;
+      case RecentActivityType.shiftAssigned:
+        return Colors.purple;
+    }
+  }
+
+  String _formatTime(DateTime ts) {
+    final diff = DateTime.now().difference(ts);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    return '${diff.inDays}d';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -515,8 +687,6 @@ class _RecentActivityCard extends StatelessWidget {
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
     final l = AppLocalizations.of(context)!;
-
-    final activities = _mockActivities(l);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -549,118 +719,75 @@ class _RecentActivityCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          ...activities.map((a) => _ActivityRow(activity: a)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActivityRow extends StatelessWidget {
-  const _ActivityRow({required this.activity});
-  final _Activity activity;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
-    final colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: activity.color.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(activity.icon, size: 16, color: activity.color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  activity.title,
-                  style: textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.textColor,
+          if (isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (activities.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  l.noRecentActivity,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  activity.subtitle,
-                  style: textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+              ),
+            )
+          else
+            ...activities.map((a) {
+              final icon = _iconFor(a.type);
+              final color = _colorFor(a.type);
+              final time = _formatTime(a.timestamp);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, size: 16, color: color),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            a.title,
+                            style: textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            a.subtitle,
+                            style: textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey[500]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      time,
+                      style: textTheme.labelSmall
+                          ?.copyWith(color: Colors.grey[400]),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          Text(
-            activity.time,
-            style: textTheme.labelSmall?.copyWith(color: Colors.grey[400]),
-          ),
+              );
+            }),
         ],
       ),
     );
   }
 }
-
-// ── Mock data ──
-
-class _Activity {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String time;
-  final Color color;
-
-  const _Activity({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.color,
-  });
-}
-
-List<_Activity> _mockActivities(AppLocalizations l) => [
-  _Activity(
-    icon: Icons.login_rounded,
-    title: 'User 3 clocked in',
-    subtitle: 'Manager team',
-    time: '2 min',
-    color: Colors.green,
-  ),
-  _Activity(
-    icon: Icons.group_add_rounded,
-    title: 'New member added',
-    subtitle: 'User 10 → Mobile team',
-    time: '15 min',
-    color: Colors.indigo,
-  ),
-  _Activity(
-    icon: Icons.checklist_rounded,
-    title: 'Survey "Q1 Feedback" created',
-    subtitle: '5 ${l.questions} • 2 ${l.team}',
-    time: '1h',
-    color: Colors.orange,
-  ),
-  _Activity(
-    icon: Icons.logout_rounded,
-    title: 'User 1 clocked out',
-    subtitle: 'Developper team • 8h worked',
-    time: '2h',
-    color: Colors.red,
-  ),
-  _Activity(
-    icon: Icons.edit_rounded,
-    title: 'Team "Commercial" updated',
-    subtitle: 'Description changed',
-    time: '3h',
-    color: Colors.teal,
-  ),
-];

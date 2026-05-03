@@ -2,6 +2,7 @@ import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordi
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remote_data_source.dart';
 import 'package:note_sondage/feature/shift/infrastructure/repositories/shift_repository_impl.dart';
+import 'package:note_sondage/feature/shift/notification/shift_alarm_scheduler.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
@@ -335,6 +336,7 @@ void _registerBlocs() {
   getIt.registerLazySingleton<NotificationPreferencesCubit>(
     () => NotificationPreferencesCubit(
       backendAuth: getIt<BackendAuthDataSource>(),
+      localNotificationService: getIt<LocalNotificationService>(),
     ),
   );
   getIt.registerLazySingleton<NotificationCenterCubit>(
@@ -363,5 +365,14 @@ void _registerShift() {
   getIt.registerLazySingleton<ShiftRepository>(
     () => ShiftRepositoryImpl(getIt<ShiftRemoteDataSource>()),
   );
-  getIt.registerFactory<ShiftBloc>(() => ShiftBloc(getIt<ShiftRepository>()));
+  // ShiftBloc come LazySingleton per poter essere osservato da ShiftAlarmScheduler
+  getIt.registerLazySingleton<ShiftBloc>(
+    () => ShiftBloc(getIt<ShiftRepository>()),
+  );
+  getIt.registerLazySingleton<ShiftAlarmScheduler>(
+    () => ShiftAlarmScheduler(
+      shiftBloc: getIt<ShiftBloc>(),
+      localNotifications: getIt<LocalNotificationService>(),
+    ),
+  );
 }

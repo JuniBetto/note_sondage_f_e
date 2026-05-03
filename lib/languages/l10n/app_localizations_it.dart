@@ -123,10 +123,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get selectedTeamcolor => 'Seleziona il colore della squadra';
 
   @override
-  String get roleManager => 'gezione dei ruoli';
+  String get roleManager => 'gestione dei ruoli';
 
   @override
-  String get permissionManager => 'Gezione dei permessi';
+  String get permissionManager => 'gestione dei permessi';
 
   @override
   String get grantList => 'List dei permessi';

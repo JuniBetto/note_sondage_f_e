@@ -79,17 +79,34 @@ class DashboardRepositoryImpl implements DashboardRepository {
     final today = DateTime(now.year, now.month, now.day);
 
     final results = await Future.wait([
+      _teamRemote.getAll().catchError((_) => <TeamEntity>[]),
       _clockingRemote.getByDate(now).catchError((_) => <ClockingRecordEntity>[]),
       _shiftRemote.getAssignments(from: today, to: DateTime(today.year, today.month, today.day, 23, 59, 59))
           .catchError((_) => <ShiftAssignmentEntity>[]),
       _sondageRemote.getAll().catchError((_) => <SondageEntity>[]),
     ]);
 
-    final clockings = results[0] as List<ClockingRecordEntity>;
-    final shifts = results[1] as List<ShiftAssignmentEntity>;
-    final sondages = results[2] as List<SondageEntity>;
+    final teams = results[0] as List<TeamEntity>;
+    final clockings = results[1] as List<ClockingRecordEntity>;
+    final shifts = results[2] as List<ShiftAssignmentEntity>;
+    final sondages = results[3] as List<SondageEntity>;
 
     final activities = <RecentActivity>[];
+
+    for (final team in teams) {
+      if (team.id == null || team.id!.isEmpty) continue;
+      activities.add(
+        RecentActivity(
+          id: 'team_${team.id}',
+          title: team.name.isNotEmpty
+              ? 'Team created — ${team.name}'
+              : 'Team created',
+          subtitle: team.description.isNotEmpty ? team.description : 'New team',
+          type: RecentActivityType.teamCreated,
+          timestamp: team.createdAt,
+        ),
+      );
+    }
 
     // Clocking activities
     for (final r in clockings) {
@@ -142,4 +159,3 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
   String _padTime(int v) => v.toString().padLeft(2, '0');
 }
-

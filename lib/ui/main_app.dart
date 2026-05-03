@@ -22,6 +22,7 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/notification/realtime/sondage_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
+import 'package:note_sondage/feature/shift/notification/shift_alarm_scheduler.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
@@ -63,15 +64,9 @@ class _MainAppState extends State<MainApp> {
     _localActionSubscription = getIt<LocalNotificationService>().actions.listen((
       action,
     ) async {
-      await getIt<NotificationCenterCubit>().handleActionIntent(
-        notificationId: action.notificationId,
-        actionId: action.actionId,
-        metadata: action.metadata,
-      );
-      if (!mounted) return;
-      getIt<TeamBloc>().add(LoadTeamsEvent());
-      getIt<DashboardBloc>().add(RefreshDashboardEvent());
+      await _handleLocalNotificationAction(action);
     });
+    unawaited(_drainPendingLocalNotificationActions());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncServicesForAuthState(
         getIt<AuthBloc>().state,
@@ -146,12 +141,41 @@ class _MainAppState extends State<MainApp> {
     if (shiftDecision.refreshCalendar) {
       getIt<DashboardBloc>().add(RefreshDashboardEvent());
     }
+    if (shiftDecision.showAlarmBanner) {
+      getIt<LocalNotificationService>().showShiftAlarmNotification(
+        shiftId: notification.metadata['shiftId'] ?? notification.notificationId,
+        profileName: shiftDecision.alarmProfileName ?? '',
+        shiftDate: shiftDecision.alarmShiftDate ?? '',
+        minutesBefore: shiftDecision.alarmMinutesBefore ?? 0,
+      );
+    }
     if (teamDecision.showSnackBar && teamDecision.snackBarMessage != null) {
       final messenger = scaffoldMessengerKey.currentState;
       messenger?.hideCurrentSnackBar();
       messenger?.showSnackBar(
         SnackBar(content: Text(teamDecision.snackBarMessage!)),
       );
+    }
+  }
+
+  Future<void> _handleLocalNotificationAction(
+    NotificationActionIntent action,
+  ) async {
+    await getIt<NotificationCenterCubit>().handleActionIntent(
+      notificationId: action.notificationId,
+      actionId: action.actionId,
+      metadata: action.metadata,
+    );
+    if (!mounted) return;
+    getIt<TeamBloc>().add(LoadTeamsEvent());
+    getIt<DashboardBloc>().add(RefreshDashboardEvent());
+  }
+
+  Future<void> _drainPendingLocalNotificationActions() async {
+    final pendingActions = await getIt<LocalNotificationService>()
+        .drainPendingActionIntents();
+    for (final action in pendingActions) {
+      await _handleLocalNotificationAction(action);
     }
   }
 
@@ -172,6 +196,8 @@ class _MainAppState extends State<MainApp> {
       unawaited(pushNotificationService.syncDeviceRegistration());
       unawaited(notificationPreferencesCubit.loadPreferences());
       unawaited(notificationCenterCubit.loadNotifications(force: true));
+      // Avvia lo scheduler allarmi turni
+      getIt<ShiftAlarmScheduler>().start();
       if (resetCaches) {
         _processedNotificationIds.clear();
         teamBloc.add(const ResetTeamCacheEvent());
@@ -187,6 +213,8 @@ class _MainAppState extends State<MainApp> {
       _processedNotificationIds.clear();
       teamBloc.add(const ResetTeamCacheEvent());
       sondageBloc.add(const ResetSondageCacheEvent());
+      // Ferma lo scheduler allarmi turni
+      getIt<ShiftAlarmScheduler>().stop();
     }
   }
 

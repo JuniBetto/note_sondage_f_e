@@ -6,7 +6,9 @@ class ShiftAssignmentEntity {
   const ShiftAssignmentEntity({
     required this.id,
     required this.userId,
+    this.userName,
     required this.shiftDate,
+    this.teamId,
     this.profileId,
     this.profileName,
     this.profileColor,
@@ -16,11 +18,14 @@ class ShiftAssignmentEntity {
     this.note,
     required this.alarmOffsets,
     this.profile,
+    this.isPublic = false,
   });
 
   final String id;
   final String userId;
+  final String? userName;
   final DateTime shiftDate;
+  final String? teamId;
   final String? profileId;
   final String? profileName;
   final String? profileColor;
@@ -33,6 +38,9 @@ class ShiftAssignmentEntity {
   /// Optional resolved profile (populated client-side for display)
   final ShiftProfileEntity? profile;
 
+  /// True → visible to all team members; False → private (owner only).
+  final bool isPublic;
+
   Color get displayColor {
     final hex = profileColor;
     if (hex == null) return Colors.blueGrey;
@@ -44,17 +52,22 @@ class ShiftAssignmentEntity {
   }
 
   ShiftAssignmentEntity copyWith({
+    String? userName,
     TimeOfDay? startTime,
     TimeOfDay? endTime,
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
     ShiftProfileEntity? profile,
+    bool? isPublic,
+    String? teamId,
   }) {
     return ShiftAssignmentEntity(
       id: id,
       userId: userId,
+      userName: userName ?? this.userName,
       shiftDate: shiftDate,
+      teamId: teamId ?? this.teamId,
       profileId: profileId,
       profileName: profileName,
       profileColor: profileColor,
@@ -64,6 +77,7 @@ class ShiftAssignmentEntity {
       note: note ?? this.note,
       alarmOffsets: alarmOffsets ?? this.alarmOffsets,
       profile: profile ?? this.profile,
+      isPublic: isPublic ?? this.isPublic,
     );
   }
 }

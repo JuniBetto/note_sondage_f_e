@@ -71,11 +71,6 @@ class RoleRepositoryImpl implements RoleRepository {
   @override
   Future<List<RoleEntity>> getAllRolesByTeamId(String teamId) async {
     try {
-      final local = await _local.getAllByTeamId(teamId);
-      if (local.isNotEmpty) {
-        _remote.getAllByTeamId(teamId).catchError((_) => <RoleEntity>[]);
-        return local;
-      }
       return await _remote.getAllByTeamId(teamId);
     } catch (e) {
       final cached = await _local.getAllByTeamId(teamId);

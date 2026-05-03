@@ -9,7 +9,7 @@ extension AppColorScheme on ColorScheme {
   /* Color? get bgLogin => brightness == Brightness.light
       ? ColorPalette.primary[6]
       : ColorPalette.gray[8];*/
-  Color? get bgsurface => brightness == Brightness.light
+  Color? get bgSurface => brightness == Brightness.light
       ? ColorPalette.surface
       : ColorPalette.gray[5];
 

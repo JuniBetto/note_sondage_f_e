@@ -72,13 +72,16 @@ class ClockingRemoteDataSource {
   }
 
   Future<ClockingRecordEntity> clockIn({
-    required String teamId,
+    String? teamId,
     String? note,
   }) async {
     try {
       final response = await _dio.post(
         '/api/aggregate/clocking/clock-in',
-        data: {'teamId': teamId, if (note != null && note.isNotEmpty) 'note': note},
+        data: {
+          if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
       );
       final record = ClockingMapper.fromJson(
         Map<String, dynamic>.from(response.data as Map<String, dynamic>),

@@ -71,7 +71,11 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       ),
       child: BlocBuilder<ClockingBloc, ClockingState>(
         builder: (context, clockingState) {
-          final records = _extractTeamRecords(clockingState);
+          final showingPersonalHistory = widget.selectedTeamId == null;
+          final records = _extractVisibleRecords(
+            clockingState,
+            showingPersonalHistory: showingPersonalHistory,
+          );
           final filteredRecords = _filterRecords(records);
           final teamState = context.watch<TeamBloc>().state;
           final selectedTeam = _selectedTeam(teamState, widget.selectedTeamId);
@@ -87,7 +91,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                 children: [
                   Expanded(
                     child: Text(
-                      localization.teamClockings,
+                      showingPersonalHistory
+                          ? localization.clockingInOut
+                          : localization.teamClockings,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: colorScheme.iconLabel,
@@ -96,9 +102,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                   ),
                   const SizedBox(width: 12),
                   OutlinedButton.icon(
-                    onPressed:
-                        widget.selectedTeamId != null &&
-                            filteredRecords.isNotEmpty
+                    onPressed: filteredRecords.isNotEmpty
                         ? () => _exportPdf(filteredRecords, selectedTeam)
                         : null,
                     icon: const Icon(Icons.download_rounded),
@@ -107,12 +111,13 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                 ],
               ),
               const SizedBox(height: 6),
-              Text(
-                localization.clockingOwnerHint,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
+              if (!showingPersonalHistory)
+                Text(
+                  localization.clockingOwnerHint,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                  ),
                 ),
-              ),
               const SizedBox(height: 16),
               widget.isMobile
                   ? Column(
@@ -170,10 +175,12 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                       ],
                     ),
               const SizedBox(height: 16),
-              if (widget.selectedTeamId == null)
-                _InfoState(message: localization.selectTeamToViewClockings)
-              else if (filteredRecords.isEmpty)
-                _InfoState(message: localization.noClockingsForTeam)
+              if (filteredRecords.isEmpty)
+                _InfoState(
+                  message: showingPersonalHistory
+                      ? localization.noClockingsForFilter
+                      : localization.noClockingsForTeam,
+                )
               else if (widget.isMobile)
                 Column(
                   children: filteredRecords
@@ -222,10 +229,19 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     return Expanded(child: content);
   }
 
-  List<ClockingRecordEntity> _extractTeamRecords(ClockingState state) {
-    if (state is ClockingRecordsLoaded) return state.teamRecords;
-    if (state is ClockingActionInProgress) return state.teamRecords;
-    if (state is ClockingActionSuccess) return state.teamRecords;
+  List<ClockingRecordEntity> _extractVisibleRecords(
+    ClockingState state, {
+    required bool showingPersonalHistory,
+  }) {
+    if (state is ClockingRecordsLoaded) {
+      return showingPersonalHistory ? state.myRecords : state.teamRecords;
+    }
+    if (state is ClockingActionInProgress) {
+      return showingPersonalHistory ? state.myRecords : state.teamRecords;
+    }
+    if (state is ClockingActionSuccess) {
+      return showingPersonalHistory ? state.myRecords : state.teamRecords;
+    }
     return const [];
   }
 

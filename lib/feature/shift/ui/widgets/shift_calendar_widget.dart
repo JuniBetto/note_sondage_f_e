@@ -10,7 +10,7 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 ///   assignments: assignments,
 ///   focusedMonth: _focusedMonth,
 ///   onMonthChanged: (d) => setState(() => _focusedMonth = d),
-///   onDayTap: (date, existing) { /* open assign dialog */ },
+///   onDayTap: (date, dayAssignments) { /* open assign dialog */ },
 /// )
 /// ```
 class ShiftCalendarWidget extends StatelessWidget {
@@ -26,8 +26,9 @@ class ShiftCalendarWidget extends StatelessWidget {
   final DateTime focusedMonth;
   final ValueChanged<DateTime> onMonthChanged;
 
-  /// Called with the tapped date and the existing assignment (or null).
-  final void Function(DateTime date, ShiftAssignmentEntity? existing) onDayTap;
+  /// Called with the tapped date and all visible assignments for that day.
+  final void Function(DateTime date, List<ShiftAssignmentEntity> assignments)
+  onDayTap;
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +41,11 @@ class ShiftCalendarWidget extends StatelessWidget {
       0,
     ).day;
 
-    // Map date → assignment for O(1) lookup
-    final assignMap = <String, ShiftAssignmentEntity>{};
+    // Map date → assignments for O(1) lookup
+    final assignMap = <String, List<ShiftAssignmentEntity>>{};
     for (final a in assignments) {
       final key = '${a.shiftDate.year}-${a.shiftDate.month}-${a.shiftDate.day}';
-      assignMap[key] = a;
+      assignMap.putIfAbsent(key, () => []).add(a);
     }
 
     final weekdayOffset = (firstDay.weekday - 1) % 7; // Mon = 0
@@ -121,15 +122,15 @@ class ShiftCalendarWidget extends StatelessWidget {
                   dayNumber,
                 );
                 final key = '${date.year}-${date.month}-${date.day}';
-                final assignment = assignMap[key];
+                final dayAssignments = assignMap[key] ?? const [];
                 final isToday = _isToday(date);
 
                 return Expanded(
                   child: _DayCell(
                     day: dayNumber,
                     isToday: isToday,
-                    assignment: assignment,
-                    onTap: () => onDayTap(date, assignment),
+                    assignments: dayAssignments,
+                    onTap: () => onDayTap(date, dayAssignments),
                   ),
                 );
               }),
@@ -181,19 +182,23 @@ class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.day,
     required this.isToday,
-    required this.assignment,
+    required this.assignments,
     required this.onTap,
   });
 
   final int day;
   final bool isToday;
-  final ShiftAssignmentEntity? assignment;
+  final List<ShiftAssignmentEntity> assignments;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final appPrimary = colorScheme.primaryColor ?? colorScheme.primary;
+    final assignment = assignments.isNotEmpty ? assignments.first : null;
     final shiftColor = assignment?.displayColor;
+    final publicCount = assignments.where((item) => item.isPublic).length;
+    final hasMore = assignments.length > 2;
 
     return GestureDetector(
       onTap: onTap,
@@ -218,38 +223,76 @@ class _DayCell extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '$day',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
-                  color: isToday
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              if (assignment != null) ...[
-                const SizedBox(height: 2),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 2,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: shiftColor!.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _abbreviate(assignment!.profileName ?? '?'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+              // Day number + visibility icon on same row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$day',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
+                      color: isToday
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                  if (assignments.isNotEmpty) ...[
+                    const SizedBox(width: 1),
+                    Tooltip(
+                      message: publicCount > 0
+                          ? '$publicCount turno/i pubblico/i visibili al team'
+                          : 'Turni privati',
+                      child: Icon(
+                        publicCount > 0 ? Icons.public : Icons.lock_outline,
+                        size: 8,
+                        color: publicCount > 0
+                            ? appPrimary
+                            : colorScheme.outline.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (assignments.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                ...assignments.take(2).map((item) {
+                  final label = item.userName?.trim().isNotEmpty == true
+                      ? '${_abbreviate(item.profileName ?? '?')} ${_initials(item.userName!)}'
+                      : _abbreviate(item.profileName ?? '?');
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: item.displayColor.withValues(alpha: 0.84),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  );
+                }),
+                if (hasMore)
+                  Text(
+                    '+${assignments.length - 2} altri',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontSize: 8,
+                      color: colorScheme.descriptionColor,
+                    ),
+                  ),
               ],
             ],
           ),
@@ -261,5 +304,11 @@ class _DayCell extends StatelessWidget {
   String _abbreviate(String name) {
     if (name.length <= 4) return name.toUpperCase();
     return name.substring(0, 3).toUpperCase();
+  }
+
+  String _initials(String raw) {
+    final parts = raw.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    final initials = parts.take(2).map((part) => part[0].toUpperCase()).join();
+    return initials.isEmpty ? '?' : initials;
   }
 }

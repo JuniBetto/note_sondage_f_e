@@ -23,8 +23,14 @@ import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 class CreateTeamMobile extends StatefulWidget {
   final String? teamId;
   final Function()? onTeamCreated;
+  final ValueChanged<TeamSectionPermissions>? onPermissionsChanged;
 
-  const CreateTeamMobile({super.key, this.onTeamCreated, this.teamId});
+  const CreateTeamMobile({
+    super.key,
+    this.onTeamCreated,
+    this.teamId,
+    this.onPermissionsChanged,
+  });
 
   @override
   State<CreateTeamMobile> createState() => _CreateTeamMobileState();
@@ -244,6 +250,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                           ? TeamMembersSection(
                               teamId: widget.teamId!,
                               ownerUserId: _ownerUserId,
+                              onPermissionsChanged: widget.onPermissionsChanged,
                             )
                           : AddUserMobile(
                               listInviteFormData: listInviteFormData,

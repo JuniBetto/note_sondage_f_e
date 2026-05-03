@@ -57,6 +57,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
       maxLines: widget.maxLines,
       minLines: widget.minLines,
       controller: widget.controller,
+      cursorColor: colorScheme.cursorColor,
       // Logica per nascondere il testo se è una password
       obscureText: widget.isPassword ? _isObscured : false,
       // Logica per la tastiera: Numerica o Testo
@@ -159,6 +160,7 @@ class _CustomTextFieldImmersiveState extends State<CustomTextFieldImmersive> {
       ),
       child: TextFormField(
         maxLines: widget.maxLines,
+        cursorColor: Theme.of(context).colorScheme.cursorColor,
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: TextStyle(color: Colors.grey[400]),

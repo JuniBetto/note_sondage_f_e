@@ -20,6 +20,7 @@ class ShiftRepositoryImpl implements ShiftRepository {
     required bool overnight,
     required List<int> alarmOffsets,
     String? color,
+    bool isPublic = false,
   }) => _remote.createProfile(
     name: name,
     startTime: startTime,
@@ -27,6 +28,7 @@ class ShiftRepositoryImpl implements ShiftRepository {
     overnight: overnight,
     alarmOffsets: alarmOffsets,
     color: color,
+    isPublic: isPublic,
   );
 
   @override
@@ -38,6 +40,7 @@ class ShiftRepositoryImpl implements ShiftRepository {
     required bool overnight,
     required List<int> alarmOffsets,
     String? color,
+    bool isPublic = false,
   }) => _remote.updateProfile(
     profileId,
     name: name,
@@ -46,6 +49,7 @@ class ShiftRepositoryImpl implements ShiftRepository {
     overnight: overnight,
     alarmOffsets: alarmOffsets,
     color: color,
+    isPublic: isPublic,
   );
 
   @override
@@ -67,6 +71,9 @@ class ShiftRepositoryImpl implements ShiftRepository {
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
+    bool isPublic = false,
+    String? teamId,
+    String? targetUserId,
   }) => _remote.assign(
     shiftDate: shiftDate,
     profileId: profileId,
@@ -75,6 +82,9 @@ class ShiftRepositoryImpl implements ShiftRepository {
     overnight: overnight,
     note: note,
     alarmOffsets: alarmOffsets,
+    isPublic: isPublic,
+    teamId: teamId,
+    targetUserId: targetUserId,
   );
 
   @override
@@ -86,6 +96,8 @@ class ShiftRepositoryImpl implements ShiftRepository {
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
+    bool isPublic = false,
+    String? teamId,
   }) => _remote.updateAssignment(
     assignmentId,
     profileId: profileId,
@@ -94,6 +106,8 @@ class ShiftRepositoryImpl implements ShiftRepository {
     overnight: overnight,
     note: note,
     alarmOffsets: alarmOffsets,
+    isPublic: isPublic,
+    teamId: teamId,
   );
 
   @override

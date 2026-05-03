@@ -49,7 +49,7 @@ class ClockingRepositoryImpl implements ClockingRepository {
 
   @override
   Future<ClockingRecordEntity> clockIn({
-    required String teamId,
+    String? teamId,
     String? note,
   }) async {
     try {

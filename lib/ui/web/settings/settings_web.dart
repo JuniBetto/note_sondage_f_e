@@ -6,7 +6,6 @@ import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_event.dart';
-import 'package:note_sondage/ui/web/login/login_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_contact_us_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_language_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_notification_web.dart';
@@ -120,12 +119,11 @@ class SettingsWeb extends StatelessWidget {
                   child ??
                   Container(
                     color: Colors.transparent,
-                    child: switch (navBarItem) {
+                  child: switch (navBarItem) {
                       0 => const SettingsLanguageWeb(),
                       1 => const SettingsNotificationWeb(),
                       2 => const SettingsContactUsWeb(),
                       3 => const SettingsPrivacyWeb(),
-                      4 => const LoginWeb(),
                       int() => const SettingsLanguageWeb(),
                     },
                   ),

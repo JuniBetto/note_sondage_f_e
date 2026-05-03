@@ -27,6 +27,7 @@ class ShiftRemoteDataSource {
     required bool overnight,
     required List<int> alarmOffsets,
     String? color,
+    bool isPublic = false,
   }) async {
     final response = await _dio.post(
       '/api/aggregate/shift/profiles',
@@ -37,6 +38,7 @@ class ShiftRemoteDataSource {
         overnight: overnight,
         alarmOffsets: alarmOffsets,
         color: color,
+        isPublic: isPublic,
       ),
     );
     return ShiftMapper.profileFromJson(
@@ -52,6 +54,7 @@ class ShiftRemoteDataSource {
     required bool overnight,
     required List<int> alarmOffsets,
     String? color,
+    bool isPublic = false,
   }) async {
     final response = await _dio.put(
       '/api/aggregate/shift/profiles/$profileId',
@@ -62,6 +65,7 @@ class ShiftRemoteDataSource {
         overnight: overnight,
         alarmOffsets: alarmOffsets,
         color: color,
+        isPublic: isPublic,
       ),
     );
     return ShiftMapper.profileFromJson(
@@ -102,6 +106,9 @@ class ShiftRemoteDataSource {
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
+    bool isPublic = false,
+    String? teamId,
+    String? targetUserId,
   }) async {
     final response = await _dio.post(
       '/api/aggregate/shift/assignments',
@@ -113,6 +120,9 @@ class ShiftRemoteDataSource {
         overnight: overnight,
         note: note,
         alarmOffsets: alarmOffsets,
+        isPublic: isPublic,
+        teamId: teamId,
+        targetFirebaseUid: targetUserId,
       ),
     );
     return ShiftMapper.assignmentFromJson(
@@ -128,6 +138,8 @@ class ShiftRemoteDataSource {
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
+    bool isPublic = false,
+    String? teamId,
   }) async {
     final response = await _dio.put(
       '/api/aggregate/shift/assignments/$assignmentId',
@@ -139,6 +151,8 @@ class ShiftRemoteDataSource {
         overnight: overnight,
         note: note,
         alarmOffsets: alarmOffsets,
+        isPublic: isPublic,
+        teamId: teamId,
       ),
     );
     return ShiftMapper.assignmentFromJson(

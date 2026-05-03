@@ -1,16 +1,21 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
+import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/notification/preferences/notification_preferences_entity.dart';
 
 part 'notification_preferences_state.dart';
 
 class NotificationPreferencesCubit extends Cubit<NotificationPreferencesState> {
-  NotificationPreferencesCubit({required BackendAuthDataSource backendAuth})
-    : _backendAuth = backendAuth,
+  NotificationPreferencesCubit({
+    required BackendAuthDataSource backendAuth,
+    required LocalNotificationService localNotificationService,
+  }) : _backendAuth = backendAuth,
+      _localNotificationService = localNotificationService,
       super(const NotificationPreferencesState());
 
   final BackendAuthDataSource _backendAuth;
+  final LocalNotificationService _localNotificationService;
 
   Future<void> loadPreferences({bool force = false}) async {
     if (state.status == NotificationPreferencesStatus.loading) {
@@ -25,6 +30,9 @@ class NotificationPreferencesCubit extends Cubit<NotificationPreferencesState> {
     emit(state.copyWith(status: NotificationPreferencesStatus.loading));
     try {
       final preferences = await _backendAuth.getNotificationPreferences();
+      await _localNotificationService.setShiftNotificationsEnabled(
+        preferences.shiftAlertsEnabled,
+      );
       emit(
         state.copyWith(
           status: NotificationPreferencesStatus.loaded,
@@ -53,6 +61,9 @@ class NotificationPreferencesCubit extends Cubit<NotificationPreferencesState> {
     );
     try {
       final saved = await _backendAuth.updateNotificationPreferences(preferences);
+      await _localNotificationService.setShiftNotificationsEnabled(
+        saved.shiftAlertsEnabled,
+      );
       emit(
         state.copyWith(
           status: NotificationPreferencesStatus.loaded,

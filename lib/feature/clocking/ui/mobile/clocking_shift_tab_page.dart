@@ -13,6 +13,11 @@ import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 class ClockingShiftTabPage extends StatefulWidget {
   const ClockingShiftTabPage({super.key});
 
+  /// Set this to 1 before navigating to index 3 to land directly on Shifts.
+  /// It is reset to 0 after the first build so subsequent navigations start
+  /// on the default Clocking tab.
+  static int requestedInitialTab = 0;
+
   @override
   State<ClockingShiftTabPage> createState() => _ClockingShiftTabPageState();
 }
@@ -24,7 +29,9 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    final initialTab = ClockingShiftTabPage.requestedInitialTab;
+    ClockingShiftTabPage.requestedInitialTab = 0; // reset for next navigation
+    _tabController = TabController(length: 2, vsync: this, initialIndex: initialTab);
     _tabController.addListener(_onTabChanged);
   }
 
@@ -87,8 +94,8 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
                   const ClockingMobile(),
 
                   // Tab 2 — My Shifts
-                  BlocProvider<ShiftBloc>(
-                    create: (_) => GetIt.instance<ShiftBloc>(),
+                  BlocProvider<ShiftBloc>.value(
+                    value: GetIt.instance<ShiftBloc>(),
                     child: const ShiftMobileWidget(),
                   ),
                 ],

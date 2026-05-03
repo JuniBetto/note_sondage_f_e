@@ -3,14 +3,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_team_mobile.dart';
+import 'package:note_sondage/feature/team/ui/widgets/team_members_section.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 
-class UpdateTeamMobile extends StatelessWidget {
+class UpdateTeamMobile extends StatefulWidget {
   const UpdateTeamMobile({super.key, this.teamId});
   final String? teamId;
+
+  @override
+  State<UpdateTeamMobile> createState() => _UpdateTeamMobileState();
+}
+
+class _UpdateTeamMobileState extends State<UpdateTeamMobile> {
+  TeamSectionPermissions _teamPermissions = TeamSectionPermissions.readOnly();
+
+  bool get _canOpenRoleManager =>
+      widget.teamId != null && _teamPermissions.canAccessRoleManager;
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +59,12 @@ class UpdateTeamMobile extends StatelessWidget {
           style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         actions: [
-          if (teamId != null)
+          if (_canOpenRoleManager)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: IconButton(
                 onPressed: () {
-                  context.go(RouterPaths.rolePage, extra: teamId);
+                  context.go(RouterPaths.rolePage, extra: widget.teamId);
                 },
                 icon: Container(
                   padding: const EdgeInsets.all(6),
@@ -71,7 +82,17 @@ class UpdateTeamMobile extends StatelessWidget {
             ),
         ],
       ),
-      body: SafeArea(child: CreateTeamMobile(teamId: teamId)),
+      body: SafeArea(
+        child: CreateTeamMobile(
+          teamId: widget.teamId,
+          onPermissionsChanged: (permissions) {
+            if (!mounted) return;
+            setState(() {
+              _teamPermissions = permissions;
+            });
+          },
+        ),
+      ),
     );
   }
 }

@@ -14,7 +14,7 @@ abstract class ClockingRepository {
   Future<List<ClockingRecordEntity>> getByTeamId(String teamId);
 
   /// Effettua il clock-in
-  Future<ClockingRecordEntity> clockIn({required String teamId, String? note});
+  Future<ClockingRecordEntity> clockIn({String? teamId, String? note});
 
   /// Effettua il clock-out
   Future<ClockingRecordEntity> clockOut({String? teamId, String? note});

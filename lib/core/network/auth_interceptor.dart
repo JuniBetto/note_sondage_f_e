@@ -15,6 +15,10 @@ import 'package:note_sondage/core/network/token_service.dart';
 /// 3. Ripetere la richiesta originale con il nuovo token.
 class AuthInterceptor extends Interceptor {
   final TokenService _tokenService;
+  Future<String?>? _exchangeInFlight;
+  String? _exchangeUid;
+  DateTime? _lastSuccessfulExchangeAt;
+  String? _lastSuccessfulExchangeUid;
 
   AuthInterceptor({TokenService? tokenService})
     : _tokenService = tokenService ?? TokenService();
@@ -52,6 +56,12 @@ class AuthInterceptor extends Interceptor {
       options.headers['X-User-Id'] = firebaseUser.uid;
     }
 
+    // Alcuni endpoint aggregator/team richiedono anche l'email utente esplicita.
+    final userEmail = firebaseUser?.email;
+    if (userEmail != null && userEmail.isNotEmpty) {
+      options.headers['X-User-Email'] = userEmail;
+    }
+
     handler.next(options);
   }
 
@@ -74,6 +84,13 @@ class AuthInterceptor extends Interceptor {
             // Riprova la richiesta originale con il nuovo token
             final opts = err.requestOptions;
             opts.headers['Authorization'] = 'Bearer $newToken';
+            if (firebaseUser.uid.isNotEmpty) {
+              opts.headers['X-User-Id'] = firebaseUser.uid;
+            }
+            final userEmail = firebaseUser.email;
+            if (userEmail != null && userEmail.isNotEmpty) {
+              opts.headers['X-User-Email'] = userEmail;
+            }
             opts.extra['isRetry'] = true;
 
             final retryResponse = await Dio().fetch(opts);
@@ -92,36 +109,71 @@ class AuthInterceptor extends Interceptor {
     required User firebaseUser,
     bool forceRefreshFirebaseToken = false,
   }) async {
-    final firebaseToken = await firebaseUser.getIdToken(forceRefreshFirebaseToken);
-    if (firebaseToken == null || firebaseToken.isEmpty) {
-      return null;
+    final uid = firebaseUser.uid;
+    final now = DateTime.now();
+
+    if (!forceRefreshFirebaseToken &&
+        _exchangeInFlight != null &&
+        _exchangeUid == uid) {
+      return _exchangeInFlight;
     }
 
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        sendTimeout: const Duration(seconds: 10),
-        headers: const {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-
-    final response = await dio.post(
-      '/public/api/auth/verify',
-      data: {'firebaseToken': firebaseToken},
-    );
-
-    if (response.data is! Map<String, dynamic> ||
-        !response.data.containsKey('token')) {
-      return null;
+    if (!forceRefreshFirebaseToken &&
+        _lastSuccessfulExchangeUid == uid &&
+        _lastSuccessfulExchangeAt != null &&
+        now.difference(_lastSuccessfulExchangeAt!) < const Duration(seconds: 10)) {
+      return _tokenService.getToken();
     }
 
-    final backendToken = response.data['token'] as String;
-    await _tokenService.saveToken(backendToken);
-    return backendToken;
+    late final Future<String?> exchangeFuture;
+    _exchangeUid = uid;
+    exchangeFuture = () async {
+      final firebaseToken = await firebaseUser.getIdToken(forceRefreshFirebaseToken);
+      if (firebaseToken == null || firebaseToken.isEmpty) {
+        return null;
+      }
+
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+          sendTimeout: const Duration(seconds: 10),
+          headers: const {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      final response = await dio.post(
+        '/public/api/auth/verify',
+        data: {'firebaseToken': firebaseToken},
+      );
+
+      if (response.data is! Map<String, dynamic> ||
+          !response.data.containsKey('token')) {
+        return null;
+      }
+
+      final backendToken = response.data['token'] as String;
+      await _tokenService.saveToken(backendToken);
+      _lastSuccessfulExchangeUid = uid;
+      _lastSuccessfulExchangeAt = DateTime.now();
+      return backendToken;
+    }();
+
+    if (!forceRefreshFirebaseToken) {
+      _exchangeInFlight = exchangeFuture;
+    }
+
+    try {
+      return await exchangeFuture;
+    } finally {
+      if (!forceRefreshFirebaseToken && identical(_exchangeInFlight, exchangeFuture)) {
+        _exchangeInFlight = null;
+        _exchangeUid = null;
+      }
+    }
   }
 }

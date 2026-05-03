@@ -56,6 +56,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   late final TeamBloc _globalTeamBloc;
   bool _isLoading = true;
   String? _ownerUserId;
+  TeamSectionPermissions _teamPermissions = TeamSectionPermissions.readOnly();
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   @override
@@ -94,6 +95,9 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
     }
   }
+
+  bool get _canOpenRoleManager =>
+      widget.teamId != null && _teamPermissions.canAccessRoleManager;
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +172,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                       ),
                     ),
                     // Role Manager button
-                    if (widget.teamId != null)
+                    if (_canOpenRoleManager)
                       FilledButton.tonalIcon(
                         onPressed: () {
                           context.go(
@@ -280,6 +284,12 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                       ? TeamMembersSection(
                           teamId: widget.teamId!,
                           ownerUserId: _ownerUserId,
+                          onPermissionsChanged: (permissions) {
+                            if (!mounted) return;
+                            setState(() {
+                              _teamPermissions = permissions;
+                            });
+                          },
                         )
                       : AddUserWeb(
                           listInviteFormData: listInviteFormData,

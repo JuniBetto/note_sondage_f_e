@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,6 +13,8 @@ import 'package:note_sondage/feature/notification/inbox/notification_center_item
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/firebase_options.dart';
+
+const String _backgroundTeamInviteCategoryId = 'team_invite_actions';
 
 /// Gestisce i messaggi FCM quando l'app è in background o terminata.
 ///
@@ -42,6 +45,31 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       data['body']?.toString().isNotEmpty == true
           ? data['body']!
           : message.notification?.body ?? '';
+  final metadata = {
+    for (final entry in data.entries)
+      if (entry.value.isNotEmpty &&
+          !_reservedKeys.contains(entry.key.toString()))
+        entry.key.toString(): entry.value.toString(),
+  };
+  final notificationItem = NotificationCenterItem(
+    notificationId:
+        data['notificationId']?.toString() ??
+        message.messageId ??
+        'push-${DateTime.now().millisecondsSinceEpoch}',
+    eventType: data['eventType']?.toString() ?? 'PUSH_NOTIFICATION',
+    sourceService: data['sourceService']?.toString() ?? 'push',
+    title: title,
+    body: body,
+    occurredAt:
+        DateTime.tryParse(data['occurredAt']?.toString() ?? '') ??
+        DateTime.now(),
+    metadata: metadata,
+  );
+  final canRespondToInvite =
+      notificationItem.eventType == 'TEAM_MEMBER_INVITED' &&
+      notificationItem.invitationId != null &&
+      (notificationItem.metadata['invitedUserId']?.trim().isNotEmpty ?? false);
+  final payload = jsonEncode(notificationItem.toJson());
 
   // Nessun testo = niente da mostrare (es. silent sync messages).
   if (title.isEmpty && body.isEmpty) return;
@@ -72,22 +100,47 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       ?.createNotificationChannel(channel);
 
   // 5. Mostra la notifica.
-  const notificationDetails = NotificationDetails(
+  final notificationDetails = NotificationDetails(
     android: AndroidNotificationDetails(
       'team_updates',
       'Team updates',
       channelDescription: 'Realtime updates about teams and invitations',
       importance: Importance.max,
       priority: Priority.high,
+      actions: canRespondToInvite
+          ? const <AndroidNotificationAction>[
+              AndroidNotificationAction(
+                'accept_team_invite',
+                'Accetta',
+                showsUserInterface: true,
+                cancelNotification: true,
+              ),
+              AndroidNotificationAction(
+                'reject_team_invite',
+                'Rifiuta',
+                showsUserInterface: true,
+                cancelNotification: true,
+              ),
+            ]
+          : null,
     ),
-    iOS: DarwinNotificationDetails(),
+    iOS: DarwinNotificationDetails(
+      categoryIdentifier: canRespondToInvite
+          ? _backgroundTeamInviteCategoryId
+          : null,
+      threadIdentifier: notificationItem.metadata['teamId'],
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    ),
   );
 
   await plugin.show(
-    message.messageId.hashCode,
+    notificationItem.notificationId.hashCode,
     title,
     body,
     notificationDetails,
+    payload: payload,
   );
 }
 

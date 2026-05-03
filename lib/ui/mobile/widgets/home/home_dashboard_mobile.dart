@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/feature/clocking/ui/mobile/clocking_shift_tab_page.dart';
 import 'package:note_sondage/feature/home/domain/entities/dashboard_entity.dart';
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -383,7 +384,10 @@ class _MobileQuickActions extends StatelessWidget {
                   icon: Icons.calendar_month_rounded,
                   label: l.myShifts,
                   color: Colors.purple,
-                  onTap: () => navBloc.add(NavigationPositionChanged(3)),
+                  onTap: () {
+                    ClockingShiftTabPage.requestedInitialTab = 1;
+                    navBloc.add(NavigationPositionChanged(3));
+                  },
                 ),
               ),
             ],

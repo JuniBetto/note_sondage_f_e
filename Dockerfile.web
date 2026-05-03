@@ -1,0 +1,23 @@
+FROM ghcr.io/cirruslabs/flutter:stable AS build
+
+WORKDIR /app
+
+ARG API_BASE_URL
+ARG SENTRY_DSN
+
+COPY pubspec.yaml pubspec.lock ./
+RUN flutter pub get
+
+COPY assets ./assets
+COPY lib ./lib
+COPY web ./web
+COPY l10n.yaml ./
+COPY analysis_options.yaml ./
+
+RUN flutter build web --release \
+    --dart-define=API_BASE_URL=${API_BASE_URL} \
+    --dart-define=SENTRY_DSN=${SENTRY_DSN}
+
+FROM docker.io/library/nginx:1.27-alpine
+
+COPY --from=build /app/build/web /usr/share/nginx/html

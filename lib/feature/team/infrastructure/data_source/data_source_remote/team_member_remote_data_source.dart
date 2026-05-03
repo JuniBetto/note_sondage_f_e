@@ -88,22 +88,51 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
 
   Future<List<TeamMemberEntity>> getAllByTeamId(String teamId) async {
     try {
-      final response = await DioClient().dio.get('$endpoint/$teamId/dashboard');
-      final data = response.data as Map<String, dynamic>;
-      final teamData = data['team'] as Map<String, dynamic>? ?? {};
-      final membersJson = teamData['members'] as List<dynamic>? ?? [];
-      final members = membersJson.where((e) => e != null).map((e) {
-        final memberJson = Map<String, dynamic>.from(e as Map<String, dynamic>);
-        // Inject team_id if the API doesn't include it per-member
-        memberJson['team_id'] ??= teamId;
-        return TeamMemberMapper.fromJson(memberJson);
-      }).toList();
+      final members = await _fetchMembersFromDedicatedEndpoint(teamId);
       final deduplicatedMembers = _deduplicateMembers(members);
       await localDataSource.saveAll(deduplicatedMembers);
       return deduplicatedMembers;
     } catch (e) {
-      throw Exception('Failed to fetch team members by team ID: $e');
+      try {
+        final members = await _fetchMembersFromDashboard(teamId);
+        final deduplicatedMembers = _deduplicateMembers(members);
+        await localDataSource.saveAll(deduplicatedMembers);
+        return deduplicatedMembers;
+      } catch (fallbackError) {
+        throw Exception(
+          'Failed to fetch team members by team ID: $e; fallback failed: $fallbackError',
+        );
+      }
     }
+  }
+
+  Future<List<TeamMemberEntity>> _fetchMembersFromDedicatedEndpoint(
+    String teamId,
+  ) async {
+    final response = await DioClient().dio.get('$endpoint/$teamId/members');
+    final membersJson = response.data as List<dynamic>? ?? [];
+    return _mapMembersJson(membersJson, teamId);
+  }
+
+  Future<List<TeamMemberEntity>> _fetchMembersFromDashboard(
+    String teamId,
+  ) async {
+    final response = await DioClient().dio.get('$endpoint/$teamId/dashboard');
+    final data = response.data as Map<String, dynamic>;
+    final teamData = data['team'] as Map<String, dynamic>? ?? {};
+    final membersJson = teamData['members'] as List<dynamic>? ?? [];
+    return _mapMembersJson(membersJson, teamId);
+  }
+
+  List<TeamMemberEntity> _mapMembersJson(
+    List<dynamic> membersJson,
+    String teamId,
+  ) {
+    return membersJson.where((e) => e != null).map((e) {
+      final memberJson = Map<String, dynamic>.from(e as Map<String, dynamic>);
+      memberJson['team_id'] ??= teamId;
+      return TeamMemberMapper.fromJson(memberJson);
+    }).toList();
   }
 
   @override
@@ -140,6 +169,9 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
               ? DateTime.tryParse(j['createdAt'].toString())
               : null,
         );
+      }).where((invitation) {
+        final status = invitation.status.trim().toUpperCase();
+        return status == 'PENDING' || status == 'PENDING_REGISTRATION';
       }).toList();
     } catch (e) {
       throw Exception('Failed to fetch pending invitations: $e');

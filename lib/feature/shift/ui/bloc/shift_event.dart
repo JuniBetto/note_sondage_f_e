@@ -19,6 +19,7 @@ class CreateShiftProfileEvent extends ShiftEvent {
   final bool overnight;
   final List<int> alarmOffsets;
   final String? color;
+  final bool isPublic;
 
   CreateShiftProfileEvent({
     required this.name,
@@ -27,6 +28,7 @@ class CreateShiftProfileEvent extends ShiftEvent {
     required this.overnight,
     required this.alarmOffsets,
     this.color,
+    this.isPublic = false,
   });
 
   @override
@@ -37,6 +39,7 @@ class CreateShiftProfileEvent extends ShiftEvent {
     overnight,
     alarmOffsets,
     color,
+    isPublic,
   ];
 }
 
@@ -48,6 +51,7 @@ class UpdateShiftProfileEvent extends ShiftEvent {
   final bool overnight;
   final List<int> alarmOffsets;
   final String? color;
+  final bool isPublic;
 
   UpdateShiftProfileEvent({
     required this.profileId,
@@ -57,10 +61,11 @@ class UpdateShiftProfileEvent extends ShiftEvent {
     required this.overnight,
     required this.alarmOffsets,
     this.color,
+    this.isPublic = false,
   });
 
   @override
-  List<Object?> get props => [profileId, name];
+  List<Object?> get props => [profileId, name, isPublic];
 }
 
 class DeleteShiftProfileEvent extends ShiftEvent {
@@ -88,6 +93,10 @@ class AssignShiftEvent extends ShiftEvent {
   final bool? overnight;
   final String? note;
   final List<int>? alarmOffsets;
+  final bool isPublic;
+  final String? teamId;
+  /// Firebase UID of the target user. Null = assign to the authenticated caller.
+  final String? targetUserId;
 
   AssignShiftEvent({
     required this.shiftDate,
@@ -97,10 +106,19 @@ class AssignShiftEvent extends ShiftEvent {
     this.overnight,
     this.note,
     this.alarmOffsets,
+    this.isPublic = false,
+    this.teamId,
+    this.targetUserId,
   });
 
   @override
-  List<Object?> get props => [shiftDate, profileId];
+  List<Object?> get props => [
+    shiftDate,
+    profileId,
+    isPublic,
+    teamId,
+    targetUserId,
+  ];
 }
 
 class UpdateShiftAssignmentEvent extends ShiftEvent {
@@ -111,6 +129,8 @@ class UpdateShiftAssignmentEvent extends ShiftEvent {
   final bool? overnight;
   final String? note;
   final List<int>? alarmOffsets;
+  final bool isPublic;
+  final String? teamId;
 
   UpdateShiftAssignmentEvent({
     required this.assignmentId,
@@ -120,10 +140,12 @@ class UpdateShiftAssignmentEvent extends ShiftEvent {
     this.overnight,
     this.note,
     this.alarmOffsets,
+    this.isPublic = false,
+    this.teamId,
   });
 
   @override
-  List<Object?> get props => [assignmentId];
+  List<Object?> get props => [assignmentId, isPublic, teamId];
 }
 
 class DeleteShiftAssignmentEvent extends ShiftEvent {

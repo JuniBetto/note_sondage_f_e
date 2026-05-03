@@ -51,7 +51,6 @@ class _ButtonClockingState extends State<ButtonClocking> {
             builder: (context, clockingState) {
               final records = _extractMyRecords(clockingState);
               final activeRecord = _activeRecord(records);
-              final hasTeams = teams.isNotEmpty;
               final isBusy = clockingState is ClockingActionInProgress;
               final isClockingReady =
                   clockingState is ClockingRecordsLoaded ||
@@ -79,7 +78,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _ClockActionButton(
-                        onTap: hasTeams && !isBusy && isClockingReady
+                        onTap: !isBusy && isClockingReady
                             ? () => _onClockAction(activeRecord)
                             : null,
                         color: clockColor,
@@ -99,7 +98,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
                                   ? localization.openYourTurn
                                   : localization.loadingClockingState),
                         isCompact: widget.isCompact,
-                        isDisabled: !hasTeams || isBusy || !isClockingReady,
+                        isDisabled: isBusy || !isClockingReady,
                       ),
                       const SizedBox(width: 12),
                       _ClockActionButton(
@@ -147,21 +146,12 @@ class _ButtonClockingState extends State<ButtonClocking> {
     }
 
     final teamIds = teams.map((team) => team.id).whereType<String>().toSet();
-    if (widget.selectedTeamId == null ||
+    if (widget.selectedTeamId != null &&
         !teamIds.contains(widget.selectedTeamId)) {
-      String? firstTeamId;
-      for (final team in teams) {
-        if (team.id != null) {
-          firstTeamId = team.id;
-          break;
-        }
-      }
-      if (firstTeamId != widget.selectedTeamId) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          widget.onSelectedTeamChanged?.call(firstTeamId);
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        widget.onSelectedTeamChanged?.call(null);
+      });
     }
   }
 
@@ -182,21 +172,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }
 
   void _onClockAction(ClockingRecordEntity? activeRecord) {
-    final selectedTeamId = widget.selectedTeamId;
-    if (selectedTeamId == null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.selectTeamToClockIn),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      return;
-    }
-
     if (activeRecord == null) {
-      context.read<ClockingBloc>().add(ClockInEvent(teamId: selectedTeamId));
+      context.read<ClockingBloc>().add(
+        ClockInEvent(teamId: widget.selectedTeamId),
+      );
       return;
     }
 
@@ -219,6 +198,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
 }
 
 class _ClockingTeamSelector extends StatelessWidget {
+  static const String _noTeamValue = '__no_team__';
+
   const _ClockingTeamSelector({
     required this.isCompact,
     required this.teams,
@@ -234,6 +215,7 @@ class _ClockingTeamSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dropdownValue = selectedTeamId ?? _noTeamValue;
 
     return Container(
       constraints: BoxConstraints(maxWidth: isCompact ? 320 : 380),
@@ -244,22 +226,33 @@ class _ClockingTeamSelector extends StatelessWidget {
         border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
       ),
       child: DropdownButtonFormField<String>(
-        value: teams.any((team) => team.id == selectedTeamId)
-            ? selectedTeamId
-            : null,
-        decoration: const InputDecoration(
+        value: dropdownValue,
+        decoration: InputDecoration(
           border: InputBorder.none,
           isDense: true,
           labelText: 'Team',
+          hintText: 'Team',
         ),
-        items: teams.where((team) => team.id != null).map((team) {
-          final teamId = team.id!;
-          return DropdownMenuItem<String>(
-            value: teamId,
-            child: Text(team.name),
-          );
-        }).toList(),
-        onChanged: teams.isEmpty ? null : onChanged,
+        items: [
+          const DropdownMenuItem<String>(
+            value: _noTeamValue,
+            child: Text('Team'),
+          ),
+          ...teams.where((team) => team.id != null).map((team) {
+            final teamId = team.id!;
+            return DropdownMenuItem<String>(
+              value: teamId,
+              child: Text(team.name),
+            );
+          }),
+        ],
+        onChanged: (value) {
+          if (value == null || value == _noTeamValue) {
+            onChanged(null);
+            return;
+          }
+          onChanged(value);
+        },
       ),
     );
   }

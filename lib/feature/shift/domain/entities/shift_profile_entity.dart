@@ -12,6 +12,7 @@ class ShiftProfileEntity {
     required this.overnight,
     required this.isSystem,
     required this.alarmOffsets,
+    this.isPublic = false,
   });
 
   final String id;
@@ -32,6 +33,9 @@ class ShiftProfileEntity {
   /// Minutes before startTime (negative values). E.g. [-30, -15]
   final List<int> alarmOffsets;
 
+  /// True → visible to all team members; False → private (owner only).
+  final bool isPublic;
+
   ShiftProfileEntity copyWith({
     String? name,
     String? color,
@@ -39,6 +43,7 @@ class ShiftProfileEntity {
     TimeOfDay? endTime,
     bool? overnight,
     List<int>? alarmOffsets,
+    bool? isPublic,
   }) {
     return ShiftProfileEntity(
       id: id,
@@ -50,6 +55,7 @@ class ShiftProfileEntity {
       overnight: overnight ?? this.overnight,
       isSystem: isSystem,
       alarmOffsets: alarmOffsets ?? this.alarmOffsets,
+      isPublic: isPublic ?? this.isPublic,
     );
   }
 

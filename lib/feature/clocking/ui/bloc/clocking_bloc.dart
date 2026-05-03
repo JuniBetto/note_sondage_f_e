@@ -32,7 +32,7 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     LoadClockingRecordsEvent event,
     Emitter<ClockingState> emit,
   ) async {
-    _selectedTeamId = event.teamId ?? _selectedTeamId;
+    _selectedTeamId = event.teamId;
     if (_cachedMyRecords.isNotEmpty || _cachedTeamRecords.isNotEmpty) {
       emit(_loadedState());
     } else {

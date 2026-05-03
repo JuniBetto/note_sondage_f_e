@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/database/hive_initializer.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/error/error_logger.dart';
@@ -64,10 +65,10 @@ void main() {
         GoogleSignIn.instance.initialize(
           serverClientId: kIsWeb
               ? null
-              : '907402131431-pqiaudv68qea3uufo7ectug6cnst58uf.apps.googleusercontent.com',
+              : RuntimeConfig.googleServerClientId,
         ),
         HiveInitializer.initialize(),
-        ErrorLogger.init(dsn: 'YOUR_DSN_HERE', enabled: !kDebugMode),
+        ErrorLogger.init(dsn: RuntimeConfig.sentryDsn, enabled: !kDebugMode),
         getIt<LocalNotificationService>().init(),
         getIt<PushNotificationService>().init(),
       ]);

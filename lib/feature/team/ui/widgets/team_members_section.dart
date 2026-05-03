@@ -30,6 +30,7 @@ class TeamSectionPermissions {
     required this.canRemoveMembers,
     required this.canChangeMemberRoles,
     required this.canManageRoleDefinitions,
+    required this.canAccessRoleManager,
   });
 
   factory TeamSectionPermissions.readOnly() {
@@ -42,6 +43,7 @@ class TeamSectionPermissions {
       canRemoveMembers: false,
       canChangeMemberRoles: false,
       canManageRoleDefinitions: false,
+      canAccessRoleManager: false,
     );
   }
 
@@ -53,6 +55,7 @@ class TeamSectionPermissions {
   final bool canRemoveMembers;
   final bool canChangeMemberRoles;
   final bool canManageRoleDefinitions;
+  final bool canAccessRoleManager;
 
   bool get isOwner => roleCode == 'OWNER';
   bool get isAdmin => roleCode == 'ADMIN';
@@ -152,6 +155,14 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
       currentUserId: getIt<AuthBloc>().state.user.uid,
     );
 
+    if (notification.sourceService == 'team-service' &&
+        notification.metadata['teamId'] == widget.teamId &&
+        (notification.eventType == 'TEAM_ROLE_CREATED' ||
+            notification.eventType == 'TEAM_ROLE_UPDATED' ||
+            notification.eventType == 'TEAM_ROLE_DELETED')) {
+      _roleBloc.add(LoadRolesEventByTeamId(widget.teamId));
+    }
+
     if (decision.needsReload) {
       _reload();
     }
@@ -195,6 +206,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         canRemoveMembers: true,
         canChangeMemberRoles: true,
         canManageRoleDefinitions: true,
+        canAccessRoleManager: true,
       );
       if (!_hasSamePermissions(_permissions, ownerPermissions)) {
         _permissions = ownerPermissions;
@@ -225,24 +237,27 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
       roleCode,
       role?.permissions,
     );
+    final isOwner = roleCode == 'OWNER';
+    final isAdmin = roleCode == 'ADMIN';
+    final hasAdminPermission = normalizedPermissions.contains('ADMIN');
+    final hasManagePermission = normalizedPermissions.contains('MANAGE');
     final nextPermissions = TeamSectionPermissions(
       roleCode: roleCode,
       canEditTeamBasics:
-          roleCode == 'OWNER' ||
+          isOwner ||
           normalizedPermissions.contains('UPDATE') ||
-          normalizedPermissions.contains('ADMIN'),
-      canEditTeamColor: roleCode == 'OWNER',
-      canInviteMembers:
-          roleCode == 'OWNER' || normalizedPermissions.contains('ADMIN'),
-      canCancelInvitations:
-          roleCode == 'OWNER' || normalizedPermissions.contains('ADMIN'),
+          hasAdminPermission,
+      canEditTeamColor: isOwner,
+      canInviteMembers: isOwner || hasAdminPermission,
+      canCancelInvitations: isOwner || hasAdminPermission,
       canRemoveMembers:
-          roleCode == 'OWNER' ||
-          normalizedPermissions.contains('ADMIN') ||
+          isOwner ||
+          hasAdminPermission ||
           normalizedPermissions.contains('DELETE'),
-      canChangeMemberRoles:
-          roleCode == 'OWNER' || normalizedPermissions.contains('MANAGE'),
-      canManageRoleDefinitions: roleCode == 'OWNER',
+      canChangeMemberRoles: isOwner || hasManagePermission,
+      canManageRoleDefinitions: isOwner,
+      canAccessRoleManager:
+          isOwner || isAdmin || hasAdminPermission || hasManagePermission,
     );
 
     if (_hasSamePermissions(_permissions, nextPermissions)) {
@@ -447,7 +462,8 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         current.canCancelInvitations == next.canCancelInvitations &&
         current.canRemoveMembers == next.canRemoveMembers &&
         current.canChangeMemberRoles == next.canChangeMemberRoles &&
-        current.canManageRoleDefinitions == next.canManageRoleDefinitions;
+        current.canManageRoleDefinitions == next.canManageRoleDefinitions &&
+        current.canAccessRoleManager == next.canAccessRoleManager;
   }
 }
 

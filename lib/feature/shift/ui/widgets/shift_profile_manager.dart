@@ -7,7 +7,12 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class ShiftProfileManager extends StatefulWidget {
   final List<ShiftProfileEntity> profiles;
-  const ShiftProfileManager({super.key, required this.profiles});
+  final bool isOwner;
+  const ShiftProfileManager({
+    super.key,
+    required this.profiles,
+    this.isOwner = false,
+  });
 
   @override
   State<ShiftProfileManager> createState() => _ShiftProfileManagerState();
@@ -42,6 +47,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
           )
         : const TimeOfDay(hour: 18, minute: 0);
     bool overnight = existing?.overnight ?? false;
+    bool isPublic = existing?.isPublic ?? false;
 
     await showDialog(
       context: context,
@@ -97,6 +103,43 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                   title: Text(loc.overnightShift),
                   contentPadding: EdgeInsets.zero,
                 ),
+                // ── Visibility toggle (owner only) ────────────────────
+                if (widget.isOwner)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      color: isPublic
+                          ? Colors.blue.withValues(alpha: 0.08)
+                          : Colors.grey.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isPublic
+                            ? Colors.blue.withValues(alpha: 0.4)
+                            : Colors.grey.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: SwitchListTile(
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 8),
+                      value: isPublic,
+                      onChanged: (v) => setS(() => isPublic = v),
+                      secondary: Icon(
+                        isPublic ? Icons.public : Icons.lock_outline,
+                        size: 18,
+                        color: isPublic ? Colors.blue : Colors.grey,
+                      ),
+                      title: Text(
+                        isPublic ? 'Pubblico' : 'Privato',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      subtitle: Text(
+                        isPublic
+                            ? 'Visibile a tutti i membri del team'
+                            : 'Visibile solo a te',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -118,6 +161,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                       endTime: endTime,
                       overnight: overnight,
                       alarmOffsets: const [],
+                      isPublic: isPublic,
                     ),
                   );
                 } else {
@@ -130,6 +174,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                       endTime: endTime,
                       overnight: overnight,
                       alarmOffsets: const [],
+                      isPublic: isPublic,
                     ),
                   );
                 }
@@ -175,53 +220,56 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
     final systemProfiles = widget.profiles.where((p) => p.isSystem).toList();
     final customProfiles = widget.profiles.where((p) => !p.isSystem).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          loc.shiftProfile,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 8),
-        ...systemProfiles.map((p) => _ProfileTile(profile: p, isSystem: true)),
-        const Divider(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              loc.customProfile,
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            IconButton.filled(
-              onPressed: _showCreateDialog,
-              icon: const Icon(Icons.add, size: 18),
-              tooltip: loc.createCustomProfile,
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        if (customProfiles.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              loc.noShiftsThisMonth,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.descriptionColor,
-                fontSize: 13,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            loc.shiftProfile,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          ...systemProfiles.map((p) => _ProfileTile(profile: p, isSystem: true)),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                loc.customProfile,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              IconButton.filled(
+                onPressed: _showCreateDialog,
+                icon: const Icon(Icons.add, size: 18),
+                tooltip: loc.createCustomProfile,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          if (customProfiles.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                loc.noShiftsThisMonth,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.descriptionColor,
+                  fontSize: 13,
+                ),
               ),
             ),
+          ...customProfiles.map(
+            (p) => _ProfileTile(
+              profile: p,
+              isSystem: false,
+              isOwner: widget.isOwner,
+              onEdit: () => _showEditDialog(p),
+              onDelete: () => _confirmDelete(p),
+            ),
           ),
-        ...customProfiles.map(
-          (p) => _ProfileTile(
-            profile: p,
-            isSystem: false,
-            onEdit: () => _showEditDialog(p),
-            onDelete: () => _confirmDelete(p),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -229,12 +277,14 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
 class _ProfileTile extends StatelessWidget {
   final ShiftProfileEntity profile;
   final bool isSystem;
+  final bool isOwner;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   const _ProfileTile({
     required this.profile,
     required this.isSystem,
+    this.isOwner = false,
     this.onEdit,
     this.onDelete,
   });
@@ -246,12 +296,53 @@ class _ProfileTile extends StatelessWidget {
     return ListTile(
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-      leading: Container(
-        width: 12,
-        height: 12,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          if (profile.isPublic)
+            Positioned(
+              bottom: -4,
+              right: -6,
+              child: Icon(Icons.public, size: 10, color: Colors.blue.shade600),
+            ),
+        ],
       ),
-      title: Text(profile.name, style: const TextStyle(fontSize: 14)),
+      title: Row(
+        children: [
+          Flexible(child: Text(profile.name, style: const TextStyle(fontSize: 14))),
+          if (profile.isPublic) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.public, size: 9, color: Colors.blue.shade700),
+                  const SizedBox(width: 2),
+                  Text(
+                    'Pubblico',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
       subtitle: Text(
         '${profile.startTime.hour.toString().padLeft(2, '0')}:${profile.startTime.minute.toString().padLeft(2, '0')}'
         ' – '
@@ -266,7 +357,9 @@ class _ProfileTile extends StatelessWidget {
               ),
               padding: EdgeInsets.zero,
             )
-          : Row(
+          : (profile.isPublic && !isOwner)
+              ? const SizedBox.shrink()
+              : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(

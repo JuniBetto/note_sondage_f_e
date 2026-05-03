@@ -9,6 +9,9 @@ class TeamRealtimeCoordinator {
     'TEAM_MEMBER_REMOVED',
     'TEAM_INVITATION_CANCELLED',
     'TEAM_INVITATION_REJECTED',
+    'TEAM_ROLE_CREATED',
+    'TEAM_ROLE_UPDATED',
+    'TEAM_ROLE_DELETED',
   };
 
   static const Set<String> _memberRefreshEventTypes = {

@@ -44,10 +44,10 @@ class LoadClockingByTeamIdEvent extends ClockingEvent {
 }
 
 class ClockInEvent extends ClockingEvent {
-  final String teamId;
+  final String? teamId;
   final String? note;
 
-  const ClockInEvent({required this.teamId, this.note});
+  const ClockInEvent({this.teamId, this.note});
 
   @override
   List<Object?> get props => [teamId, note];

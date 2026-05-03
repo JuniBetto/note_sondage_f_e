@@ -3,6 +3,7 @@ enum LoginType { microsoft, google, facebook }
 enum ApiType { express, python }
 
 enum UserRole {
+  owner('OWNER'),
   admin('ADMIN'),
   manager('MANAGER'),
   worker('WORKER');
@@ -16,6 +17,10 @@ enum UserRole {
       orElse: () => UserRole.worker,
     );
   }
+
+  /// True if the role can manage public shifts (create / edit public resources).
+  bool get canManagePublicShifts =>
+      this == UserRole.owner || this == UserRole.admin;
 
   @override
   String toString() => value;

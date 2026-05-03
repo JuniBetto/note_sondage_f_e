@@ -23,6 +23,7 @@ class ShiftMapper {
       overnight: (json['overnight'] as bool?) ?? false,
       isSystem: (json['isSystem'] as bool?) ?? false,
       alarmOffsets: offsets,
+      isPublic: (json['isPublic'] as bool?) ?? false,
     );
   }
 
@@ -33,7 +34,9 @@ class ShiftMapper {
     return ShiftAssignmentEntity(
       id: json['id'] as String,
       userId: json['userId'] as String,
+      userName: json['userName'] as String?,
       shiftDate: DateTime.parse(json['shiftDate'] as String),
+      teamId: json['teamId'] as String?,
       profileId: json['profileId'] as String?,
       profileName: json['profileName'] as String?,
       profileColor: json['profileColor'] as String?,
@@ -42,6 +45,7 @@ class ShiftMapper {
       overnight: (json['overnight'] as bool?) ?? false,
       note: json['note'] as String?,
       alarmOffsets: offsets,
+      isPublic: (json['isPublic'] as bool?) ?? false,
     );
   }
 
@@ -52,6 +56,7 @@ class ShiftMapper {
     required bool overnight,
     required List<int> alarmOffsets,
     String? color,
+    bool isPublic = false,
   }) {
     return {
       'name': name,
@@ -62,6 +67,7 @@ class ShiftMapper {
           '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}:00',
       'overnight': overnight,
       'alarmOffsets': alarmOffsets,
+      'isPublic': isPublic,
     };
   }
 
@@ -73,6 +79,9 @@ class ShiftMapper {
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
+    bool isPublic = false,
+    String? teamId,
+    String? targetFirebaseUid,
   }) {
     String? _fmt(TimeOfDay? t) => t == null
         ? null
@@ -86,6 +95,9 @@ class ShiftMapper {
       if (overnight != null) 'overnight': overnight,
       if (note != null) 'note': note,
       if (alarmOffsets != null) 'alarmOffsets': alarmOffsets,
+      if (teamId != null) 'teamId': teamId,
+      'isPublic': isPublic,
+      if (targetFirebaseUid != null) 'targetFirebaseUid': targetFirebaseUid,
     };
   }
 }

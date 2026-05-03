@@ -4,7 +4,7 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 Future<bool> showLogoutConfirmationDialog(BuildContext context) async {
   final localization = AppLocalizations.of(context)!;
-
+ 
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) {

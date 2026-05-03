@@ -12,6 +12,7 @@ abstract class ShiftRepository {
     required bool overnight,
     required List<int> alarmOffsets,
     String? color,
+    bool isPublic = false,
   });
 
   Future<ShiftProfileEntity> updateProfile(
@@ -22,6 +23,7 @@ abstract class ShiftRepository {
     required bool overnight,
     required List<int> alarmOffsets,
     String? color,
+    bool isPublic = false,
   });
 
   Future<void> deleteProfile(String profileId);
@@ -39,6 +41,9 @@ abstract class ShiftRepository {
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
+    bool isPublic = false,
+    String? teamId,
+    String? targetUserId,
   });
 
   Future<ShiftAssignmentEntity> updateAssignment(
@@ -49,6 +54,8 @@ abstract class ShiftRepository {
     bool? overnight,
     String? note,
     List<int>? alarmOffsets,
+    bool isPublic = false,
+    String? teamId,
   });
 
   Future<void> deleteAssignment(String assignmentId);

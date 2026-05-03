@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/widgets/role_permission_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'dart:async';
 
 class ListRolePermission extends StatefulWidget {
   const ListRolePermission({
@@ -26,11 +29,32 @@ class _ListRolePermissionState extends State<ListRolePermission> {
   List<RoleEntity> rolesList = [];
   Set<String> selectedIds = {};
   bool _isLoading = true;
+  StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   @override
   void initState() {
     super.initState();
     _roleBloc = getIt<RoleBloc>();
+    _roleBloc.add(LoadRolesEventByTeamId(widget.teamId));
+    _realtimeSubscription = getIt<RealtimeNotificationService>().stream.listen(
+      _handleRealtimeNotification,
+    );
+  }
+
+  @override
+  void dispose() {
+    _realtimeSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _handleRealtimeNotification(RealtimeNotification notification) {
+    if (notification.sourceService != 'team-service') return;
+    if (notification.metadata['teamId'] != widget.teamId) return;
+    if (notification.eventType != 'TEAM_ROLE_CREATED' &&
+        notification.eventType != 'TEAM_ROLE_UPDATED' &&
+        notification.eventType != 'TEAM_ROLE_DELETED') {
+      return;
+    }
     _roleBloc.add(LoadRolesEventByTeamId(widget.teamId));
   }
 

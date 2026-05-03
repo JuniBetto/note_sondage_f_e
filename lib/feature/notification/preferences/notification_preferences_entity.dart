@@ -4,6 +4,7 @@ class NotificationPreferencesEntity {
   final bool surveyRemindersEnabled;
   final bool teamUpdatesEnabled;
   final bool clockingAlertsEnabled;
+  final bool shiftAlertsEnabled;
 
   const NotificationPreferencesEntity({
     required this.emailEnabled,
@@ -11,6 +12,7 @@ class NotificationPreferencesEntity {
     required this.surveyRemindersEnabled,
     required this.teamUpdatesEnabled,
     required this.clockingAlertsEnabled,
+    required this.shiftAlertsEnabled,
   });
 
   static const defaults = NotificationPreferencesEntity(
@@ -19,6 +21,7 @@ class NotificationPreferencesEntity {
     surveyRemindersEnabled: true,
     teamUpdatesEnabled: true,
     clockingAlertsEnabled: true,
+    shiftAlertsEnabled: true,
   );
 
   factory NotificationPreferencesEntity.fromJson(Map<String, dynamic> json) {
@@ -35,6 +38,7 @@ class NotificationPreferencesEntity {
       surveyRemindersEnabled: readBool('surveyRemindersEnabled', true),
       teamUpdatesEnabled: readBool('teamUpdatesEnabled', true),
       clockingAlertsEnabled: readBool('clockingAlertsEnabled', true),
+      shiftAlertsEnabled: readBool('shiftAlertsEnabled', true),
     );
   }
 
@@ -45,6 +49,7 @@ class NotificationPreferencesEntity {
       'surveyRemindersEnabled': surveyRemindersEnabled,
       'teamUpdatesEnabled': teamUpdatesEnabled,
       'clockingAlertsEnabled': clockingAlertsEnabled,
+      'shiftAlertsEnabled': shiftAlertsEnabled,
     };
   }
 
@@ -54,6 +59,7 @@ class NotificationPreferencesEntity {
     bool? surveyRemindersEnabled,
     bool? teamUpdatesEnabled,
     bool? clockingAlertsEnabled,
+    bool? shiftAlertsEnabled,
   }) {
     return NotificationPreferencesEntity(
       emailEnabled: emailEnabled ?? this.emailEnabled,
@@ -62,6 +68,7 @@ class NotificationPreferencesEntity {
           surveyRemindersEnabled ?? this.surveyRemindersEnabled,
       teamUpdatesEnabled: teamUpdatesEnabled ?? this.teamUpdatesEnabled,
       clockingAlertsEnabled: clockingAlertsEnabled ?? this.clockingAlertsEnabled,
+      shiftAlertsEnabled: shiftAlertsEnabled ?? this.shiftAlertsEnabled,
     );
   }
 }

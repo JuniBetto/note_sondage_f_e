@@ -44,6 +44,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         overnight: event.overnight,
         alarmOffsets: event.alarmOffsets,
         color: event.color,
+        isPublic: event.isPublic,
       );
       emit(ShiftProfileCreated(profile));
     } catch (e) {
@@ -65,6 +66,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         overnight: event.overnight,
         alarmOffsets: event.alarmOffsets,
         color: event.color,
+        isPublic: event.isPublic,
       );
       emit(ShiftProfileUpdated(profile));
     } catch (e) {
@@ -113,6 +115,9 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         overnight: event.overnight,
         note: event.note,
         alarmOffsets: event.alarmOffsets,
+        isPublic: event.isPublic,
+        teamId: event.teamId,
+        targetUserId: event.targetUserId,
       );
       emit(ShiftAssigned(assignment));
     } catch (e) {
@@ -133,6 +138,8 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         overnight: event.overnight,
         note: event.note,
         alarmOffsets: event.alarmOffsets,
+        isPublic: event.isPublic,
+        teamId: event.teamId,
       );
       emit(ShiftAssignmentUpdated(assignment));
     } catch (e) {

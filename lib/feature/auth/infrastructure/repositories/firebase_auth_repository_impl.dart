@@ -21,6 +21,10 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   final firebase.FirebaseAuth _firebaseAuth;
   final BackendAuthDataSource _backendAuth;
   final TokenService _tokenService;
+  Future<void>? _backendExchangeInFlight;
+  String? _backendExchangeUid;
+  DateTime? _lastSuccessfulExchangeAt;
+  String? _lastSuccessfulExchangeUid;
 
   FirebaseAuthRepositoryImpl({
     firebase.FirebaseAuth? firebaseAuth,
@@ -34,17 +38,53 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   /// Non lancia eccezioni: se lo scambio fallisce, logga e continua.
   /// L'utente resta autenticato con Firebase, il JWT verrà ritentato.
   Future<void> _exchangeTokenWithBackend(firebase.User user) async {
-    try {
-      final firebaseIdToken = await user.getIdToken();
-      if (firebaseIdToken != null) {
-        final backendJwt = await _backendAuth.exchangeToken(firebaseIdToken);
-        await _tokenService.saveToken(backendJwt);
-        debugPrint('[Auth] Backend JWT ottenuto con successo.');
+    final uid = user.uid;
+    final now = DateTime.now();
+
+    if (_backendExchangeInFlight != null && _backendExchangeUid == uid) {
+      await _backendExchangeInFlight;
+      return;
+    }
+
+    if (_lastSuccessfulExchangeUid == uid &&
+        _lastSuccessfulExchangeAt != null &&
+        now.difference(_lastSuccessfulExchangeAt!) < const Duration(seconds: 10)) {
+      return;
+    }
+
+    late final Future<void> exchangeFuture;
+    _backendExchangeUid = uid;
+    exchangeFuture = () async {
+      try {
+        final firebaseIdToken = await user.getIdToken();
+        if (firebaseIdToken != null) {
+          final backendJwt = await _backendAuth.exchangeToken(firebaseIdToken);
+          await _tokenService.saveToken(backendJwt);
+          _lastSuccessfulExchangeUid = uid;
+          _lastSuccessfulExchangeAt = DateTime.now();
+          debugPrint('[Auth] Backend JWT ottenuto con successo.');
+        }
+      } catch (e) {
+        debugPrint('[Auth] Scambio token con backend fallito: $e');
+        // Non blocchiamo il login: l'utente è comunque autenticato con Firebase.
+        // Il token verrà ritentato dall'AuthInterceptor al prossimo 401.
+      } finally {
+        if (identical(_backendExchangeInFlight, exchangeFuture)) {
+          _backendExchangeInFlight = null;
+          _backendExchangeUid = null;
+        }
       }
-    } catch (e) {
-      debugPrint('[Auth] Scambio token con backend fallito: $e');
-      // Non blocchiamo il login: l'utente è comunque autenticato con Firebase.
-      // Il token verrà ritentato dall'AuthInterceptor al prossimo 401.
+    }();
+
+    _backendExchangeInFlight = exchangeFuture;
+
+    try {
+      await exchangeFuture;
+    } finally {
+      if (identical(_backendExchangeInFlight, exchangeFuture)) {
+        _backendExchangeInFlight = null;
+        _backendExchangeUid = null;
+      }
     }
   }
 
@@ -54,6 +94,10 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       if (firebaseUser != null) {
         unawaited(_exchangeTokenWithBackend(firebaseUser));
       } else {
+        _backendExchangeInFlight = null;
+        _backendExchangeUid = null;
+        _lastSuccessfulExchangeAt = null;
+        _lastSuccessfulExchangeUid = null;
         unawaited(_tokenService.clearToken());
       }
       return AuthMapper.fromFirebaseUser(firebaseUser);
@@ -186,6 +230,10 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     try {
       // Rimuovi il JWT del backend
       await _tokenService.clearToken();
+      _backendExchangeInFlight = null;
+      _backendExchangeUid = null;
+      _lastSuccessfulExchangeAt = null;
+      _lastSuccessfulExchangeUid = null;
 
       await Future.wait([
         _firebaseAuth.signOut(),

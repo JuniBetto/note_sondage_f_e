@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/network/auth_interceptor.dart';
 import 'package:note_sondage/core/network/token_service.dart';
 
@@ -26,10 +27,27 @@ class DioClient {
     return '127.0.0.1';
   }
 
+  static String get _resolvedHostForAbsoluteUrls {
+    if (RuntimeConfig.hasCustomApiBaseUrl) {
+      final configuredHost = Uri.tryParse(
+        RuntimeConfig.resolvedApiBaseUrl,
+      )?.host;
+      if (configuredHost != null && configuredHost.isNotEmpty) {
+        return configuredHost;
+      }
+    }
+    return _host;
+  }
+
   /// Returns the correct base URL depending on the platform:
   /// - Web / iOS / macOS / desktop: http://127.0.0.1:8081
   /// - Android emulator:            http://10.0.2.2:8081
-  static String get baseUrl => '$_scheme://$_host:8080';
+  static String get baseUrl {
+    if (RuntimeConfig.hasCustomApiBaseUrl) {
+      return RuntimeConfig.resolvedApiBaseUrl;
+    }
+    return '$_scheme://$_host:8080';
+  }
 
   /// MinIO API port for direct access (only used if bucket is public)
   static String get _minioBaseUrl => 'http://$_host:9002/bucket1';
@@ -49,7 +67,9 @@ class DioClient {
 
     // Already a full URL – just fix the host
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url.replaceAll('localhost', _host).replaceAll('127.0.0.1', _host);
+      return url
+          .replaceAll('localhost', _resolvedHostForAbsoluteUrls)
+          .replaceAll('127.0.0.1', _resolvedHostForAbsoluteUrls);
     }
 
     // Relative path from MinIO: "team_member/{member_id}/{filename}"

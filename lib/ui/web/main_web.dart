@@ -130,9 +130,9 @@ class MainWeb extends StatelessWidget {
               const SizedBox.shrink(), // index 2 (settings = dialog)
               const ClockingWeb(), // index 3
               const SondageWeb(), // index 4
-              BlocProvider<ShiftBloc>(
+              BlocProvider<ShiftBloc>.value(
                 // index 5
-                create: (_) => GetIt.instance<ShiftBloc>(),
+                value: GetIt.instance<ShiftBloc>(),
                 child: const ShiftWebPage(),
               ),
             ];

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
@@ -26,13 +27,23 @@ class RealtimeNotificationService {
 
     final apiUri = Uri.parse(DioClient.baseUrl);
     final wsScheme = apiUri.scheme == 'https' ? 'wss' : 'ws';
-    final wsUrl = Uri(
-      scheme: wsScheme,
-      host: apiUri.host,
-      port: 8085,
-      path: '/ws',
-      queryParameters: {'userId': userId},
-    ).toString();
+    final wsUrl =
+        RuntimeConfig.hasCustomApiBaseUrl
+            ? apiUri
+                .replace(
+                  scheme: wsScheme,
+                  path: '/ws',
+                  queryParameters: {'userId': userId},
+                )
+                .toString()
+            : apiUri
+                .replace(
+                  scheme: wsScheme,
+                  port: 8085,
+                  path: '/ws',
+                  queryParameters: {'userId': userId},
+                )
+                .toString();
     final webSocketHeaders = kIsWeb ? null : {'X-User-Id': userId};
 
     _client = StompClient(
@@ -62,7 +73,9 @@ class RealtimeNotificationService {
           );
         },
         onStompError: (frame) {
-          debugPrint('[RealtimeNotificationService] STOMP error: ${frame.body}');
+          debugPrint(
+            '[RealtimeNotificationService] STOMP error: ${frame.body}',
+          );
         },
         onWebSocketError: (error) {
           debugPrint(
