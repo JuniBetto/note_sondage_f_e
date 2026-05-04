@@ -76,11 +76,13 @@ class ClockingRemoteDataSource {
     String? note,
   }) async {
     try {
+      final clockInAt = DateTime.now();
       final response = await _dio.post(
         '/api/aggregate/clocking/clock-in',
         data: {
           if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
           if (note != null && note.isNotEmpty) 'note': note,
+          'clockInAt': clockInAt.toIso8601String(),
         },
       );
       final record = ClockingMapper.fromJson(
@@ -94,11 +96,13 @@ class ClockingRemoteDataSource {
 
   Future<ClockingRecordEntity> clockOut({String? teamId, String? note}) async {
     try {
+      final clockOutAt = DateTime.now();
       final response = await _dio.post(
         '/api/aggregate/clocking/clock-out',
         data: {
           if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
           if (note != null && note.isNotEmpty) 'note': note,
+          'clockOutAt': clockOutAt.toIso8601String(),
         },
       );
       final record = ClockingMapper.fromJson(
@@ -112,11 +116,13 @@ class ClockingRemoteDataSource {
 
   Future<ClockingRecordEntity> startBreak({String? teamId, String? note}) async {
     try {
+      final actionAt = DateTime.now();
       final response = await _dio.post(
         '/api/aggregate/clocking/start-break',
         data: {
           if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
           if (note != null && note.isNotEmpty) 'note': note,
+          'actionAt': actionAt.toIso8601String(),
         },
       );
       return ClockingMapper.fromJson(
@@ -129,11 +135,13 @@ class ClockingRemoteDataSource {
 
   Future<ClockingRecordEntity> stopBreak({String? teamId, String? note}) async {
     try {
+      final actionAt = DateTime.now();
       final response = await _dio.post(
         '/api/aggregate/clocking/stop-break',
         data: {
           if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
           if (note != null && note.isNotEmpty) 'note': note,
+          'actionAt': actionAt.toIso8601String(),
         },
       );
       return ClockingMapper.fromJson(

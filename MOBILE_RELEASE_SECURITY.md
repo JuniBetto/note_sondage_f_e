@@ -15,11 +15,51 @@ Important:
 - `google-services.json`, `GoogleService-Info.plist` and `firebase_options.dart` contain client configuration, not backend secrets
 - they should still be restricted correctly in Firebase / Google Cloud console
 
+See also:
+- [MOBILE_BUILD_MODES.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/MOBILE_BUILD_MODES.md)
+
 ## What is now ready
 
 - API target is configurable with `--dart-define=API_BASE_URL=...`
 - Android release signing can use a real keystore through [android/key.properties.example](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/android/key.properties.example)
 - Android cleartext HTTP can be enabled only for specific LAN test builds through the `usesCleartextTraffic=true` Gradle property
+
+## Important runtime note
+
+The mobile app does not read `.env` automatically at runtime.
+
+For Android and iOS builds, the backend target must be passed with `--dart-define`,
+because the app reads `API_BASE_URL` through `String.fromEnvironment(...)`.
+
+That means:
+- backend `.env` is for Spring / Podman
+- frontend `.env.web` is for the web image build
+- mobile APK / IPA target must be injected explicitly at Flutter build time
+
+Examples:
+
+- Android emulator:
+```bash
+flutter build apk --release \
+  --dart-define=API_BASE_URL=http://10.0.2.2:8080
+```
+
+- Physical Android device on LAN:
+```bash
+flutter build apk --release \
+  --dart-define=API_BASE_URL=http://192.168.1.20:8080
+```
+
+- Public HTTPS:
+```bash
+flutter build apk --release \
+  --dart-define=API_BASE_URL=https://api.example.com
+```
+
+Important:
+- `127.0.0.1` inside the APK points to the phone itself
+- Android emulator must use `10.0.2.2`
+- physical devices must use the real backend host/IP
 
 ## Android release
 
@@ -53,7 +93,7 @@ Then build:
 
 ```bash
 flutter build apk --release \
-  --dart-define=API_BASE_URL=http://192.168.1.20 \
+  --dart-define=API_BASE_URL=http://192.168.1.20:8080 \
   --obfuscate \
   --split-debug-info=build/symbols/android
 ```

@@ -58,3 +58,22 @@ That means:
 - Android LAN HTTP tests can target `http://192.168.x.x`
 
 Without changing code again.
+
+Important distinction:
+- `.env.web` is used for the web image build
+- mobile APK / IPA do not read `.env.web`
+- Android and iOS builds must pass `API_BASE_URL` explicitly with `--dart-define`
+
+Examples:
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=http://10.0.2.2:8080
+```
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=http://192.168.1.20:8080
+```
+
+```bash
+flutter build ipa --release --dart-define=API_BASE_URL=https://api.example.com
+```
