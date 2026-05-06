@@ -220,56 +220,54 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
     final systemProfiles = widget.profiles.where((p) => p.isSystem).toList();
     final customProfiles = widget.profiles.where((p) => !p.isSystem).toList();
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            loc.shiftProfile,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          ...systemProfiles.map((p) => _ProfileTile(profile: p, isSystem: true)),
-          const Divider(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                loc.customProfile,
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              IconButton.filled(
-                onPressed: _showCreateDialog,
-                icon: const Icon(Icons.add, size: 18),
-                tooltip: loc.createCustomProfile,
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          if (customProfiles.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                loc.noShiftsThisMonth,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.descriptionColor,
-                  fontSize: 13,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          loc.shiftProfile,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        ...systemProfiles.map((p) => _ProfileTile(profile: p, isSystem: true)),
+        const Divider(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              loc.customProfile,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            IconButton.filled(
+              onPressed: _showCreateDialog,
+              icon: const Icon(Icons.add, size: 18),
+              tooltip: loc.createCustomProfile,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        if (customProfiles.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              loc.noShiftsThisMonth,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.descriptionColor,
+                fontSize: 13,
               ),
             ),
-          ...customProfiles.map(
-            (p) => _ProfileTile(
-              profile: p,
-              isSystem: false,
-              isOwner: widget.isOwner,
-              onEdit: () => _showEditDialog(p),
-              onDelete: () => _confirmDelete(p),
-            ),
           ),
-        ],
-      ),
+        ...customProfiles.map(
+          (p) => _ProfileTile(
+            profile: p,
+            isSystem: false,
+            isOwner: widget.isOwner,
+            onEdit: () => _showEditDialog(p),
+            onDelete: () => _confirmDelete(p),
+          ),
+        ),
+      ],
     );
   }
 }

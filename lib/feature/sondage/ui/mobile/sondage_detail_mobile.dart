@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/domain/use_case/sondage_use_case.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
+import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
@@ -25,12 +26,16 @@ class SondageDetailMobile extends StatefulWidget {
 
 class _SondageDetailMobileState extends State<SondageDetailMobile> {
   late final SondageBloc _bloc;
+  late final TeamMemberUseCase _teamMemberUseCase;
   StreamSubscription<RealtimeNotification>? _subscription;
   SondageEntity? _lastSondage;
+  String? _loadedTeamId;
+  int? _teamMemberCount;
 
   @override
   void initState() {
     super.initState();
+    _teamMemberUseCase = getIt<TeamMemberUseCase>();
     _bloc = SondageBloc(
       sondageUseCase: getIt<SondageUseCase>(),
       sondageLocalDataSource: getIt(),
@@ -55,6 +60,27 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
     return '${value.day.toString().padLeft(2, '0')}/'
         '${value.month.toString().padLeft(2, '0')}/'
         '${value.year}';
+  }
+
+  Future<void> _ensureTeamMemberCountLoaded(SondageEntity sondage) async {
+    final teamId = sondage.teamId;
+    if (teamId == null || teamId.isEmpty || _loadedTeamId == teamId) {
+      return;
+    }
+
+    _loadedTeamId = teamId;
+    try {
+      final members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
+      if (!mounted) return;
+      setState(() {
+        _teamMemberCount = members.length;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _teamMemberCount = null;
+      });
+    }
   }
 
   @override
@@ -116,7 +142,18 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
             );
           }
 
+          _ensureTeamMemberCountLoaded(sondage);
+
           final sondageColor = sondage.color;
+          final teamMemberCount = _teamMemberCount;
+          final progressValue =
+              teamMemberCount != null && teamMemberCount > 0
+              ? (sondage.responses / teamMemberCount).clamp(0.0, 1.0)
+              : 0.0;
+          final progressLabel =
+              teamMemberCount != null && teamMemberCount > 0
+              ? '${sondage.responses} / $teamMemberCount ${localization.responses}'
+              : '${sondage.responses} ${localization.responses}';
 
           return Scaffold(
             backgroundColor: colorScheme.homePrimary,
@@ -233,11 +270,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: LinearProgressIndicator(
-                            value: sondage.options.isNotEmpty
-                                ? (sondage.responses /
-                                          (sondage.options.length * 10))
-                                      .clamp(0.0, 1.0)
-                                : 0,
+                            value: progressValue,
                             minHeight: 10,
                             backgroundColor: Colors.grey[300],
                             valueColor: AlwaysStoppedAnimation<Color>(
@@ -247,7 +280,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${sondage.responses} ${localization.responses}',
+                          progressLabel,
                           style: textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
                           ),

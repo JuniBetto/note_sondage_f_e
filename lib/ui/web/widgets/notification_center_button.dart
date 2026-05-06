@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
+import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class NotificationCenterButton extends StatelessWidget {
@@ -209,57 +210,88 @@ class _NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.homeSecondary,
+    final navigationLabel = canRespond ? null : NotificationNavigation.labelFor(item);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            item.title.isEmpty ? item.eventType : item.title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+        onTap: canRespond ? null : () => _handleOpen(context),
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.homeSecondary,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.12)),
           ),
-          if (item.body.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(item.body, style: theme.textTheme.bodyMedium),
-          ],
-          const SizedBox(height: 10),
-          Text(
-            item.occurredAt.toLocal().toString(),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.descriptionColor,
-            ),
-          ),
-          if (canRespond) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                OutlinedButton(
-                  onPressed: isProcessing ? null : onReject,
-                  child: const Text('Rifiuta'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.title.isEmpty ? item.eventType : item.title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(width: 10),
-                FilledButton(
-                  onPressed: isProcessing ? null : onAccept,
-                  child: isProcessing
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Accetta'),
-                ),
+              ),
+              if (item.body.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(item.body, style: theme.textTheme.bodyMedium),
               ],
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.occurredAt.toLocal().toString(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.descriptionColor,
+                      ),
+                    ),
+                  ),
+                  if (navigationLabel != null)
+                    Text(
+                      navigationLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.selectItem,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                ],
+              ),
+              if (canRespond) ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    OutlinedButton(
+                      onPressed: isProcessing ? null : onReject,
+                      child: const Text('Rifiuta'),
+                    ),
+                    const SizedBox(width: 10),
+                    FilledButton(
+                      onPressed: isProcessing ? null : onAccept,
+                      child: isProcessing
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Accetta'),
+                    ),
+                  ],
+                ),
+              ],],
             ),
-          ],
-        ],
-      ),
+          ),
+        ),
+      );
+
+  }
+
+  Future<void> _handleOpen(BuildContext context) async {
+    context.read<NotificationCenterCubit>().markAsSeen(item.notificationId);
+    await NotificationNavigation.open(
+      item,
+      context: context,
+      closeOverlays: true,
     );
   }
 }

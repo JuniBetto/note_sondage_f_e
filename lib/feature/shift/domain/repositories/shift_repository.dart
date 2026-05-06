@@ -56,6 +56,7 @@ abstract class ShiftRepository {
     List<int>? alarmOffsets,
     bool isPublic = false,
     String? teamId,
+    String? targetUserId,
   });
 
   Future<void> deleteAssignment(String assignmentId);

@@ -18,25 +18,35 @@ samples, guidance on mobile development, and a full API reference.
 ## Runtime configuration
 
 This frontend uses `API_BASE_URL` through `--dart-define`.
+If you want registration emails to land on the app confirmation page, also pass
+`EMAIL_CONFIRMATION_URL`.
 
 Important:
-- web container builds use `.env.web`
+- web container builds read `.env.web` during the image build
 - mobile builds do not read `.env.web`
 - Android / iOS release builds must pass the backend target explicitly
+- email confirmation links should point to `/confirm-registration`
 
 Examples:
 
 ```bash
-flutter build apk --release --dart-define=API_BASE_URL=http://10.0.2.2:8080
+flutter build apk --release \
+  --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
+  --dart-define=EMAIL_CONFIRMATION_URL=http://10.0.2.2:8088/confirm-registration
 ```
 
 ```bash
-flutter build apk --release --dart-define=API_BASE_URL=http://192.168.1.20:8080
+flutter build apk --release \
+  --dart-define=API_BASE_URL=http://192.168.1.20:8080 \
+  --dart-define=EMAIL_CONFIRMATION_URL=http://192.168.1.20:8088/confirm-registration
 ```
 
 ```bash
-flutter build ipa --release --dart-define=API_BASE_URL=https://api.example.com
+flutter build ipa --release \
+  --dart-define=API_BASE_URL=https://api.example.com \
+  --dart-define=EMAIL_CONFIRMATION_URL=https://app.example.com/confirm-registration
 ```
 
 See also:
 - [MOBILE_BUILD_MODES.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/MOBILE_BUILD_MODES.md)
+- [SHIFT_CREATE_MODAL.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/SHIFT_CREATE_MODAL.md)

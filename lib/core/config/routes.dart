@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
+import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
+import 'package:note_sondage/feature/shift/ui/mobile/shift_mobile_page.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/sondage_detail_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/web/sondage_detail_web.dart';
@@ -29,6 +32,7 @@ import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_web.dart';
 import 'package:note_sondage/ui/app_keys.dart';
 import 'package:note_sondage/ui/widgets/about_page.dart';
+import 'package:note_sondage/ui/widgets/auth/confirm_registration_page.dart';
 import 'package:note_sondage/ui/widgets/splash_screen/splash_sreen_begin.dart';
 
 //String currentAppPath = RouterPaths.splashScreen;
@@ -236,6 +240,16 @@ GoRouter createRouter(BuildContext context) {
               const NoTransitionPage<void>(child: SondageMobile()),
         ),
         GoRoute(
+          path: RouterPaths.shifts,
+          name: RouterPaths.shifts,
+          pageBuilder: (context, state) => NoTransitionPage<void>(
+            child: BlocProvider<ShiftBloc>.value(
+              value: GetIt.instance<ShiftBloc>(),
+              child: const ShiftMobilePage(),
+            ),
+          ),
+        ),
+        GoRoute(
           path: RouterPaths.rolePage,
           name: RouterPaths.rolePage,
           pageBuilder: (context, state) {
@@ -325,6 +339,15 @@ GoRouter createRouter(BuildContext context) {
             const NoTransitionPage<void>(child: AboutPage()),
       ),
       GoRoute(
+        path: RouterPaths.confirmRegistration,
+        name: RouterPaths.confirmRegistration,
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          child: ConfirmRegistrationPage(
+            queryParameters: state.uri.queryParameters,
+          ),
+        ),
+      ),
+      GoRoute(
         path: RouterPaths.splashScreen,
         name: RouterPaths.splashScreen,
         pageBuilder: (context, state) =>
@@ -332,8 +355,10 @@ GoRouter createRouter(BuildContext context) {
       ),
       GoRoute(
         path: RouterPaths.login,
-        pageBuilder: (context, state) => const NoTransitionPage<void>(
-          child: kIsWeb ? LoginWeb() : LoginMobile(),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          child: kIsWeb
+              ? LoginWeb(queryParameters: state.uri.queryParameters)
+              : LoginMobile(queryParameters: state.uri.queryParameters),
         ),
       ),
     ],
@@ -344,7 +369,8 @@ GoRouter createRouter(BuildContext context) {
       final isPublicRoute =
           currentPath == RouterPaths.login ||
           currentPath == RouterPaths.splashScreen ||
-          currentPath == RouterPaths.forgotPassword;
+          currentPath == RouterPaths.forgotPassword ||
+          currentPath == RouterPaths.confirmRegistration;
 
       // 0. Operazione in corso (login/register/SSO): non toccare la rotta
       if (authBloc.state.status == AuthStatus.loading) {
@@ -397,6 +423,7 @@ abstract class RouterPaths {
   static const home = '/';
   static const login = '/login';
   static const about = '/about';
+  static const confirmRegistration = '/confirm-registration';
   static const team = '/team';
   static const forgotPassword = '/forgot_password';
   static const splashScreen = '/splash_screen';

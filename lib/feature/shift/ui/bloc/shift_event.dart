@@ -131,6 +131,8 @@ class UpdateShiftAssignmentEvent extends ShiftEvent {
   final List<int>? alarmOffsets;
   final bool isPublic;
   final String? teamId;
+  /// Firebase UID of the new target user. Null = keep the existing owner.
+  final String? targetUserId;
 
   UpdateShiftAssignmentEvent({
     required this.assignmentId,
@@ -142,10 +144,11 @@ class UpdateShiftAssignmentEvent extends ShiftEvent {
     this.alarmOffsets,
     this.isPublic = false,
     this.teamId,
+    this.targetUserId,
   });
 
   @override
-  List<Object?> get props => [assignmentId, isPublic, teamId];
+  List<Object?> get props => [assignmentId, isPublic, teamId, targetUserId];
 }
 
 class DeleteShiftAssignmentEvent extends ShiftEvent {

@@ -2,9 +2,6 @@ FROM ghcr.io/cirruslabs/flutter:stable AS build
 
 WORKDIR /app
 
-ARG API_BASE_URL
-ARG SENTRY_DSN
-
 COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
@@ -13,10 +10,16 @@ COPY lib ./lib
 COPY web ./web
 COPY l10n.yaml ./
 COPY analysis_options.yaml ./
+COPY .env.web ./.env.web
 
-RUN flutter build web --release \
-    --dart-define=API_BASE_URL=${API_BASE_URL} \
-    --dart-define=SENTRY_DSN=${SENTRY_DSN}
+RUN test -f ./.env.web \
+    && set -a \
+    && . ./.env.web \
+    && set +a \
+    && flutter build web --release \
+      --dart-define=API_BASE_URL="${API_BASE_URL}" \
+      --dart-define=EMAIL_CONFIRMATION_URL="${EMAIL_CONFIRMATION_URL}" \
+      --dart-define=SENTRY_DSN="${SENTRY_DSN}"
 
 FROM docker.io/library/nginx:1.27-alpine
 

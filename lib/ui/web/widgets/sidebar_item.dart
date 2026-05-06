@@ -11,6 +11,7 @@ import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_event.dart';
 import 'package:note_sondage/ui/web/settings/settings_web.dart';
+import 'package:note_sondage/ui/widgets/logout_confirmation_dialog.dart';
 
 class SidebarItem extends StatelessWidget {
   final bool isSettings;
@@ -72,11 +73,15 @@ class SidebarItem extends StatelessWidget {
 
   void _onTapSettings(BuildContext context, int index) {
     if (index == 4) {
-      getIt<TeamBloc>().add(const ResetTeamCacheEvent());
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      context.read<AuthBloc>().add(const AuthLogoutRequested());
+      () async {
+        final confirmed = await showLogoutConfirmationDialog(context);
+        if (!confirmed || !context.mounted) return;
+        getIt<TeamBloc>().add(const ResetTeamCacheEvent());
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        context.read<AuthBloc>().add(const AuthLogoutRequested());
+      }();
       return;
     }
 

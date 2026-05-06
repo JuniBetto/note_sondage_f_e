@@ -4,7 +4,8 @@ class SsoLogin extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isLoading;
   final double? width;
-  final String assetPath;
+  final String? assetPath;
+  final IconData? iconData;
   final String buttonText;
 
   const SsoLogin({
@@ -13,6 +14,7 @@ class SsoLogin extends StatelessWidget {
     this.isLoading = false,
     this.width,
     this.assetPath = 'assets/images/logo.png',
+    this.iconData,
     this.buttonText = 'Continue with Google',
   });
 
@@ -44,15 +46,17 @@ class SsoLogin extends StatelessWidget {
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Icona Google con dimensioni precise
-                  SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: Image.asset(assetPath, fit: BoxFit.contain),
-                  ),
+                  if (assetPath != null)
+                    SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: Image.asset(assetPath!, fit: BoxFit.contain),
+                    )
+                  else if (iconData != null)
+                    Icon(iconData, size: 18, color: const Color(0xFF3C4043)),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Continue with Google',
+                  Text(
+                    buttonText,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,

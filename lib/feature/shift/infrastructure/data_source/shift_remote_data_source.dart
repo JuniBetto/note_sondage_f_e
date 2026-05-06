@@ -140,6 +140,7 @@ class ShiftRemoteDataSource {
     List<int>? alarmOffsets,
     bool isPublic = false,
     String? teamId,
+    String? targetUserId,
   }) async {
     final response = await _dio.put(
       '/api/aggregate/shift/assignments/$assignmentId',
@@ -153,6 +154,7 @@ class ShiftRemoteDataSource {
         alarmOffsets: alarmOffsets,
         isPublic: isPublic,
         teamId: teamId,
+        targetFirebaseUid: targetUserId,
       ),
     );
     return ShiftMapper.assignmentFromJson(

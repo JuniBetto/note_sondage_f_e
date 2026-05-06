@@ -13,6 +13,7 @@ import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 import 'package:note_sondage/ui/web/widgets/full_sidebar.dart';
 import 'package:note_sondage/ui/web/widgets/home/left_home_section.dart';
 import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
+import 'package:note_sondage/ui/widgets/auth/contact_email_setup_card.dart';
 import 'package:note_sondage/ui/widgets/authenticated_user_summary_card.dart';
 
 class SettingsWeb extends StatelessWidget {
@@ -37,6 +38,8 @@ class SettingsWeb extends StatelessWidget {
       child: Column(
         children: [
           const AuthenticatedUserSummaryCard(),
+          const SizedBox(height: 12),
+          const ContactEmailSetupCard(compact: true),
           const SizedBox(height: 16),
           Expanded(
             child: FullSidebar(

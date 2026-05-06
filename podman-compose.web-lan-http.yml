@@ -3,9 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
-      args:
-        API_BASE_URL: ${API_BASE_URL}
-        SENTRY_DSN: ${SENTRY_DSN}
     container_name: note_sondage_web
     env_file:
       - .env.web

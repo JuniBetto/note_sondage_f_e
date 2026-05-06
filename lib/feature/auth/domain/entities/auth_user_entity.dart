@@ -63,6 +63,7 @@ class AuthUserEntity extends Equatable {
 enum AuthProvider {
   email('EMAIL'),
   google('GOOGLE'),
+  phone('PHONE'),
   apple('APPLE'),
   anonymous('ANONYMOUS');
 

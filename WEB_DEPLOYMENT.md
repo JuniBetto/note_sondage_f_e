@@ -8,9 +8,10 @@ For the available modes, see:
 The web image now builds Flutter inside Podman.
 
 So on the server you do **not** need a local `flutter` installation.
-The values from `.env.web` are passed to the build as:
+The Flutter build reads `.env.web` directly inside the image build and uses:
 
 - `API_BASE_URL`
+- `EMAIL_CONFIRMATION_URL`
 - `SENTRY_DSN`
 
 Before going live, also verify:

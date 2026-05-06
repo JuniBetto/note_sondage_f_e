@@ -79,3 +79,12 @@ final class AuthLogoutRequested extends AuthEvent {
 final class AuthReloadRequested extends AuthEvent {
   const AuthReloadRequested();
 }
+
+final class AuthProfileEmailUpdated extends AuthEvent {
+  final String email;
+
+  const AuthProfileEmailUpdated(this.email);
+
+  @override
+  List<Object?> get props => [email];
+}

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
@@ -12,6 +10,8 @@ import 'package:note_sondage/ui/mobile/widgets/settings/widgets/change_theme.dar
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/contact_us_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/notification_settings_mobile.dart';
 import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
+import 'package:note_sondage/ui/widgets/auth/contact_email_setup_card.dart';
+import 'package:note_sondage/ui/widgets/logout_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
@@ -270,15 +270,22 @@ class SettingsMobile extends StatelessWidget {
                   iconColor: colorScheme.deleteCard!,
                   title: localization.logout,
                   subtitle: '',
-                  onTap: () {
+                  onTap: () async {
+                    final confirmed = await showLogoutConfirmationDialog(
+                      context,
+                    );
+                    if (!confirmed || !context.mounted) return;
                     getIt<TeamBloc>().add(const ResetTeamCacheEvent());
                     context.read<AuthBloc>().add(const AuthLogoutRequested());
-                    context.go(RouterPaths.login);
                   },
                   showDivider: false,
                   isDestructive: true,
                 ),
               ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: ContactEmailSetupCard(),
             ),
 
             const SizedBox(height: 32),

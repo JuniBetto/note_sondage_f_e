@@ -5,7 +5,6 @@
 .vscode/
 test/
 *.log
-.env.web
 nginx/certs/
 letsencrypt/
 certbot-www/

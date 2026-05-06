@@ -235,6 +235,12 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         _selectedTeam = widget.ownerTeams
             .where((team) => team.team.id == ex.teamId)
             .firstOrNull;
+        // Pre-select the existing target member so an admin can see and
+        // optionally change it when editing a team-scoped shift.
+        if (ex.userId.isNotEmpty) {
+          _assignToAllMembers = false;
+          _selectedMemberIds.add(ex.userId);
+        }
         unawaited(_ensureTeamMembersLoaded(_selectedTeam));
       }
     } else {
@@ -381,6 +387,14 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                           ),
                         ),
                       ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                      tooltip: 'Chiudi',
+                      onPressed: () => Navigator.of(context).pop(null),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -401,7 +415,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Turno pubblico – solo il team owner può modificarlo',
+                        'Turno pubblico – solo owner, admin o ruoli con permessi Admin/Manage possono modificarlo',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: appPrimary,
                         ),
@@ -533,8 +547,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
               ),
               maxLines: 2,
             ),
-            // ── Team assignment (owner only, creation only) ───────────────
-            if (_hasOwnerTeams && widget.existing == null) ...[
+            // ── Team assignment (managers: create + edit of public shifts) ──
+            if (_hasOwnerTeams && (widget.existing == null || (widget.canManagePublicShifts && widget.existing!.isPublic))) ...[
               const SizedBox(height: 12),
               _TeamAssignmentSection(
                 ownerTeams: widget.ownerTeams,

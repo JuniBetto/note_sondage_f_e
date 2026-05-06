@@ -26,6 +26,8 @@ class AuthMapper {
     switch (providerId) {
       case 'google.com':
         return AuthProvider.google;
+      case 'phone':
+        return AuthProvider.phone;
       case 'apple.com':
         return AuthProvider.apple;
       case 'password':

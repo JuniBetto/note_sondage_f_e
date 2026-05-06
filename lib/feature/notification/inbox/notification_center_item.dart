@@ -92,6 +92,24 @@ class NotificationCenterItem extends Equatable {
     return value;
   }
 
+  bool get isPendingTeamInvitation => eventType == 'TEAM_MEMBER_INVITED';
+
+  bool get isTerminalTeamInvitationEvent =>
+      eventType == 'TEAM_INVITATION_CANCELLED' ||
+      eventType == 'TEAM_INVITATION_REJECTED' ||
+      (eventType == 'TEAM_MEMBER_JOINED' && invitationId != null);
+
+  bool hidesTeamDetailFor(String currentUserId) {
+    final invitedUserId = metadata['invitedUserId']?.trim() ?? '';
+    if (currentUserId.isEmpty || invitedUserId.isEmpty) {
+      return false;
+    }
+    if (invitedUserId != currentUserId) {
+      return false;
+    }
+    return isPendingTeamInvitation || isTerminalTeamInvitationEvent;
+  }
+
   bool supportsInviteDecisionFor(String currentUserId) {
     return eventType == 'TEAM_MEMBER_INVITED' &&
         invitationId != null &&

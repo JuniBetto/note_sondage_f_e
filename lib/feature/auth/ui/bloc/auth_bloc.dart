@@ -27,6 +27,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthPasswordResetRequested>(_onPasswordReset);
     on<AuthLogoutRequested>(_onLogout);
     on<AuthReloadRequested>(_onReload);
+    on<AuthProfileEmailUpdated>(_onProfileEmailUpdated);
 
     // Ascolta i cambiamenti di stato auth da Firebase
     _authSubscription = _authUseCase.authStateChanges.listen(
@@ -74,7 +75,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         profileImageBytes: event.profileImageBytes,
         profileImageFileName: event.profileImageFileName,
       );
-      // Lo stream _authSubscription aggiornerà lo stato automaticamente
+      emit(AuthState.verificationEmailSent(event.email));
     } catch (e) {
       emit(AuthState.error(e.toString()));
     }
@@ -138,6 +139,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Errore di rete: non disconnettere l'utente, mantenere lo stato attuale.
       // Firebase Auth ha i token cached, l'utente può continuare offline.
     }
+  }
+
+  void _onProfileEmailUpdated(
+    AuthProfileEmailUpdated event,
+    Emitter<AuthState> emit,
+  ) {
+    if (state.status != AuthStatus.authenticated) return;
+    emit(AuthState.authenticated(state.user.copyWith(email: event.email)));
   }
 
   @override

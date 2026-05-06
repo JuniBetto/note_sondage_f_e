@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/network/token_service.dart';
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
+import 'package:note_sondage/feature/auth/domain/entities/phone_sign_in_start_result.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/auth_mapper.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Implementazione concreta di [AuthRepository] con Firebase Auth.
 ///
@@ -18,9 +22,16 @@ import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_
 /// - Stream di stato auth (per GoRouter refresh)
 /// - Reload utente (per background → foreground)
 class FirebaseAuthRepositoryImpl implements AuthRepository {
+  static const _pendingAvatarUidKey = 'pending_registration_avatar_uid';
+  static const _pendingAvatarBytesKey = 'pending_registration_avatar_bytes';
+  static const _pendingAvatarFileNameKey =
+      'pending_registration_avatar_file_name';
+  static const _webPhoneSessionPrefix = 'web-phone:';
+
   final firebase.FirebaseAuth _firebaseAuth;
   final BackendAuthDataSource _backendAuth;
   final TokenService _tokenService;
+  final Map<String, firebase.ConfirmationResult> _webPhoneSessions = {};
   Future<void>? _backendExchangeInFlight;
   String? _backendExchangeUid;
   DateTime? _lastSuccessfulExchangeAt;
@@ -35,9 +46,12 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
        _tokenService = tokenService ?? TokenService();
 
   /// Scambia il Firebase ID Token con un JWT del backend.
-  /// Non lancia eccezioni: se lo scambio fallisce, logga e continua.
-  /// L'utente resta autenticato con Firebase, il JWT verrà ritentato.
-  Future<void> _exchangeTokenWithBackend(firebase.User user) async {
+  /// Di default non lancia eccezioni: se lo scambio fallisce, logga e continua.
+  /// Quando [propagateErrors] è true, il login corrente fallisce in modo esplicito.
+  Future<void> _exchangeTokenWithBackend(
+    firebase.User user, {
+    bool propagateErrors = false,
+  }) async {
     final uid = user.uid;
     final now = DateTime.now();
 
@@ -66,8 +80,12 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         }
       } catch (e) {
         debugPrint('[Auth] Scambio token con backend fallito: $e');
-        // Non blocchiamo il login: l'utente è comunque autenticato con Firebase.
-        // Il token verrà ritentato dall'AuthInterceptor al prossimo 401.
+        if (propagateErrors) {
+          await signOut();
+          throw _mapBackendExchangeError(e);
+        }
+        // Non blocchiamo il recupero background della sessione: il token verrà
+        // ritentato dall'AuthInterceptor al prossimo 401.
       } finally {
         if (identical(_backendExchangeInFlight, exchangeFuture)) {
           _backendExchangeInFlight = null;
@@ -123,12 +141,18 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         password: password,
       );
 
-      // Scambia il Firebase token con il backend per ottenere il JWT interno
-      if (credential.user != null) {
-        await _exchangeTokenWithBackend(credential.user!);
+      await credential.user?.reload();
+      final currentUser = _firebaseAuth.currentUser ?? credential.user;
+      if (currentUser != null) {
+        await _exchangeTokenWithBackend(currentUser, propagateErrors: true);
+        await _syncBackendProfile(
+          currentUser: currentUser,
+          displayName: currentUser.displayName,
+        );
+        await _syncPendingRegistrationProfile(currentUser);
       }
 
-      return AuthMapper.fromFirebaseUser(credential.user);
+      return AuthMapper.fromFirebaseUser(currentUser);
     } on firebase.FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
     }
@@ -154,19 +178,19 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         await credential.user!.reload();
       }
 
-      // Scambia il Firebase token con il backend per ottenere il JWT interno
       final currentUser = _firebaseAuth.currentUser;
       if (currentUser != null) {
-        await _exchangeTokenWithBackend(currentUser);
-        await _syncBackendProfile(
-          currentUser: currentUser,
-          displayName: displayName,
+        await _sendEmailVerification(currentUser);
+        await _cachePendingRegistrationProfile(
+          firebaseUid: currentUser.uid,
           profileImageBytes: profileImageBytes,
           profileImageFileName: profileImageFileName,
         );
       }
 
-      return AuthMapper.fromFirebaseUser(_firebaseAuth.currentUser);
+      final registeredUser = AuthMapper.fromFirebaseUser(currentUser);
+      await signOut();
+      return registeredUser;
     } on firebase.FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
     }
@@ -193,7 +217,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
       // Scambia il Firebase token con il backend per ottenere il JWT interno
       if (userCredential.user != null) {
-        await _exchangeTokenWithBackend(userCredential.user!);
+        await _exchangeTokenWithBackend(
+          userCredential.user!,
+          propagateErrors: true,
+        );
+        await _syncBackendProfile(
+          currentUser: userCredential.user!,
+          displayName: userCredential.user!.displayName,
+        );
       }
 
       return AuthMapper.fromFirebaseUser(userCredential.user);
@@ -216,6 +247,139 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<PhoneSignInStartResult> startPhoneSignIn({
+    required String phoneNumber,
+  }) async {
+    final normalizedPhone = phoneNumber.trim();
+    if (normalizedPhone.isEmpty) {
+      throw const AuthException(
+        code: 'invalid-phone-number',
+        message: 'Please enter a valid phone number.',
+      );
+    }
+
+    if (kIsWeb) {
+      try {
+        final confirmation = await _firebaseAuth.signInWithPhoneNumber(
+          normalizedPhone,
+        );
+        final sessionId = '$_webPhoneSessionPrefix${confirmation.verificationId}';
+        _webPhoneSessions[sessionId] = confirmation;
+        return PhoneSignInStartResult.codeSent(sessionId);
+      } on firebase.FirebaseAuthException catch (e) {
+        throw _mapFirebaseAuthException(e);
+      }
+    }
+
+    final completer = Completer<PhoneSignInStartResult>();
+    try {
+      await _firebaseAuth.verifyPhoneNumber(
+        phoneNumber: normalizedPhone,
+        verificationCompleted: (credential) async {
+          if (completer.isCompleted) return;
+          try {
+            final userCredential = await _firebaseAuth.signInWithCredential(
+              credential,
+            );
+            if (userCredential.user != null) {
+              await _exchangeTokenWithBackend(
+                userCredential.user!,
+                propagateErrors: true,
+              );
+              completer.complete(
+                PhoneSignInStartResult.completed(
+                  AuthMapper.fromFirebaseUser(userCredential.user),
+                ),
+              );
+            } else {
+              completer.completeError(
+                const AuthException(
+                  code: 'phone-sign-in-failed',
+                  message: 'Phone sign-in did not return a valid user.',
+                ),
+              );
+            }
+          } catch (e) {
+            completer.completeError(e);
+          }
+        },
+        verificationFailed: (error) {
+          if (!completer.isCompleted) {
+            completer.completeError(_mapFirebaseAuthException(error));
+          }
+        },
+        codeSent: (verificationId, _) {
+          if (!completer.isCompleted) {
+            completer.complete(PhoneSignInStartResult.codeSent(verificationId));
+          }
+        },
+        codeAutoRetrievalTimeout: (_) {
+          if (!completer.isCompleted) {
+            completer.completeError(
+              const AuthException(
+                code: 'phone-code-timeout',
+                message:
+                    'The verification code request timed out. Please try again.',
+              ),
+            );
+          }
+        },
+      );
+      return await completer.future;
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  @override
+  Future<AuthUserEntity> confirmPhoneSignIn({
+    required String sessionId,
+    required String smsCode,
+  }) async {
+    final normalizedCode = smsCode.trim();
+    if (normalizedCode.isEmpty) {
+      throw const AuthException(
+        code: 'missing-sms-code',
+        message: 'Please enter the verification code you received.',
+      );
+    }
+
+    try {
+      firebase.UserCredential userCredential;
+      if (sessionId.startsWith(_webPhoneSessionPrefix)) {
+        final confirmation = _webPhoneSessions.remove(sessionId);
+        if (confirmation == null) {
+          throw const AuthException(
+            code: 'phone-session-expired',
+            message:
+                'This phone verification session has expired. Please request a new code.',
+          );
+        }
+        userCredential = await confirmation.confirm(normalizedCode);
+      } else {
+        final credential = firebase.PhoneAuthProvider.credential(
+          verificationId: sessionId,
+          smsCode: normalizedCode,
+        );
+        userCredential = await _firebaseAuth.signInWithCredential(credential);
+      }
+
+      final user = userCredential.user;
+      if (user == null) {
+        throw const AuthException(
+          code: 'phone-sign-in-failed',
+          message: 'Phone sign-in did not return a valid user.',
+        );
+      }
+
+      await _exchangeTokenWithBackend(user, propagateErrors: true);
+      return AuthMapper.fromFirebaseUser(user);
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  @override
   Future<void> sendPasswordResetEmail({required String email}) async {
     try {
       await _backendAuth.requestPasswordReset(email);
@@ -223,6 +387,24 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     } on firebase.FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
     }
+  }
+
+  @override
+  Future<void> updateContactEmail({required String email}) async {
+    await _backendAuth.updateContactEmail(email);
+    await refreshBackendSession();
+  }
+
+  @override
+  Future<void> refreshBackendSession() async {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw const AuthException(
+        code: 'not-authenticated',
+        message: 'You need to be signed in to refresh the session.',
+      );
+    }
+    await _exchangeTokenWithBackend(currentUser, propagateErrors: true);
   }
 
   @override
@@ -282,6 +464,26 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           code: 'invalid-email',
           message: 'The email address is invalid.',
         );
+      case 'invalid-phone-number':
+        return const AuthException(
+          code: 'invalid-phone-number',
+          message: 'The phone number format is invalid.',
+        );
+      case 'invalid-verification-code':
+        return const AuthException(
+          code: 'invalid-verification-code',
+          message: 'The verification code is incorrect.',
+        );
+      case 'invalid-verification-id':
+        return const AuthException(
+          code: 'invalid-verification-id',
+          message: 'The phone verification session is no longer valid.',
+        );
+      case 'session-expired':
+        return const AuthException(
+          code: 'session-expired',
+          message: 'The verification code has expired. Please request a new one.',
+        );
       case 'user-disabled':
         return const AuthException(
           code: 'user-disabled',
@@ -303,6 +505,82 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           message: e.message ?? 'An authentication error occurred.',
         );
     }
+  }
+
+  Future<void> _sendEmailVerification(firebase.User user) async {
+    final targetUrl = _buildEmailConfirmationUrl();
+    if (targetUrl == null) {
+      await user.sendEmailVerification();
+      return;
+    }
+
+    await user.sendEmailVerification(
+      firebase.ActionCodeSettings(url: targetUrl, handleCodeInApp: false),
+    );
+  }
+
+  String? _buildEmailConfirmationUrl() {
+    if (RuntimeConfig.hasCustomEmailConfirmationUrl) {
+      return RuntimeConfig.resolvedEmailConfirmationUrl;
+    }
+
+    if (kIsWeb) {
+      return '${Uri.base.origin}/confirm-registration';
+    }
+
+    return null;
+  }
+
+  Future<void> _cachePendingRegistrationProfile({
+    required String firebaseUid,
+    List<int>? profileImageBytes,
+    String? profileImageFileName,
+  }) async {
+    if (profileImageBytes == null || profileImageBytes.isEmpty) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pendingAvatarUidKey, firebaseUid);
+    await prefs.setString(
+      _pendingAvatarBytesKey,
+      base64Encode(profileImageBytes),
+    );
+    await prefs.setString(
+      _pendingAvatarFileNameKey,
+      profileImageFileName ?? 'profile.jpg',
+    );
+  }
+
+  Future<void> _syncPendingRegistrationProfile(firebase.User currentUser) async {
+    final prefs = await SharedPreferences.getInstance();
+    final pendingUid = prefs.getString(_pendingAvatarUidKey);
+    final pendingBytes = prefs.getString(_pendingAvatarBytesKey);
+
+    if (pendingUid != currentUser.uid ||
+        pendingBytes == null ||
+        pendingBytes.isEmpty) {
+      return;
+    }
+
+    try {
+      await _syncBackendProfile(
+        currentUser: currentUser,
+        profileImageBytes: base64Decode(pendingBytes),
+        profileImageFileName:
+            prefs.getString(_pendingAvatarFileNameKey) ?? 'profile.jpg',
+      );
+      await _clearPendingRegistrationProfile();
+    } catch (e) {
+      debugPrint('[Auth] Pending avatar sync failed: $e');
+    }
+  }
+
+  Future<void> _clearPendingRegistrationProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_pendingAvatarUidKey);
+    await prefs.remove(_pendingAvatarBytesKey);
+    await prefs.remove(_pendingAvatarFileNameKey);
   }
 
   Future<void> _syncBackendProfile({
@@ -337,6 +615,22 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       debugPrint('[Auth] Profile sync after registration failed: $e');
     }
   }
+
+  AuthException _mapBackendExchangeError(Object error) {
+    final message = error.toString();
+    final lowered = message.toLowerCase();
+    if (lowered.contains('403') && lowered.contains('email not verified')) {
+      return const AuthException(
+        code: 'email-not-verified',
+        message: 'Please verify your email address before logging in.',
+      );
+    }
+
+    return const AuthException(
+      code: 'backend-auth-failed',
+      message: 'Unable to complete sign-in right now. Please try again.',
+    );
+  }
 }
 
 /// Eccezione personalizzata per errori di autenticazione.
@@ -347,5 +641,5 @@ class AuthException implements Exception {
   const AuthException({required this.code, required this.message});
 
   @override
-  String toString() => 'AuthException($code): $message';
+  String toString() => message;
 }

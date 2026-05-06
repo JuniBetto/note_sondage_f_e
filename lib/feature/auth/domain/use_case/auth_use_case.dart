@@ -1,4 +1,5 @@
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
+import 'package:note_sondage/feature/auth/domain/entities/phone_sign_in_start_result.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 
 /// Caso d'uso per le operazioni di autenticazione.
@@ -59,10 +60,50 @@ class AuthUseCase {
     }
   }
 
+  Future<PhoneSignInStartResult> startPhoneSignIn({
+    required String phoneNumber,
+  }) async {
+    try {
+      return await _repository.startPhoneSignIn(phoneNumber: phoneNumber);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<AuthUserEntity> confirmPhoneSignIn({
+    required String sessionId,
+    required String smsCode,
+  }) async {
+    try {
+      return await _repository.confirmPhoneSignIn(
+        sessionId: sessionId,
+        smsCode: smsCode,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Invio email reset password.
   Future<void> sendPasswordResetEmail({required String email}) async {
     try {
       return await _repository.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateContactEmail({required String email}) async {
+    try {
+      return await _repository.updateContactEmail(email: email);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> refreshBackendSession() async {
+    try {
+      return await _repository.refreshBackendSession();
     } catch (e) {
       rethrow;
     }

@@ -8,13 +8,16 @@ import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/ui/widgets/auth/phone_sign_in_dialog.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/sso_login.dart';
 
 class AuthTabLogin extends StatefulWidget {
-  const AuthTabLogin({super.key});
+  final Map<String, String>? queryParameters;
+
+  const AuthTabLogin({super.key, this.queryParameters});
 
   @override
   State<AuthTabLogin> createState() => _AuthTabLoginState();
@@ -45,10 +48,27 @@ class _AuthTabLoginState extends State<AuthTabLogin>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: _shouldStartOnRegister ? 1 : 0,
+    );
 
     // AGGIUNGI QUESTO LISTENER per aggiornare la UI
     _tabController.addListener(_handleTabSelection);
+  }
+
+  bool get _shouldStartOnRegister {
+    final queryParameters = widget.queryParameters;
+    if (queryParameters == null || queryParameters.isEmpty) {
+      return false;
+    }
+
+    final mode = queryParameters['mode']?.trim().toLowerCase();
+    final tab = queryParameters['tab']?.trim().toLowerCase();
+    return mode == 'register' ||
+        tab == 'register' ||
+        queryParameters.containsKey('inviteToken');
   }
 
   void _handleTabSelection() {
@@ -110,10 +130,46 @@ class _AuthTabLoginState extends State<AuthTabLogin>
     });
   }
 
+  Future<void> _startPhoneSignIn() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => const PhoneSignInDialog(),
+    );
+
+    if (!mounted || result != true) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Phone sign-in completed successfully.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        if (state.verificationEmailSent) {
+          _tabController.animateTo(0);
+          _registerPasswordController.clear();
+          _registerConfirmPasswordController.clear();
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Ti abbiamo inviato una mail di conferma a '
+                  '${state.verificationEmail ?? _registerEmailController.text.trim()}. '
+                  'Apri il link ricevuto e poi accedi.',
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          return;
+        }
+
         if (state.errorMessage != null) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
@@ -254,6 +310,15 @@ class _AuthTabLoginState extends State<AuthTabLogin>
               onPressed: () {
                 context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
               },
+              buttonText: 'Continue with Google',
+            ),
+            const SizedBox(height: 12),
+            SsoLogin(
+              key: const ValueKey("phone_sso_login_button"),
+              onPressed: _startPhoneSignIn,
+              assetPath: null,
+              iconData: Icons.phone_iphone_rounded,
+              buttonText: 'Continue with Phone',
             ),
           ],
         ),
@@ -363,6 +428,15 @@ class _AuthTabLoginState extends State<AuthTabLogin>
               onPressed: () {
                 context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
               },
+              buttonText: 'Continue with Google',
+            ),
+            const SizedBox(height: 12),
+            SsoLogin(
+              key: const ValueKey("phone_sso_register_button"),
+              onPressed: _startPhoneSignIn,
+              assetPath: null,
+              iconData: Icons.phone_iphone_rounded,
+              buttonText: 'Continue with Phone',
             ),
           ],
         ),

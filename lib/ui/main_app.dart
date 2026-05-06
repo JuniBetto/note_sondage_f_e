@@ -23,6 +23,7 @@ import 'package:note_sondage/feature/notification/realtime/sondage_realtime_coor
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/shift/notification/shift_alarm_scheduler.dart';
+import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
@@ -140,6 +141,16 @@ class _MainAppState extends State<MainApp> {
     }
     if (shiftDecision.refreshCalendar) {
       getIt<DashboardBloc>().add(RefreshDashboardEvent());
+      // Se il ShiftBloc ha già caricato un range, ricaricalo con lo stesso
+      // range così il calendario viene aggiornato anche se l'utente non è
+      // sulla pagina shift in quel momento.
+      final shiftState = getIt<ShiftBloc>().state;
+      if (shiftState is ShiftAssignmentsLoaded) {
+        final now = DateTime.now();
+        final first = DateTime(now.year, now.month, 1);
+        final last = DateTime(now.year, now.month + 1, 0);
+        getIt<ShiftBloc>().add(LoadShiftAssignmentsEvent(from: first, to: last));
+      }
     }
     if (shiftDecision.showAlarmBanner) {
       getIt<LocalNotificationService>().showShiftAlarmNotification(

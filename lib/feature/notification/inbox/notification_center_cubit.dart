@@ -25,14 +25,19 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
 
     emit(state.copyWith(status: NotificationCenterStatus.loading));
     try {
-      final notifications = (await _backendAuth.getMyNotifications())
-          .where((item) => !_isRealtimeOnlyMetadata(item.metadata))
-          .toList();
+      final notifications = _normalizeNotifications(
+        (await _backendAuth.getMyNotifications())
+            .where((item) => !_isRealtimeOnlyMetadata(item.metadata))
+            .toList(),
+      ).where(
+        (item) => !state.dismissedNotificationIds.contains(item.notificationId),
+      ).toList();
       emit(
         state.copyWith(
           status: NotificationCenterStatus.loaded,
           notifications: notifications,
           seenNotificationIds: state.seenNotificationIds,
+          dismissedNotificationIds: state.dismissedNotificationIds,
           completedActionNotificationIds: state.completedActionNotificationIds,
           errorMessage: null,
         ),
@@ -55,14 +60,29 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     }
 
     final item = NotificationCenterItem.fromRealtime(notification);
+    if (state.dismissedNotificationIds.contains(item.notificationId)) {
+      return;
+    }
     final current = List<NotificationCenterItem>.from(state.notifications);
     current.removeWhere((entry) => entry.notificationId == item.notificationId);
-    current.insert(0, item);
+
+    if (item.isTerminalTeamInvitationEvent && item.invitationId != null) {
+      current.removeWhere(
+        (entry) =>
+            entry.invitationId == item.invitationId &&
+            entry.isPendingTeamInvitation,
+      );
+    } else {
+      current.insert(0, item);
+    }
+
+    final normalized = _normalizeNotifications(current);
     emit(
       state.copyWith(
         status: NotificationCenterStatus.loaded,
-        notifications: current,
+        notifications: normalized,
         seenNotificationIds: state.seenNotificationIds,
+        dismissedNotificationIds: state.dismissedNotificationIds,
         completedActionNotificationIds: state.completedActionNotificationIds,
       ),
     );
@@ -79,6 +99,25 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     if (filtered.isEmpty) return;
     final seen = Set<String>.from(state.seenNotificationIds)..addAll(filtered);
     emit(state.copyWith(seenNotificationIds: seen));
+  }
+
+  void consumeNotification(String notificationId) {
+    if (notificationId.trim().isEmpty) {
+      return;
+    }
+    final seen = Set<String>.from(state.seenNotificationIds)..add(notificationId);
+    final dismissed = Set<String>.from(state.dismissedNotificationIds)
+      ..add(notificationId);
+    final remainingNotifications = state.notifications
+        .where((item) => item.notificationId != notificationId)
+        .toList();
+    emit(
+      state.copyWith(
+        notifications: remainingNotifications,
+        seenNotificationIds: seen,
+        dismissedNotificationIds: dismissed,
+      ),
+    );
   }
 
   Future<void> acceptInvitation(NotificationCenterItem item) async {
@@ -145,6 +184,29 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     return metadata['realtimeOnly']?.toLowerCase() == 'true';
   }
 
+  List<NotificationCenterItem> _normalizeNotifications(
+    List<NotificationCenterItem> notifications,
+  ) {
+    final terminalInvitationIds = notifications
+        .where((item) => item.isTerminalTeamInvitationEvent)
+        .map((item) => item.invitationId)
+        .whereType<String>()
+        .toSet();
+
+    return notifications.where((item) {
+      if (item.isTerminalTeamInvitationEvent) {
+        return false;
+      }
+      final invitationId = item.invitationId;
+      if (item.isPendingTeamInvitation &&
+          invitationId != null &&
+          terminalInvitationIds.contains(invitationId)) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
   Future<void> _performAction(
     String notificationId,
     Future<void> Function() action,
@@ -157,6 +219,8 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       await action();
       final completed = Set<String>.from(state.completedActionNotificationIds)
         ..add(notificationId);
+      final dismissed = Set<String>.from(state.dismissedNotificationIds)
+        ..add(notificationId);
       final remainingNotifications = state.notifications
           .where((item) => item.notificationId != notificationId)
           .toList();
@@ -166,6 +230,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           notifications: remainingNotifications,
           processingNotificationIds: processing,
           completedActionNotificationIds: completed,
+          dismissedNotificationIds: dismissed,
           seenNotificationIds: Set<String>.from(state.seenNotificationIds)
             ..add(notificationId),
           errorMessage: null,
@@ -173,6 +238,27 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       );
     } catch (e) {
       processing.remove(notificationId);
+      if (_isTerminalInvitationConflict(e)) {
+        final completed = Set<String>.from(state.completedActionNotificationIds)
+          ..add(notificationId);
+        final dismissed = Set<String>.from(state.dismissedNotificationIds)
+          ..add(notificationId);
+        final remainingNotifications = state.notifications
+            .where((item) => item.notificationId != notificationId)
+            .toList();
+        emit(
+          state.copyWith(
+            notifications: remainingNotifications,
+            processingNotificationIds: processing,
+            completedActionNotificationIds: completed,
+            dismissedNotificationIds: dismissed,
+            seenNotificationIds: Set<String>.from(state.seenNotificationIds)
+              ..add(notificationId),
+            errorMessage: null,
+          ),
+        );
+        return;
+      }
       emit(
         state.copyWith(
           processingNotificationIds: processing,
@@ -180,5 +266,14 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         ),
       );
     }
+  }
+
+  bool _isTerminalInvitationConflict(Object error) {
+    final raw = error.toString().toLowerCase();
+    return raw.contains('409') ||
+        raw.contains('not pending') ||
+        raw.contains('already accepted') ||
+        raw.contains('has expired') ||
+        raw.contains('expired');
   }
 }

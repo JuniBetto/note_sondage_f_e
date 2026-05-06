@@ -9,12 +9,16 @@ class AuthState extends Equatable {
   final AuthUserEntity user;
   final String? errorMessage;
   final bool passwordResetSent;
+  final bool verificationEmailSent;
+  final String? verificationEmail;
 
   const AuthState._({
     required this.status,
     this.user = AuthUserEntity.empty,
     this.errorMessage,
     this.passwordResetSent = false,
+    this.verificationEmailSent = false,
+    this.verificationEmail,
   });
 
   /// Stato iniziale: non sappiamo ancora se l'utente è loggato.
@@ -41,6 +45,21 @@ class AuthState extends Equatable {
   const AuthState.passwordResetSent()
     : this._(status: AuthStatus.unauthenticated, passwordResetSent: true);
 
+  /// Registrazione completata: attendiamo la conferma email prima del login.
+  const AuthState.verificationEmailSent(String email)
+    : this._(
+        status: AuthStatus.unauthenticated,
+        verificationEmailSent: true,
+        verificationEmail: email,
+      );
+
   @override
-  List<Object?> get props => [status, user, errorMessage, passwordResetSent];
+  List<Object?> get props => [
+    status,
+    user,
+    errorMessage,
+    passwordResetSent,
+    verificationEmailSent,
+    verificationEmail,
+  ];
 }

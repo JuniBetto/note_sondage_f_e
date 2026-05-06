@@ -15,6 +15,11 @@ class RuntimeConfig {
     defaultValue: defaultGoogleServerClientId,
   );
 
+  static const String emailConfirmationUrl = String.fromEnvironment(
+    'EMAIL_CONFIRMATION_URL',
+    defaultValue: '',
+  );
+
   static const String sentryDsn = String.fromEnvironment(
     'SENTRY_DSN',
     defaultValue: defaultSentryDsn,
@@ -26,6 +31,9 @@ class RuntimeConfig {
   );
 
   static String get resolvedApiBaseUrl => normalizeBaseUrl(apiBaseUrl.trim());
+  static String get resolvedEmailConfirmationUrl => emailConfirmationUrl.trim();
 
   static bool get hasCustomApiBaseUrl => resolvedApiBaseUrl.isNotEmpty;
+  static bool get hasCustomEmailConfirmationUrl =>
+      resolvedEmailConfirmationUrl.isNotEmpty;
 }

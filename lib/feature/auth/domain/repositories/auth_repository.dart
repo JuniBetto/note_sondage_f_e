@@ -1,4 +1,5 @@
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
+import 'package:note_sondage/feature/auth/domain/entities/phone_sign_in_start_result.dart';
 
 /// Repository astratto per l'autenticazione.
 /// Definisce il contratto che ogni implementazione (Firebase, mock, etc.) deve rispettare.
@@ -27,8 +28,23 @@ abstract class AuthRepository {
   /// Login con Google SSO.
   Future<AuthUserEntity> signInWithGoogle();
 
+  /// Avvia login con telefono e invio OTP.
+  Future<PhoneSignInStartResult> startPhoneSignIn({required String phoneNumber});
+
+  /// Conferma OTP del login telefonico.
+  Future<AuthUserEntity> confirmPhoneSignIn({
+    required String sessionId,
+    required String smsCode,
+  });
+
   /// Invio email di reset password.
   Future<void> sendPasswordResetEmail({required String email});
+
+  /// Aggiorna l'email di contatto usata da inviti e notifiche.
+  Future<void> updateContactEmail({required String email});
+
+  /// Rigenera il JWT interno del backend per riallineare gli header utente.
+  Future<void> refreshBackendSession();
 
   /// Logout.
   Future<void> signOut();

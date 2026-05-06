@@ -6,6 +6,7 @@ on where the backend is running.
 Important:
 - mobile builds do not read `.env.web`
 - mobile runtime target must be passed with `--dart-define=API_BASE_URL=...`
+- custom registration confirmation emails should pass `--dart-define=EMAIL_CONFIRMATION_URL=...`
 - `127.0.0.1` on a phone points to the phone itself
 - Android emulator must use `10.0.2.2`
 
@@ -23,7 +24,8 @@ Run:
 ```bash
 cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
 flutter run \
-  --dart-define=API_BASE_URL=http://10.0.2.2:8080
+  --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
+  --dart-define=EMAIL_CONFIRMATION_URL=http://10.0.2.2:8088/confirm-registration
 ```
 
 ## 2. Local debug on iOS simulator / desktop
@@ -40,7 +42,8 @@ Run:
 ```bash
 cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
 flutter run \
-  --dart-define=API_BASE_URL=http://127.0.0.1:8080
+  --dart-define=API_BASE_URL=http://127.0.0.1:8080 \
+  --dart-define=EMAIL_CONFIRMATION_URL=http://127.0.0.1:8088/confirm-registration
 ```
 
 ## 3. Local debug on physical phone over LAN
@@ -57,7 +60,8 @@ Example:
 ```bash
 cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
 flutter run \
-  --dart-define=API_BASE_URL=http://192.168.1.20:8080
+  --dart-define=API_BASE_URL=http://192.168.1.20:8080 \
+  --dart-define=EMAIL_CONFIRMATION_URL=http://192.168.1.20:8088/confirm-registration
 ```
 
 Notes:
@@ -75,7 +79,8 @@ Example:
 ```bash
 cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
 flutter build apk --release \
-  --dart-define=API_BASE_URL=http://192.168.1.20:8080
+  --dart-define=API_BASE_URL=http://192.168.1.20:8080 \
+  --dart-define=EMAIL_CONFIRMATION_URL=http://192.168.1.20:8088/confirm-registration
 ```
 
 If you need HTTP on Android release/LAN builds, verify the project is

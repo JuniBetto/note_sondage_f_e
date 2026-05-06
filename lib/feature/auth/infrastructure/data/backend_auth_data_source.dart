@@ -112,7 +112,11 @@ class BackendAuthDataSource {
     }
   }
 
-  Future<void> updateMyProfile({String? fullName, String? avatarUrl}) async {
+  Future<void> updateMyProfile({
+    String? fullName,
+    String? avatarUrl,
+    String? email,
+  }) async {
     try {
       await _authenticatedDio.patch(
         '/api/users/me',
@@ -121,6 +125,7 @@ class BackendAuthDataSource {
             'fullName': fullName.trim(),
           if (avatarUrl != null && avatarUrl.trim().isNotEmpty)
             'avatarUrl': avatarUrl.trim(),
+          if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
         },
       );
     } on DioException catch (e) {
@@ -129,6 +134,38 @@ class BackendAuthDataSource {
         'Failed to update user profile: '
         '${e.response?.statusCode ?? 'no status'} – ${e.message}',
       );
+    }
+  }
+
+  Future<void> updateContactEmail(String email) async {
+    try {
+      await _authenticatedDio.patch(
+        '/api/users/me/contact-email',
+        queryParameters: {'email': email.trim()},
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Contact email update failed: ${e.message}');
+      throw Exception(
+        'Failed to update contact email: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<String?> getMyProfileEmail() async {
+    try {
+      final response = await _authenticatedDio.get('/api/users/me');
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final email = data['email']?.toString().trim();
+        if (email != null && email.isNotEmpty) {
+          return email;
+        }
+      }
+      return null;
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Profile fetch failed: ${e.message}');
+      return null;
     }
   }
 

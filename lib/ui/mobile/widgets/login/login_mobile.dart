@@ -4,12 +4,20 @@ import 'package:note_sondage/ui/mobile/widgets/login/forget_password.dart';
 
 class LoginMobile extends StatelessWidget {
   final bool? isForgetPassword;
-  const LoginMobile({super.key, this.isForgetPassword = false});
+  final Map<String, String>? queryParameters;
+
+  const LoginMobile({
+    super.key,
+    this.isForgetPassword = false,
+    this.queryParameters,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: isForgetPassword! ? ForgetPassword() : AuthTabLogin(),
+      body: isForgetPassword!
+          ? ForgetPassword()
+          : AuthTabLogin(queryParameters: queryParameters),
     );
   }
 }

@@ -60,7 +60,7 @@ That means:
 Without changing code again.
 
 Important distinction:
-- `.env.web` is used for the web image build
+- `.env.web` is read directly during the web image build
 - mobile APK / IPA do not read `.env.web`
 - Android and iOS builds must pass `API_BASE_URL` explicitly with `--dart-define`
 

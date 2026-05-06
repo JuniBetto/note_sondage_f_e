@@ -4,17 +4,30 @@ import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
+import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
-import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 
-class PendingNotificationsCard extends StatelessWidget {
+class PendingNotificationsCard extends StatefulWidget {
   const PendingNotificationsCard({
     super.key,
     this.maxItems = 4,
   });
 
   final int maxItems;
+
+  @override
+  State<PendingNotificationsCard> createState() => _PendingNotificationsCardState();
+}
+
+class _PendingNotificationsCardState extends State<PendingNotificationsCard> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<NotificationCenterCubit>().loadNotifications(force: true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +38,7 @@ class PendingNotificationsCard extends StatelessWidget {
     return BlocBuilder<NotificationCenterCubit, NotificationCenterState>(
       builder: (context, state) {
         final pending = state.pendingFor(currentUserId);
-        final visibleItems = pending.take(maxItems).toList();
+        final visibleItems = pending.take(widget.maxItems).toList();
         final hiddenCount = pending.length - visibleItems.length;
         final isLoading =
             (state.status == NotificationCenterStatus.initial ||
@@ -139,11 +152,23 @@ class PendingNotificationsCard extends StatelessWidget {
               if (state.errorMessage != null &&
                   state.errorMessage!.trim().isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text(
-                  state.errorMessage!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Impossibile aggiornare le notifiche in questo momento.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => context
+                          .read<NotificationCenterCubit>()
+                          .loadNotifications(force: true),
+                      child: const Text('Riprova'),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -218,7 +243,7 @@ class _PendingNotificationTile extends StatelessWidget {
       item.notificationId,
     );
     final isSeen = state.seenNotificationIds.contains(item.notificationId);
-    final navigationLabel = _navigationLabelFor(item);
+    final navigationLabel = canRespond ? null : _navigationLabelFor(item);
     final teamName = item.teamName;
     final roleCode = item.roleCode;
     final theme = Theme.of(context);
@@ -228,7 +253,7 @@ class _PendingNotificationTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => _handleOpen(context),
+        onTap: canRespond ? null : () => _handleOpen(context),
         child: Ink(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -390,10 +415,7 @@ class _PendingNotificationTile extends StatelessWidget {
 
   Future<void> _handleOpen(BuildContext context) async {
     context.read<NotificationCenterCubit>().markAsSeen(item.notificationId);
-    final targetIndex = _targetNavigationIndex(item);
-    if (targetIndex != null) {
-      context.read<NavigationBloc>().add(NavigationPositionChanged(targetIndex));
-    }
+    await NotificationNavigation.open(item, context: context);
   }
 
   static IconData _leadingIconFor(NotificationCenterItem item) {
@@ -409,31 +431,8 @@ class _PendingNotificationTile extends StatelessWidget {
     return Icons.notifications_none_rounded;
   }
 
-  static int? _targetNavigationIndex(NotificationCenterItem item) {
-    if (item.eventType.startsWith('TEAM_') || item.metadata.containsKey('teamId')) {
-      return 1;
-    }
-    if (item.eventType.contains('CLOCK')) {
-      return 3;
-    }
-    if (item.eventType.contains('SURVEY') || item.eventType.contains('SONDAGE')) {
-      return 4;
-    }
-    return null;
-  }
-
   static String? _navigationLabelFor(NotificationCenterItem item) {
-    final targetIndex = _targetNavigationIndex(item);
-    if (targetIndex == 1) {
-      return 'Apri team';
-    }
-    if (targetIndex == 3) {
-      return 'Apri clocking';
-    }
-    if (targetIndex == 4) {
-      return 'Apri sondage';
-    }
-    return null;
+    return NotificationNavigation.labelFor(item);
   }
 
   static String _formatDate(BuildContext context, DateTime value) {

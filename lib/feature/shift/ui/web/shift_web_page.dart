@@ -12,6 +12,7 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
+import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_entries_sheet.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_profile_manager.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
@@ -137,6 +138,47 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     _loadAssignments();
   }
 
+  /// Consumes any pending deep-link intent queued by [ShiftOpenIntentController]
+  /// (e.g. when the user tapped a push notification). Must be called after
+  /// assignments have been loaded so we can look up the entity by ID.
+  void _tryConsumeShiftOpenIntent(BuildContext context) {
+    final intentController = GetIt.instance<ShiftOpenIntentController>();
+    final intent = intentController.pendingIntent;
+    if (intent == null) return;
+    intentController.clear();
+
+    final date = intent.shiftDate;
+    if (date == null) return;
+
+    // Navigate to the correct month first
+    if (date.year != _focusedMonth.year || date.month != _focusedMonth.month) {
+      setState(() => _focusedMonth = date);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      ShiftAssignmentEntity? existing;
+      if (intent.assignmentId != null) {
+        existing = _assignments
+            .where((a) => a.id == intent.assignmentId)
+            .firstOrNull;
+      }
+      // Fallback: match by date if no assignmentId or not found
+      if (existing == null) {
+        final matches = _assignments
+            .where(
+              (a) =>
+                  a.shiftDate.year == date.year &&
+                  a.shiftDate.month == date.month &&
+                  a.shiftDate.day == date.day,
+            )
+            .toList();
+        if (matches.length == 1) existing = matches.first;
+      }
+      await _openDialogForAssignment(context, date, existing: existing);
+    });
+  }
+
   bool _canManageAssignment(ShiftAssignmentEntity assignment) {
     if (!assignment.isPublic) {
       return assignment.userId == _currentUid;
@@ -251,6 +293,10 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
           alarmOffsets: result.alarmOffsets,
           isPublic: result.isPublic,
           teamId: result.isPublic ? result.teamId : null,
+          // Pass the new target only when the manager picked a different member.
+          targetUserId: result.isPublic && result.targetUserIds.length == 1
+              ? result.targetUserIds.first
+              : null,
         ),
       );
       return;
@@ -342,6 +388,8 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
             }
             if (state is ShiftAssignmentsLoaded) {
               setState(() => _assignments = state.assignments);
+              // Open the specific shift if we arrived here via a notification tap
+              _tryConsumeShiftOpenIntent(context);
             }
             if (state is ShiftAssigned ||
                 state is ShiftAssignmentUpdated ||
