@@ -15,9 +15,40 @@ const String _teamInviteCategoryId = 'team_invite_actions';
 const String _shiftAlarmChannelId = 'shift_alarms';
 const String _shiftAlarmChannelName = 'Shift Alarms';
 const String _shiftAlarmChannelDesc = 'Reminders before your scheduled shifts';
+const String _shiftAlarmClockChannelId = 'shift_alarms_clock';
+const String _shiftAlarmClockChannelName = 'Sveglie Turno';
+const String _shiftAlarmClockChannelDesc =
+    'Sveglie con schermo intero per i tuoi turni';
 const String _pendingNotificationActionsKey = 'pending_notification_actions';
 const String _shiftNotificationsEnabledKey = 'shift_notifications_enabled';
 const String _scheduledShiftAlarmIdsKey = 'scheduled_shift_alarm_ids';
+const String _shiftAlarmTypeKey = 'shift_alarm_type';
+
+/// Esito della richiesta di permessi per la modalità **Sveglia** su Android.
+class AlarmPermissionStatus {
+  const AlarmPermissionStatus({
+    required this.exactAlarm,
+    required this.fullScreenIntent,
+  });
+
+  /// Se l'app può schedulare allarmi esatti (`SCHEDULE_EXACT_ALARM`).
+  final bool exactAlarm;
+
+  /// Se l'app può mostrare notifiche a schermo intero (`USE_FULL_SCREEN_INTENT`).
+  final bool fullScreenIntent;
+
+  /// `true` se entrambi i permessi sono concessi.
+  bool get allGranted => exactAlarm && fullScreenIntent;
+}
+
+/// Tipo di notifica di allarme turno scelta dall'utente.
+enum ShiftAlarmType {
+  /// Notifica standard (comportamento di default).
+  notification,
+
+  /// Sveglia vera: schermo intero, vibrazione persistente, non si chiude da sola.
+  alarm,
+}
 
 @pragma('vm:entry-point')
 Future<void> notificationTapBackground(
@@ -83,10 +114,7 @@ class LocalNotificationService {
 
     try {
       await _plugin.initialize(
-        InitializationSettings(
-          android: androidSettings,
-          iOS: darwinSettings,
-        ),
+        InitializationSettings(android: androidSettings, iOS: darwinSettings),
         onDidReceiveNotificationResponse: _onNotificationResponse,
         onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
       );
@@ -130,6 +158,21 @@ class LocalNotificationService {
             AndroidFlutterLocalNotificationsPlugin
           >()
           ?.createNotificationChannel(shiftAlarmChannel);
+
+      const shiftAlarmClockChannel = AndroidNotificationChannel(
+        _shiftAlarmClockChannelId,
+        _shiftAlarmClockChannelName,
+        description: _shiftAlarmClockChannelDesc,
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
+
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(shiftAlarmClockChannel);
 
       final launchDetails = await _plugin.getNotificationAppLaunchDetails();
       if (launchDetails?.didNotificationLaunchApp == true &&
@@ -204,10 +247,7 @@ class LocalNotificationService {
       item.notificationId.hashCode,
       item.title,
       item.body,
-      NotificationDetails(
-        android: androidDetails,
-        iOS: darwinDetails,
-      ),
+      NotificationDetails(android: androidDetails, iOS: darwinDetails),
       payload: payload,
     );
   }
@@ -267,20 +307,28 @@ class LocalNotificationService {
     if (!_initialized || !_available || !_supportsLocalNotifications) return;
     if (!await areShiftNotificationsEnabled()) return;
 
+    final alarmType = await getShiftAlarmType();
+    final isAlarm = alarmType == ShiftAlarmType.alarm;
+
     final title = '⏰ Turno tra $minutesBefore min';
     final body = profileName.isNotEmpty
         ? 'Shift "$profileName" — $shiftDate'
         : 'Il tuo turno inizia tra $minutesBefore minuti';
 
     final androidDetails = AndroidNotificationDetails(
-      _shiftAlarmChannelId,
-      _shiftAlarmChannelName,
-      channelDescription: _shiftAlarmChannelDesc,
+      isAlarm ? _shiftAlarmClockChannelId : _shiftAlarmChannelId,
+      isAlarm ? _shiftAlarmClockChannelName : _shiftAlarmChannelName,
+      channelDescription: isAlarm
+          ? _shiftAlarmClockChannelDesc
+          : _shiftAlarmChannelDesc,
       importance: Importance.max,
-      priority: Priority.high,
+      priority: Priority.max,
       playSound: true,
       enableVibration: true,
       category: AndroidNotificationCategory.alarm,
+      fullScreenIntent: isAlarm,
+      ongoing: isAlarm,
+      autoCancel: !isAlarm,
     );
 
     final darwinDetails = DarwinNotificationDetails(
@@ -310,6 +358,9 @@ class LocalNotificationService {
     if (!await areShiftNotificationsEnabled()) return;
     if (alarmOffsets.isEmpty) return;
 
+    final alarmType = await getShiftAlarmType();
+    final isAlarm = alarmType == ShiftAlarmType.alarm;
+
     // Cancella prima i vecchi allarmi per questo turno
     await cancelShiftAlarms(shiftId: shiftId, alarmOffsets: alarmOffsets);
 
@@ -333,14 +384,19 @@ class LocalNotificationService {
           : 'Il tuo turno inizia tra $minutesBefore minuti';
 
       final androidDetails = AndroidNotificationDetails(
-        _shiftAlarmChannelId,
-        _shiftAlarmChannelName,
-        channelDescription: _shiftAlarmChannelDesc,
+        isAlarm ? _shiftAlarmClockChannelId : _shiftAlarmChannelId,
+        isAlarm ? _shiftAlarmClockChannelName : _shiftAlarmChannelName,
+        channelDescription: isAlarm
+            ? _shiftAlarmClockChannelDesc
+            : _shiftAlarmChannelDesc,
         importance: Importance.max,
-        priority: Priority.high,
+        priority: Priority.max,
         playSound: true,
         enableVibration: true,
         category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: isAlarm,
+        ongoing: isAlarm,
+        autoCancel: !isAlarm,
       );
 
       final darwinDetails = DarwinNotificationDetails(
@@ -357,9 +413,24 @@ class LocalNotificationService {
           body,
           alarmTime,
           NotificationDetails(android: androidDetails, iOS: darwinDetails),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          androidScheduleMode: isAlarm
+              ? AndroidScheduleMode.alarmClock
+              : AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
+          payload: jsonEncode({
+            'notificationId': notifId.toString(),
+            'eventType': 'SHIFT_ALARM',
+            'sourceService': 'shift',
+            'title': title,
+            'body': body,
+            'occurredAt': alarmTime.toIso8601String(),
+            'metadata': {
+              'assignmentId': shiftId,
+              'shiftDate': shiftStart.toIso8601String(),
+              'profileName': profileName,
+            },
+          }),
         );
         await _rememberScheduledShiftAlarmId(notifId);
         debugPrint('[ShiftAlarm] Scheduled alarm $notifId at $alarmTime');
@@ -386,11 +457,12 @@ class LocalNotificationService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_shiftNotificationsEnabledKey, enabled);
     if (!enabled) {
-      final scheduledIds = prefs
-          .getStringList(_scheduledShiftAlarmIdsKey)
-          ?.map(int.tryParse)
-          .whereType<int>()
-          .toList() ??
+      final scheduledIds =
+          prefs
+              .getStringList(_scheduledShiftAlarmIdsKey)
+              ?.map(int.tryParse)
+              .whereType<int>()
+              .toList() ??
           const <int>[];
       for (final notifId in scheduledIds) {
         await _plugin.cancel(notifId);
@@ -402,6 +474,80 @@ class LocalNotificationService {
   Future<bool> areShiftNotificationsEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_shiftNotificationsEnabledKey) ?? true;
+  }
+
+  Future<void> setShiftAlarmType(ShiftAlarmType type) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_shiftAlarmTypeKey, type.name);
+  }
+
+  Future<ShiftAlarmType> getShiftAlarmType() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_shiftAlarmTypeKey);
+    if (raw == ShiftAlarmType.alarm.name) return ShiftAlarmType.alarm;
+    return ShiftAlarmType.notification;
+  }
+
+  /// Richiede i permessi necessari per la modalità **Sveglia** su Android.
+  ///
+  /// Restituisce un [AlarmPermissionStatus] con l'esito dei singoli check:
+  /// - [exactAlarm]: se l'app può schedulare allarmi esatti
+  ///   (`SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM`).
+  ///   Per `alarmClock` non è strettamente richiesto, ma consigliato per
+  ///   la modalità notifica con `exactAllowWhileIdle`.
+  /// - [fullScreenIntent]: se l'app può aprire lo schermo intero (Android 14+).
+  ///   Senza questo permesso `fullScreenIntent: true` viene ignorato silenziosamente.
+  ///
+  /// Entrambi i metodi aprono la pagina Impostazioni di sistema corretta se
+  /// il permesso non è ancora concesso.
+  Future<AlarmPermissionStatus> requestAlarmModePermissions() async {
+    if (!_initialized || !_available || !_supportsLocalNotifications) {
+      return const AlarmPermissionStatus(
+        exactAlarm: true,
+        fullScreenIntent: true,
+      );
+    }
+
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+
+    if (android == null) {
+      return const AlarmPermissionStatus(
+        exactAlarm: true,
+        fullScreenIntent: true,
+      );
+    }
+
+    // ── Exact alarm (Android 12+ / API 31+) ──────────────────────────────────
+    // setAlarmClock() non richiede questo permesso, ma requestExactAlarmsPermission
+    // non causa errori su versioni precedenti e prepara l'app per la modalità
+    // exactAllowWhileIdle usata per le notifiche normali.
+    bool exactAlarmGranted = true;
+    try {
+      final granted = await android.requestExactAlarmsPermission();
+      exactAlarmGranted = granted ?? true;
+    } catch (_) {
+      // API non disponibile su questa versione Android → consideriamo OK
+    }
+
+    // ── Full screen intent (Android 14+ / API 34+) ───────────────────────────
+    // Senza questo permesso la notifica sveglia non mostra lo schermo intero.
+    // requestFullScreenIntentPermission() è no-op su Android < 14 e restituisce
+    // true se il permesso è già concesso o non richiesto.
+    bool fullScreenGranted = true;
+    try {
+      final granted = await android.requestFullScreenIntentPermission();
+      fullScreenGranted = granted ?? true;
+    } catch (_) {
+      // API non disponibile su versioni precedenti Android 14 → consideriamo OK
+    }
+
+    return AlarmPermissionStatus(
+      exactAlarm: exactAlarmGranted,
+      fullScreenIntent: fullScreenGranted,
+    );
   }
 
   Future<void> _rememberScheduledShiftAlarmId(int notifId) async {

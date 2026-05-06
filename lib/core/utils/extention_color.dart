@@ -39,6 +39,11 @@ extension StringToColor on String {
   Color toColor() {
     final trimmedString = trim();
 
+    // Empty string → fallback instead of throwing
+    if (trimmedString.isEmpty) {
+      return Colors.blue;
+    }
+
     // Gestione formato #RRGGBB o #AARRGGBB
     if (trimmedString.startsWith('#')) {
       return _hexToColor(trimmedString);

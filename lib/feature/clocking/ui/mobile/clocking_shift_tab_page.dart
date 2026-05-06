@@ -31,7 +31,11 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
     super.initState();
     final initialTab = ClockingShiftTabPage.requestedInitialTab;
     ClockingShiftTabPage.requestedInitialTab = 0; // reset for next navigation
-    _tabController = TabController(length: 2, vsync: this, initialIndex: initialTab);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: initialTab,
+    );
     _tabController.addListener(_onTabChanged);
   }
 

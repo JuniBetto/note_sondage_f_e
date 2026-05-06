@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +22,8 @@ import 'package:note_sondage/feature/notification/realtime/clocking_realtime_coo
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/sondage_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
+import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
+import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/shift/notification/shift_alarm_scheduler.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
@@ -62,17 +65,14 @@ class _MainAppState extends State<MainApp> {
     _pushSubscription = getIt<PushNotificationService>().stream.listen(
       _handleRealtimeNotification,
     );
-    _localActionSubscription = getIt<LocalNotificationService>().actions.listen((
-      action,
-    ) async {
-      await _handleLocalNotificationAction(action);
-    });
+    _localActionSubscription = getIt<LocalNotificationService>().actions.listen(
+      (action) async {
+        await _handleLocalNotificationAction(action);
+      },
+    );
     unawaited(_drainPendingLocalNotificationActions());
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncServicesForAuthState(
-        getIt<AuthBloc>().state,
-        resetCaches: true,
-      );
+      _syncServicesForAuthState(getIt<AuthBloc>().state, resetCaches: true);
     });
   }
 
@@ -97,13 +97,15 @@ class _MainAppState extends State<MainApp> {
     final selectedClockingTeamId = _selectedClockingTeamId(
       getIt<ClockingBloc>().state,
     );
-    final clockingDecision = getIt<ClockingRealtimeCoordinator>().resolveDecision(
+    final clockingDecision = getIt<ClockingRealtimeCoordinator>()
+        .resolveDecision(
+          notification,
+          currentUserId: currentUserId,
+          selectedTeamId: selectedClockingTeamId,
+        );
+    final sondageDecision = getIt<SondageRealtimeCoordinator>().resolveDecision(
       notification,
-      currentUserId: currentUserId,
-      selectedTeamId: selectedClockingTeamId,
     );
-    final sondageDecision =
-        getIt<SondageRealtimeCoordinator>().resolveDecision(notification);
     final shiftDecision = getIt<ShiftRealtimeCoordinator>().resolveDecision(
       notification,
       currentUserId: currentUserId,
@@ -149,16 +151,34 @@ class _MainAppState extends State<MainApp> {
         final now = DateTime.now();
         final first = DateTime(now.year, now.month, 1);
         final last = DateTime(now.year, now.month + 1, 0);
-        getIt<ShiftBloc>().add(LoadShiftAssignmentsEvent(from: first, to: last));
+        getIt<ShiftBloc>().add(
+          LoadShiftAssignmentsEvent(from: first, to: last),
+        );
       }
     }
     if (shiftDecision.showAlarmBanner) {
-      getIt<LocalNotificationService>().showShiftAlarmNotification(
-        shiftId: notification.metadata['shiftId'] ?? notification.notificationId,
-        profileName: shiftDecision.alarmProfileName ?? '',
-        shiftDate: shiftDecision.alarmShiftDate ?? '',
-        minutesBefore: shiftDecision.alarmMinutesBefore ?? 0,
-      );
+      final alarmShiftId =
+          notification.metadata['shiftId'] ??
+          notification.metadata['assignmentId'] ??
+          notification.notificationId;
+      if (kIsWeb) {
+        _showShiftAlarmSnackBar(
+          assignmentId: alarmShiftId,
+          shiftDate: notification.metadata['shiftDate'],
+          profileName: shiftDecision.alarmProfileName ?? '',
+          shiftDateLabel: shiftDecision.alarmShiftDate ?? '',
+          minutesBefore: shiftDecision.alarmMinutesBefore ?? 0,
+        );
+      } else {
+        unawaited(
+          getIt<LocalNotificationService>().showShiftAlarmNotification(
+            shiftId: alarmShiftId,
+            profileName: shiftDecision.alarmProfileName ?? '',
+            shiftDate: shiftDecision.alarmShiftDate ?? '',
+            minutesBefore: shiftDecision.alarmMinutesBefore ?? 0,
+          ),
+        );
+      }
     }
     if (teamDecision.showSnackBar && teamDecision.snackBarMessage != null) {
       final messenger = scaffoldMessengerKey.currentState;
@@ -169,9 +189,68 @@ class _MainAppState extends State<MainApp> {
     }
   }
 
+  /// Mostra uno SnackBar di allarme turno sull'interfaccia web.
+  /// Rimane visibile 12 secondi e offre il bottone "Apri turno" che
+  /// naviga alla pagina shift e pre-seleziona il turno corretto.
+  void _showShiftAlarmSnackBar({
+    required String assignmentId,
+    required String? shiftDate,
+    required String profileName,
+    required String shiftDateLabel,
+    required int minutesBefore,
+  }) {
+    final messenger = scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+
+    final title = '⏰ Turno tra $minutesBefore min';
+    final body = profileName.isNotEmpty
+        ? 'Shift "$profileName"${shiftDateLabel.isNotEmpty ? ' — $shiftDateLabel' : ''}'
+        : 'Il tuo turno inizia presto';
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 12),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(body, style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'Apri turno',
+          onPressed: () {
+            getIt<ShiftOpenIntentController>().queue(
+              assignmentId: assignmentId,
+              shiftDate: shiftDate,
+            );
+            unawaited(NotificationNavigation.openShifts());
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleLocalNotificationAction(
     NotificationActionIntent action,
   ) async {
+    // ── Shift alarm tap → naviga al turno ────────────────────────────────────
+    if (action.metadata['eventType'] == 'SHIFT_ALARM') {
+      final assignmentId = action.metadata['assignmentId'];
+      final shiftDateRaw = action.metadata['shiftDate'];
+      getIt<ShiftOpenIntentController>().queue(
+        assignmentId: assignmentId,
+        shiftDate: shiftDateRaw,
+      );
+      if (mounted) {
+        await NotificationNavigation.openShifts(context: context);
+      }
+      return;
+    }
+
+    // ── Team invite / altri ───────────────────────────────────────────────────
     await getIt<NotificationCenterCubit>().handleActionIntent(
       notificationId: action.notificationId,
       actionId: action.actionId,
@@ -190,16 +269,12 @@ class _MainAppState extends State<MainApp> {
     }
   }
 
-  void _syncServicesForAuthState(
-    AuthState state, {
-    bool resetCaches = false,
-  }) {
+  void _syncServicesForAuthState(AuthState state, {bool resetCaches = false}) {
     final realtimeService = getIt<RealtimeNotificationService>();
     final pushNotificationService = getIt<PushNotificationService>();
     final teamBloc = getIt<TeamBloc>();
     final sondageBloc = getIt<SondageBloc>();
-    final notificationPreferencesCubit =
-        getIt<NotificationPreferencesCubit>();
+    final notificationPreferencesCubit = getIt<NotificationPreferencesCubit>();
     final notificationCenterCubit = getIt<NotificationCenterCubit>();
 
     if (state.status == AuthStatus.authenticated && state.user.uid.isNotEmpty) {

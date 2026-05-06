@@ -30,9 +30,11 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
     return BlocBuilder<DashboardBloc, DashboardState>(
       builder: (context, state) {
         final stats = state is DashboardLoaded ? state.stats : null;
-        final activities =
-            state is DashboardLoaded ? state.activities : <RecentActivity>[];
-        final isLoading = state is DashboardLoading || state is DashboardInitial;
+        final activities = state is DashboardLoaded
+            ? state.activities
+            : <RecentActivity>[];
+        final isLoading =
+            state is DashboardLoading || state is DashboardInitial;
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -68,8 +70,7 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
                       child: _MobileStatCard(
                         icon: Icons.people_rounded,
                         label: l.totalMembers,
-                        value:
-                            isLoading ? null : '${stats?.totalMembers ?? 0}',
+                        value: isLoading ? null : '${stats?.totalMembers ?? 0}',
                         color: Colors.teal,
                       ),
                     ),
@@ -82,8 +83,9 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
                       child: _MobileStatCard(
                         icon: Icons.checklist_rounded,
                         label: l.activeSurveys,
-                        value:
-                            isLoading ? null : '${stats?.activeSurveys ?? 0}',
+                        value: isLoading
+                            ? null
+                            : '${stats?.activeSurveys ?? 0}',
                         color: Colors.orange,
                       ),
                     ),
@@ -92,8 +94,9 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
                       child: _MobileStatCard(
                         icon: Icons.timer_rounded,
                         label: l.todayClocking,
-                        value:
-                            isLoading ? null : '${stats?.todayClocking ?? 0}',
+                        value: isLoading
+                            ? null
+                            : '${stats?.todayClocking ?? 0}',
                         color: Colors.blue,
                       ),
                     ),
@@ -106,8 +109,7 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
                       child: _MobileStatCard(
                         icon: Icons.calendar_month_rounded,
                         label: l.myShifts,
-                        value:
-                            isLoading ? null : '${stats?.todayShifts ?? 0}',
+                        value: isLoading ? null : '${stats?.todayShifts ?? 0}',
                         color: Colors.purple,
                       ),
                     ),
@@ -145,7 +147,6 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
     );
   }
 }
-
 
 // ════════════════════════════════════════════════════════════════
 //  WELCOME BANNER (MOBILE)
@@ -561,63 +562,59 @@ class _MobileRecentActivity extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
                   l.noRecentActivity,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500],
-                  ),
+                  style: textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
                 ),
               ),
             )
           else
-            ...activities.map(
-              (a) {
-                final icon = _iconFor(a.type);
-                final color = _colorFor(a.type);
-                final time = _formatTime(a.timestamp);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(icon, size: 14, color: color),
+            ...activities.map((a) {
+              final icon = _iconFor(a.type);
+              final color = _colorFor(a.type);
+              final time = _formatTime(a.timestamp);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              a.title,
-                              style: textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.textColor,
-                              ),
+                      child: Icon(icon, size: 14, color: color),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            a.title,
+                            style: textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.textColor,
                             ),
-                            Text(
-                              a.subtitle,
-                              style: textTheme.labelSmall?.copyWith(
-                                color: Colors.grey[500],
-                              ),
+                          ),
+                          Text(
+                            a.subtitle,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: Colors.grey[500],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        time,
-                        style: textTheme.labelSmall?.copyWith(
-                          color: Colors.grey[400],
-                        ),
+                    ),
+                    Text(
+                      time,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: Colors.grey[400],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );

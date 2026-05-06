@@ -119,8 +119,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                       ),
                     ),
                     child: SwitchListTile(
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 8),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                       value: isPublic,
                       onChanged: (v) => setS(() => isPublic = v),
                       secondary: Icon(
@@ -312,7 +311,9 @@ class _ProfileTile extends StatelessWidget {
       ),
       title: Row(
         children: [
-          Flexible(child: Text(profile.name, style: const TextStyle(fontSize: 14))),
+          Flexible(
+            child: Text(profile.name, style: const TextStyle(fontSize: 14)),
+          ),
           if (profile.isPublic) ...[
             const SizedBox(width: 6),
             Container(
@@ -356,8 +357,8 @@ class _ProfileTile extends StatelessWidget {
               padding: EdgeInsets.zero,
             )
           : (profile.isPublic && !isOwner)
-              ? const SizedBox.shrink()
-              : Row(
+          ? const SizedBox.shrink()
+          : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(

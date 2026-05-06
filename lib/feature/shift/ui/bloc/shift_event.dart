@@ -95,6 +95,7 @@ class AssignShiftEvent extends ShiftEvent {
   final List<int>? alarmOffsets;
   final bool isPublic;
   final String? teamId;
+
   /// Firebase UID of the target user. Null = assign to the authenticated caller.
   final String? targetUserId;
 
@@ -131,6 +132,7 @@ class UpdateShiftAssignmentEvent extends ShiftEvent {
   final List<int>? alarmOffsets;
   final bool isPublic;
   final String? teamId;
+
   /// Firebase UID of the new target user. Null = keep the existing owner.
   final String? targetUserId;
 

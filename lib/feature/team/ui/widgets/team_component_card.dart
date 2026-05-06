@@ -161,8 +161,8 @@ class _TeamComponentCardState extends State<TeamComponentCard> {
                                             if (widget.isOwner)
                                               ActionOnUser(
                                                 iconSize: 18,
-                                                icon:
-                                                    Icons.delete_forever_outlined,
+                                                icon: Icons
+                                                    .delete_forever_outlined,
                                                 color: colorScheme.deleteCard!,
                                                 onTap: () {
                                                   _confirmDelete(context);
@@ -293,9 +293,9 @@ Widget buildTeamItem(List<Map<String, dynamic>> membersAvatar) {
 
 Widget buildRowTeamItem(
   BuildContext context,
-  List<Map<String, dynamic>> members,
-  {int? memberCount}
-) {
+  List<Map<String, dynamic>> members, {
+  int? memberCount,
+}) {
   final theme = Theme.of(context);
   final textTheme = theme.textTheme;
   final colorScheme = theme.colorScheme;

@@ -169,7 +169,10 @@ class TeamRealtimeGlobalDecision {
   static const none = TeamRealtimeGlobalDecision();
 
   bool get hasWork =>
-      refreshTeams || refreshDashboard || showSnackBar || snackBarMessage != null;
+      refreshTeams ||
+      refreshDashboard ||
+      showSnackBar ||
+      snackBarMessage != null;
 }
 
 class TeamRealtimeScreenDecision {
@@ -187,6 +190,5 @@ class TeamRealtimeScreenDecision {
 
   static const none = TeamRealtimeScreenDecision();
 
-  bool get needsReload =>
-      refreshTeam || refreshMembers || refreshInvitations;
+  bool get needsReload => refreshTeam || refreshMembers || refreshInvitations;
 }

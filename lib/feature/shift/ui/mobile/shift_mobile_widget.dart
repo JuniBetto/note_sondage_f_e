@@ -69,9 +69,18 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     _loadProfiles();
     _loadAssignments();
     _teamBloc.add(LoadTeamsEvent());
-    _realtimeSubscription = GetIt.instance<RealtimeNotificationService>()
-        .stream
+    _realtimeSubscription = GetIt.instance<RealtimeNotificationService>().stream
         .listen(_handleRealtimeNotification);
+    // Se arrivando sulla pagina c'è già un intent pendente (es. tap su
+    // notifica allarme mentre si era già sulla pagina shift), consumalo
+    // al primo frame disponibile dopo che lo stato è già ShiftAssignmentsLoaded.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final shiftState = context.read<ShiftBloc>().state;
+      if (shiftState is ShiftAssignmentsLoaded) {
+        _tryConsumeShiftOpenIntent(context);
+      }
+    });
   }
 
   @override
@@ -105,7 +114,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           _loadingTeamMemberIds.add(teamId)) {
         _teamMemberBloc.add(LoadTeamMembersByTeamIdEvent(teamId));
       }
-      if (!_rolesByTeamId.containsKey(teamId) && _loadingTeamRoleIds.add(teamId)) {
+      if (!_rolesByTeamId.containsKey(teamId) &&
+          _loadingTeamRoleIds.add(teamId)) {
         _loadRolesForTeam(teamId);
       }
     }
@@ -281,6 +291,22 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     }
 
     if (existing != null) {
+      // ── public → privato: cancella tutti i turni degli altri membri ──────
+      final wasPublic = existing.isPublic;
+      final nowPrivate = !result.isPublic;
+      if (wasPublic && nowPrivate && existing.teamId != null) {
+        final toDelete = _assignments.where(
+          (a) =>
+              a.id != existing.id &&
+              a.teamId == existing.teamId &&
+              a.shiftDate.year == existing.shiftDate.year &&
+              a.shiftDate.month == existing.shiftDate.month &&
+              a.shiftDate.day == existing.shiftDate.day,
+        );
+        for (final a in toDelete) {
+          context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(a.id));
+        }
+      }
       context.read<ShiftBloc>().add(
         UpdateShiftAssignmentEvent(
           assignmentId: existing.id,
@@ -444,9 +470,9 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                 const SizedBox(width: 8),
                 Text(
                   loc.myShifts,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 if (_canManageAnyTeam) ...[
                   const Spacer(),

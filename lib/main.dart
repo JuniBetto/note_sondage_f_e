@@ -63,9 +63,7 @@ void main() {
         // Obbligatorio su Android per ottenere l'idToken da passare a Firebase Auth.
         // Su web NON va passato: viene letto dal meta tag in index.html.
         GoogleSignIn.instance.initialize(
-          serverClientId: kIsWeb
-              ? null
-              : RuntimeConfig.googleServerClientId,
+          serverClientId: kIsWeb ? null : RuntimeConfig.googleServerClientId,
         ),
         HiveInitializer.initialize(),
         ErrorLogger.init(dsn: RuntimeConfig.sentryDsn, enabled: !kDebugMode),

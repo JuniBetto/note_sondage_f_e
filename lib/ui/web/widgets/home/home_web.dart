@@ -157,63 +157,63 @@ class _HomeWebState extends State<HomeWeb> {
                               ],
                             ),
                           ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: _StatCard(
-                            icon: Icons.group_rounded,
-                            label: l.activeTeams,
-                            value: '4',
-                            color: Colors.indigo,
-                          ),
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: _StatCard(
+                                icon: Icons.group_rounded,
+                                label: l.activeTeams,
+                                value: '4',
+                                color: Colors.indigo,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _StatCard(
+                                icon: Icons.people_rounded,
+                                label: l.totalMembers,
+                                value: isLoading
+                                    ? null
+                                    : '${stats?.totalMembers ?? 0}',
+                                color: Colors.teal,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _StatCard(
+                                icon: Icons.checklist_rounded,
+                                label: l.activeSurveys,
+                                value: isLoading
+                                    ? null
+                                    : '${stats?.activeSurveys ?? 0}',
+                                color: Colors.orange,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _StatCard(
+                                icon: Icons.timer_rounded,
+                                label: l.todayClocking,
+                                value: isLoading
+                                    ? null
+                                    : '${stats?.todayClocking ?? 0}',
+                                color: Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _StatCard(
+                                icon: Icons.calendar_month_rounded,
+                                label: l.myShifts,
+                                value: isLoading
+                                    ? null
+                                    : '${stats?.todayShifts ?? 0}',
+                                color: Colors.purple,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _StatCard(
-                            icon: Icons.people_rounded,
-                            label: l.totalMembers,
-                            value: isLoading
-                                ? null
-                                : '${stats?.totalMembers ?? 0}',
-                            color: Colors.teal,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _StatCard(
-                            icon: Icons.checklist_rounded,
-                            label: l.activeSurveys,
-                            value: isLoading
-                                ? null
-                                : '${stats?.activeSurveys ?? 0}',
-                            color: Colors.orange,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _StatCard(
-                            icon: Icons.timer_rounded,
-                            label: l.todayClocking,
-                            value: isLoading
-                                ? null
-                                : '${stats?.todayClocking ?? 0}',
-                            color: Colors.blue,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _StatCard(
-                            icon: Icons.calendar_month_rounded,
-                            label: l.myShifts,
-                            value: isLoading
-                                ? null
-                                : '${stats?.todayShifts ?? 0}',
-                            color: Colors.purple,
-                          ),
-                        ),
-                      ],
-                    ),
                   const SizedBox(height: 24),
 
                   // ═══════════════════════════════
@@ -732,9 +732,7 @@ class _RecentActivityCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
                   l.noRecentActivity,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500],
-                  ),
+                  style: textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
                 ),
               ),
             )
@@ -771,16 +769,18 @@ class _RecentActivityCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             a.subtitle,
-                            style: textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey[500]),
+                            style: textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[500],
+                            ),
                           ),
                         ],
                       ),
                     ),
                     Text(
                       time,
-                      style: textTheme.labelSmall
-                          ?.copyWith(color: Colors.grey[400]),
+                      style: textTheme.labelSmall?.copyWith(
+                        color: Colors.grey[400],
+                      ),
                     ),
                   ],
                 ),

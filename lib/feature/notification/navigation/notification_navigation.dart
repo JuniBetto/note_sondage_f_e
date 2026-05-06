@@ -52,6 +52,15 @@ class NotificationNavigation {
     return destination?.label;
   }
 
+  /// Naviga direttamente alla pagina dei turni (usato per allarmi locali).
+  static Future<void> openShifts({BuildContext? context}) async {
+    final sourceContext = context ?? navigatorKey.currentContext;
+    if (sourceContext == null) return;
+    await SchedulerBinding.instance.endOfFrame;
+    final navigationContext = navigatorKey.currentContext ?? sourceContext;
+    GoRouter.of(navigationContext).go(RouterPaths.shifts);
+  }
+
   static _NotificationDestination? _resolve(
     NotificationCenterItem item, {
     bool armIntents = false,
@@ -104,7 +113,9 @@ class NotificationNavigation {
       }
       return _NotificationDestination.path(
         path: RouterPaths.shifts,
-        label: (assignmentId?.isNotEmpty ?? false) ? 'Apri turno' : 'Apri turni',
+        label: (assignmentId?.isNotEmpty ?? false)
+            ? 'Apri turno'
+            : 'Apri turni',
       );
     }
 
@@ -143,19 +154,17 @@ class NotificationNavigation {
 enum _NotificationDestinationKind { path, named }
 
 class _NotificationDestination {
-  const _NotificationDestination.path({
-    required this.path,
-    required this.label,
-  })  : kind = _NotificationDestinationKind.path,
-        routeName = null,
-        extra = null;
+  const _NotificationDestination.path({required this.path, required this.label})
+    : kind = _NotificationDestinationKind.path,
+      routeName = null,
+      extra = null;
 
   const _NotificationDestination.named({
     required this.routeName,
     required this.extra,
     required this.label,
-  })  : kind = _NotificationDestinationKind.named,
-        path = null;
+  }) : kind = _NotificationDestinationKind.named,
+       path = null;
 
   final _NotificationDestinationKind kind;
   final String? path;

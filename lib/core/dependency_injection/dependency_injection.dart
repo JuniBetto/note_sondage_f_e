@@ -2,6 +2,7 @@ import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordi
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remote_data_source.dart';
 import 'package:note_sondage/feature/shift/infrastructure/repositories/shift_repository_impl.dart';
+import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/shift/notification/shift_alarm_scheduler.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -374,5 +375,8 @@ void _registerShift() {
       shiftBloc: getIt<ShiftBloc>(),
       localNotifications: getIt<LocalNotificationService>(),
     ),
+  );
+  getIt.registerLazySingleton<ShiftOpenIntentController>(
+    () => ShiftOpenIntentController(),
   );
 }

@@ -13,8 +13,8 @@ class ShiftAlarmScheduler {
   ShiftAlarmScheduler({
     required ShiftBloc shiftBloc,
     required LocalNotificationService localNotifications,
-  })  : _shiftBloc = shiftBloc,
-        _localNotifications = localNotifications;
+  }) : _shiftBloc = shiftBloc,
+       _localNotifications = localNotifications;
 
   final ShiftBloc _shiftBloc;
   final LocalNotificationService _localNotifications;

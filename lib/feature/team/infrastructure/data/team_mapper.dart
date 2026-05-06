@@ -16,9 +16,12 @@ class TeamMapper {
     final createdByUserId =
         (json['ownerId'] ?? json['createdByUserId'])?.toString() ?? '';
 
+    final rawColor = json['color']?.toString();
+    final color = (rawColor != null && rawColor.isNotEmpty) ? rawColor : null;
+
     return TeamEntity(
       json['id']?.toString(),
-      json['color']?.toString() ?? '',
+      color,
       null, // pendingInvitations is not returned by the API
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
@@ -63,7 +66,9 @@ class TeamMapper {
       description: json['description']?.toString() ?? '',
       createdByUserId:
           (json['ownerId'] ?? json['created_by_user_id'])?.toString() ?? '',
-      color: json['color']?.toString() ?? '',
+      color: (json['color']?.toString().isNotEmpty ?? false)
+          ? json['color']!.toString()
+          : null,
       listMember: [],
     );
   }

@@ -242,7 +242,8 @@ Widget viewScrollWebMobile(
           final item = entry.value;
           final teamId = item["teamId"] as String;
           final ownerUserId = (item["ownerUserId"] as String?) ?? '';
-          final isOwner = currentUserId.isNotEmpty && currentUserId == ownerUserId;
+          final isOwner =
+              currentUserId.isNotEmpty && currentUserId == ownerUserId;
 
           return isRow
               ? TeamComponentCard(

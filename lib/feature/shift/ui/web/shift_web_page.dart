@@ -61,8 +61,9 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         .toList();
   }
 
-  bool get _isOwnerOfAnyTeam =>
-      _teams.any((team) => team.id != null && team.createdByUserId == _currentUid);
+  bool get _isOwnerOfAnyTeam => _teams.any(
+    (team) => team.id != null && team.createdByUserId == _currentUid,
+  );
 
   bool get _canManageAnyTeam => _manageableTeams.isNotEmpty;
 
@@ -72,9 +73,15 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     _loadProfiles();
     _loadAssignments();
     _teamBloc.add(LoadTeamsEvent());
-    _realtimeSubscription = GetIt.instance<RealtimeNotificationService>()
-        .stream
+    _realtimeSubscription = GetIt.instance<RealtimeNotificationService>().stream
         .listen(_handleRealtimeNotification);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final shiftState = context.read<ShiftBloc>().state;
+      if (shiftState is ShiftAssignmentsLoaded) {
+        _tryConsumeShiftOpenIntent(context);
+      }
+    });
   }
 
   @override
@@ -107,7 +114,8 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
           _loadingTeamMemberIds.add(teamId)) {
         _teamMemberBloc.add(LoadTeamMembersByTeamIdEvent(teamId));
       }
-      if (!_rolesByTeamId.containsKey(teamId) && _loadingTeamRoleIds.add(teamId)) {
+      if (!_rolesByTeamId.containsKey(teamId) &&
+          _loadingTeamRoleIds.add(teamId)) {
         _loadRolesForTeam(teamId);
       }
     }
@@ -282,6 +290,22 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     }
 
     if (existing != null) {
+      // ── public → privato: cancella tutti i turni degli altri membri ──────
+      final wasPublic = existing.isPublic;
+      final nowPrivate = !result.isPublic;
+      if (wasPublic && nowPrivate && existing.teamId != null) {
+        final toDelete = _assignments.where(
+          (a) =>
+              a.id != existing.id &&
+              a.teamId == existing.teamId &&
+              a.shiftDate.year == existing.shiftDate.year &&
+              a.shiftDate.month == existing.shiftDate.month &&
+              a.shiftDate.day == existing.shiftDate.day,
+        );
+        for (final a in toDelete) {
+          context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(a.id));
+        }
+      }
       context.read<ShiftBloc>().add(
         UpdateShiftAssignmentEvent(
           assignmentId: existing.id,
@@ -376,8 +400,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final appPrimary = colorScheme.primaryColor ?? colorScheme.primary;
-    final borderColor =
-        colorScheme.borderColor ?? colorScheme.outlineVariant;
+    final borderColor = colorScheme.borderColor ?? colorScheme.outlineVariant;
 
     return MultiBlocListener(
       listeners: [

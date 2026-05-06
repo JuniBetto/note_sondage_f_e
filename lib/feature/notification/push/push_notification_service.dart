@@ -37,14 +37,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   // 2. Legge title/body dal payload data o dal blocco notification (fallback).
   final data = message.data;
-  final title =
-      data['title']?.toString().isNotEmpty == true
-          ? data['title']!
-          : message.notification?.title ?? 'Notifica';
-  final body =
-      data['body']?.toString().isNotEmpty == true
-          ? data['body']!
-          : message.notification?.body ?? '';
+  final title = data['title']?.toString().isNotEmpty == true
+      ? data['title']!
+      : message.notification?.title ?? 'Notifica';
+  final body = data['body']?.toString().isNotEmpty == true
+      ? data['body']!
+      : message.notification?.body ?? '';
   final metadata = {
     for (final entry in data.entries)
       if (entry.value.isNotEmpty &&
@@ -79,10 +77,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   const androidSettings = AndroidInitializationSettings('ic_launcher');
   const darwinSettings = DarwinInitializationSettings();
   await plugin.initialize(
-    const InitializationSettings(
-      android: androidSettings,
-      iOS: darwinSettings,
-    ),
+    const InitializationSettings(android: androidSettings, iOS: darwinSettings),
     onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
   );
 
@@ -237,7 +232,9 @@ class PushNotificationService {
         '[PushNotificationService] device registration skipped due to platform error: ${error.message ?? error.code}',
       );
     } catch (error) {
-      debugPrint('[PushNotificationService] device registration failed: $error');
+      debugPrint(
+        '[PushNotificationService] device registration failed: $error',
+      );
     }
   }
 
@@ -269,10 +266,7 @@ class PushNotificationService {
           data['title']?.toString() ??
           message.notification?.title ??
           'Notification',
-      body:
-          data['body']?.toString() ??
-          message.notification?.body ??
-          '',
+      body: data['body']?.toString() ?? message.notification?.body ?? '',
       occurredAt:
           DateTime.tryParse(data['occurredAt']?.toString() ?? '') ??
           DateTime.now(),
@@ -283,9 +277,7 @@ class PushNotificationService {
             entry.key.toString(): entry.value.toString(),
       },
     );
-    _controller.add(
-      notification,
-    );
+    _controller.add(notification);
     return notification;
   }
 
