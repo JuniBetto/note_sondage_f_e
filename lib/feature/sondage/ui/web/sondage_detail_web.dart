@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/domain/use_case/sondage_use_case.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
+import 'package:note_sondage/feature/sondage/ui/widgets/sondage_detail_sections.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -26,9 +27,16 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
   late final SondageBloc _bloc;
   late final TeamMemberUseCase _teamMemberUseCase;
   StreamSubscription<RealtimeNotification>? _subscription;
-  SondageEntity? _lastSondage;
   String? _loadedTeamId;
-  int? _teamMemberCount;
+  DateTime? _ignoreRealtimeUntil;
+  SondageEntity? _pendingVoteRollback;
+  final ValueNotifier<SondageEntity?> _sondageNotifier = ValueNotifier(null);
+  final ValueNotifier<bool> _isRefreshingNotifier = ValueNotifier(true);
+  final ValueNotifier<int?> _teamMemberCountNotifier = ValueNotifier(null);
+  final ValueNotifier<String?> _loadErrorNotifier = ValueNotifier(null);
+  final ValueNotifier<Set<String>> _pendingVoteOptionIdsNotifier =
+      ValueNotifier(<String>{});
+  bool _hasInitialContent = false;
 
   @override
   void initState() {
@@ -37,12 +45,12 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     _bloc = SondageBloc(
       sondageUseCase: getIt<SondageUseCase>(),
       sondageLocalDataSource: getIt(),
-    )
-      ..add(LoadSondageByIdEvent(widget.sondageId));
+    )..add(LoadSondageByIdEvent(widget.sondageId));
     _subscription = getIt<RealtimeNotificationService>().stream.listen((event) {
       if (!mounted || _bloc.isClosed) return;
       if (event.sourceService == 'sondage-service' &&
-          event.metadata['sondageId'] == widget.sondageId) {
+          event.metadata['sondageId'] == widget.sondageId &&
+          !_shouldIgnoreRealtimeRefresh) {
         _bloc.add(LoadSondageByIdEvent(widget.sondageId));
       }
     });
@@ -51,6 +59,11 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
   @override
   void dispose() {
     _subscription?.cancel();
+    _sondageNotifier.dispose();
+    _isRefreshingNotifier.dispose();
+    _teamMemberCountNotifier.dispose();
+    _loadErrorNotifier.dispose();
+    _pendingVoteOptionIdsNotifier.dispose();
     _bloc.close();
     super.dispose();
   }
@@ -65,15 +78,158 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     try {
       final members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
       if (!mounted) return;
-      setState(() {
-        _teamMemberCount = members.length;
-      });
+      _teamMemberCountNotifier.value = members.length;
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _teamMemberCount = null;
-      });
+      _teamMemberCountNotifier.value = null;
     }
+  }
+
+  void _handleBlocState(SondageState state) {
+    if (state is SondageLoading) {
+      if (_sondageNotifier.value != null) {
+        _isRefreshingNotifier.value = true;
+      }
+      return;
+    }
+
+    if (state is SondageLoaded || state is SondageActionSuccess) {
+      final sondage = state is SondageLoaded
+          ? state.sondage
+          : (state as SondageActionSuccess).sondage;
+      _pendingVoteRollback = null;
+      _pendingVoteOptionIdsNotifier.value = <String>{};
+      _sondageNotifier.value = sondage;
+      _loadErrorNotifier.value = null;
+      _isRefreshingNotifier.value = false;
+      _ensureTeamMemberCountLoaded(sondage);
+      if (!_hasInitialContent && mounted) {
+        setState(() {
+          _hasInitialContent = true;
+        });
+      }
+      return;
+    }
+
+    if (state is SondageError) {
+      if (_pendingVoteRollback != null) {
+        _sondageNotifier.value = _pendingVoteRollback;
+        _pendingVoteRollback = null;
+        _pendingVoteOptionIdsNotifier.value = <String>{};
+      }
+      _isRefreshingNotifier.value = false;
+      _loadErrorNotifier.value = state.message;
+    }
+  }
+
+  bool get _shouldIgnoreRealtimeRefresh =>
+      _ignoreRealtimeUntil != null &&
+      DateTime.now().isBefore(_ignoreRealtimeUntil!);
+
+  void _markLocalMutation() {
+    _ignoreRealtimeUntil = DateTime.now().add(const Duration(seconds: 1));
+  }
+
+  SondageEntity? _buildOptimisticVoteSondage(
+    SondageEntity current,
+    String optionId,
+  ) {
+    if (!current.canVote) {
+      return null;
+    }
+
+    final hasCurrentSingleVote = (current.currentUserOptionId ?? '')
+        .trim()
+        .isNotEmpty;
+    final hadUserVote =
+        hasCurrentSingleVote || current.currentUserOptionIds.isNotEmpty;
+    if (current.allowMultipleResponses) {
+      final isSelected = current.currentUserOptionIds.contains(optionId);
+      final updatedOptionIds = isSelected
+          ? current.currentUserOptionIds
+                .where((existingId) => existingId != optionId)
+                .toList()
+          : <String>{...current.currentUserOptionIds, optionId}.toList();
+      final updatedOptions = current.options.map((option) {
+        if (option.id != optionId) {
+          return option;
+        }
+        final nextCount = isSelected
+            ? (option.voteCount > 0 ? option.voteCount - 1 : 0)
+            : option.voteCount + 1;
+        return option.copyWith(voteCount: nextCount);
+      }).toList();
+      final hadVoteBefore = current.currentUserOptionIds.isNotEmpty;
+      final hasVoteAfter = updatedOptionIds.isNotEmpty;
+      final responseDelta = hadVoteBefore == hasVoteAfter
+          ? 0
+          : (hasVoteAfter ? 1 : -1);
+      final totalVoteDelta = isSelected ? -1 : 1;
+
+      return current.copyWith(
+        options: updatedOptions,
+        totalVotes: totalVoteDelta < 0 && current.totalVotes > 0
+            ? current.totalVotes - 1
+            : current.totalVotes + totalVoteDelta,
+        responses: responseDelta < 0 && current.responses > 0
+            ? current.responses - 1
+            : current.responses + responseDelta,
+        currentUserOptionIds: updatedOptionIds,
+        canVote: current.canVote,
+      );
+    }
+
+    if (current.currentUserOptionId == optionId) {
+      return null;
+    }
+
+    final previousOptionId = current.currentUserOptionId;
+    final updatedOptions = current.options.map((option) {
+      if (option.id == optionId) {
+        return option.copyWith(voteCount: option.voteCount + 1);
+      }
+      if (option.id == previousOptionId) {
+        return option.copyWith(
+          voteCount: option.voteCount > 0 ? option.voteCount - 1 : 0,
+        );
+      }
+      return option;
+    }).toList();
+
+    return current.copyWith(
+      options: updatedOptions,
+      totalVotes: current.totalVotes + (hadUserVote ? 0 : 1),
+      responses: hadUserVote ? current.responses : current.responses + 1,
+      currentUserOptionId: optionId,
+      currentUserOptionIds: <String>[optionId],
+      canVote: current.canVote,
+    );
+  }
+
+  void _voteForOption(String sondageId, String optionId) {
+    final current = _sondageNotifier.value;
+    if (current == null) {
+      return;
+    }
+    final optimisticSondage = _buildOptimisticVoteSondage(current, optionId);
+    if (optimisticSondage == null) {
+      return;
+    }
+    _pendingVoteRollback = current;
+    _pendingVoteOptionIdsNotifier.value = <String>{optionId};
+    _sondageNotifier.value = optimisticSondage;
+    _markLocalMutation();
+    _bloc.add(VoteSondageEvent(sondageId, optionId));
+  }
+
+  void _publishSondage(String sondageId) {
+    _markLocalMutation();
+    _bloc.add(PublishSondageEvent(sondageId));
+  }
+
+  void _closeSondage(String sondageId) {
+    _markLocalMutation();
+    _bloc.add(CloseSondageEvent(sondageId));
   }
 
   @override
@@ -85,571 +241,250 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
 
     return BlocProvider.value(
       value: _bloc,
-      child: BlocConsumer<SondageBloc, SondageState>(
-        listenWhen: (_, state) => state is SondageError,
+      child: BlocListener<SondageBloc, SondageState>(
         listener: (context, state) {
-          if (state is SondageError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+          if (!mounted) {
+            return;
+          }
+          _handleBlocState(state);
+          if (state is SondageError && context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
-        buildWhen: (_, state) =>
-            state is SondageInitial ||
-            state is SondageLoading ||
-            state is SondageLoaded ||
-            state is SondageActionSuccess ||
-            state is SondageError,
-        builder: (context, state) {
-          if (state is SondageLoaded) {
-            _lastSondage = state.sondage;
-          } else if (state is SondageActionSuccess) {
-            _lastSondage = state.sondage;
-          }
-
-          final sondage = state is SondageLoaded
-              ? state.sondage
-              : state is SondageActionSuccess
-              ? state.sondage
-              : _lastSondage;
-          final isRefreshing = state is SondageLoading && sondage != null;
-
-          if ((state is SondageLoading || state is SondageInitial) &&
-              sondage == null) {
-            return Scaffold(
-              backgroundColor: colorScheme.homePrimary,
-              body: const Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (state is SondageError && sondage == null) {
-            return Scaffold(
-              backgroundColor: colorScheme.homePrimary,
-              body: Center(child: Text(localization.surveyNotFound)),
-            );
-          }
-
-          if (sondage == null) {
-            return Scaffold(
-              backgroundColor: colorScheme.homePrimary,
-              body: Center(child: Text(localization.surveyNotFound)),
-            );
-          }
-
-          _ensureTeamMemberCountLoaded(sondage);
-
-          final sondageColor = sondage.color;
-          final detailText = sondage.description?.isNotEmpty == true
-              ? sondage.description!
-              : sondage.focus;
-          final teamMemberCount = _teamMemberCount;
-          final progressValue =
-              teamMemberCount != null && teamMemberCount > 0
-              ? (sondage.responses / teamMemberCount).clamp(0.0, 1.0)
-              : 0.0;
-          final progressLabel =
-              teamMemberCount != null && teamMemberCount > 0
-              ? '${sondage.responses} / $teamMemberCount ${localization.responses}'
-              : '${sondage.responses} ${localization.responses}';
-
-          return Scaffold(
-            backgroundColor: colorScheme.homePrimary,
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1180),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (isRefreshing)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 16),
-                          child: LinearProgressIndicator(minHeight: 2),
+        child: !_hasInitialContent
+            ? ValueListenableBuilder<bool>(
+                valueListenable: _isRefreshingNotifier,
+                builder: (context, isRefreshing, _) {
+                  return ValueListenableBuilder<String?>(
+                    valueListenable: _loadErrorNotifier,
+                    builder: (context, errorMessage, _) {
+                      if (isRefreshing) {
+                        return Scaffold(
+                          backgroundColor: colorScheme.homePrimary,
+                          body: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+                      return Scaffold(
+                        backgroundColor: colorScheme.homePrimary,
+                        body: Center(
+                          child: Text(
+                            errorMessage ?? localization.surveyNotFound,
+                          ),
                         ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.bgNavbarSurface,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              onPressed: () => context.go(RouterPaths.sondage),
-                              icon: Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: colorScheme.iconLabel,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    sondage.name,
-                                    style: textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.iconLabel,
+                      );
+                    },
+                  );
+                },
+              )
+            : Scaffold(
+                backgroundColor: colorScheme.homePrimary,
+                body: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1180),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ValueListenableBuilder<bool>(
+                            valueListenable: _isRefreshingNotifier,
+                            builder: (context, isRefreshing, _) {
+                              if (!isRefreshing) {
+                                return const SizedBox.shrink();
+                              }
+                              return const Padding(
+                                padding: EdgeInsets.only(bottom: 16),
+                                child: LinearProgressIndicator(minHeight: 2),
+                              );
+                            },
+                          ),
+                          ValueListenableBuilder<SondageEntity?>(
+                            valueListenable: _sondageNotifier,
+                            builder: (context, sondage, _) {
+                              if (sondage == null) {
+                                return const SizedBox.shrink();
+                              }
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.bgNavbarSurface,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Row(
+                                  children: [
+                                    IconButton(
+                                      onPressed: () =>
+                                          context.go(RouterPaths.sondage),
+                                      icon: Icon(
+                                        Icons.arrow_back_ios_new_rounded,
+                                        color: colorScheme.iconLabel,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    sondage.teamName ?? '-',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: Colors.grey[600],
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            sondage.name,
+                                            style: textTheme.headlineSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: colorScheme.iconLabel,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            sondage.teamName ?? '-',
+                                            style: textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  color: Colors.grey[600],
+                                                ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _StatusChip(status: sondage.status.name),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isCompact = constraints.maxWidth < 900;
-                          final children = [
-                            _DetailCard(
-                              colorScheme: colorScheme,
-                              sondageColor: sondageColor,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _LabelValue(
-                                    label: localization.focus,
-                                    value: detailText,
-                                    icon: Icons.description_outlined,
-                                    textTheme: textTheme,
-                                    colorScheme: colorScheme,
-                                  ),
-                                  const Divider(height: 24),
-                                  _LabelValue(
-                                    label: 'Team',
-                                    value: sondage.teamName ?? '-',
-                                    icon: Icons.groups_outlined,
-                                    textTheme: textTheme,
-                                    colorScheme: colorScheme,
-                                  ),
-                                  const Divider(height: 24),
-                                  _LabelValue(
-                                    label: localization.responses,
-                                    value: '${sondage.responses}',
-                                    icon: Icons.people_outline,
-                                    textTheme: textTheme,
-                                    colorScheme: colorScheme,
-                                  ),
-                                  const Divider(height: 24),
-                                  _LabelValue(
-                                    label: localization.createdDate,
-                                    value: _formatDate(sondage.createdDate),
-                                    icon: Icons.calendar_today_outlined,
-                                    textTheme: textTheme,
-                                    colorScheme: colorScheme,
-                                  ),
-                                  if (sondage.expiryDate != null) ...[
-                                    const Divider(height: 24),
-                                    _LabelValue(
-                                      label: localization.expiryDate,
-                                      value: _formatDate(sondage.expiryDate!),
-                                      icon: Icons.event_outlined,
-                                      textTheme: textTheme,
-                                      colorScheme: colorScheme,
+                                    SondageStatusChip(
+                                      status: sondage.status.name,
                                     ),
                                   ],
-                                ],
-                              ),
-                            ),
-                            _DetailCard(
-                              colorScheme: colorScheme,
-                              sondageColor: sondageColor,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    localization.progress,
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.iconLabel,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: LinearProgressIndicator(
-                                      value: progressValue,
-                                      minHeight: 10,
-                                      backgroundColor: Colors.grey[300],
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(
-                                            sondageColor,
-                                          ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    progressLabel,
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _DetailCard(
-                              colorScheme: colorScheme,
-                              sondageColor: sondageColor,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    localization.options,
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.iconLabel,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  if (sondage.options.isEmpty)
-                                    Text(
-                                      localization.noOptionsAvailable,
-                                      style: textTheme.bodyMedium?.copyWith(
-                                        color: Colors.grey[600],
-                                      ),
-                                    )
-                                  else
-                                    ...sondage.options.map((option) {
-                                      final isSelected =
-                                          sondage.currentUserOptionId == option.id;
-                                      final totalVotes =
-                                          sondage.responses > 0
-                                          ? sondage.responses
-                                          : 1;
-                                      final votePercent = (option.voteCount /
-                                              totalVotes)
-                                          .clamp(0.0, 1.0);
-
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 12,
-                                        ),
-                                        child: InkWell(
-                                          onTap: sondage.canVote
-                                              ? () => _bloc.add(
-                                                  VoteSondageEvent(
-                                                    sondage.id,
-                                                    option.id,
-                                                  ),
-                                                )
-                                              : null,
-                                          borderRadius: BorderRadius.circular(10),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(
-                                              milliseconds: 200,
-                                            ),
-                                            padding: const EdgeInsets.all(14),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? sondageColor.withValues(
-                                                      alpha: 0.15,
-                                                    )
-                                                  : colorScheme.homeSecondary,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? sondageColor
-                                                    : Colors.transparent,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    CircleAvatar(
-                                                      radius: 14,
-                                                      backgroundColor:
-                                                          sondageColor
-                                                              .withValues(
-                                                                alpha: 0.2,
-                                                              ),
-                                                      child: Text(
-                                                        '${option.sortOrder + 1}',
-                                                        style: TextStyle(
-                                                          color: sondageColor,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 12,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 10),
-                                                    Expanded(
-                                                      child: Text(
-                                                        option.label,
-                                                        style: textTheme.bodyMedium
-                                                            ?.copyWith(
-                                                              color: colorScheme
-                                                                  .iconLabel,
-                                                              fontWeight: isSelected
-                                                                  ? FontWeight
-                                                                        .bold
-                                                                  : FontWeight
-                                                                        .normal,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                    if (isSelected)
-                                                      Icon(
-                                                        Icons
-                                                            .check_circle_rounded,
-                                                        color: sondageColor,
-                                                        size: 20,
-                                                      ),
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                      localization.votes(
-                                                        option.voteCount,
-                                                      ),
-                                                      style: textTheme.bodySmall
-                                                          ?.copyWith(
-                                                            color:
-                                                                Colors.grey[600],
-                                                          ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 8),
-                                                ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                  child: LinearProgressIndicator(
-                                                    value: votePercent,
-                                                    minHeight: 6,
-                                                    backgroundColor:
-                                                        Colors.grey[200],
-                                                    valueColor:
-                                                        AlwaysStoppedAnimation<
-                                                          Color
-                                                        >(sondageColor),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isCompact = constraints.maxWidth < 900;
+                              final infoSection = AnimatedBuilder(
+                                animation: Listenable.merge([
+                                  _sondageNotifier,
+                                  _teamMemberCountNotifier,
+                                ]),
+                                builder: (context, _) {
+                                  final sondage = _sondageNotifier.value;
+                                  if (sondage == null) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return SondageDetailInfoSection(
+                                    sondage: sondage,
+                                    formatDate: _formatDate,
+                                    colorScheme: colorScheme,
+                                    textTheme: textTheme,
+                                  );
+                                },
+                              );
+                              final progressSection = AnimatedBuilder(
+                                animation: Listenable.merge([
+                                  _sondageNotifier,
+                                  _teamMemberCountNotifier,
+                                ]),
+                                builder: (context, _) {
+                                  final sondage = _sondageNotifier.value;
+                                  if (sondage == null) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return SondageDetailProgressSection(
+                                    sondage: sondage,
+                                    teamMemberCount:
+                                        _teamMemberCountNotifier.value,
+                                    colorScheme: colorScheme,
+                                    textTheme: textTheme,
+                                  );
+                                },
+                              );
+                              final voteSection = AnimatedBuilder(
+                                animation: Listenable.merge([
+                                  _sondageNotifier,
+                                  _pendingVoteOptionIdsNotifier,
+                                ]),
+                                builder: (context, _) {
+                                  final sondage = _sondageNotifier.value;
+                                  if (sondage == null) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return SondageVoteSection(
+                                    sondage: sondage,
+                                    pendingOptionIds:
+                                        _pendingVoteOptionIdsNotifier.value,
+                                    onVote: (optionId) =>
+                                        _voteForOption(sondage.id, optionId),
+                                    colorScheme: colorScheme,
+                                    textTheme: textTheme,
+                                    compactPadding: const EdgeInsets.all(18),
+                                  );
+                                },
+                              );
+                              final actionsSection =
+                                  ValueListenableBuilder<SondageEntity?>(
+                                    valueListenable: _sondageNotifier,
+                                    builder: (context, sondage, _) {
+                                      if (sondage == null) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return SondageOwnerActionsSection(
+                                        sondage: sondage,
+                                        onPublish: () =>
+                                            _publishSondage(sondage.id),
+                                        onClose: () =>
+                                            _closeSondage(sondage.id),
                                       );
-                                    }),
-                                  if (!sondage.canVote &&
-                                      sondage.status == SondageStatus.active)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        sondage.currentUserOptionId != null
-                                            ? localization.alreadyVoted
-                                            : localization.cannotVote,
-                                        style: textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey[500],
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            if (sondage.canPublish || sondage.canClose)
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: [
-                                  if (sondage.canPublish)
-                                    FilledButton.icon(
-                                      onPressed: () => _bloc.add(
-                                        PublishSondageEvent(sondage.id),
-                                      ),
-                                      icon: const Icon(
-                                        Icons.publish_rounded,
-                                      ),
-                                      label: Text(localization.publish),
-                                    ),
-                                  if (sondage.canClose)
-                                    FilledButton.tonalIcon(
-                                      onPressed: () => _bloc.add(
-                                        CloseSondageEvent(sondage.id),
-                                      ),
-                                      icon: const Icon(
-                                        Icons.lock_clock_rounded,
-                                      ),
-                                      label: Text(localization.closeSurvey),
-                                    ),
-                                ],
-                              ),
-                          ];
+                                    },
+                                  );
 
-                          if (isCompact) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                for (final child in children) ...[
-                                  child,
-                                  const SizedBox(height: 18),
-                                ],
-                              ],
-                            );
-                          }
+                              if (isCompact) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    infoSection,
+                                    const SizedBox(height: 18),
+                                    progressSection,
+                                    const SizedBox(height: 18),
+                                    voteSection,
+                                    const SizedBox(height: 18),
+                                    actionsSection,
+                                  ],
+                                );
+                              }
 
-                          return Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              return Column(
                                 children: [
-                                  Expanded(child: children[0]),
-                                  const SizedBox(width: 20),
-                                  Expanded(child: children[1]),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: infoSection),
+                                      const SizedBox(width: 20),
+                                      Expanded(child: progressSection),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+                                  voteSection,
+                                  const SizedBox(height: 20),
+                                  actionsSection,
                                 ],
-                              ),
-                              const SizedBox(height: 20),
-                              children[2],
-                              if (children.length > 3) ...[
-                                const SizedBox(height: 20),
-                                children[3],
-                              ],
-                            ],
-                          );
-                        },
+                              );
+                            },
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
       ),
     );
   }
 
   String _formatDate(DateTime value) {
     return '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.sondageStatusColor(status);
-    final l10n = AppLocalizations.of(context)!;
-    final label = switch (status.toLowerCase()) {
-      'active' => l10n.statusActive,
-      'draft' => l10n.statusDraft,
-      'closed' => l10n.statusClosed,
-      'completed' => l10n.statusCompleted,
-      'published' => l10n.statusPublished,
-      _ => status.toUpperCase(),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({
-    required this.colorScheme,
-    required this.sondageColor,
-    required this.child,
-  });
-
-  final ColorScheme colorScheme;
-  final Color sondageColor;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: colorScheme.bgNavbarSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: sondageColor.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
-class _LabelValue extends StatelessWidget {
-  const _LabelValue({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.textTheme,
-    required this.colorScheme,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final TextTheme textTheme;
-  final ColorScheme colorScheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
-        const SizedBox(width: 10),
-        Text(
-          '$label: ',
-          style: textTheme.bodyMedium?.copyWith(
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.iconLabel,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }

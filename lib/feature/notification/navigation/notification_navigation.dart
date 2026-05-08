@@ -22,7 +22,7 @@ class NotificationNavigation {
     }
 
     final sourceContext = context ?? navigatorKey.currentContext;
-    if (sourceContext == null) {
+    if (sourceContext == null || !sourceContext.mounted) {
       return;
     }
 
@@ -35,6 +35,9 @@ class NotificationNavigation {
 
     await SchedulerBinding.instance.endOfFrame;
     final navigationContext = navigatorKey.currentContext ?? sourceContext;
+    if (!navigationContext.mounted) {
+      return;
+    }
     final router = GoRouter.of(navigationContext);
 
     switch (destination.kind) {
@@ -55,9 +58,12 @@ class NotificationNavigation {
   /// Naviga direttamente alla pagina dei turni (usato per allarmi locali).
   static Future<void> openShifts({BuildContext? context}) async {
     final sourceContext = context ?? navigatorKey.currentContext;
-    if (sourceContext == null) return;
+    if (sourceContext == null || !sourceContext.mounted) return;
     await SchedulerBinding.instance.endOfFrame;
     final navigationContext = navigatorKey.currentContext ?? sourceContext;
+    if (!navigationContext.mounted) {
+      return;
+    }
     GoRouter.of(navigationContext).go(RouterPaths.shifts);
   }
 

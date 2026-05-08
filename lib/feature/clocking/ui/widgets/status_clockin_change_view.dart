@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:note_sondage/core/archive/user_archive_service.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_entity.dart';
 import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
@@ -9,6 +11,7 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class StatusClockInChangeView extends StatefulWidget {
@@ -27,9 +30,12 @@ class StatusClockInChangeView extends StatefulWidget {
 }
 
 class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
+  final UserArchiveService _archiveService = getIt<UserArchiveService>();
   late final TextEditingController _searchController;
   DateTime? _selectedDateFilter;
   final Set<ClockingStatus> _selectedStatusFilters = <ClockingStatus>{};
+  Set<String> _archivedRecordIds = <String>{};
+  bool _showArchivedOnly = false;
 
   @override
   void initState() {
@@ -38,12 +44,37 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     _searchController.addListener(() {
       if (mounted) setState(() {});
     });
+    _loadArchivedRecords();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  String get _currentUserId => context.read<AuthBloc>().state.user.uid;
+
+  Future<void> _loadArchivedRecords() async {
+    final archived = await _archiveService.loadArchivedIds(
+      userId: _currentUserId,
+      bucket: ArchiveBuckets.clockingRecords,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _archivedRecordIds = archived;
+    });
+  }
+
+  Future<void> _toggleArchiveRecord(String recordId) async {
+    await _archiveService.toggleArchived(
+      userId: _currentUserId,
+      bucket: ArchiveBuckets.clockingRecords,
+      itemId: recordId,
+    );
+    await _loadArchivedRecords();
   }
 
   @override
@@ -77,6 +108,15 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
             showingPersonalHistory: showingPersonalHistory,
           );
           final filteredRecords = _filterRecords(records);
+          final foregroundRecords = filteredRecords
+              .where((record) => !_archivedRecordIds.contains(record.id))
+              .toList();
+          final archivedRecords = filteredRecords
+              .where((record) => _archivedRecordIds.contains(record.id))
+              .toList();
+          final displayedRecords = _showArchivedOnly
+              ? archivedRecords
+              : foregroundRecords;
           final teamState = context.watch<TeamBloc>().state;
           final selectedTeam = _selectedTeam(teamState, widget.selectedTeamId);
           final authState = context.watch<AuthBloc>().state;
@@ -84,7 +124,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
               authState.user.isNotEmpty &&
               selectedTeam?.createdByUserId == authState.user.uid;
 
-          return Column(
+          final col = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -102,8 +142,8 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                   ),
                   const SizedBox(width: 12),
                   OutlinedButton.icon(
-                    onPressed: filteredRecords.isNotEmpty
-                        ? () => _exportPdf(filteredRecords, selectedTeam)
+                    onPressed: displayedRecords.isNotEmpty
+                        ? () => _exportPdf(displayedRecords, selectedTeam)
                         : null,
                     icon: const Icon(Icons.download_rounded),
                     label: Text(localization.downloadPdf),
@@ -118,6 +158,15 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                     color: Colors.grey[600],
                   ),
                 ),
+              const SizedBox(height: 16),
+              ArchiveViewToggle(
+                showArchivedOnly: _showArchivedOnly,
+                primaryCount: foregroundRecords.length,
+                archivedCount: archivedRecords.length,
+                onChanged: (value) {
+                  setState(() => _showArchivedOnly = value);
+                },
+              ),
               const SizedBox(height: 16),
               widget.isMobile
                   ? Column(
@@ -175,50 +224,58 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                       ],
                     ),
               const SizedBox(height: 16),
-              if (filteredRecords.isEmpty)
+              if (displayedRecords.isEmpty)
                 _InfoState(
-                  message: showingPersonalHistory
-                      ? localization.noClockingsForFilter
-                      : localization.noClockingsForTeam,
+                  message: _showArchivedOnly
+                      ? 'Nessun record archiviato.'
+                      : (showingPersonalHistory
+                            ? localization.noClockingsForFilter
+                            : localization.noClockingsForTeam),
                 )
               else if (widget.isMobile)
                 Column(
-                  children: filteredRecords
+                  children: displayedRecords
                       .map(
                         (record) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _MobileRecordCard(
                             record: record,
                             isOwner: isOwner,
+                            isArchived: _archivedRecordIds.contains(record.id),
                             onDecommit: () => _decommitRecord(record),
                             onCommit: () => _commitRecord(record),
                             onEdit: () => _editRecord(record),
+                            onArchive: () => _toggleArchiveRecord(record.id),
                           ),
                         ),
                       )
                       .toList(),
                 )
               else
-                SingleChildScrollView(
-                  child: Column(
-                    children: filteredRecords
-                        .map(
-                          (record) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _WebRecordRow(
-                              record: record,
-                              isOwner: isOwner,
-                              onDecommit: () => _decommitRecord(record),
-                              onCommit: () => _commitRecord(record),
-                              onEdit: () => _editRecord(record),
+                Column(
+                  children: displayedRecords
+                      .map(
+                        (record) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _WebRecordRow(
+                            record: record,
+                            isOwner: isOwner,
+                            isArchived: _archivedRecordIds.contains(
+                              record.id,
                             ),
+                            onDecommit: () => _decommitRecord(record),
+                            onCommit: () => _commitRecord(record),
+                            onEdit: () => _editRecord(record),
+                            onArchive: () =>
+                                _toggleArchiveRecord(record.id),
                           ),
-                        )
-                        .toList(),
-                  ),
+                        ),
+                      )
+                      .toList(),
                 ),
             ],
           );
+          return widget.isMobile ? col : SingleChildScrollView(child: col);
         },
       ),
     );
@@ -548,16 +605,20 @@ class _WebRecordRow extends StatelessWidget {
   const _WebRecordRow({
     required this.record,
     required this.isOwner,
+    required this.isArchived,
     required this.onDecommit,
     required this.onCommit,
     required this.onEdit,
+    required this.onArchive,
   });
 
   final ClockingRecordEntity record;
   final bool isOwner;
+  final bool isArchived;
   final VoidCallback onDecommit;
   final VoidCallback onCommit;
   final VoidCallback onEdit;
+  final VoidCallback onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -615,6 +676,15 @@ class _WebRecordRow extends StatelessWidget {
               onEdit: onEdit,
             ),
           ),
+          const SizedBox(width: 8),
+          IconButton(
+            tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
+            onPressed: onArchive,
+            icon: Icon(
+              isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+              color: Colors.blueGrey,
+            ),
+          ),
         ],
       ),
     );
@@ -625,16 +695,20 @@ class _MobileRecordCard extends StatelessWidget {
   const _MobileRecordCard({
     required this.record,
     required this.isOwner,
+    required this.isArchived,
     required this.onDecommit,
     required this.onCommit,
     required this.onEdit,
+    required this.onArchive,
   });
 
   final ClockingRecordEntity record;
   final bool isOwner;
+  final bool isArchived;
   final VoidCallback onDecommit;
   final VoidCallback onCommit;
   final VoidCallback onEdit;
+  final VoidCallback onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -650,7 +724,22 @@ class _MobileRecordCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _RecordSummary(record: record),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _RecordSummary(record: record)),
+              IconButton(
+                tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
+                onPressed: onArchive,
+                icon: Icon(
+                  isArchived
+                      ? Icons.unarchive_outlined
+                      : Icons.archive_outlined,
+                  color: Colors.blueGrey,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 12,

@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 
 class SondageMapper {
+  static String? _normalizeOptionalString(dynamic value) {
+    final normalized = value?.toString().trim();
+    if (normalized == null ||
+        normalized.isEmpty ||
+        normalized.toLowerCase() == 'null') {
+      return null;
+    }
+    return normalized;
+  }
+
   static Color _deriveColor(Map<String, dynamic> json) {
     final rawColor = json['color'];
     if (rawColor is int) {
@@ -52,7 +62,10 @@ class SondageMapper {
               id: item['id']?.toString() ?? '',
               label: item['label']?.toString() ?? '',
               sortOrder: (item['sortOrder'] as num?)?.toInt() ?? 0,
-              voteCount: (item['voteCount'] as num?)?.toInt() ?? 0,
+              voteCount:
+                  (item['voteCount'] as num?)?.toInt() ??
+                  (item['votes'] as num?)?.toInt() ??
+                  0,
             ),
           );
         } else if (item is Map) {
@@ -61,7 +74,10 @@ class SondageMapper {
               id: item['id']?.toString() ?? '',
               label: item['label']?.toString() ?? '',
               sortOrder: (item['sortOrder'] as num?)?.toInt() ?? 0,
-              voteCount: (item['voteCount'] as num?)?.toInt() ?? 0,
+              voteCount:
+                  (item['voteCount'] as num?)?.toInt() ??
+                  (item['votes'] as num?)?.toInt() ??
+                  0,
             ),
           );
         }
@@ -70,17 +86,30 @@ class SondageMapper {
 
     final name = json['name']?.toString() ?? json['title']?.toString() ?? '';
     final description = json['description']?.toString();
+    final currentUserOptionIds = ((json['currentUserOptionIds'] as List?) ?? [])
+        .map((value) => value?.toString() ?? '')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty && value.toLowerCase() != 'null')
+        .toList();
+    final currentUserOptionId = _normalizeOptionalString(
+      json['currentUserOptionId'],
+    );
 
     return SondageEntity(
       id: json['id']?.toString() ?? '',
       name: name,
       focus: json['focus']?.toString() ?? description ?? '',
       status: SondageStatus.fromString(json['status']?.toString() ?? 'draft'),
-      responses: (json['responses'] as num?)?.toInt() ??
+      responses:
+          (json['participantCount'] as num?)?.toInt() ??
+          (json['responses'] as num?)?.toInt() ??
           (json['totalVotes'] as num?)?.toInt() ??
           0,
-      totalQuestions: (json['totalQuestions'] as num?)?.toInt() ??
-          options.length,
+      totalVotes:
+          (json['totalVotes'] as num?)?.toInt() ??
+          options.fold(0, (sum, option) => sum + option.voteCount),
+      totalQuestions:
+          (json['totalQuestions'] as num?)?.toInt() ?? options.length,
       createdDate: createdDate ?? DateTime.now(),
       expiryDate: expiryDate,
       color: _deriveColor(json),
@@ -88,8 +117,10 @@ class SondageMapper {
       teamId: json['teamId']?.toString(),
       teamName: json['teamName']?.toString(),
       description: description,
+      allowMultipleResponses: json['allowMultipleResponses'] == true,
       options: options,
-      currentUserOptionId: json['currentUserOptionId']?.toString(),
+      currentUserOptionId: currentUserOptionId,
+      currentUserOptionIds: currentUserOptionIds,
       canEdit: json['canEdit'] == true,
       canDelete: json['canDelete'] == true,
       canPublish: json['canPublish'] == true,
@@ -103,8 +134,11 @@ class SondageMapper {
       if (entity.teamId != null && entity.teamId!.isNotEmpty)
         'teamId': entity.teamId,
       'title': entity.name,
-      'description': entity.description ?? entity.focus,
-      if (entity.expiryDate != null) 'expiresAt': entity.expiryDate!.toIso8601String(),
+      if (entity.description != null && entity.description!.trim().isNotEmpty)
+        'description': entity.description!.trim(),
+      'allowMultipleResponses': entity.allowMultipleResponses,
+      if (entity.expiryDate != null)
+        'expiresAt': entity.expiryDate!.toIso8601String(),
       'options': entity.options.map((option) => option.label).toList(),
     };
   }

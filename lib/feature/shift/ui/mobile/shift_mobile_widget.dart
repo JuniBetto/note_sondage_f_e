@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
@@ -10,6 +11,7 @@ import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordi
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments_list.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
@@ -21,6 +23,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 
 /// Mobile widget embedded inside the clocking section (or standalone).
 class ShiftMobileWidget extends StatefulWidget {
@@ -34,6 +37,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   final TeamBloc _teamBloc = GetIt.instance<TeamBloc>();
   final TeamMemberBloc _teamMemberBloc = GetIt.instance<TeamMemberBloc>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
+  final UserArchiveService _archiveService =
+      GetIt.instance<UserArchiveService>();
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   DateTime _focusedMonth = DateTime.now();
@@ -44,6 +49,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   final Map<String, List<RoleEntity>> _rolesByTeamId = {};
   final Set<String> _loadingTeamMemberIds = <String>{};
   final Set<String> _loadingTeamRoleIds = <String>{};
+  Set<String> _archivedAssignmentIds = <String>{};
+  bool _showArchivedOnly = false;
 
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid;
   String get _currentEmail =>
@@ -69,6 +76,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     _loadProfiles();
     _loadAssignments();
     _teamBloc.add(LoadTeamsEvent());
+    unawaited(_loadArchivedAssignments());
     _realtimeSubscription = GetIt.instance<RealtimeNotificationService>().stream
         .listen(_handleRealtimeNotification);
     // Se arrivando sulla pagina c'è già un intent pendente (es. tap su
@@ -99,6 +107,32 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     context.read<ShiftBloc>().add(
       LoadShiftAssignmentsEvent(from: first, to: last),
     );
+  }
+
+  Future<void> _loadArchivedAssignments() async {
+    final archived = await _archiveService.loadArchivedIds(
+      userId: _currentUid,
+      bucket: ArchiveBuckets.shiftAssignments,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _archivedAssignmentIds = archived;
+    });
+  }
+
+  Future<void> _setAssignmentArchived(
+    ShiftAssignmentEntity assignment,
+    bool archived,
+  ) async {
+    await _archiveService.setArchived(
+      userId: _currentUid,
+      bucket: ArchiveBuckets.shiftAssignments,
+      itemId: assignment.id,
+      archived: archived,
+    );
+    await _loadArchivedAssignments();
   }
 
   void _onMonthChanged(DateTime month) {
@@ -285,8 +319,18 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     );
     if (result == null) return;
 
+    if (result.archived && existing != null) {
+      await _setAssignmentArchived(existing, true);
+      return;
+    }
+
     if (result.deleted && existing != null) {
-      context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(existing.id));
+      final assignmentsToDelete = _relatedPublicAssignments(existing);
+      for (final assignment in assignmentsToDelete) {
+        context.read<ShiftBloc>().add(
+          DeleteShiftAssignmentEvent(assignment.id),
+        );
+      }
       return;
     }
 
@@ -295,14 +339,9 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       final wasPublic = existing.isPublic;
       final nowPrivate = !result.isPublic;
       if (wasPublic && nowPrivate && existing.teamId != null) {
-        final toDelete = _assignments.where(
-          (a) =>
-              a.id != existing.id &&
-              a.teamId == existing.teamId &&
-              a.shiftDate.year == existing.shiftDate.year &&
-              a.shiftDate.month == existing.shiftDate.month &&
-              a.shiftDate.day == existing.shiftDate.day,
-        );
+        final toDelete = _relatedPublicAssignments(
+          existing,
+        ).where((assignment) => assignment.id != existing.id);
         for (final a in toDelete) {
           context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(a.id));
         }
@@ -346,6 +385,41 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         ),
       );
     }
+  }
+
+  Iterable<ShiftAssignmentEntity> _relatedPublicAssignments(
+    ShiftAssignmentEntity existing,
+  ) {
+    if (!existing.isPublic || existing.teamId == null) {
+      return [existing];
+    }
+
+    return _assignments.where(
+      (assignment) =>
+          assignment.isPublic &&
+          assignment.teamId == existing.teamId &&
+          _isSameShiftDate(assignment.shiftDate, existing.shiftDate) &&
+          _isSameShiftTime(assignment, existing) &&
+          assignment.overnight == existing.overnight &&
+          (assignment.profileId == existing.profileId ||
+              assignment.profileName == existing.profileName),
+    );
+  }
+
+  bool _isSameShiftDate(DateTime left, DateTime right) {
+    return left.year == right.year &&
+        left.month == right.month &&
+        left.day == right.day;
+  }
+
+  bool _isSameShiftTime(
+    ShiftAssignmentEntity left,
+    ShiftAssignmentEntity right,
+  ) {
+    return left.startTime.hour == right.startTime.hour &&
+        left.startTime.minute == right.startTime.minute &&
+        left.endTime.hour == right.endTime.hour &&
+        left.endTime.minute == right.endTime.minute;
   }
 
   Future<void> _onDayTap(
@@ -400,6 +474,12 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+    final foregroundAssignments = _assignments
+        .where((assignment) => !_archivedAssignmentIds.contains(assignment.id))
+        .toList();
+    final archivedAssignments = _assignments
+        .where((assignment) => _archivedAssignmentIds.contains(assignment.id))
+        .toList();
 
     return MultiBlocListener(
       listeners: [
@@ -485,12 +565,40 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
               ],
             ),
             const SizedBox(height: 12),
-            ShiftCalendarWidget(
-              assignments: _assignments,
-              focusedMonth: _focusedMonth,
-              onMonthChanged: _onMonthChanged,
-              onDayTap: (date, assignments) =>
-                  _onDayTap(context, date, assignments),
+            ArchiveViewToggle(
+              showArchivedOnly: _showArchivedOnly,
+              primaryCount: foregroundAssignments.length,
+              archivedCount: archivedAssignments.length,
+              primaryLabel: 'Calendario',
+              archivedLabel: 'Archivio',
+              onChanged: (value) {
+                setState(() => _showArchivedOnly = value);
+              },
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _showArchivedOnly
+                  ? ShiftArchivedAssignmentsList(
+                      assignments: archivedAssignments,
+                      compact: false,
+                      onOpen: (assignment) {
+                        _openDialogForAssignment(
+                          context,
+                          assignment.shiftDate,
+                          existing: assignment,
+                        );
+                      },
+                      onRestore: (assignment) {
+                        _setAssignmentArchived(assignment, false);
+                      },
+                    )
+                  : ShiftCalendarWidget(
+                      assignments: foregroundAssignments,
+                      focusedMonth: _focusedMonth,
+                      onMonthChanged: _onMonthChanged,
+                      onDayTap: (date, assignments) =>
+                          _onDayTap(context, date, assignments),
+                    ),
             ),
           ],
         ),

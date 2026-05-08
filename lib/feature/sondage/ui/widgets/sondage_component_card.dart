@@ -14,7 +14,11 @@ class SondageComponentCard extends StatefulWidget {
   final Color colorSondage;
   final bool isActive;
   final bool canDelete;
+  final bool canEdit;
+  final bool isArchived;
   final VoidCallback onTap;
+  final VoidCallback? onEditTap;
+  final VoidCallback? onArchiveTap;
   final Function(String) onDeleteTap;
 
   const SondageComponentCard({
@@ -30,7 +34,11 @@ class SondageComponentCard extends StatefulWidget {
     required this.colorSondage,
     this.isActive = false,
     this.canDelete = false,
+    this.canEdit = false,
+    this.isArchived = false,
     required this.onTap,
+    this.onEditTap,
+    this.onArchiveTap,
     required this.onDeleteTap,
   });
 
@@ -100,13 +108,51 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (widget.canDelete)
-                      IconButton(
-                        icon: Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: () => widget.onDeleteTap(widget.sondageId),
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints(),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {},
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.canEdit)
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit_outlined,
+                                color: colorScheme.selectionColor,
+                              ),
+                              tooltip: 'Modifica sondaggio',
+                              onPressed: widget.onEditTap,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          IconButton(
+                            icon: Icon(
+                              widget.isArchived
+                                  ? Icons.unarchive_outlined
+                                  : Icons.archive_outlined,
+                              color: Colors.blueGrey,
+                            ),
+                            tooltip: widget.isArchived
+                                ? 'Ripristina sondaggio'
+                                : 'Archivia sondaggio',
+                            onPressed: widget.onArchiveTap,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          if (widget.canDelete)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              onPressed: () =>
+                                  widget.onDeleteTap(widget.sondageId),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
                 SizedBox(height: 8),

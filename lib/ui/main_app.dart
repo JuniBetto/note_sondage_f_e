@@ -72,6 +72,9 @@ class _MainAppState extends State<MainApp> {
     );
     unawaited(_drainPendingLocalNotificationActions());
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       _syncServicesForAuthState(getIt<AuthBloc>().state, resetCaches: true);
     });
   }
@@ -85,6 +88,9 @@ class _MainAppState extends State<MainApp> {
   }
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
+    if (!mounted) {
+      return;
+    }
     if (_isDuplicateNotification(notification.notificationId)) {
       return;
     }
@@ -162,6 +168,9 @@ class _MainAppState extends State<MainApp> {
           notification.metadata['assignmentId'] ??
           notification.notificationId;
       if (kIsWeb) {
+        if (!mounted) {
+          return;
+        }
         _showShiftAlarmSnackBar(
           assignmentId: alarmShiftId,
           shiftDate: notification.metadata['shiftDate'],
@@ -181,12 +190,26 @@ class _MainAppState extends State<MainApp> {
       }
     }
     if (teamDecision.showSnackBar && teamDecision.snackBarMessage != null) {
-      final messenger = scaffoldMessengerKey.currentState;
+      final messenger = _activeScaffoldMessenger();
+      if (messenger == null) {
+        return;
+      }
       messenger?.hideCurrentSnackBar();
       messenger?.showSnackBar(
         SnackBar(content: Text(teamDecision.snackBarMessage!)),
       );
     }
+  }
+
+  ScaffoldMessengerState? _activeScaffoldMessenger() {
+    if (!mounted) {
+      return null;
+    }
+    final messengerContext = scaffoldMessengerKey.currentContext;
+    if (messengerContext == null || !messengerContext.mounted) {
+      return null;
+    }
+    return scaffoldMessengerKey.currentState;
   }
 
   /// Mostra uno SnackBar di allarme turno sull'interfaccia web.
@@ -199,7 +222,7 @@ class _MainAppState extends State<MainApp> {
     required String shiftDateLabel,
     required int minutesBefore,
   }) {
-    final messenger = scaffoldMessengerKey.currentState;
+    final messenger = _activeScaffoldMessenger();
     if (messenger == null) return;
 
     final title = '⏰ Turno tra $minutesBefore min';
@@ -236,6 +259,9 @@ class _MainAppState extends State<MainApp> {
   Future<void> _handleLocalNotificationAction(
     NotificationActionIntent action,
   ) async {
+    if (!mounted) {
+      return;
+    }
     // ── Shift alarm tap → naviga al turno ────────────────────────────────────
     if (action.metadata['eventType'] == 'SHIFT_ALARM') {
       final assignmentId = action.metadata['assignmentId'];
@@ -265,6 +291,9 @@ class _MainAppState extends State<MainApp> {
     final pendingActions = await getIt<LocalNotificationService>()
         .drainPendingActionIntents();
     for (final action in pendingActions) {
+      if (!mounted) {
+        return;
+      }
       await _handleLocalNotificationAction(action);
     }
   }

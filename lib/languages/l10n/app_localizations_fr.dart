@@ -607,6 +607,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shiftCalendar => 'Calendrier des quarts';
 
   @override
+  String get shiftCalendarSubtitle => 'Your personal and team shift schedule';
+
+  @override
   String get addShift => 'Ajouter un quart';
 
   @override

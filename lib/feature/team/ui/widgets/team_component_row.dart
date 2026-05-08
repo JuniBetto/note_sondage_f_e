@@ -1,3 +1,4 @@
+import 'package:dart_code_metrics/cli_runner.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import 'package:note_sondage/feature/team/ui/mobile/widgets/action_on_user.dart'
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/avatar_app.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:printing/printing.dart';
 
 class TeamComponentRow extends StatefulWidget {
   const TeamComponentRow({
@@ -19,7 +21,9 @@ class TeamComponentRow extends StatefulWidget {
     this.members,
     this.memberCount,
     this.onDeleteTap,
+    this.onArchiveTap,
     this.isOwner = false,
+    this.isArchived = false,
   });
   final Color colorTeam;
   final String teamName;
@@ -30,7 +34,9 @@ class TeamComponentRow extends StatefulWidget {
   final int? memberCount;
   final void Function()? onTap;
   final void Function(String id)? onDeleteTap;
+  final VoidCallback? onArchiveTap;
   final bool isOwner;
+  final bool isArchived;
 
   @override
   State<TeamComponentRow> createState() => _TeamComponentRowState();
@@ -160,6 +166,14 @@ class _TeamComponentRowState extends State<TeamComponentRow> {
                                                   extra: widget.teamId,
                                                 );
                                               },
+                                            ),
+                                            ActionOnUser(
+                                              iconSize: 28,
+                                              icon: widget.isArchived
+                                                  ? Icons.unarchive_outlined
+                                                  : Icons.archive_outlined,
+                                              color: Colors.blueGrey,
+                                              onTap: widget.onArchiveTap,
                                             ),
                                             if (widget.isOwner)
                                               ActionOnUser(
@@ -301,9 +315,7 @@ Widget buildRowTeamItem(
         buildTeamItem(members),
 
         GestureDetector(
-          onTap: () {
-            print('Tapped on add member');
-          },
+          onTap: () {},
           child: DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,

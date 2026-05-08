@@ -209,6 +209,7 @@
     "noClockingsForFilter": "No clockings found for the selected filters",
     "myShifts": "My Shifts",
     "shiftCalendar": "Shift Calendar",
+    "shiftCalendarSubtitle": "Your personal and team shift schedule",
     "addShift": "Add Shift",
     "shiftProfile": "Shift Profile",
     "shiftStart": "Start",

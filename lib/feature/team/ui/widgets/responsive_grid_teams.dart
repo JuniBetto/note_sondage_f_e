@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/utils/extention_color.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
@@ -8,6 +9,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_card.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_row.dart';
+import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 
 class ResponsiveGridTeams extends StatefulWidget {
   const ResponsiveGridTeams({
@@ -29,16 +31,45 @@ class ResponsiveGridTeams extends StatefulWidget {
 class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
   late final TeamBloc _teamBloc;
   late final TeamMemberBloc _teamMemberBloc;
+  late final UserArchiveService _archiveService;
   List<TeamEntityForView> teamsWithMembers = [];
   Map<String, List<TeamMemberforView>> teamMembersMap = {};
   bool _syncedFromCurrentState = false;
+  bool _showArchivedOnly = false;
+  Set<String> _archivedTeamIds = <String>{};
+
+  String get _currentUserId => getIt<AuthBloc>().state.user.uid;
 
   @override
   void initState() {
     super.initState();
     _teamBloc = getIt<TeamBloc>();
     _teamMemberBloc = getIt<TeamMemberBloc>();
+    _archiveService = getIt<UserArchiveService>();
     _teamBloc.add(LoadTeamsEvent());
+    _loadArchivedTeams();
+  }
+
+  Future<void> _loadArchivedTeams() async {
+    final archived = await _archiveService.loadArchivedIds(
+      userId: _currentUserId,
+      bucket: ArchiveBuckets.teams,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _archivedTeamIds = archived;
+    });
+  }
+
+  Future<void> _toggleArchive(String teamId) async {
+    await _archiveService.toggleArchived(
+      userId: _currentUserId,
+      bucket: ArchiveBuckets.teams,
+      itemId: teamId,
+    );
+    await _loadArchivedTeams();
   }
 
   @override
@@ -47,12 +78,10 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
       bloc: _teamBloc,
       listener: (context, state) {
         if (state is TeamsLoaded) {
-          debugPrint("✅ TeamsLoaded: ${state.teams.length} teams");
           final newTeams = state.teams
               .map((team) => TeamEntityForView(team: team, members: []))
               .toList();
 
-          // Preserve already-loaded members when teams update
           final updatedTeams = newTeams.map((newTeam) {
             final existing = teamsWithMembers
                 .where((t) => t.team.id == newTeam.team.id)
@@ -68,8 +97,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
             teamsWithMembers = updatedTeams;
           });
 
-          // Load members only for teams that don't have members yet
-          for (var team in state.teams) {
+          for (final team in state.teams) {
             final createdTeamId = team.id;
             if (createdTeamId != null &&
                 !teamMembersMap.containsKey(createdTeamId)) {
@@ -77,12 +105,8 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
             }
           }
         }
-        if (state is TeamError) {
-          debugPrint("❌ TeamError: ${state.message}");
-        }
       },
       builder: (context, teamState) {
-        // If bloc already has teams loaded (singleton reuse), sync local state
         if (teamState is TeamsLoaded &&
             teamsWithMembers.isEmpty &&
             !_syncedFromCurrentState) {
@@ -94,7 +118,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
                   .map((team) => TeamEntityForView(team: team, members: []))
                   .toList();
             });
-            for (var team in teamState.teams) {
+            for (final team in teamState.teams) {
               final id = team.id;
               if (id != null) {
                 _teamMemberBloc.add(LoadTeamMembersByTeamIdEvent(id));
@@ -103,12 +127,10 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
           });
         }
 
-        // Show loading only on initial load (no teams yet)
         if (teamState is TeamLoading && teamsWithMembers.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // Show error only if we have no cached data
         if (teamState is TeamError && teamsWithMembers.isEmpty) {
           return Center(
             child: Column(
@@ -125,60 +147,28 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
         return BlocConsumer<TeamMemberBloc, TeamMemberState>(
           bloc: _teamMemberBloc,
           listener: (context, memberState) {
-            if (memberState is TeamMembersLoaded) {
-              debugPrint("Loaded team members: ${memberState.members}");
+            if (memberState is TeamMembersLoaded &&
+                memberState.members.isNotEmpty) {
+              final teamId = memberState.members.first.teamId;
+              setState(() {
+                teamMembersMap[teamId] = memberState.members
+                    .map(
+                      (member) =>
+                          TeamMemberforView(teamMember: member, user: null),
+                    )
+                    .toList();
 
-              // Group members by team_id
-              if (memberState.members.isNotEmpty) {
-                final teamId = memberState.members.first.teamId;
-                setState(() {
-                  teamMembersMap[teamId] = memberState.members
-                      .map(
-                        (member) =>
-                            TeamMemberforView(teamMember: member, user: null),
-                      )
-                      .toList();
-
-                  // Update the corresponding team with its members
-                  teamsWithMembers = teamsWithMembers.map((teamView) {
-                    if (teamView.team.id == teamId) {
-                      return teamView.copyWith(members: teamMembersMap[teamId])
-                          as TeamEntityForView;
-                    }
-                    return teamView;
-                  }).toList();
-                });
-              }
-            }
-
-            if (memberState is TeamMemberError) {
-              debugPrint("Error loading team members: ${memberState.message}");
+                teamsWithMembers = teamsWithMembers.map((teamView) {
+                  if (teamView.team.id == teamId) {
+                    return teamView.copyWith(members: teamMembersMap[teamId])
+                        as TeamEntityForView;
+                  }
+                  return teamView;
+                }).toList();
+              });
             }
           },
           builder: (context, memberState) {
-            // If no teams loaded yet, show empty state
-            if (teamsWithMembers.isEmpty) {
-              debugPrint(
-                "⚠️ ResponsiveGridTeams: No teams loaded, showing empty state",
-              );
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.group_outlined, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text('No teams found', style: TextStyle(fontSize: 18)),
-                  ],
-                ),
-              );
-            }
-
-            debugPrint(
-              "✅ ResponsiveGridTeams: Building with ${teamsWithMembers.length} teams",
-            );
-
-            // Convert teamsWithMembers to the format expected by viewScrollWebMobile
-            final currentUserId = getIt<AuthBloc>().state.user.uid;
             final items = teamsWithMembers.map((teamView) {
               return {
                 "teamName": teamView.team.name,
@@ -202,18 +192,75 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
               };
             }).toList();
 
-            debugPrint(
-              "📦 ResponsiveGridTeams: Converted ${items.length} items for display",
-            );
-            debugPrint("📱 ResponsiveGridTeams: isRow = ${widget.isRow}");
+            final foregroundItems = items
+                .where(
+                  (item) => !_archivedTeamIds.contains(
+                    (item['teamId'] ?? '') as String,
+                  ),
+                )
+                .toList();
+            final archivedItems = items
+                .where(
+                  (item) => _archivedTeamIds.contains(
+                    (item['teamId'] ?? '') as String,
+                  ),
+                )
+                .toList();
+            final displayedItems = _showArchivedOnly
+                ? archivedItems
+                : foregroundItems;
 
-            return viewScrollWebMobile(
-              _teamBloc,
-              items,
-              widget.isRow,
-              widget.isSelectionMode,
-              widget.onTeamSelected,
-              currentUserId: currentUserId,
+            if (items.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.group_outlined, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text('No teams found', style: TextStyle(fontSize: 18)),
+                  ],
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                if (!widget.isSelectionMode)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: ArchiveViewToggle(
+                        showArchivedOnly: _showArchivedOnly,
+                        primaryCount: foregroundItems.length,
+                        archivedCount: archivedItems.length,
+                        onChanged: (value) {
+                          setState(() => _showArchivedOnly = value);
+                        },
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: displayedItems.isEmpty
+                      ? Center(
+                          child: Text(
+                            _showArchivedOnly
+                                ? 'Nessun team archiviato.'
+                                : 'Nessun team in primo piano.',
+                          ),
+                        )
+                      : viewScrollWebMobile(
+                          _teamBloc,
+                          displayedItems,
+                          widget.isRow,
+                          widget.isSelectionMode,
+                          widget.onTeamSelected,
+                          currentUserId: _currentUserId,
+                          archivedTeamIds: _archivedTeamIds,
+                          onArchiveToggle: _toggleArchive,
+                        ),
+                ),
+              ],
             );
           },
         );
@@ -229,6 +276,8 @@ Widget viewScrollWebMobile(
   bool isSelectionMode,
   void Function(Map<String, dynamic> selectedTeam)? onTeamSelected, {
   String currentUserId = '',
+  Set<String> archivedTeamIds = const <String>{},
+  required ValueChanged<String> onArchiveToggle,
 }) {
   return Padding(
     padding: const EdgeInsets.all(0.0),
@@ -244,6 +293,7 @@ Widget viewScrollWebMobile(
           final ownerUserId = (item["ownerUserId"] as String?) ?? '';
           final isOwner =
               currentUserId.isNotEmpty && currentUserId == ownerUserId;
+          final isArchived = archivedTeamIds.contains(teamId);
 
           return isRow
               ? TeamComponentCard(
@@ -254,10 +304,14 @@ Widget viewScrollWebMobile(
                   teamId: teamId,
                   members: item["members"],
                   isOwner: isOwner,
+                  isArchived: isArchived,
                   onTap: isSelectionMode
                       ? () => onTeamSelected?.call(item)
                       : () {},
                   colorTeam: item["color"],
+                  onArchiveTap: isSelectionMode
+                      ? null
+                      : () => onArchiveToggle(teamId),
                   onDeleteTap: isSelectionMode
                       ? null
                       : (teamId) {
@@ -271,11 +325,15 @@ Widget viewScrollWebMobile(
                   teamFocus: item["teamFocus"],
                   members: item["members"],
                   isOwner: isOwner,
+                  isArchived: isArchived,
                   onTap: isSelectionMode
                       ? () => onTeamSelected?.call(item)
                       : () {},
                   colorTeam: item["color"],
                   teamId: teamId,
+                  onArchiveTap: isSelectionMode
+                      ? null
+                      : () => onArchiveToggle(teamId),
                   onDeleteTap: isSelectionMode
                       ? null
                       : (teamId) {

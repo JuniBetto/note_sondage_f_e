@@ -19,11 +19,15 @@ class SondageWeb extends StatefulWidget {
 
 class _SondageWebState extends State<SondageWeb> {
   int isGridView = 1;
+  List<SondageEntity> _lastSondages = const <SondageEntity>[];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       context.read<SondageBloc>().add(LoadSondagesEvent());
     });
   }
@@ -53,6 +57,66 @@ class _SondageWebState extends State<SondageWeb> {
     }
   }
 
+  void _openCreateDialog() {
+    CustomDialog(
+      title: widget.title,
+      width: 760,
+      child: CreateSondageWeb(
+        onsondageCreated: () {
+          context.read<SondageBloc>().add(LoadSondagesEvent());
+        },
+      ),
+    ).show(context);
+  }
+
+  void _openEditDialog(SondageEntity sondage) {
+    CustomDialog(
+      title: 'Modifica sondaggio',
+      width: 760,
+      child: CreateSondageWeb(
+        initialSondage: sondage,
+        onsondageCreated: () {
+          context.read<SondageBloc>().add(LoadSondagesEvent());
+        },
+      ),
+    ).show(context);
+  }
+
+  void _refreshList() {
+    context.read<SondageBloc>().add(LoadSondagesEvent());
+  }
+
+  int _countByStatus(List<SondageEntity> sondages, SondageStatus status) {
+    return sondages.where((sondage) => sondage.status == status).length;
+  }
+
+  Widget _buildStatChip({
+    required String label,
+    required int value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text('$label: $value'),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -61,16 +125,28 @@ class _SondageWebState extends State<SondageWeb> {
     return BlocConsumer<SondageBloc, SondageState>(
       listener: (context, state) {
         if (state is SondageError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       builder: (context, state) {
+        if (state is SondagesLoaded) {
+          _lastSondages = state.sondages;
+        }
         final List<SondageEntity> sondages = state is SondagesLoaded
             ? state.sondages
-            : const <SondageEntity>[];
-        final isLoading = state is SondageLoading && sondages.isEmpty;
+            : _lastSondages;
+        final isLoading =
+            (state is SondageLoading || state is SondageInitial) &&
+            sondages.isEmpty;
+        final isRefreshing = state is SondageLoading && sondages.isNotEmpty;
+        final draftCount = _countByStatus(sondages, SondageStatus.draft);
+        final activeCount = _countByStatus(sondages, SondageStatus.active);
+        final completedCount = _countByStatus(
+          sondages,
+          SondageStatus.completed,
+        );
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
@@ -82,77 +158,87 @@ class _SondageWebState extends State<SondageWeb> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 8.0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    runSpacing: 12,
+                    spacing: 12,
                     children: [
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            CustomDialog(
-                              title: widget.title,
-                              width: 700,
-                              child: CreateSondageWeb(
-                                onsondageCreated: () {
-                                  context.read<SondageBloc>().add(
-                                    LoadSondagesEvent(),
-                                  );
-                                },
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.sondage,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                color: colorScheme.iconLabel,
+                                fontWeight: FontWeight.w700,
                               ),
-                            ).show(context);
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Ink(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  colorScheme.secondary,
-                                  colorScheme.secondary.withValues(alpha: 0.75),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Feed unificato di bozze personali, bozze team visibili e sondaggi attivi.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.descriptionColor,
                               ),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colorScheme.secondary.withValues(
-                                    alpha: 0.35,
-                                  ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
+                          ],
+                        ),
+                      ),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: _refreshList,
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Aggiorna'),
+                          ),
+                          FilledButton.icon(
+                            onPressed: _openCreateDialog,
+                            icon: const Icon(Icons.poll_rounded, size: 20),
+                            label: Text(
+                              '${AppLocalizations.of(context)!.create} ${AppLocalizations.of(context)!.sondage}',
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.poll_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  '${AppLocalizations.of(context)!.create} ${AppLocalizations.of(context)!.sondage}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ],
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colorScheme.secondary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                if (isRefreshing) const LinearProgressIndicator(minHeight: 2),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _buildStatChip(
+                        label: 'Draft',
+                        value: draftCount,
+                        color: Colors.orange,
+                      ),
+                      _buildStatChip(
+                        label: 'Attivi',
+                        value: activeCount,
+                        color: Colors.green,
+                      ),
+                      _buildStatChip(
+                        label: 'Chiusi',
+                        value: completedCount,
+                        color: Colors.red,
                       ),
                     ],
                   ),
@@ -161,10 +247,17 @@ class _SondageWebState extends State<SondageWeb> {
                 Divider(height: 4, color: colorScheme.borderColor),
                 const SizedBox(height: 16),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+                      Expanded(
+                        child: Text(
+                          '${sondages.length} elementi nel feed',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.descriptionColor,
+                          ),
+                        ),
+                      ),
                       VisualType(
                         isActive1: isGridView == 1,
                         isActive2: isGridView == 2,
@@ -180,10 +273,7 @@ class _SondageWebState extends State<SondageWeb> {
                 const SizedBox(height: 16),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8.0,
-                      vertical: 8.0,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
                     child: SizedBox(
                       width: double.infinity,
                       child: DecoratedBox(
@@ -192,7 +282,9 @@ class _SondageWebState extends State<SondageWeb> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: colorScheme.bgNavbarSurface!,
+                              color:
+                                  (colorScheme.bgNavbarSurface ?? Colors.black)
+                                      .withValues(alpha: 0.2),
                               blurRadius: 8,
                               spreadRadius: 2,
                               offset: const Offset(0, 2),
@@ -205,6 +297,7 @@ class _SondageWebState extends State<SondageWeb> {
                                 items: sondages,
                                 isRow: isGridView == 1,
                                 onDeleteTap: _confirmDelete,
+                                onEditTap: _openEditDialog,
                               ),
                       ),
                     ),

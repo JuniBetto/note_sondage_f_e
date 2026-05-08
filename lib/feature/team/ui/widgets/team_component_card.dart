@@ -18,7 +18,9 @@ class TeamComponentCard extends StatefulWidget {
     this.members,
     this.memberCount,
     this.onDeleteTap,
+    this.onArchiveTap,
     this.isOwner = false,
+    this.isArchived = false,
   });
   final Color colorTeam;
   final String teamName;
@@ -29,7 +31,9 @@ class TeamComponentCard extends StatefulWidget {
   final int? memberCount;
   final void Function()? onTap;
   final void Function(String id)? onDeleteTap;
+  final VoidCallback? onArchiveTap;
   final bool isOwner;
+  final bool isArchived;
 
   @override
   State<TeamComponentCard> createState() => _TeamComponentCardState();
@@ -157,6 +161,14 @@ class _TeamComponentCardState extends State<TeamComponentCard> {
                                                   extra: widget.teamId,
                                                 );
                                               },
+                                            ),
+                                            ActionOnUser(
+                                              iconSize: 18,
+                                              icon: widget.isArchived
+                                                  ? Icons.unarchive_outlined
+                                                  : Icons.archive_outlined,
+                                              color: Colors.blueGrey,
+                                              onTap: widget.onArchiveTap,
                                             ),
                                             if (widget.isOwner)
                                               ActionOnUser(

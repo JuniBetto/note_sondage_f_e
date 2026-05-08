@@ -9,12 +9,14 @@ class SondageDisplay extends StatefulWidget {
   final Function(int) onViewChanged;
   final int initialViewType;
   final ValueChanged<String> onDeleteTap;
+  final ValueChanged<SondageEntity> onEditTap;
 
   const SondageDisplay({
     Key? key,
     required this.sondages,
     required this.onViewChanged,
     required this.onDeleteTap,
+    required this.onEditTap,
     this.initialViewType = 1,
   }) : super(key: key);
 
@@ -29,6 +31,14 @@ class _TeamsDisplaySectionState extends State<SondageDisplay> {
   void initState() {
     super.initState();
     isGridView = widget.initialViewType;
+  }
+
+  @override
+  void didUpdateWidget(covariant SondageDisplay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialViewType != widget.initialViewType) {
+      isGridView = widget.initialViewType;
+    }
   }
 
   @override
@@ -62,7 +72,7 @@ class _TeamsDisplaySectionState extends State<SondageDisplay> {
             ),
           ],
         ),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         Expanded(
           child: SizedBox(
             width: double.infinity,
@@ -75,7 +85,7 @@ class _TeamsDisplaySectionState extends State<SondageDisplay> {
                     color: colorScheme.bgNavbarSurface!.withValues(alpha: 0.2),
                     blurRadius: 8,
                     spreadRadius: 2,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -83,6 +93,7 @@ class _TeamsDisplaySectionState extends State<SondageDisplay> {
                 items: widget.sondages,
                 isRow: isGridView == 1,
                 onDeleteTap: widget.onDeleteTap,
+                onEditTap: widget.onEditTap,
               ),
             ),
           ),

@@ -35,6 +35,20 @@ class SondageOptionEntity {
     required this.sortOrder,
     this.voteCount = 0,
   });
+
+  SondageOptionEntity copyWith({
+    String? id,
+    String? label,
+    int? sortOrder,
+    int? voteCount,
+  }) {
+    return SondageOptionEntity(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      sortOrder: sortOrder ?? this.sortOrder,
+      voteCount: voteCount ?? this.voteCount,
+    );
+  }
 }
 
 /// Entità Sondage — dominio puro, nessuna dipendenza infrastrutturale
@@ -44,6 +58,7 @@ class SondageEntity {
   final String focus;
   final SondageStatus status;
   final int responses;
+  final int totalVotes;
   final int totalQuestions;
   final DateTime createdDate;
   final DateTime? expiryDate;
@@ -52,8 +67,10 @@ class SondageEntity {
   final String? teamId;
   final String? teamName;
   final String? description;
+  final bool allowMultipleResponses;
   final List<SondageOptionEntity> options;
   final String? currentUserOptionId;
+  final List<String> currentUserOptionIds;
   final bool canEdit;
   final bool canDelete;
   final bool canPublish;
@@ -66,6 +83,7 @@ class SondageEntity {
     required this.focus,
     required this.status,
     this.responses = 0,
+    this.totalVotes = 0,
     this.totalQuestions = 0,
     required this.createdDate,
     this.expiryDate,
@@ -74,8 +92,10 @@ class SondageEntity {
     this.teamId,
     this.teamName,
     this.description,
+    this.allowMultipleResponses = false,
     this.options = const [],
     this.currentUserOptionId,
+    this.currentUserOptionIds = const [],
     this.canEdit = false,
     this.canDelete = false,
     this.canPublish = false,
@@ -89,6 +109,7 @@ class SondageEntity {
     String? focus,
     SondageStatus? status,
     int? responses,
+    int? totalVotes,
     int? totalQuestions,
     DateTime? createdDate,
     DateTime? expiryDate,
@@ -97,8 +118,10 @@ class SondageEntity {
     String? teamId,
     String? teamName,
     String? description,
+    bool? allowMultipleResponses,
     List<SondageOptionEntity>? options,
     String? currentUserOptionId,
+    List<String>? currentUserOptionIds,
     bool? canEdit,
     bool? canDelete,
     bool? canPublish,
@@ -111,6 +134,7 @@ class SondageEntity {
       focus: focus ?? this.focus,
       status: status ?? this.status,
       responses: responses ?? this.responses,
+      totalVotes: totalVotes ?? this.totalVotes,
       totalQuestions: totalQuestions ?? this.totalQuestions,
       createdDate: createdDate ?? this.createdDate,
       expiryDate: expiryDate ?? this.expiryDate,
@@ -119,8 +143,11 @@ class SondageEntity {
       teamId: teamId ?? this.teamId,
       teamName: teamName ?? this.teamName,
       description: description ?? this.description,
+      allowMultipleResponses:
+          allowMultipleResponses ?? this.allowMultipleResponses,
       options: options ?? this.options,
       currentUserOptionId: currentUserOptionId ?? this.currentUserOptionId,
+      currentUserOptionIds: currentUserOptionIds ?? this.currentUserOptionIds,
       canEdit: canEdit ?? this.canEdit,
       canDelete: canDelete ?? this.canDelete,
       canPublish: canPublish ?? this.canPublish,

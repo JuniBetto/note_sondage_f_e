@@ -54,6 +54,7 @@ class SondageLocalDataSource {
             focus: m.focus,
             status: SondageStatus.fromString(m.status),
             responses: m.responses,
+            totalVotes: m.responses,
             totalQuestions: m.totalQuestions,
             createdDate: DateTime.tryParse(m.createdDate) ?? DateTime.now(),
             expiryDate: m.expiryDate != null

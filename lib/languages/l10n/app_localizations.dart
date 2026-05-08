@@ -1254,6 +1254,12 @@ abstract class AppLocalizations {
   /// **'Shift Calendar'**
   String get shiftCalendar;
 
+  /// No description provided for @shiftCalendarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your personal and team shift schedule'**
+  String get shiftCalendarSubtitle;
+
   /// No description provided for @addShift.
   ///
   /// In en, this message translates to:

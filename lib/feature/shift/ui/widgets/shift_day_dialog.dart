@@ -35,6 +35,7 @@ class ShiftDayDialogResult {
     required this.alarmOffsets,
     this.note,
     this.deleted = false,
+    this.archived = false,
     this.isPublic = false,
     this.teamId,
     this.targetUserIds = const [],
@@ -47,6 +48,7 @@ class ShiftDayDialogResult {
   final List<int> alarmOffsets;
   final String? note;
   final bool deleted;
+  final bool archived;
 
   /// True → shift visible to all team members.
   final bool isPublic;
@@ -412,6 +414,23 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                         ),
                       ),
                     ),
+                    if (widget.existing != null && !_readOnly)
+                      IconButton(
+                        icon: Icon(
+                          Icons.archive_outlined,
+                          color: colorScheme.descriptionColor,
+                        ),
+                        tooltip: 'Archivia',
+                        onPressed: () => Navigator.of(context).pop(
+                          ShiftDayDialogResult(
+                            startTime: _startTime,
+                            endTime: _endTime,
+                            overnight: _overnight,
+                            alarmOffsets: _alarmOffsets,
+                            archived: true,
+                          ),
+                        ),
+                      ),
                     if (widget.existing != null && !_readOnly)
                       IconButton(
                         icon: Icon(Icons.delete_outline, color: appError),

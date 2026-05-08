@@ -609,6 +609,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shiftCalendar => 'Calendario de turnos';
 
   @override
+  String get shiftCalendarSubtitle => 'Your personal and team shift schedule';
+
+  @override
   String get addShift => 'Agregar turno';
 
   @override

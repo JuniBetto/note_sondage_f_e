@@ -5,6 +5,7 @@ import 'package:note_sondage/feature/shift/infrastructure/repositories/shift_rep
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/shift/notification/shift_alarm_scheduler.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
+import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
@@ -105,6 +106,8 @@ void _registerAuth() {
 // ==================== DATA SOURCES ====================
 
 void _registerDataSources() {
+  getIt.registerLazySingleton<UserArchiveService>(() => UserArchiveService());
+
   // Local data sources
   getIt.registerLazySingleton<PermissionLocalDataSource>(
     () => PermissionLocalDataSource(),
@@ -341,7 +344,10 @@ void _registerBlocs() {
     ),
   );
   getIt.registerLazySingleton<NotificationCenterCubit>(
-    () => NotificationCenterCubit(backendAuth: getIt<BackendAuthDataSource>()),
+    () => NotificationCenterCubit(
+      backendAuth: getIt<BackendAuthDataSource>(),
+      currentUserIdProvider: () => getIt<AuthBloc>().state.user.uid,
+    ),
   );
   getIt.registerLazySingleton<TeamRealtimeCoordinator>(
     () => TeamRealtimeCoordinator(),
