@@ -21,9 +21,10 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
   bool _isLoading = false;
   String? _verificationId;
   String? _errorMessage;
+  bool _isCollectingCode = false;
   late MfaFactorHintEntity _selectedFactor;
 
-  bool get _awaitingCode => _verificationId != null;
+  bool get _awaitingCode => _isCollectingCode;
 
   @override
   void initState() {
@@ -38,6 +39,15 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
   }
 
   Future<void> _sendCode() async {
+    if (_selectedFactor.isTotp) {
+      setState(() {
+        _errorMessage = null;
+        _verificationId = null;
+        _isCollectingCode = true;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -54,6 +64,7 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
 
       setState(() {
         _verificationId = result.sessionId;
+        _isCollectingCode = true;
       });
     } catch (error) {
       if (!mounted) return;
@@ -71,9 +82,17 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
 
   Future<void> _confirmCode() async {
     final code = _codeController.text.trim();
-    if (_verificationId == null || code.isEmpty) {
+    if (code.isEmpty) {
       setState(() {
-        _errorMessage = 'Enter the verification code you received.';
+        _errorMessage = _selectedFactor.isTotp
+            ? 'Enter the verification code from your authenticator app.'
+            : 'Enter the verification code you received.';
+      });
+      return;
+    }
+    if (_selectedFactor.isSms && _verificationId == null) {
+      setState(() {
+        _errorMessage = 'Request a new SMS code and try again.';
       });
       return;
     }
@@ -84,10 +103,17 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
     });
 
     try {
-      await _authUseCase.confirmPendingMfaSignIn(
-        sessionId: _verificationId!,
-        smsCode: code,
-      );
+      if (_selectedFactor.isTotp) {
+        await _authUseCase.confirmPendingTotpMfaSignIn(
+          factorUid: _selectedFactor.uid,
+          verificationCode: code,
+        );
+      } else {
+        await _authUseCase.confirmPendingMfaSignIn(
+          sessionId: _verificationId!,
+          smsCode: code,
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (error) {
@@ -120,7 +146,7 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
           children: [
             Text(
               _awaitingCode
-                  ? 'We sent a verification code to ${_selectedFactor.label}.'
+                  ? _selectedFactor.signInPrompt
                   : 'Choose how to receive your verification code.',
             ),
             const SizedBox(height: 16),
@@ -131,7 +157,7 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
                     .map(
                       (factor) => DropdownMenuItem<String>(
                         value: factor.uid,
-                        child: Text(factor.label),
+                        child: Text('${factor.methodLabel}: ${factor.label}'),
                       ),
                     )
                     .toList(),
@@ -144,6 +170,10 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
                         );
                         setState(() {
                           _selectedFactor = selected;
+                          _verificationId = null;
+                          _isCollectingCode = false;
+                          _codeController.clear();
+                          _errorMessage = null;
                         });
                       },
               ),
@@ -153,7 +183,9 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
                 keyboardType: TextInputType.number,
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: 'SMS code',
+                  labelText: _selectedFactor.isTotp
+                      ? 'Authenticator code'
+                      : 'SMS code',
                   hintText: '123456',
                   errorText: _errorMessage,
                 ),
@@ -183,7 +215,13 @@ class _MfaSignInDialogState extends State<MfaSignInDialog> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(_awaitingCode ? 'Verify' : 'Send code'),
+              : Text(
+                  _awaitingCode
+                      ? 'Verify'
+                      : _selectedFactor.isTotp
+                      ? 'Use authenticator app'
+                      : 'Send code',
+                ),
         ),
       ],
     );

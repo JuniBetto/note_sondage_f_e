@@ -98,6 +98,15 @@ final class AuthProfileDisplayNameUpdated extends AuthEvent {
   List<Object?> get props => [displayName];
 }
 
+final class AuthProfilePhotoUpdated extends AuthEvent {
+  final String? photoUrl;
+
+  const AuthProfilePhotoUpdated(this.photoUrl);
+
+  @override
+  List<Object?> get props => [photoUrl];
+}
+
 final class AuthMfaChallengeDismissed extends AuthEvent {
   const AuthMfaChallengeDismissed();
 }

@@ -13,6 +13,10 @@ import 'package:note_sondage/feature/notification/preferences/notification_prefe
 /// 4. Il backend verifica il token Firebase, crea/recupera l'utente interno
 ///    e ritorna un JWT con ruoli e info dell'app.
 class BackendAuthDataSource {
+  static const _defaultConnectTimeout = Duration(seconds: 15);
+  static const _defaultSendTimeout = Duration(seconds: 15);
+  static const _defaultReceiveTimeout = Duration(seconds: 45);
+
   final Dio _dio;
   final Dio _authenticatedDio;
 
@@ -22,9 +26,9 @@ class BackendAuthDataSource {
           Dio(
             BaseOptions(
               baseUrl: DioClient.baseUrl,
-              connectTimeout: const Duration(seconds: 10),
-              receiveTimeout: const Duration(seconds: 10),
-              sendTimeout: const Duration(seconds: 10),
+              connectTimeout: _defaultConnectTimeout,
+              receiveTimeout: _defaultReceiveTimeout,
+              sendTimeout: _defaultSendTimeout,
               headers: const {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
@@ -11,6 +13,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/auth/two_factor_setup_card.dart';
+import 'package:note_sondage/ui/widgets/avatar_input.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class SettingsProfileWeb extends StatefulWidget {
@@ -31,6 +34,9 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
   String _seededUid = '';
   String _initialDisplayName = '';
   String _initialEmail = '';
+  String _initialPhotoUrl = '';
+  Uint8List? _selectedProfileImageBytes;
+  int _avatarInputRevision = 0;
   bool _isSaving = false;
   String? _errorMessage;
 
@@ -42,17 +48,20 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
   }
 
   bool get _hasChanges =>
-      _displayNameController.text.trim() != _initialDisplayName;
+      _displayNameController.text.trim() != _initialDisplayName ||
+      _selectedProfileImageBytes != null;
 
   void _seedControllers(AuthUserEntity user) {
     final resolvedDisplayName = _resolveDisplayName(user);
     final email = user.email.trim();
+    final photoUrl = _resolvePhotoUrl(user) ?? '';
 
     final shouldReplaceValues =
         _seededUid != user.uid ||
         (!_hasChanges &&
             (_initialDisplayName != resolvedDisplayName ||
-                _initialEmail != email));
+                _initialEmail != email ||
+                _initialPhotoUrl != photoUrl));
 
     if (!shouldReplaceValues) {
       return;
@@ -61,6 +70,7 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
     _seededUid = user.uid;
     _initialDisplayName = resolvedDisplayName;
     _initialEmail = email;
+    _initialPhotoUrl = photoUrl;
     _displayNameController.text = resolvedDisplayName;
     _emailController.text = email;
   }
@@ -77,6 +87,14 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
     }
 
     return '';
+  }
+
+  String? _resolvePhotoUrl(AuthUserEntity user) {
+    final photoUrl = user.photoUrl?.trim();
+    if (photoUrl == null || photoUrl.isEmpty) {
+      return null;
+    }
+    return photoUrl;
   }
 
   Future<void> _save() async {
@@ -123,16 +141,29 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
         }
       }
 
-      await _authUseCase.updateMyProfile(displayName: normalizedDisplayName);
+      await _authUseCase.updateMyProfile(
+        displayName: normalizedDisplayName,
+        profileImageBytes: _selectedProfileImageBytes,
+        profileImageFileName: _selectedProfileImageBytes != null
+            ? 'profile-$_seededUid.jpg'
+            : null,
+      );
 
       if (!mounted) return;
 
+      final refreshedUser = _authUseCase.currentUser;
       context.read<AuthBloc>().add(
         AuthProfileDisplayNameUpdated(normalizedDisplayName),
+      );
+      context.read<AuthBloc>().add(
+        AuthProfilePhotoUpdated(refreshedUser.photoUrl),
       );
 
       setState(() {
         _initialDisplayName = normalizedDisplayName;
+        _initialPhotoUrl = refreshedUser.photoUrl?.trim() ?? _initialPhotoUrl;
+        _selectedProfileImageBytes = null;
+        _avatarInputRevision += 1;
       });
 
       AppSnackBar.showSuccess(
@@ -159,6 +190,15 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
       error,
       fallback: 'We could not save your profile right now. Please try again.',
     );
+  }
+
+  void _resetForm() {
+    _displayNameController.text = _initialDisplayName;
+    setState(() {
+      _selectedProfileImageBytes = null;
+      _avatarInputRevision += 1;
+      _errorMessage = null;
+    });
   }
 
   String? _displayNameValidator(String? value) {
@@ -287,6 +327,34 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
                             ],
                           ),
                           const SizedBox(height: 24),
+                          Center(
+                            child: Column(
+                              children: [
+                                AvatarInput(
+                                  key: ValueKey(
+                                    'profile-web-avatar-${_avatarInputRevision}_$_initialPhotoUrl',
+                                  ),
+                                  size: 116,
+                                  initialImageUrl: _initialPhotoUrl,
+                                  editable: !_isSaving,
+                                  onImageBytesChanged: (bytes) {
+                                    setState(() {
+                                      _selectedProfileImageBytes = bytes;
+                                      _errorMessage = null;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Tap the avatar to choose a new profile image.',
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.descriptionColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
                           Text(
                             localization.fullName,
                             style: textTheme.titleSmall?.copyWith(
@@ -334,15 +402,7 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
                           Row(
                             children: [
                               OutlinedButton(
-                                onPressed: _isSaving
-                                    ? null
-                                    : () {
-                                        _displayNameController.text =
-                                            _initialDisplayName;
-                                        setState(() {
-                                          _errorMessage = null;
-                                        });
-                                      },
+                                onPressed: _isSaving ? null : _resetForm,
                                 child: const Text('Reset'),
                               ),
                               const SizedBox(width: 12),

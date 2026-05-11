@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/auth/domain/entities/auth_mfa_required_exce
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
 import 'package:note_sondage/feature/auth/domain/entities/mfa_factor_hint_entity.dart';
 import 'package:note_sondage/feature/auth/domain/entities/phone_sign_in_start_result.dart';
+import 'package:note_sondage/feature/auth/domain/entities/totp_enrollment_secret_entity.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/auth_mapper.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
@@ -35,6 +36,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   final TokenService _tokenService;
   final Map<String, firebase.ConfirmationResult> _webPhoneSessions = {};
   firebase.MultiFactorResolver? _pendingMfaResolver;
+  firebase.TotpSecret? _pendingTotpEnrollmentSecret;
   Future<void>? _backendExchangeInFlight;
   String? _backendExchangeUid;
   DateTime? _lastSuccessfulExchangeAt;
@@ -85,6 +87,12 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       } catch (e) {
         debugPrint('[Auth] Scambio token con backend fallito: $e');
         if (propagateErrors) {
+          if (_isTransientBackendExchangeError(e)) {
+            debugPrint(
+              '[Auth] Backend exchange failed temporarily. The session stays active and will retry on the next protected request.',
+            );
+            return;
+          }
           await signOut();
           throw _mapBackendExchangeError(e);
         }
@@ -157,6 +165,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       }
 
       _pendingMfaResolver = null;
+      _pendingTotpEnrollmentSecret = null;
       return AuthMapper.fromFirebaseUser(currentUser);
     } on firebase.FirebaseAuthMultiFactorException catch (e) {
       _pendingMfaResolver = e.resolver;
@@ -239,6 +248,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       }
 
       _pendingMfaResolver = null;
+      _pendingTotpEnrollmentSecret = null;
       return AuthMapper.fromFirebaseUser(userCredential.user);
     } on firebase.FirebaseAuthMultiFactorException catch (e) {
       _pendingMfaResolver = e.resolver;
@@ -417,13 +427,30 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> sendEmailVerification() async {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw const AuthException(
+        code: 'not-authenticated',
+        message: 'You need to be signed in to verify your email address.',
+      );
+    }
+
+    await _sendEmailVerification(currentUser);
+  }
+
+  @override
   Future<void> updateContactEmail({required String email}) async {
     await _backendAuth.updateContactEmail(email);
     await refreshBackendSession();
   }
 
   @override
-  Future<void> updateMyProfile({String? displayName}) async {
+  Future<void> updateMyProfile({
+    String? displayName,
+    List<int>? profileImageBytes,
+    String? profileImageFileName,
+  }) async {
     final currentUser = _firebaseAuth.currentUser;
     if (currentUser == null) {
       throw const AuthException(
@@ -433,12 +460,35 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     }
 
     final normalizedDisplayName = displayName?.trim();
-    if (normalizedDisplayName == null || normalizedDisplayName.isEmpty) {
+    final hasDisplayNameUpdate =
+        normalizedDisplayName != null && normalizedDisplayName.isNotEmpty;
+    final hasProfileImageUpdate =
+        profileImageBytes != null && profileImageBytes.isNotEmpty;
+
+    if (!hasDisplayNameUpdate && !hasProfileImageUpdate) {
       return;
     }
 
-    await _backendAuth.updateMyProfile(fullName: normalizedDisplayName);
-    await currentUser.updateDisplayName(normalizedDisplayName);
+    String? avatarPath;
+    if (hasProfileImageUpdate) {
+      avatarPath = await _backendAuth.uploadProfileImage(
+        firebaseUid: currentUser.uid,
+        imageBytes: profileImageBytes!,
+        fileName: profileImageFileName ?? 'profile.jpg',
+      );
+    }
+
+    await _backendAuth.updateMyProfile(
+      fullName: hasDisplayNameUpdate ? normalizedDisplayName : null,
+      avatarUrl: avatarPath,
+    );
+
+    if (hasDisplayNameUpdate) {
+      await currentUser.updateDisplayName(normalizedDisplayName);
+    }
+    if (avatarPath != null && avatarPath.isNotEmpty) {
+      await currentUser.updatePhotoURL(avatarPath);
+    }
     await currentUser.reload();
     await refreshBackendSession();
   }
@@ -489,6 +539,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
     final completer = Completer<PhoneSignInStartResult>();
     try {
+      _pendingTotpEnrollmentSecret = null;
       final multiFactorSession = await currentUser.multiFactor.getSession();
       await _firebaseAuth.verifyPhoneNumber(
         phoneNumber: normalizedPhone,
@@ -556,6 +607,109 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
             ? null
             : displayName?.trim(),
       );
+      await currentUser.reload();
+      await refreshBackendSession();
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  @override
+  Future<TotpEnrollmentSecretEntity> startTotpMfaEnrollment({
+    String? issuer,
+    String? accountName,
+  }) async {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw const AuthException(
+        code: 'not-authenticated',
+        message:
+            'You need to be signed in to enable two-factor authentication.',
+      );
+    }
+    if (!currentUser.emailVerified) {
+      throw const AuthException(
+        code: 'email-not-verified',
+        message:
+            'Verify your email address before enabling two-factor authentication.',
+      );
+    }
+
+    try {
+      final multiFactorSession = await currentUser.multiFactor.getSession();
+      final secret = await firebase.TotpMultiFactorGenerator.generateSecret(
+        multiFactorSession,
+      );
+      final resolvedAccountName = accountName?.trim().isNotEmpty == true
+          ? accountName!.trim()
+          : currentUser.email?.trim().isNotEmpty == true
+          ? currentUser.email!.trim()
+          : currentUser.uid;
+      final resolvedIssuer = issuer?.trim().isNotEmpty == true
+          ? issuer!.trim()
+          : 'NoteSondage';
+      final qrCodeUrl = await secret.generateQrCodeUrl(
+        accountName: resolvedAccountName,
+        issuer: resolvedIssuer,
+      );
+      _pendingTotpEnrollmentSecret = secret;
+      return TotpEnrollmentSecretEntity(
+        secretKey: secret.secretKey,
+        qrCodeUrl: qrCodeUrl,
+        accountName: resolvedAccountName,
+        issuer: resolvedIssuer,
+        codeLength: secret.codeLength,
+        codeIntervalSeconds: secret.codeIntervalSeconds,
+      );
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  @override
+  Future<void> confirmTotpMfaEnrollment({
+    required String verificationCode,
+    String? displayName,
+  }) async {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw const AuthException(
+        code: 'not-authenticated',
+        message:
+            'You need to be signed in to enable two-factor authentication.',
+      );
+    }
+
+    final secret = _pendingTotpEnrollmentSecret;
+    final normalizedCode = verificationCode.trim();
+    if (secret == null) {
+      throw const AuthException(
+        code: 'totp-setup-expired',
+        message:
+            'The authenticator setup expired. Generate a new QR code and try again.',
+      );
+    }
+    if (normalizedCode.isEmpty) {
+      throw const AuthException(
+        code: 'missing-verification-code',
+        message: 'Enter the verification code from your authenticator app.',
+      );
+    }
+
+    try {
+      final assertion =
+          await firebase.TotpMultiFactorGenerator.getAssertionForEnrollment(
+            secret,
+            normalizedCode,
+          );
+      final resolvedDisplayName = displayName?.trim().isNotEmpty == true
+          ? displayName!.trim()
+          : 'Authenticator app';
+      await currentUser.multiFactor.enroll(
+        assertion,
+        displayName: resolvedDisplayName,
+      );
+      _pendingTotpEnrollmentSecret = null;
       await currentUser.reload();
       await refreshBackendSession();
     } on firebase.FirebaseAuthException catch (e) {
@@ -677,8 +831,59 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AuthUserEntity> confirmPendingTotpMfaSignIn({
+    required String factorUid,
+    required String verificationCode,
+  }) async {
+    final resolver = _pendingMfaResolver;
+    if (resolver == null) {
+      throw const AuthException(
+        code: 'no-pending-mfa-challenge',
+        message: 'There is no pending two-factor sign-in challenge.',
+      );
+    }
+
+    final normalizedFactorUid = factorUid.trim();
+    final normalizedCode = verificationCode.trim();
+    if (normalizedFactorUid.isEmpty || normalizedCode.isEmpty) {
+      throw const AuthException(
+        code: 'missing-verification-code',
+        message: 'Enter the verification code from your authenticator app.',
+      );
+    }
+
+    try {
+      final assertion =
+          await firebase.TotpMultiFactorGenerator.getAssertionForSignIn(
+            normalizedFactorUid,
+            normalizedCode,
+          );
+      final result = await resolver.resolveSignIn(assertion);
+      final user = result.user;
+      if (user == null) {
+        throw const AuthException(
+          code: 'totp-sign-in-failed',
+          message: 'Two-factor sign-in did not return a valid user.',
+        );
+      }
+
+      _pendingMfaResolver = null;
+      _pendingTotpEnrollmentSecret = null;
+      await _exchangeTokenWithBackend(user, propagateErrors: true);
+      await _syncBackendProfile(
+        currentUser: user,
+        displayName: user.displayName,
+      );
+      return AuthMapper.fromFirebaseUser(user);
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  @override
   void clearPendingMfaSignInChallenge() {
     _pendingMfaResolver = null;
+    _pendingTotpEnrollmentSecret = null;
   }
 
   @override
@@ -699,6 +904,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       // Rimuovi il JWT del backend
       await _tokenService.clearToken();
       _pendingMfaResolver = null;
+      _pendingTotpEnrollmentSecret = null;
       _backendExchangeInFlight = null;
       _backendExchangeUid = null;
       _lastSuccessfulExchangeAt = null;
@@ -969,15 +1175,35 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     );
   }
 
+  bool _isTransientBackendExchangeError(Object error) {
+    final lowered = error.toString().toLowerCase();
+    return lowered.contains('timed out') ||
+        lowered.contains('timeout') ||
+        lowered.contains('receive timeout') ||
+        lowered.contains('connect timeout') ||
+        lowered.contains('send timeout') ||
+        lowered.contains('socketexception') ||
+        lowered.contains('network error') ||
+        lowered.contains('failed host lookup') ||
+        lowered.contains('connection error') ||
+        lowered.contains('no status');
+  }
+
   List<MfaFactorHintEntity> _mapFactorHints(
     List<firebase.MultiFactorInfo> hints,
   ) {
     return hints.map((hint) {
+      final type = switch (hint) {
+        firebase.PhoneMultiFactorInfo _ => MfaFactorType.sms,
+        firebase.TotpMultiFactorInfo _ => MfaFactorType.totp,
+        _ => hint.factorId == 'totp' ? MfaFactorType.totp : MfaFactorType.sms,
+      };
       final phoneNumber = hint is firebase.PhoneMultiFactorInfo
           ? hint.phoneNumber
           : null;
       return MfaFactorHintEntity(
         uid: hint.uid,
+        type: type,
         displayName: hint.displayName,
         phoneNumber: phoneNumber,
       );

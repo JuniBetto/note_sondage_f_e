@@ -221,10 +221,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get preferences => 'Préférences';
 
   @override
-  String get manageYourPrivacySettings => 'Gérez vos paramètres de confidentialité';
+  String get manageYourPrivacySettings =>
+      'Gérez vos paramètres de confidentialité';
 
   @override
-  String get getInTouchWithOurSupportTeam => 'Contactez notre équipe d\'assistance';
+  String get getInTouchWithOurSupportTeam =>
+      'Contactez notre équipe d\'assistance';
 
   @override
   String get themeTitle => 'Thème';
@@ -272,7 +274,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get none => 'Aucun';
 
   @override
-  String get personalStatusClockingActions => 'Actions personnelles de pointage';
+  String get personalStatusClockingActions =>
+      'Actions personnelles de pointage';
 
   @override
   String get clockedInAt => 'Arrivée à:';
@@ -380,7 +383,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get expiryDate => 'Date d\'expiration';
 
   @override
-  String get dashboardSubtitle => 'Voici un aperçu rapide de votre espace de travail';
+  String get dashboardSubtitle =>
+      'Voici un aperçu rapide de votre espace de travail';
 
   @override
   String get quickActions => 'Actions rapides';
@@ -422,7 +426,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get startActiveBreak => 'Commencer la pause';
 
   @override
-  String get selectTeamToClockIn => 'Veuillez sélectionner une équipe pour pointer';
+  String get selectTeamToClockIn =>
+      'Veuillez sélectionner une équipe pour pointer';
 
   @override
   String get allDates => 'Toutes les dates';
@@ -446,7 +451,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reset => 'Réinitialiser';
 
   @override
-  String get selectTeamToViewClockings => 'Veuillez sélectionner une équipe per voir les pointages';
+  String get selectTeamToViewClockings =>
+      'Veuillez sélectionner une équipe per voir les pointages';
 
   @override
   String get noClockingsForTeam => 'Aucun pointage trouvé pour cette équipe';
@@ -470,7 +476,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get invalidDateFormat => 'Format de date invalide';
 
   @override
-  String get noClockingsToExport => 'Aucun pointage disponible pour l\'exportation';
+  String get noClockingsToExport =>
+      'Aucun pointage disponible pour l\'exportation';
 
   @override
   String get ownerOnly => 'Propriétaire uniquement';
@@ -590,7 +597,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loadingClockingState => 'Chargement de l\'état de pointage...';
 
   @override
-  String get noClockingsForFilter => 'Aucun pointage trouvé pour les filtres sélectionnés';
+  String get noClockingsForFilter =>
+      'Aucun pointage trouvé pour les filtres sélectionnés';
 
   @override
   String get myShifts => 'Mes quarts';
@@ -632,7 +640,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shiftColor => 'Couleur';
 
   @override
-  String get deleteShiftProfileConfirm => 'Voulez-vous vraiment supprimer ce profil ?';
+  String get deleteShiftProfileConfirm =>
+      'Voulez-vous vraiment supprimer ce profil ?';
 
   @override
   String get customProfile => 'Profils personnalisés';

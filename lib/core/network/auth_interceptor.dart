@@ -14,6 +14,10 @@ import 'package:note_sondage/core/network/token_service.dart';
 /// 2. Ri-scambiarlo con il backend per un nuovo JWT.
 /// 3. Ripetere la richiesta originale con il nuovo token.
 class AuthInterceptor extends Interceptor {
+  static const _exchangeConnectTimeout = Duration(seconds: 15);
+  static const _exchangeSendTimeout = Duration(seconds: 15);
+  static const _exchangeReceiveTimeout = Duration(seconds: 45);
+
   final TokenService _tokenService;
   Future<String?>? _exchangeInFlight;
   String? _exchangeUid;
@@ -121,14 +125,17 @@ class AuthInterceptor extends Interceptor {
     if (!forceRefreshFirebaseToken &&
         _lastSuccessfulExchangeUid == uid &&
         _lastSuccessfulExchangeAt != null &&
-        now.difference(_lastSuccessfulExchangeAt!) < const Duration(seconds: 10)) {
+        now.difference(_lastSuccessfulExchangeAt!) <
+            const Duration(seconds: 10)) {
       return _tokenService.getToken();
     }
 
     late final Future<String?> exchangeFuture;
     _exchangeUid = uid;
     exchangeFuture = () async {
-      final firebaseToken = await firebaseUser.getIdToken(forceRefreshFirebaseToken);
+      final firebaseToken = await firebaseUser.getIdToken(
+        forceRefreshFirebaseToken,
+      );
       if (firebaseToken == null || firebaseToken.isEmpty) {
         return null;
       }
@@ -136,9 +143,9 @@ class AuthInterceptor extends Interceptor {
       final dio = Dio(
         BaseOptions(
           baseUrl: baseUrl,
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
-          sendTimeout: const Duration(seconds: 10),
+          connectTimeout: _exchangeConnectTimeout,
+          receiveTimeout: _exchangeReceiveTimeout,
+          sendTimeout: _exchangeSendTimeout,
           headers: const {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -170,7 +177,8 @@ class AuthInterceptor extends Interceptor {
     try {
       return await exchangeFuture;
     } finally {
-      if (!forceRefreshFirebaseToken && identical(_exchangeInFlight, exchangeFuture)) {
+      if (!forceRefreshFirebaseToken &&
+          identical(_exchangeInFlight, exchangeFuture)) {
         _exchangeInFlight = null;
         _exchangeUid = null;
       }

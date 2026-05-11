@@ -80,12 +80,14 @@ class AuthUserMessageResolver {
     if (lowered.contains('invalid-verification-id') ||
         lowered.contains('phone-session-expired') ||
         lowered.contains('session-expired') ||
+        lowered.contains('totp-setup-expired') ||
         lowered.contains('no pending two-factor sign-in challenge')) {
       return 'This verification session expired. Request a new code and try again.';
     }
 
-    if (lowered.contains('missing-sms-code')) {
-      return 'Enter the verification code you received.';
+    if (lowered.contains('missing-sms-code') ||
+        lowered.contains('missing-verification-code')) {
+      return 'Enter the verification code to continue.';
     }
 
     if (lowered.contains('unsupported-second-factor')) {

@@ -104,11 +104,7 @@ void main() {
     // Cattura TUTTI gli errori non gestiti dall'app.
     (error, stack) {
       ErrorLogger.log(error, stack);
-
-      if (kDebugMode) {
-        debugPrint('----error debug :  $error');
-        return;
-      }
+      if (kDebugMode) return;
 
       // 8. Naviga alla pagina di errore fatale per l'utente
       // Usiamo la chiave globale per accedere al Navigator

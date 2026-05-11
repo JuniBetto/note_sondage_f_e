@@ -1,6 +1,7 @@
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
 import 'package:note_sondage/feature/auth/domain/entities/mfa_factor_hint_entity.dart';
 import 'package:note_sondage/feature/auth/domain/entities/phone_sign_in_start_result.dart';
+import 'package:note_sondage/feature/auth/domain/entities/totp_enrollment_secret_entity.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 
 /// Caso d'uso per le operazioni di autenticazione.
@@ -94,6 +95,14 @@ class AuthUseCase {
     }
   }
 
+  Future<void> sendEmailVerification() async {
+    try {
+      return await _repository.sendEmailVerification();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> updateContactEmail({required String email}) async {
     try {
       return await _repository.updateContactEmail(email: email);
@@ -102,9 +111,17 @@ class AuthUseCase {
     }
   }
 
-  Future<void> updateMyProfile({String? displayName}) async {
+  Future<void> updateMyProfile({
+    String? displayName,
+    List<int>? profileImageBytes,
+    String? profileImageFileName,
+  }) async {
     try {
-      return await _repository.updateMyProfile(displayName: displayName);
+      return await _repository.updateMyProfile(
+        displayName: displayName,
+        profileImageBytes: profileImageBytes,
+        profileImageFileName: profileImageFileName,
+      );
     } catch (e) {
       rethrow;
     }
@@ -144,6 +161,34 @@ class AuthUseCase {
     }
   }
 
+  Future<TotpEnrollmentSecretEntity> startTotpMfaEnrollment({
+    String? issuer,
+    String? accountName,
+  }) async {
+    try {
+      return await _repository.startTotpMfaEnrollment(
+        issuer: issuer,
+        accountName: accountName,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> confirmTotpMfaEnrollment({
+    required String verificationCode,
+    String? displayName,
+  }) async {
+    try {
+      return await _repository.confirmTotpMfaEnrollment(
+        verificationCode: verificationCode,
+        displayName: displayName,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<PhoneSignInStartResult> requestPendingMfaSignInCode({
     String? factorUid,
   }) async {
@@ -164,6 +209,20 @@ class AuthUseCase {
       return await _repository.confirmPendingMfaSignIn(
         sessionId: sessionId,
         smsCode: smsCode,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<AuthUserEntity> confirmPendingTotpMfaSignIn({
+    required String factorUid,
+    required String verificationCode,
+  }) async {
+    try {
+      return await _repository.confirmPendingTotpMfaSignIn(
+        factorUid: factorUid,
+        verificationCode: verificationCode,
       );
     } catch (e) {
       rethrow;

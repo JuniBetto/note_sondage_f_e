@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/feature/auth/domain/entities/mfa_factor_hint_entity.dart';
 import 'package:note_sondage/feature/auth/infrastructure/local/pending_mfa_setup_store.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -52,6 +53,7 @@ class _AuthTabLoginState extends State<AuthTabLogin>
   Uint8List? _registerAvatarBytes;
   String? _registerAvatarFileName;
   bool _enableMfaOnRegistration = false;
+  MfaFactorType _registrationMfaMethod = MfaFactorType.sms;
   bool _mfaDialogOpen = false;
 
   @override
@@ -175,11 +177,15 @@ class _AuthTabLoginState extends State<AuthTabLogin>
 
         if (state.verificationEmailSent) {
           final shouldFinishMfaLater = _enableMfaOnRegistration;
+          final selectedMfaMethod = _registrationMfaMethod;
           if (_enableMfaOnRegistration) {
             unawaited(
               _pendingMfaSetupStore.save(
                 email: _registerEmailController.text.trim(),
-                phoneNumber: _registerMfaPhoneController.text.trim(),
+                method: selectedMfaMethod,
+                phoneNumber: selectedMfaMethod == MfaFactorType.sms
+                    ? _registerMfaPhoneController.text.trim()
+                    : null,
               ),
             );
           }
@@ -189,13 +195,16 @@ class _AuthTabLoginState extends State<AuthTabLogin>
           setState(() {
             _registerMfaPhoneController.clear();
             _enableMfaOnRegistration = false;
+            _registrationMfaMethod = MfaFactorType.sms;
           });
+          final selectedMethodMessage =
+              ' After your first verified sign-in, you can finish enabling your authenticator app from your profile.';
           AppSnackBar.showSuccess(
             context,
             'We sent a confirmation email to '
             '${state.verificationEmail ?? _registerEmailController.text.trim()}. '
             'Open the link you received, then sign in.'
-            '${shouldFinishMfaLater ? ' After your first verified sign-in, you can finish enabling 2FA from your profile.' : ''}',
+            '${shouldFinishMfaLater ? selectedMethodMessage : ''}',
             title: 'Check your email',
           );
           return;
@@ -398,23 +407,28 @@ class _AuthTabLoginState extends State<AuthTabLogin>
               contentPadding: EdgeInsets.zero,
               title: const Text('Enable two-factor authentication'),
               subtitle: const Text(
-                'Add SMS verification to protect this account after your first verified sign-in.',
+                'Use an authenticator app to protect this account after your first verified sign-in.',
               ),
               onChanged: (value) {
                 setState(() {
                   _enableMfaOnRegistration = value;
+                  if (value) {
+                    _registrationMfaMethod = MfaFactorType.totp;
+                  }
                   if (!value) {
                     _registerMfaPhoneController.clear();
+                    _registrationMfaMethod = MfaFactorType.sms;
                   }
                 });
               },
             ),
             if (_enableMfaOnRegistration) ...[
               const SizedBox(height: 8),
-              CustomInputField(
-                hintText: 'Phone number for 2FA (+39 333 123 4567)',
-                controller: _registerMfaPhoneController,
-                prefixIcon: Icons.phone_outlined,
+              Text(
+                'You will finish setup with Google Authenticator, Authy or another app from your profile after the first verified sign-in.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.descriptionColor,
+                ),
               ),
             ],
 
@@ -444,6 +458,7 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                 key: ValueKey("register_button"),
                 onPressed: () {
                   if (_enableMfaOnRegistration &&
+                      _registrationMfaMethod == MfaFactorType.sms &&
                       _registerMfaPhoneController.text.trim().isEmpty) {
                     AppSnackBar.showWarning(
                       context,

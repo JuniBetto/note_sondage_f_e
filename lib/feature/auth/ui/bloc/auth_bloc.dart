@@ -32,6 +32,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthReloadRequested>(_onReload);
     on<AuthProfileEmailUpdated>(_onProfileEmailUpdated);
     on<AuthProfileDisplayNameUpdated>(_onProfileDisplayNameUpdated);
+    on<AuthProfilePhotoUpdated>(_onProfilePhotoUpdated);
     on<AuthMfaChallengeDismissed>(_onMfaChallengeDismissed);
 
     // Ascolta i cambiamenti di stato auth da Firebase
@@ -140,6 +141,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (user.isEmpty && state.status == AuthStatus.authenticated) {
         // L'utente è stato invalidato server-side (es. account eliminato)
         emit(const AuthState.unauthenticated());
+      } else if (user.isNotEmpty && user != state.user) {
+        // Aggiorna anche cambiamenti come emailVerified o displayName.
+        emit(AuthState.authenticated(user));
       } else if (user.isNotEmpty && state.status != AuthStatus.authenticated) {
         // La sessione è ancora valida — ripristina lo stato autenticato
         emit(AuthState.authenticated(user));
@@ -167,6 +171,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       AuthState.authenticated(
         state.user.copyWith(displayName: event.displayName),
       ),
+    );
+  }
+
+  void _onProfilePhotoUpdated(
+    AuthProfilePhotoUpdated event,
+    Emitter<AuthState> emit,
+  ) {
+    if (state.status != AuthStatus.authenticated) return;
+    emit(
+      AuthState.authenticated(state.user.copyWith(photoUrl: event.photoUrl)),
     );
   }
 

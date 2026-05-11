@@ -150,14 +150,16 @@ class SettingsWeb extends StatelessWidget {
 }
 
 void showSettingsDialog(BuildContext context, int lastVisitedIndex) {
+  final settingNavigationBloc = context.read<SettingNavigationBloc>();
+  final navigationBloc = context.read<NavigationBloc>();
+  final surfaceColor = Theme.of(context).colorScheme.surface;
+
   showDialog(
     context: context,
     builder: (dialogContext) {
-      context.read<SettingNavigationBloc>().add(
-        SettingNavigationPositionChanged(0),
-      );
+      settingNavigationBloc.add(SettingNavigationPositionChanged(0));
       return Dialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: surfaceColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: FractionallySizedBox(
           widthFactor: 0.85,
@@ -172,9 +174,7 @@ void showSettingsDialog(BuildContext context, int lastVisitedIndex) {
   ).then((onValue) {
     // Se l'utente chiude il dialog senza usare il pulsante di chiusura, torna all'ultima pagina visitata
     if (onValue == null) {
-      context.read<NavigationBloc>().add(
-        NavigationPositionChanged(lastVisitedIndex),
-      );
+      navigationBloc.add(NavigationPositionChanged(lastVisitedIndex));
     }
   });
 }
