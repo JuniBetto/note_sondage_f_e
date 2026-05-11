@@ -36,8 +36,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get continueWithGoogle => 'Continua con Google';
 
   @override
-  String get justSomeInfoToGetStarted =>
-      'Solo alcune informazioni per iniziare';
+  String get justSomeInfoToGetStarted => 'Solo alcune informazioni per iniziare';
 
   @override
   String get fullName => 'Nome completo';
@@ -222,12 +221,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get preferences => 'Preferenze';
 
   @override
-  String get manageYourPrivacySettings =>
-      'Gestisci le tue impostazioni sulla privacy';
+  String get manageYourPrivacySettings => 'Gestisci le tue impostazioni sulla privacy';
 
   @override
-  String get getInTouchWithOurSupportTeam =>
-      'Mettiti in contatto con il nostro team di supporto';
+  String get getInTouchWithOurSupportTeam => 'Mettiti in contatto con il nostro team di supporto';
 
   @override
   String get themeTitle => 'Tema';
@@ -383,8 +380,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get expiryDate => 'Data scadenza';
 
   @override
-  String get dashboardSubtitle =>
-      'Ecco un rapido riepilogo del tuo spazio di lavoro';
+  String get dashboardSubtitle => 'Ecco un rapido riepilogo del tuo spazio di lavoro';
 
   @override
   String get quickActions => 'Azioni rapide';
@@ -450,8 +446,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get reset => 'Resetta';
 
   @override
-  String get selectTeamToViewClockings =>
-      'Seleziona un team per vedere le timbrature';
+  String get selectTeamToViewClockings => 'Seleziona un team per vedere le timbrature';
 
   @override
   String get noClockingsForTeam => 'Nessuna timbratura trovata per questo team';
@@ -475,8 +470,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get invalidDateFormat => 'Formato data non valido';
 
   @override
-  String get noClockingsToExport =>
-      'Nessuna timbratura disponibile da esportare';
+  String get noClockingsToExport => 'Nessuna timbratura disponibile da esportare';
 
   @override
   String get ownerOnly => 'Solo Proprietario';
@@ -596,8 +590,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get loadingClockingState => 'Caricamento stato timbratura...';
 
   @override
-  String get noClockingsForFilter =>
-      'Nessuna timbratura trovata per i filtri selezionati';
+  String get noClockingsForFilter => 'Nessuna timbratura trovata per i filtri selezionati';
 
   @override
   String get myShifts => 'I miei turni';
@@ -639,8 +632,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shiftColor => 'Colore';
 
   @override
-  String get deleteShiftProfileConfirm =>
-      'Sei sicuro di voler eliminare questo profilo?';
+  String get deleteShiftProfileConfirm => 'Sei sicuro di voler eliminare questo profilo?';
 
   @override
   String get customProfile => 'Profili personalizzati';

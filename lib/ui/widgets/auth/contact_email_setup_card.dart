@@ -4,6 +4,7 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
 import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
+import 'package:note_sondage/feature/auth/ui/auth_user_message_resolver.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
@@ -73,9 +74,8 @@ class ContactEmailSetupCard extends StatelessWidget {
                     onPressed: () async {
                       final updatedEmail = await showDialog<String>(
                         context: context,
-                        builder: (_) => _ContactEmailDialog(
-                          initialValue: currentValue,
-                        ),
+                        builder: (_) =>
+                            _ContactEmailDialog(initialValue: currentValue),
                       );
                       if (!context.mounted || updatedEmail == null) return;
                       context.read<AuthBloc>().add(
@@ -139,7 +139,11 @@ class _ContactEmailDialogState extends State<_ContactEmailDialog> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = error.toString();
+        _errorMessage = AuthUserMessageResolver.resolve(
+          error,
+          fallback:
+              'We could not save the invitation email right now. Please try again.',
+        );
       });
     } finally {
       if (mounted) {

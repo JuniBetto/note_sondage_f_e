@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/network/token_service.dart';
+import 'package:note_sondage/feature/auth/domain/entities/auth_mfa_required_exception.dart';
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
+import 'package:note_sondage/feature/auth/domain/entities/mfa_factor_hint_entity.dart';
 import 'package:note_sondage/feature/auth/domain/entities/phone_sign_in_start_result.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/auth_mapper.dart';
@@ -32,6 +34,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   final BackendAuthDataSource _backendAuth;
   final TokenService _tokenService;
   final Map<String, firebase.ConfirmationResult> _webPhoneSessions = {};
+  firebase.MultiFactorResolver? _pendingMfaResolver;
   Future<void>? _backendExchangeInFlight;
   String? _backendExchangeUid;
   DateTime? _lastSuccessfulExchangeAt;
@@ -62,7 +65,8 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
     if (_lastSuccessfulExchangeUid == uid &&
         _lastSuccessfulExchangeAt != null &&
-        now.difference(_lastSuccessfulExchangeAt!) < const Duration(seconds: 10)) {
+        now.difference(_lastSuccessfulExchangeAt!) <
+            const Duration(seconds: 10)) {
       return;
     }
 
@@ -152,7 +156,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         await _syncPendingRegistrationProfile(currentUser);
       }
 
+      _pendingMfaResolver = null;
       return AuthMapper.fromFirebaseUser(currentUser);
+    } on firebase.FirebaseAuthMultiFactorException catch (e) {
+      _pendingMfaResolver = e.resolver;
+      throw AuthMfaRequiredException(
+        factors: _mapFactorHints(e.resolver.hints),
+        message: 'Enter the verification code sent to your second factor.',
+      );
     } on firebase.FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
     }
@@ -227,7 +238,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         );
       }
 
+      _pendingMfaResolver = null;
       return AuthMapper.fromFirebaseUser(userCredential.user);
+    } on firebase.FirebaseAuthMultiFactorException catch (e) {
+      _pendingMfaResolver = e.resolver;
+      throw AuthMfaRequiredException(
+        factors: _mapFactorHints(e.resolver.hints),
+        message: 'Enter the verification code sent to your second factor.',
+      );
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         throw const AuthException(
@@ -242,7 +260,11 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     } on firebase.FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
     } catch (e) {
-      throw AuthException(code: 'google-sign-in-failed', message: e.toString());
+      throw const AuthException(
+        code: 'google-sign-in-failed',
+        message:
+            'We could not complete Google sign-in right now. Please try again.',
+      );
     }
   }
 
@@ -263,7 +285,8 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         final confirmation = await _firebaseAuth.signInWithPhoneNumber(
           normalizedPhone,
         );
-        final sessionId = '$_webPhoneSessionPrefix${confirmation.verificationId}';
+        final sessionId =
+            '$_webPhoneSessionPrefix${confirmation.verificationId}';
         _webPhoneSessions[sessionId] = confirmation;
         return PhoneSignInStartResult.codeSent(sessionId);
       } on firebase.FirebaseAuthException catch (e) {
@@ -381,9 +404,13 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> sendPasswordResetEmail({required String email}) async {
+    final normalizedEmail = email.trim();
     try {
-      await _backendAuth.requestPasswordReset(email);
-      await _firebaseAuth.sendPasswordResetEmail(email: email);
+      await _backendAuth.requestPasswordReset(normalizedEmail);
+      await _firebaseAuth.sendPasswordResetEmail(
+        email: normalizedEmail,
+        actionCodeSettings: _buildPasswordResetActionCodeSettings(),
+      );
     } on firebase.FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
     }
@@ -393,6 +420,265 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   Future<void> updateContactEmail({required String email}) async {
     await _backendAuth.updateContactEmail(email);
     await refreshBackendSession();
+  }
+
+  @override
+  Future<void> updateMyProfile({String? displayName}) async {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw const AuthException(
+        code: 'not-authenticated',
+        message: 'You need to be signed in to update your profile.',
+      );
+    }
+
+    final normalizedDisplayName = displayName?.trim();
+    if (normalizedDisplayName == null || normalizedDisplayName.isEmpty) {
+      return;
+    }
+
+    await _backendAuth.updateMyProfile(fullName: normalizedDisplayName);
+    await currentUser.updateDisplayName(normalizedDisplayName);
+    await currentUser.reload();
+    await refreshBackendSession();
+  }
+
+  @override
+  Future<List<MfaFactorHintEntity>> getEnrolledMfaFactors() async {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw const AuthException(
+        code: 'not-authenticated',
+        message:
+            'You need to be signed in to manage two-factor authentication.',
+      );
+    }
+
+    await currentUser.reload();
+    final factors = await currentUser.multiFactor.getEnrolledFactors();
+    return _mapFactorHints(factors);
+  }
+
+  @override
+  Future<PhoneSignInStartResult> startSmsMfaEnrollment({
+    required String phoneNumber,
+  }) async {
+    final normalizedPhone = phoneNumber.trim();
+    if (normalizedPhone.isEmpty) {
+      throw const AuthException(
+        code: 'invalid-phone-number',
+        message: 'Please enter a valid phone number.',
+      );
+    }
+
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw const AuthException(
+        code: 'not-authenticated',
+        message:
+            'You need to be signed in to enable two-factor authentication.',
+      );
+    }
+    if (!currentUser.emailVerified) {
+      throw const AuthException(
+        code: 'email-not-verified',
+        message:
+            'Verify your email address before enabling two-factor authentication.',
+      );
+    }
+
+    final completer = Completer<PhoneSignInStartResult>();
+    try {
+      final multiFactorSession = await currentUser.multiFactor.getSession();
+      await _firebaseAuth.verifyPhoneNumber(
+        phoneNumber: normalizedPhone,
+        multiFactorSession: multiFactorSession,
+        verificationCompleted: (_) {},
+        verificationFailed: (error) {
+          if (!completer.isCompleted) {
+            completer.completeError(_mapFirebaseAuthException(error));
+          }
+        },
+        codeSent: (verificationId, _) {
+          if (!completer.isCompleted) {
+            completer.complete(PhoneSignInStartResult.codeSent(verificationId));
+          }
+        },
+        codeAutoRetrievalTimeout: (_) {
+          if (!completer.isCompleted) {
+            completer.completeError(
+              const AuthException(
+                code: 'phone-code-timeout',
+                message:
+                    'The verification code request timed out. Please try again.',
+              ),
+            );
+          }
+        },
+      );
+      return await completer.future;
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  @override
+  Future<void> confirmSmsMfaEnrollment({
+    required String sessionId,
+    required String smsCode,
+    String? displayName,
+  }) async {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw const AuthException(
+        code: 'not-authenticated',
+        message:
+            'You need to be signed in to enable two-factor authentication.',
+      );
+    }
+
+    final normalizedCode = smsCode.trim();
+    if (sessionId.trim().isEmpty || normalizedCode.isEmpty) {
+      throw const AuthException(
+        code: 'missing-sms-code',
+        message: 'Please enter the verification code you received.',
+      );
+    }
+
+    try {
+      final credential = firebase.PhoneAuthProvider.credential(
+        verificationId: sessionId.trim(),
+        smsCode: normalizedCode,
+      );
+      await currentUser.multiFactor.enroll(
+        firebase.PhoneMultiFactorGenerator.getAssertion(credential),
+        displayName: displayName?.trim().isEmpty ?? true
+            ? null
+            : displayName?.trim(),
+      );
+      await currentUser.reload();
+      await refreshBackendSession();
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  @override
+  Future<PhoneSignInStartResult> requestPendingMfaSignInCode({
+    String? factorUid,
+  }) async {
+    final resolver = _pendingMfaResolver;
+    if (resolver == null) {
+      throw const AuthException(
+        code: 'no-pending-mfa-challenge',
+        message: 'There is no pending two-factor sign-in challenge.',
+      );
+    }
+
+    firebase.MultiFactorInfo? selectedFactor;
+    if (factorUid != null && factorUid.trim().isNotEmpty) {
+      for (final factor in resolver.hints) {
+        if (factor.uid == factorUid.trim()) {
+          selectedFactor = factor;
+          break;
+        }
+      }
+    }
+    selectedFactor ??= resolver.hints.isNotEmpty ? resolver.hints.first : null;
+    if (selectedFactor == null ||
+        selectedFactor is! firebase.PhoneMultiFactorInfo) {
+      throw const AuthException(
+        code: 'unsupported-second-factor',
+        message: 'No supported second factor is available for this account.',
+      );
+    }
+
+    final completer = Completer<PhoneSignInStartResult>();
+    try {
+      await _firebaseAuth.verifyPhoneNumber(
+        multiFactorSession: resolver.session,
+        multiFactorInfo: selectedFactor,
+        verificationCompleted: (_) {},
+        verificationFailed: (error) {
+          if (!completer.isCompleted) {
+            completer.completeError(_mapFirebaseAuthException(error));
+          }
+        },
+        codeSent: (verificationId, _) {
+          if (!completer.isCompleted) {
+            completer.complete(PhoneSignInStartResult.codeSent(verificationId));
+          }
+        },
+        codeAutoRetrievalTimeout: (_) {
+          if (!completer.isCompleted) {
+            completer.completeError(
+              const AuthException(
+                code: 'phone-code-timeout',
+                message:
+                    'The verification code request timed out. Please try again.',
+              ),
+            );
+          }
+        },
+      );
+      return await completer.future;
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  @override
+  Future<AuthUserEntity> confirmPendingMfaSignIn({
+    required String sessionId,
+    required String smsCode,
+  }) async {
+    final resolver = _pendingMfaResolver;
+    if (resolver == null) {
+      throw const AuthException(
+        code: 'no-pending-mfa-challenge',
+        message: 'There is no pending two-factor sign-in challenge.',
+      );
+    }
+
+    final normalizedCode = smsCode.trim();
+    if (sessionId.trim().isEmpty || normalizedCode.isEmpty) {
+      throw const AuthException(
+        code: 'missing-sms-code',
+        message: 'Please enter the verification code you received.',
+      );
+    }
+
+    try {
+      final credential = firebase.PhoneAuthProvider.credential(
+        verificationId: sessionId.trim(),
+        smsCode: normalizedCode,
+      );
+      final result = await resolver.resolveSignIn(
+        firebase.PhoneMultiFactorGenerator.getAssertion(credential),
+      );
+      final user = result.user;
+      if (user == null) {
+        throw const AuthException(
+          code: 'phone-sign-in-failed',
+          message: 'Two-factor sign-in did not return a valid user.',
+        );
+      }
+
+      _pendingMfaResolver = null;
+      await _exchangeTokenWithBackend(user, propagateErrors: true);
+      await _syncBackendProfile(
+        currentUser: user,
+        displayName: user.displayName,
+      );
+      return AuthMapper.fromFirebaseUser(user);
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  @override
+  void clearPendingMfaSignInChallenge() {
+    _pendingMfaResolver = null;
   }
 
   @override
@@ -412,6 +698,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     try {
       // Rimuovi il JWT del backend
       await _tokenService.clearToken();
+      _pendingMfaResolver = null;
       _backendExchangeInFlight = null;
       _backendExchangeUid = null;
       _lastSuccessfulExchangeAt = null;
@@ -422,7 +709,10 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         GoogleSignIn.instance.signOut(),
       ]);
     } catch (e) {
-      throw AuthException(code: 'sign-out-failed', message: e.toString());
+      throw const AuthException(
+        code: 'sign-out-failed',
+        message: 'We could not sign you out right now. Please try again.',
+      );
     }
   }
 
@@ -482,7 +772,8 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       case 'session-expired':
         return const AuthException(
           code: 'session-expired',
-          message: 'The verification code has expired. Please request a new one.',
+          message:
+              'The verification code has expired. Please request a new one.',
         );
       case 'user-disabled':
         return const AuthException(
@@ -493,6 +784,29 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         return const AuthException(
           code: 'too-many-requests',
           message: 'Too many attempts. Please try again later.',
+        );
+      case 'requires-recent-login':
+        return const AuthException(
+          code: 'requires-recent-login',
+          message:
+              'For security reasons, sign out and sign in again before enabling two-factor authentication.',
+        );
+      case 'second-factor-already-in-use':
+        return const AuthException(
+          code: 'second-factor-already-in-use',
+          message:
+              'This phone number is already registered as a second factor.',
+        );
+      case 'maximum-second-factor-count-exceeded':
+        return const AuthException(
+          code: 'maximum-second-factor-count-exceeded',
+          message: 'You have reached the maximum number of second factors.',
+        );
+      case 'unverified-email':
+        return const AuthException(
+          code: 'unverified-email',
+          message:
+              'Verify your email address before enabling two-factor authentication.',
         );
       case 'network-request-failed':
         return const AuthException(
@@ -531,6 +845,27 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     return null;
   }
 
+  firebase.ActionCodeSettings? _buildPasswordResetActionCodeSettings() {
+    final targetUrl = _buildPasswordResetUrl();
+    if (targetUrl == null) {
+      return null;
+    }
+
+    return firebase.ActionCodeSettings(url: targetUrl, handleCodeInApp: false);
+  }
+
+  String? _buildPasswordResetUrl() {
+    if (RuntimeConfig.hasCustomPasswordResetUrl) {
+      return RuntimeConfig.resolvedPasswordResetUrl;
+    }
+
+    if (kIsWeb) {
+      return '${Uri.base.origin}/reset-password';
+    }
+
+    return null;
+  }
+
   Future<void> _cachePendingRegistrationProfile({
     required String firebaseUid,
     List<int>? profileImageBytes,
@@ -552,7 +887,9 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     );
   }
 
-  Future<void> _syncPendingRegistrationProfile(firebase.User currentUser) async {
+  Future<void> _syncPendingRegistrationProfile(
+    firebase.User currentUser,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final pendingUid = prefs.getString(_pendingAvatarUidKey);
     final pendingBytes = prefs.getString(_pendingAvatarBytesKey);
@@ -630,6 +967,21 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       code: 'backend-auth-failed',
       message: 'Unable to complete sign-in right now. Please try again.',
     );
+  }
+
+  List<MfaFactorHintEntity> _mapFactorHints(
+    List<firebase.MultiFactorInfo> hints,
+  ) {
+    return hints.map((hint) {
+      final phoneNumber = hint is firebase.PhoneMultiFactorInfo
+          ? hint.phoneNumber
+          : null;
+      return MfaFactorHintEntity(
+        uid: hint.uid,
+        displayName: hint.displayName,
+        phoneNumber: phoneNumber,
+      );
+    }).toList();
   }
 }
 

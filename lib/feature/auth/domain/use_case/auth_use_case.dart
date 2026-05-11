@@ -1,4 +1,5 @@
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
+import 'package:note_sondage/feature/auth/domain/entities/mfa_factor_hint_entity.dart';
 import 'package:note_sondage/feature/auth/domain/entities/phone_sign_in_start_result.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 
@@ -99,6 +100,78 @@ class AuthUseCase {
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<void> updateMyProfile({String? displayName}) async {
+    try {
+      return await _repository.updateMyProfile(displayName: displayName);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<MfaFactorHintEntity>> getEnrolledMfaFactors() async {
+    try {
+      return await _repository.getEnrolledMfaFactors();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<PhoneSignInStartResult> startSmsMfaEnrollment({
+    required String phoneNumber,
+  }) async {
+    try {
+      return await _repository.startSmsMfaEnrollment(phoneNumber: phoneNumber);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> confirmSmsMfaEnrollment({
+    required String sessionId,
+    required String smsCode,
+    String? displayName,
+  }) async {
+    try {
+      return await _repository.confirmSmsMfaEnrollment(
+        sessionId: sessionId,
+        smsCode: smsCode,
+        displayName: displayName,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<PhoneSignInStartResult> requestPendingMfaSignInCode({
+    String? factorUid,
+  }) async {
+    try {
+      return await _repository.requestPendingMfaSignInCode(
+        factorUid: factorUid,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<AuthUserEntity> confirmPendingMfaSignIn({
+    required String sessionId,
+    required String smsCode,
+  }) async {
+    try {
+      return await _repository.confirmPendingMfaSignIn(
+        sessionId: sessionId,
+        smsCode: smsCode,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  void clearPendingMfaSignInChallenge() {
+    _repository.clearPendingMfaSignInChallenge();
   }
 
   Future<void> refreshBackendSession() async {

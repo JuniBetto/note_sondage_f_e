@@ -9,10 +9,12 @@ class AuthenticatedUserSummaryCard extends StatelessWidget {
     super.key,
     this.compact = false,
     this.margin,
+    this.onTap,
   });
 
   final bool compact;
   final EdgeInsetsGeometry? margin;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +30,7 @@ class AuthenticatedUserSummaryCard extends StatelessWidget {
         final photoUrl = _resolvePhotoUrl(user);
         final showSecondaryEmail = email.isNotEmpty && email != displayName;
 
-        return Container(
+        final card = Container(
           margin: margin,
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -85,8 +87,28 @@ class AuthenticatedUserSummaryCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (onTap != null) ...[
+                  SizedBox(width: compact ? 10 : 12),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white.withValues(alpha: 0.92),
+                  ),
+                ],
               ],
             ),
+          ),
+        );
+
+        if (onTap == null) {
+          return card;
+        }
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(compact ? 18 : 20),
+            onTap: onTap,
+            child: card,
           ),
         );
       },
@@ -149,10 +171,7 @@ class _UserAvatar extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 )
-              : const Icon(
-                  Icons.person_rounded,
-                  color: Colors.white,
-                ),
+              : const Icon(Icons.person_rounded, color: Colors.white),
         ),
       ),
     );

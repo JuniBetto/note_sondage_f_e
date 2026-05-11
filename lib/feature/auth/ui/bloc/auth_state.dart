@@ -11,6 +11,7 @@ class AuthState extends Equatable {
   final bool passwordResetSent;
   final bool verificationEmailSent;
   final String? verificationEmail;
+  final List<MfaFactorHintEntity> pendingMfaFactors;
 
   const AuthState._({
     required this.status,
@@ -19,6 +20,7 @@ class AuthState extends Equatable {
     this.passwordResetSent = false,
     this.verificationEmailSent = false,
     this.verificationEmail,
+    this.pendingMfaFactors = const [],
   });
 
   /// Stato iniziale: non sappiamo ancora se l'utente è loggato.
@@ -53,6 +55,13 @@ class AuthState extends Equatable {
         verificationEmail: email,
       );
 
+  const AuthState.mfaRequired(List<MfaFactorHintEntity> factors, String message)
+    : this._(
+        status: AuthStatus.unauthenticated,
+        errorMessage: message,
+        pendingMfaFactors: factors,
+      );
+
   @override
   List<Object?> get props => [
     status,
@@ -61,5 +70,6 @@ class AuthState extends Equatable {
     passwordResetSent,
     verificationEmailSent,
     verificationEmail,
+    pendingMfaFactors,
   ];
 }

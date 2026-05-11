@@ -36,8 +36,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get continueWithGoogle => 'Continuar con Google';
 
   @override
-  String get justSomeInfoToGetStarted =>
-      'Solo algo de información para comenzar';
+  String get justSomeInfoToGetStarted => 'Solo algo de información para comenzar';
 
   @override
   String get fullName => 'Nombre completo';
@@ -46,8 +45,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get confirmPassword => 'Confirmar contraseña';
 
   @override
-  String get pleaseEnterYourEmail =>
-      'Por favor, introduce tu correo electrónico';
+  String get pleaseEnterYourEmail => 'Por favor, introduce tu correo electrónico';
 
   @override
   String get resetPassword => 'Restablecer contraseña';
@@ -223,12 +221,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get preferences => 'Preferencias';
 
   @override
-  String get manageYourPrivacySettings =>
-      'Gestiona tu configuración de privacidad';
+  String get manageYourPrivacySettings => 'Gestiona tu configuración de privacidad';
 
   @override
-  String get getInTouchWithOurSupportTeam =>
-      'Ponte en contacto con nuestro equipo de soporte';
+  String get getInTouchWithOurSupportTeam => 'Ponte en contacto con nuestro equipo de soporte';
 
   @override
   String get themeTitle => 'Tema';
@@ -384,8 +380,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get expiryDate => 'Fecha de vencimiento';
 
   @override
-  String get dashboardSubtitle =>
-      'Aquí tienes un resumen rápido de tu espacio de trabajo';
+  String get dashboardSubtitle => 'Aquí tienes un resumen rápido de tu espacio de trabajo';
 
   @override
   String get quickActions => 'Acciones rápidas';
@@ -415,8 +410,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get getStarted => 'Comienza explorando tu espacio de trabajo';
 
   @override
-  String get logoutConfirmation =>
-      '¿Estás seguro de que quieres cerrar sesión?';
+  String get logoutConfirmation => '¿Estás seguro de que quieres cerrar sesión?';
 
   @override
   String get clockInRequiredForBreak => 'Fichaje requerido para el descanso';
@@ -428,8 +422,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get startActiveBreak => 'Iniciar descanso';
 
   @override
-  String get selectTeamToClockIn =>
-      'Por favor, seleccione un equipo para fichar';
+  String get selectTeamToClockIn => 'Por favor, seleccione un equipo para fichar';
 
   @override
   String get allDates => 'Todas las fechas';
@@ -453,12 +446,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reset => 'Restablecer';
 
   @override
-  String get selectTeamToViewClockings =>
-      'Por favor, seleccione un equipo para ver los fichajes';
+  String get selectTeamToViewClockings => 'Por favor, seleccione un equipo para ver los fichajes';
 
   @override
-  String get noClockingsForTeam =>
-      'No se han encontrado fichajes para este equipo';
+  String get noClockingsForTeam => 'No se han encontrado fichajes para este equipo';
 
   @override
   String get committed => 'Confirmado';
@@ -599,8 +590,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loadingClockingState => 'Cargando estado de fichaje...';
 
   @override
-  String get noClockingsForFilter =>
-      'No se encontraron fichajes para los filtros seleccionados';
+  String get noClockingsForFilter => 'No se encontraron fichajes para los filtros seleccionados';
 
   @override
   String get myShifts => 'Mis turnos';
@@ -642,8 +632,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shiftColor => 'Color';
 
   @override
-  String get deleteShiftProfileConfirm =>
-      '¿Estás seguro de que quieres eliminar este perfil?';
+  String get deleteShiftProfileConfirm => '¿Estás seguro de que quieres eliminar este perfil?';
 
   @override
   String get customProfile => 'Perfiles personalizados';

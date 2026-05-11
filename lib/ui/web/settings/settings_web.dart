@@ -9,6 +9,7 @@ import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_
 import 'package:note_sondage/ui/web/settings/settings_contact_us_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_language_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_notification_web.dart';
+import 'package:note_sondage/ui/web/settings/settings_profile_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 import 'package:note_sondage/ui/web/widgets/full_sidebar.dart';
 import 'package:note_sondage/ui/web/widgets/home/left_home_section.dart';
@@ -37,7 +38,13 @@ class SettingsWeb extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          const AuthenticatedUserSummaryCard(),
+          AuthenticatedUserSummaryCard(
+            onTap: () {
+              context.read<SettingNavigationBloc>().add(
+                SettingNavigationPositionChanged(5),
+              );
+            },
+          ),
           const SizedBox(height: 12),
           const ContactEmailSetupCard(compact: true),
           const SizedBox(height: 16),
@@ -122,7 +129,8 @@ class SettingsWeb extends StatelessWidget {
                   child ??
                   Container(
                     color: Colors.transparent,
-                  child: switch (navBarItem) {
+                    child: switch (navBarItem) {
+                      5 => const SettingsProfileWeb(),
                       0 => const SettingsLanguageWeb(),
                       1 => const SettingsNotificationWeb(),
                       2 => const SettingsContactUsWeb(),

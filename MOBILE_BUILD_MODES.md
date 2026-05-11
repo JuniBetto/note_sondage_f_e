@@ -7,6 +7,7 @@ Important:
 - mobile builds do not read `.env.web`
 - mobile runtime target must be passed with `--dart-define=API_BASE_URL=...`
 - custom registration confirmation emails should pass `--dart-define=EMAIL_CONFIRMATION_URL=...`
+- Sentry is enabled only when `SENTRY_DSN` is passed or configured with a real DSN
 - `127.0.0.1` on a phone points to the phone itself
 - Android emulator must use `10.0.2.2`
 
@@ -146,7 +147,44 @@ flutter build apk --release --dart-define-from-file=.env.android.lan
 If `--dart-define-from-file` is not supported in your environment, use plain
 `--dart-define=...`.
 
-## 8. Quick reference
+## 8. Sentry environments on mobile
+
+Current Sentry behavior:
+- `Dev` for normal `flutter run` / debug builds
+- `Dev` for release builds pointing to private or LAN `http` backends
+- `Test` for release builds pointing to private or LAN `https` backends
+- `Prod` for release builds pointing to public HTTPS domains
+
+Important for beta distributions:
+- Flutter cannot reliably detect by itself whether a mobile release is TestFlight / Play beta or public store
+- for beta builds, explicitly pass `--dart-define=APP_ENV=Test`
+- for public store builds, explicitly pass `--dart-define=APP_ENV=Prod`
+
+Examples:
+
+```bash
+flutter run \
+  --dart-define=SENTRY_DSN=https://your-dsn@o0.ingest.sentry.io/0
+```
+
+```bash
+flutter build ipa --release \
+  --dart-define=API_BASE_URL=https://api.notesondage.lan \
+  --dart-define=SENTRY_DSN=https://your-dsn@o0.ingest.sentry.io/0 \
+  --dart-define=APP_ENV=Test
+```
+
+```bash
+flutter build appbundle --release \
+  --dart-define=API_BASE_URL=https://api.example.com \
+  --dart-define=SENTRY_DSN=https://your-dsn@o0.ingest.sentry.io/0 \
+  --dart-define=APP_ENV=Prod
+```
+
+Without a real `SENTRY_DSN`, Sentry stays disabled even if the environment is
+resolved to `Dev`, `Test`, or `Prod`.
+
+## 9. Quick reference
 
 - Android emulator -> `http://10.0.2.2:8080`
 - iOS simulator / desktop -> `http://127.0.0.1:8080`

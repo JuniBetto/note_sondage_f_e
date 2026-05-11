@@ -88,3 +88,16 @@ final class AuthProfileEmailUpdated extends AuthEvent {
   @override
   List<Object?> get props => [email];
 }
+
+final class AuthProfileDisplayNameUpdated extends AuthEvent {
+  final String displayName;
+
+  const AuthProfileDisplayNameUpdated(this.displayName);
+
+  @override
+  List<Object?> get props => [displayName];
+}
+
+final class AuthMfaChallengeDismissed extends AuthEvent {
+  const AuthMfaChallengeDismissed();
+}

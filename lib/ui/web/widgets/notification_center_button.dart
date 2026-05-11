@@ -6,18 +6,17 @@ import 'package:note_sondage/feature/notification/inbox/notification_center_item
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
+const int _maxWebNotificationCenterItems = 10;
+
 class NotificationCenterButton extends StatelessWidget {
   const NotificationCenterButton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = context.select<AuthBloc, String>(
-      (bloc) => bloc.state.user.uid,
-    );
-
     return BlocBuilder<NotificationCenterCubit, NotificationCenterState>(
       builder: (context, state) {
-        final count = state.pendingFor(currentUserId).length;
+        final visibleNotifications = _visibleNotifications(state.notifications);
+        final count = _visiblePendingCount(state, visibleNotifications);
         return Stack(
           clipBehavior: Clip.none,
           children: [
@@ -71,8 +70,11 @@ class NotificationCenterButton extends StatelessWidget {
   Future<void> _showNotificationCenter(BuildContext context) async {
     final cubit = context.read<NotificationCenterCubit>();
     await cubit.loadNotifications(force: true);
+    final visibleNotifications = _visibleNotifications(
+      cubit.state.notifications,
+    );
     cubit.markManyAsSeen(
-      cubit.state.notifications.map((item) => item.notificationId),
+      visibleNotifications.map((item) => item.notificationId),
     );
     if (!context.mounted) return;
 
@@ -106,6 +108,9 @@ class _NotificationCenterDialog extends StatelessWidget {
         ),
         child: BlocBuilder<NotificationCenterCubit, NotificationCenterState>(
           builder: (context, state) {
+            final visibleNotifications = _visibleNotifications(
+              state.notifications,
+            );
             return Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -128,11 +133,11 @@ class _NotificationCenterDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   if (state.status == NotificationCenterStatus.loading &&
-                      state.notifications.isEmpty)
+                      visibleNotifications.isEmpty)
                     const Expanded(
                       child: Center(child: CircularProgressIndicator()),
                     )
-                  else if (state.notifications.isEmpty)
+                  else if (visibleNotifications.isEmpty)
                     Expanded(
                       child: Center(
                         child: Text(
@@ -144,13 +149,14 @@ class _NotificationCenterDialog extends StatelessWidget {
                   else
                     Expanded(
                       child: ListView.separated(
-                        itemCount: state.notifications.length,
+                        itemCount: visibleNotifications.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
-                          final item = state.notifications[index];
+                          final item = visibleNotifications[index];
                           final isProcessing = state.processingNotificationIds
                               .contains(item.notificationId);
-                          final isCompleted = state.completedActionNotificationIds
+                          final isCompleted = state
+                              .completedActionNotificationIds
                               .contains(item.notificationId);
                           final canRespond =
                               !isCompleted &&
@@ -191,6 +197,32 @@ class _NotificationCenterDialog extends StatelessWidget {
   }
 }
 
+List<NotificationCenterItem> _visibleNotifications(
+  List<NotificationCenterItem> notifications,
+) {
+  if (notifications.length <= _maxWebNotificationCenterItems) {
+    return notifications;
+  }
+
+  return notifications.take(_maxWebNotificationCenterItems).toList();
+}
+
+int _visiblePendingCount(
+  NotificationCenterState state,
+  List<NotificationCenterItem> visibleNotifications,
+) {
+  return visibleNotifications.where((item) {
+    if (state.dismissedNotificationIds.contains(item.notificationId)) {
+      return false;
+    }
+    final seen = state.seenNotificationIds.contains(item.notificationId);
+    final completed = state.completedActionNotificationIds.contains(
+      item.notificationId,
+    );
+    return !seen && !completed;
+  }).length;
+}
+
 class _NotificationCard extends StatelessWidget {
   const _NotificationCard({
     required this.item,
@@ -210,7 +242,9 @@ class _NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final navigationLabel = canRespond ? null : NotificationNavigation.labelFor(item);
+    final navigationLabel = canRespond
+        ? null
+        : NotificationNavigation.labelFor(item);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -278,12 +312,12 @@ class _NotificationCard extends StatelessWidget {
                     ),
                   ],
                 ),
-              ],],
-            ),
+              ],
+            ],
           ),
         ),
-      );
-
+      ),
+    );
   }
 
   Future<void> _handleOpen(BuildContext context) async {

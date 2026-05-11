@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -5,9 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/feature/auth/infrastructure/local/pending_mfa_setup_store.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/auth/mfa_sign_in_dialog.dart';
 import 'package:note_sondage/ui/widgets/auth/phone_sign_in_dialog.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
@@ -36,14 +40,19 @@ class _AuthTabLoginState extends State<AuthTabLogin>
   final TextEditingController _registerNameController = TextEditingController();
   final TextEditingController _registerEmailController =
       TextEditingController();
+  final TextEditingController _registerMfaPhoneController =
+      TextEditingController();
   final TextEditingController _registerPasswordController =
       TextEditingController();
   final TextEditingController _registerConfirmPasswordController =
       TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
+  final PendingMfaSetupStore _pendingMfaSetupStore = PendingMfaSetupStore();
 
   Uint8List? _registerAvatarBytes;
   String? _registerAvatarFileName;
+  bool _enableMfaOnRegistration = false;
+  bool _mfaDialogOpen = false;
 
   @override
   void initState() {
@@ -87,6 +96,7 @@ class _AuthTabLoginState extends State<AuthTabLogin>
     _loginPasswordController.dispose();
     _registerNameController.dispose();
     _registerEmailController.dispose();
+    _registerMfaPhoneController.dispose();
     _registerPasswordController.dispose();
     _registerConfirmPasswordController.dispose();
     super.dispose();
@@ -112,14 +122,11 @@ class _AuthTabLoginState extends State<AuthTabLogin>
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('Impossibile selezionare l\'immagine: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+      AppSnackBar.showError(
+        context,
+        'We could not select the image. Please try again.',
+        title: 'Image not selected',
+      );
     }
   }
 
@@ -137,48 +144,72 @@ class _AuthTabLoginState extends State<AuthTabLogin>
     );
 
     if (!mounted || result != true) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('Phone sign-in completed successfully.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    AppSnackBar.showSuccess(
+      context,
+      'Your account has been verified and you are now signed in.',
+      title: 'Phone sign-in completed',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        if (state.pendingMfaFactors.isNotEmpty && !_mfaDialogOpen) {
+          _mfaDialogOpen = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!mounted) return;
+            final result = await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => MfaSignInDialog(factors: state.pendingMfaFactors),
+            );
+            _mfaDialogOpen = false;
+            if (!mounted) return;
+            if (result != true) {
+              context.read<AuthBloc>().add(const AuthMfaChallengeDismissed());
+            }
+          });
+          return;
+        }
+
         if (state.verificationEmailSent) {
+          final shouldFinishMfaLater = _enableMfaOnRegistration;
+          if (_enableMfaOnRegistration) {
+            unawaited(
+              _pendingMfaSetupStore.save(
+                email: _registerEmailController.text.trim(),
+                phoneNumber: _registerMfaPhoneController.text.trim(),
+              ),
+            );
+          }
           _tabController.animateTo(0);
           _registerPasswordController.clear();
           _registerConfirmPasswordController.clear();
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Ti abbiamo inviato una mail di conferma a '
-                  '${state.verificationEmail ?? _registerEmailController.text.trim()}. '
-                  'Apri il link ricevuto e poi accedi.',
-                ),
-                backgroundColor: Colors.green,
-              ),
-            );
+          setState(() {
+            _registerMfaPhoneController.clear();
+            _enableMfaOnRegistration = false;
+          });
+          AppSnackBar.showSuccess(
+            context,
+            'We sent a confirmation email to '
+            '${state.verificationEmail ?? _registerEmailController.text.trim()}. '
+            'Open the link you received, then sign in.'
+            '${shouldFinishMfaLater ? ' After your first verified sign-in, you can finish enabling 2FA from your profile.' : ''}',
+            title: 'Check your email',
+          );
           return;
         }
 
         if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
+          final isRegisterTab = _tabController.index == 1;
+          AppSnackBar.showError(
+            context,
+            state.errorMessage!,
+            title: isRegisterTab
+                ? 'Unable to create account'
+                : 'Unable to sign in',
+          );
         }
       },
       child: Padding(
@@ -362,6 +393,32 @@ class _AuthTabLoginState extends State<AuthTabLogin>
             ),
 
             const SizedBox(height: 16),
+            SwitchListTile.adaptive(
+              value: _enableMfaOnRegistration,
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Enable two-factor authentication'),
+              subtitle: const Text(
+                'Add SMS verification to protect this account after your first verified sign-in.',
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _enableMfaOnRegistration = value;
+                  if (!value) {
+                    _registerMfaPhoneController.clear();
+                  }
+                });
+              },
+            ),
+            if (_enableMfaOnRegistration) ...[
+              const SizedBox(height: 8),
+              CustomInputField(
+                hintText: 'Phone number for 2FA (+39 333 123 4567)',
+                controller: _registerMfaPhoneController,
+                prefixIcon: Icons.phone_outlined,
+              ),
+            ],
+
+            const SizedBox(height: 16),
             CustomInputField(
               key: ValueKey("register_password_field"),
               hintText: localization.password,
@@ -386,6 +443,15 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                 type: ButtonType.text,
                 key: ValueKey("register_button"),
                 onPressed: () {
+                  if (_enableMfaOnRegistration &&
+                      _registerMfaPhoneController.text.trim().isEmpty) {
+                    AppSnackBar.showWarning(
+                      context,
+                      'Enter a phone number to enable two-factor authentication.',
+                      title: 'Phone number required',
+                    );
+                    return;
+                  }
                   if (_registerFormKey.currentState?.validate() ?? false) {
                     context.read<AuthBloc>().add(
                       AuthRegisterRequested(
@@ -467,7 +533,9 @@ class _RegisterAvatarPicker extends StatelessWidget {
           child: CircleAvatar(
             radius: 34,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.10),
-            backgroundImage: imageBytes != null ? MemoryImage(imageBytes!) : null,
+            backgroundImage: imageBytes != null
+                ? MemoryImage(imageBytes!)
+                : null,
             child: imageBytes == null
                 ? Icon(
                     Icons.add_a_photo_outlined,

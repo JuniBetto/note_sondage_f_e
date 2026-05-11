@@ -224,8 +224,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get manageYourPrivacySettings => 'Manage your privacy settings';
 
   @override
-  String get getInTouchWithOurSupportTeam =>
-      'Get in touch with our support team';
+  String get getInTouchWithOurSupportTeam => 'Get in touch with our support team';
 
   @override
   String get themeTitle => 'Theme';
@@ -273,8 +272,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get none => 'None';
 
   @override
-  String get personalStatusClockingActions =>
-      'Personal status clock in actions';
+  String get personalStatusClockingActions => 'Personal status clock in actions';
 
   @override
   String get clockedInAt => 'Clocked in at:';
@@ -448,8 +446,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reset => 'Reset';
 
   @override
-  String get selectTeamToViewClockings =>
-      'Please select a team to view clockings';
+  String get selectTeamToViewClockings => 'Please select a team to view clockings';
 
   @override
   String get noClockingsForTeam => 'No clockings found for this team';
@@ -593,8 +590,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadingClockingState => 'Loading clock in state...';
 
   @override
-  String get noClockingsForFilter =>
-      'No clockings found for the selected filters';
+  String get noClockingsForFilter => 'No clockings found for the selected filters';
 
   @override
   String get myShifts => 'My Shifts';
@@ -636,8 +632,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shiftColor => 'Color';
 
   @override
-  String get deleteShiftProfileConfirm =>
-      'Are you sure you want to delete this profile?';
+  String get deleteShiftProfileConfirm => 'Are you sure you want to delete this profile?';
 
   @override
   String get customProfile => 'Custom Profiles';

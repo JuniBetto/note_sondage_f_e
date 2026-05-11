@@ -1,7 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/network/auth_interceptor.dart';
 import 'package:note_sondage/core/network/token_service.dart';
@@ -9,6 +9,26 @@ import 'package:note_sondage/core/network/token_service.dart';
 class DioClient {
   static DioClient? _instance;
   final Dio dio;
+
+  static void debugWarnIfMisconfiguredForPlatform() {
+    if (kIsWeb || !RuntimeConfig.hasCustomApiBaseUrl) {
+      return;
+    }
+
+    final configuredUri = Uri.tryParse(RuntimeConfig.resolvedApiBaseUrl);
+    final configuredHost = configuredUri?.host;
+    if (configuredHost == null || configuredHost.isEmpty) {
+      return;
+    }
+
+    if (Platform.isIOS && configuredHost == '10.0.2.2') {
+      debugPrint(
+        '[DioClient] API_BASE_URL points to 10.0.2.2 on iOS. '
+        '10.0.2.2 is the Android emulator loopback alias. '
+        'Use your Mac/host LAN IP or 127.0.0.1 only when the backend runs on the same Mac.',
+      );
+    }
+  }
 
   static String get _scheme {
     if (kIsWeb) {
@@ -88,6 +108,8 @@ class DioClient {
   }
 
   DioClient._(this.dio) {
+    debugWarnIfMisconfiguredForPlatform();
+
     // Interceptor per autenticazione: aggiunge il JWT del backend a ogni richiesta
     dio.interceptors.add(AuthInterceptor(tokenService: TokenService()));
 

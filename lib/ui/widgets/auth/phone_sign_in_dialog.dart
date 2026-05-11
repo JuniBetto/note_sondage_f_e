@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
 import 'package:note_sondage/feature/auth/domain/entities/phone_sign_in_start_result.dart';
+import 'package:note_sondage/feature/auth/ui/auth_user_message_resolver.dart';
 
 class PhoneSignInDialog extends StatefulWidget {
   const PhoneSignInDialog({super.key});
@@ -59,7 +60,7 @@ class _PhoneSignInDialogState extends State<PhoneSignInDialog> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = error.toString();
+        _errorMessage = AuthUserMessageResolver.resolve(error);
       });
     } finally {
       if (mounted) {
@@ -94,7 +95,7 @@ class _PhoneSignInDialogState extends State<PhoneSignInDialog> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = error.toString();
+        _errorMessage = AuthUserMessageResolver.resolve(error);
       });
     } finally {
       if (mounted) {
@@ -108,7 +109,9 @@ class _PhoneSignInDialogState extends State<PhoneSignInDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_awaitingCode ? 'Enter verification code' : 'Continue with phone'),
+      title: Text(
+        _awaitingCode ? 'Enter verification code' : 'Continue with phone',
+      ),
       content: SizedBox(
         width: 420,
         child: Column(
@@ -142,7 +145,9 @@ class _PhoneSignInDialogState extends State<PhoneSignInDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _isLoading ? null : (_awaitingCode ? _confirmCode : _requestCode),
+          onPressed: _isLoading
+              ? null
+              : (_awaitingCode ? _confirmCode : _requestCode),
           child: _isLoading
               ? const SizedBox(
                   width: 18,

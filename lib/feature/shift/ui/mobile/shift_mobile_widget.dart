@@ -346,6 +346,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(a.id));
         }
       }
+
+      // public → public: il backend aggiornerà TUTTE le righe del team in automatico
       context.read<ShiftBloc>().add(
         UpdateShiftAssignmentEvent(
           assignmentId: existing.id,

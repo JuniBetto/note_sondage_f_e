@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/feature/auth/domain/entities/auth_mfa_required_exception.dart';
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
+import 'package:note_sondage/feature/auth/domain/entities/mfa_factor_hint_entity.dart';
 import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
+import 'package:note_sondage/feature/auth/ui/auth_user_message_resolver.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -28,6 +31,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutRequested>(_onLogout);
     on<AuthReloadRequested>(_onReload);
     on<AuthProfileEmailUpdated>(_onProfileEmailUpdated);
+    on<AuthProfileDisplayNameUpdated>(_onProfileDisplayNameUpdated);
+    on<AuthMfaChallengeDismissed>(_onMfaChallengeDismissed);
 
     // Ascolta i cambiamenti di stato auth da Firebase
     _authSubscription = _authUseCase.authStateChanges.listen(
@@ -57,8 +62,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
       );
       // Lo stream _authSubscription aggiornerà lo stato automaticamente
+    } on AuthMfaRequiredException catch (e) {
+      emit(AuthState.mfaRequired(e.factors, e.message));
     } catch (e) {
-      emit(AuthState.error(e.toString()));
+      emit(AuthState.error(AuthUserMessageResolver.resolve(e)));
     }
   }
 
@@ -77,7 +84,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(AuthState.verificationEmailSent(event.email));
     } catch (e) {
-      emit(AuthState.error(e.toString()));
+      emit(AuthState.error(AuthUserMessageResolver.resolve(e)));
     }
   }
 
@@ -88,8 +95,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthState.loading());
     try {
       await _authUseCase.signInWithGoogle();
+    } on AuthMfaRequiredException catch (e) {
+      emit(AuthState.mfaRequired(e.factors, e.message));
     } catch (e) {
-      emit(AuthState.error(e.toString()));
+      emit(AuthState.error(AuthUserMessageResolver.resolve(e)));
     }
   }
 
@@ -102,7 +111,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authUseCase.sendPasswordResetEmail(email: event.email);
       emit(const AuthState.passwordResetSent());
     } catch (e) {
-      emit(AuthState.error(e.toString()));
+      emit(AuthState.error(AuthUserMessageResolver.resolve(e)));
     }
   }
 
@@ -114,7 +123,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authUseCase.signOut();
       // Lo stream _authSubscription aggiornerà lo stato automaticamente
     } catch (e) {
-      emit(AuthState.error(e.toString()));
+      emit(AuthState.error(AuthUserMessageResolver.resolve(e)));
     }
   }
 
@@ -147,6 +156,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) {
     if (state.status != AuthStatus.authenticated) return;
     emit(AuthState.authenticated(state.user.copyWith(email: event.email)));
+  }
+
+  void _onProfileDisplayNameUpdated(
+    AuthProfileDisplayNameUpdated event,
+    Emitter<AuthState> emit,
+  ) {
+    if (state.status != AuthStatus.authenticated) return;
+    emit(
+      AuthState.authenticated(
+        state.user.copyWith(displayName: event.displayName),
+      ),
+    );
+  }
+
+  void _onMfaChallengeDismissed(
+    AuthMfaChallengeDismissed event,
+    Emitter<AuthState> emit,
+  ) {
+    _authUseCase.clearPendingMfaSignInChallenge();
+    emit(const AuthState.unauthenticated());
   }
 
   @override

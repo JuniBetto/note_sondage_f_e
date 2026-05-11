@@ -134,7 +134,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   late TimeOfDay _endTime;
   late bool _overnight;
   late List<int> _alarmOffsets;
-  ShiftAlarmType _alarmType = ShiftAlarmType.notification;
+  ShiftAlarmType _alarmType = ShiftAlarmType.alarm;
   late bool _isPublic;
   late bool _readOnly;
   final _noteCtrl = TextEditingController();

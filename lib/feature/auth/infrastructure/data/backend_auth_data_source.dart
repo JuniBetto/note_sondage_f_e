@@ -17,7 +17,8 @@ class BackendAuthDataSource {
   final Dio _authenticatedDio;
 
   BackendAuthDataSource({Dio? dio})
-    : _dio = dio ??
+    : _dio =
+          dio ??
           Dio(
             BaseOptions(
               baseUrl: DioClient.baseUrl,
@@ -74,9 +75,10 @@ class BackendAuthDataSource {
       );
     } on DioException catch (e) {
       debugPrint('[BackendAuth] Password reset request failed: ${e.message}');
+      final responseData = e.response?.data;
       throw Exception(
         'Failed to register password reset request: '
-        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+        '${e.response?.statusCode ?? 'no status'} – ${responseData ?? e.message}',
       );
     }
   }
@@ -132,7 +134,8 @@ class BackendAuthDataSource {
       debugPrint('[BackendAuth] Profile update failed: ${e.message}');
       throw Exception(
         'Failed to update user profile: '
-        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+        '${e.response?.statusCode ?? 'no status'} – '
+        '${e.response?.data ?? e.message}',
       );
     }
   }
@@ -153,14 +156,22 @@ class BackendAuthDataSource {
   }
 
   Future<String?> getMyProfileEmail() async {
+    final profile = await getMyProfile();
+    if (profile == null) return null;
+
+    final email = profile['email']?.toString().trim();
+    if (email == null || email.isEmpty) {
+      return null;
+    }
+    return email;
+  }
+
+  Future<Map<String, dynamic>?> getMyProfile() async {
     try {
       final response = await _authenticatedDio.get('/api/users/me');
       final data = response.data;
       if (data is Map<String, dynamic>) {
-        final email = data['email']?.toString().trim();
-        if (email != null && email.isNotEmpty) {
-          return email;
-        }
+        return data;
       }
       return null;
     } on DioException catch (e) {
@@ -178,7 +189,9 @@ class BackendAuthDataSource {
         Map<String, dynamic>.from(response.data as Map<String, dynamic>),
       );
     } on DioException catch (e) {
-      debugPrint('[BackendAuth] Notification preferences fetch failed: ${e.message}');
+      debugPrint(
+        '[BackendAuth] Notification preferences fetch failed: ${e.message}',
+      );
       throw Exception(
         'Failed to fetch notification preferences: '
         '${e.response?.statusCode ?? 'no status'} – ${e.message}',
@@ -198,7 +211,9 @@ class BackendAuthDataSource {
         Map<String, dynamic>.from(response.data as Map<String, dynamic>),
       );
     } on DioException catch (e) {
-      debugPrint('[BackendAuth] Notification preferences update failed: ${e.message}');
+      debugPrint(
+        '[BackendAuth] Notification preferences update failed: ${e.message}',
+      );
       throw Exception(
         'Failed to update notification preferences: '
         '${e.response?.statusCode ?? 'no status'} – ${e.message}',
@@ -237,7 +252,9 @@ class BackendAuthDataSource {
     }
   }
 
-  Future<List<NotificationCenterItem>> getMyNotifications({int limit = 30}) async {
+  Future<List<NotificationCenterItem>> getMyNotifications({
+    int limit = 30,
+  }) async {
     try {
       final response = await _authenticatedDio.get(
         '/api/aggregate/notifications/me',

@@ -327,8 +327,10 @@ class LocalNotificationService {
       enableVibration: true,
       category: AndroidNotificationCategory.alarm,
       fullScreenIntent: isAlarm,
-      ongoing: isAlarm,
-      autoCancel: !isAlarm,
+      // ongoing: true causa soppressione silenziosa su Android 14+ senza foreground service
+      ongoing: false,
+      autoCancel: true,
+      visibility: NotificationVisibility.public,
     );
 
     final darwinDetails = DarwinNotificationDetails(
@@ -395,8 +397,10 @@ class LocalNotificationService {
         enableVibration: true,
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: isAlarm,
-        ongoing: isAlarm,
-        autoCancel: !isAlarm,
+        // ongoing: true causa soppressione silenziosa su Android 14+ senza foreground service
+        ongoing: false,
+        autoCancel: true,
+        visibility: NotificationVisibility.public,
       );
 
       final darwinDetails = DarwinNotificationDetails(
@@ -484,8 +488,9 @@ class LocalNotificationService {
   Future<ShiftAlarmType> getShiftAlarmType() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_shiftAlarmTypeKey);
-    if (raw == ShiftAlarmType.alarm.name) return ShiftAlarmType.alarm;
-    return ShiftAlarmType.notification;
+    // Default: alarm (sveglia), non semplice notifica
+    if (raw == ShiftAlarmType.notification.name) return ShiftAlarmType.notification;
+    return ShiftAlarmType.alarm;
   }
 
   /// Richiede i permessi necessari per la modalità **Sveglia** su Android.

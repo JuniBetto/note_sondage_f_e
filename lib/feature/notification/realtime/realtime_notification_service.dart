@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:note_sondage/core/config/runtime_config.dart';
@@ -26,24 +27,29 @@ class RealtimeNotificationService {
     _connectedUserId = userId;
 
     final apiUri = Uri.parse(DioClient.baseUrl);
+    if (!kIsWeb && Platform.isIOS && apiUri.host == '10.0.2.2') {
+      debugPrint(
+        '[RealtimeNotificationService] API_BASE_URL is using 10.0.2.2 on iOS. '
+        'This host works for the Android emulator, not for iOS.',
+      );
+    }
     final wsScheme = apiUri.scheme == 'https' ? 'wss' : 'ws';
-    final wsUrl =
-        RuntimeConfig.hasCustomApiBaseUrl
-            ? apiUri
-                .replace(
-                  scheme: wsScheme,
-                  path: '/ws',
-                  queryParameters: {'userId': userId},
-                )
-                .toString()
-            : apiUri
-                .replace(
-                  scheme: wsScheme,
-                  port: 8085,
-                  path: '/ws',
-                  queryParameters: {'userId': userId},
-                )
-                .toString();
+    final wsUrl = RuntimeConfig.hasCustomApiBaseUrl
+        ? apiUri
+              .replace(
+                scheme: wsScheme,
+                path: '/ws',
+                queryParameters: {'userId': userId},
+              )
+              .toString()
+        : apiUri
+              .replace(
+                scheme: wsScheme,
+                port: 8085,
+                path: '/ws',
+                queryParameters: {'userId': userId},
+              )
+              .toString();
     final webSocketHeaders = kIsWeb ? null : {'X-User-Id': userId};
 
     _client = StompClient(

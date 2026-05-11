@@ -66,7 +66,7 @@ void main() {
           serverClientId: kIsWeb ? null : RuntimeConfig.googleServerClientId,
         ),
         HiveInitializer.initialize(),
-        ErrorLogger.init(dsn: RuntimeConfig.sentryDsn, enabled: !kDebugMode),
+        ErrorLogger.init(dsn: RuntimeConfig.sentryDsn),
         getIt<LocalNotificationService>().init(),
         getIt<PushNotificationService>().init(),
       ]);

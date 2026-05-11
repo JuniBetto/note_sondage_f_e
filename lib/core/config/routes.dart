@@ -33,6 +33,7 @@ import 'package:note_sondage/ui/web/settings/settings_web.dart';
 import 'package:note_sondage/ui/app_keys.dart';
 import 'package:note_sondage/ui/widgets/about_page.dart';
 import 'package:note_sondage/ui/widgets/auth/confirm_registration_page.dart';
+import 'package:note_sondage/ui/widgets/auth/reset_password_page.dart';
 import 'package:note_sondage/ui/widgets/splash_screen/splash_sreen_begin.dart';
 
 //String currentAppPath = RouterPaths.splashScreen;
@@ -348,6 +349,13 @@ GoRouter createRouter(BuildContext context) {
         ),
       ),
       GoRoute(
+        path: RouterPaths.resetPassword,
+        name: RouterPaths.resetPassword,
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          child: ResetPasswordPage(queryParameters: state.uri.queryParameters),
+        ),
+      ),
+      GoRoute(
         path: RouterPaths.splashScreen,
         name: RouterPaths.splashScreen,
         pageBuilder: (context, state) =>
@@ -370,7 +378,8 @@ GoRouter createRouter(BuildContext context) {
           currentPath == RouterPaths.login ||
           currentPath == RouterPaths.splashScreen ||
           currentPath == RouterPaths.forgotPassword ||
-          currentPath == RouterPaths.confirmRegistration;
+          currentPath == RouterPaths.confirmRegistration ||
+          currentPath == RouterPaths.resetPassword;
 
       // 0. Operazione in corso (login/register/SSO): non toccare la rotta
       if (authBloc.state.status == AuthStatus.loading) {
@@ -424,6 +433,7 @@ abstract class RouterPaths {
   static const login = '/login';
   static const about = '/about';
   static const confirmRegistration = '/confirm-registration';
+  static const resetPassword = '/reset-password';
   static const team = '/team';
   static const forgotPassword = '/forgot_password';
   static const splashScreen = '/splash_screen';
