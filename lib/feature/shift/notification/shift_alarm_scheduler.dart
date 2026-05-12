@@ -19,10 +19,20 @@ class ShiftAlarmScheduler {
   final ShiftBloc _shiftBloc;
   final LocalNotificationService _localNotifications;
   StreamSubscription<ShiftState>? _subscription;
+  bool _started = false;
 
   /// Avvia l'ascolto degli stati del bloc.
   void start() {
-    _subscription = _shiftBloc.stream.listen(_handleState);
+    if (_started) {
+      debugPrint('[ShiftAlarmScheduler] start skipped: already running');
+      return;
+    }
+    _started = true;
+    _subscription?.cancel();
+    _subscription = _shiftBloc.stream.listen((state) {
+      unawaited(_handleState(state));
+    });
+    unawaited(_handleState(_shiftBloc.state));
     debugPrint('[ShiftAlarmScheduler] started');
   }
 
@@ -30,17 +40,18 @@ class ShiftAlarmScheduler {
   void stop() {
     _subscription?.cancel();
     _subscription = null;
+    _started = false;
     debugPrint('[ShiftAlarmScheduler] stopped');
   }
 
-  void _handleState(ShiftState state) {
+  Future<void> _handleState(ShiftState state) async {
     if (state is ShiftAssignmentsLoaded) {
-      _rescheduleAll(state.assignments);
+      await _rescheduleAll(state.assignments);
     } else if (state is ShiftAssigned) {
-      _scheduleOne(state.assignment);
+      await _scheduleOne(state.assignment);
     } else if (state is ShiftAssignmentUpdated) {
       // Cancella i vecchi allarmi e rischedula con i nuovi offset
-      _cancelAndReschedule(state.assignment);
+      await _cancelAndReschedule(state.assignment);
     } else if (state is ShiftAssignmentDeleted) {
       // Non abbiamo l'id qui — la cancellazione viene fatta in cancelShiftAlarms
       // Prima del delete event l'UI passa l'id, quindi non serve fare altro.
@@ -57,7 +68,12 @@ class ShiftAlarmScheduler {
 
   /// Schedula allarmi per un singolo turno.
   Future<void> _scheduleOne(ShiftAssignmentEntity assignment) async {
-    if (assignment.alarmOffsets.isEmpty) return;
+    if (assignment.alarmOffsets.isEmpty) {
+      debugPrint(
+        '[ShiftAlarmScheduler] Skip ${assignment.id}: no alarm offsets.',
+      );
+      return;
+    }
 
     final shiftStart = DateTime(
       assignment.shiftDate.year,
@@ -65,6 +81,10 @@ class ShiftAlarmScheduler {
       assignment.shiftDate.day,
       assignment.startTime.hour,
       assignment.startTime.minute,
+    );
+
+    debugPrint(
+      '[ShiftAlarmScheduler] Scheduling ${assignment.id} at $shiftStart with offsets=${assignment.alarmOffsets}',
     );
 
     await _localNotifications.scheduleShiftAlarms(

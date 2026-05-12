@@ -48,10 +48,10 @@
              Su Android 5+ deve essere bianca su sfondo trasparente (monochrome). -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@drawable/ic_stat_notify" />
         <meta-data
             android:name="com.dexterous.flutterlocalnotifications.defaultIcon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@drawable/ic_stat_notify" />
         <receiver
             android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />

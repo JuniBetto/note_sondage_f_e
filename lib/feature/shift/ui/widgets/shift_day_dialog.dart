@@ -761,23 +761,33 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       : FilledButton(
                           onPressed: !_hasValidTeamSelection
                               ? null
-                              : () => Navigator.of(context).pop(
-                                  ShiftDayDialogResult(
-                                    profileId: _selectedProfile?.id,
-                                    startTime: _startTime,
-                                    endTime: _endTime,
-                                    overnight: _overnight,
-                                    alarmOffsets: _alarmOffsets,
-                                    note: _noteCtrl.text.trim().isEmpty
-                                        ? null
-                                        : _noteCtrl.text.trim(),
-                                    isPublic: _effectiveIsPublic,
-                                    teamId:
-                                        _selectedTeam?.team.id ??
-                                        widget.existing?.teamId,
-                                    targetUserIds: _resolvedTargetUserIds,
-                                  ),
-                                ),
+                              : () async {
+                                  if (_alarmOffsets.isNotEmpty &&
+                                      _alarmType == ShiftAlarmType.alarm) {
+                                    await _requestAlarmPermissionsIfNeeded();
+                                    if (!mounted) {
+                                      return;
+                                    }
+                                  }
+
+                                  Navigator.of(context).pop(
+                                    ShiftDayDialogResult(
+                                      profileId: _selectedProfile?.id,
+                                      startTime: _startTime,
+                                      endTime: _endTime,
+                                      overnight: _overnight,
+                                      alarmOffsets: _alarmOffsets,
+                                      note: _noteCtrl.text.trim().isEmpty
+                                          ? null
+                                          : _noteCtrl.text.trim(),
+                                      isPublic: _effectiveIsPublic,
+                                      teamId:
+                                          _selectedTeam?.team.id ??
+                                          widget.existing?.teamId,
+                                      targetUserIds: _resolvedTargetUserIds,
+                                    ),
+                                  );
+                                },
                           style: FilledButton.styleFrom(
                             backgroundColor: appPrimary,
                             shape: RoundedRectangleBorder(

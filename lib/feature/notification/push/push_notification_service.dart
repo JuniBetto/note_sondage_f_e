@@ -74,7 +74,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   // 3. Inizializza flutter_local_notifications standalone.
   final plugin = FlutterLocalNotificationsPlugin();
-  const androidSettings = AndroidInitializationSettings('ic_launcher');
+  const androidSettings = AndroidInitializationSettings('ic_stat_notify');
   const darwinSettings = DarwinInitializationSettings();
   await plugin.initialize(
     const InitializationSettings(android: androidSettings, iOS: darwinSettings),
@@ -102,6 +102,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       channelDescription: 'Realtime updates about teams and invitations',
       importance: Importance.max,
       priority: Priority.high,
+      icon: 'ic_stat_notify',
       actions: canRespondToInvite
           ? const <AndroidNotificationAction>[
               AndroidNotificationAction(
