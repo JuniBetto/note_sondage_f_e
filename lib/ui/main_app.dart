@@ -39,6 +39,7 @@ import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart'
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_state.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../feature/auth/domain/entities/auth_user_entity.dart';
 
@@ -398,6 +399,12 @@ class _MainAppState extends State<MainApp> {
                   debugShowCheckedModeBanner: false,
                   routerConfig: _router,
                   scaffoldMessengerKey: scaffoldMessengerKey,
+                  builder: (context, child) {
+                    return ShowCaseWidget(
+                      builder: (showcaseContext) =>
+                          child ?? const SizedBox.shrink(),
+                    );
+                  },
                   theme: themeState.themeData,
                   themeMode: ThemeMode.system,
                   supportedLocales: L10n.all,
