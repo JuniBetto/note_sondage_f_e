@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
@@ -20,6 +22,7 @@ import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class CreateTeamMobile extends StatefulWidget {
   final String? teamId;
@@ -41,6 +44,10 @@ class CreateTeamMobile extends StatefulWidget {
 
 class _CreateTeamMobileState extends State<CreateTeamMobile> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey _teamInfoKey = GlobalKey();
+  final GlobalKey _teamColorKey = GlobalKey();
+  final GlobalKey _teamMembersKey = GlobalKey();
+  final GlobalKey _teamActionKey = GlobalKey();
   final TextEditingController nameTeamController = TextEditingController();
   final TextEditingController descriptionTeamController =
       TextEditingController();
@@ -57,8 +64,10 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   bool _isLoading = false;
   String? _ownerUserId;
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
+  bool _tutorialScheduled = false;
 
   bool get _isEditMode => widget.teamId != null;
+  bool get _supportsCreateTutorial => !_isEditMode && !widget.readOnly;
 
   @override
   void initState() {
@@ -104,6 +113,31 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+
+    if (_supportsCreateTutorial) {
+      AppTutorialController.registerTargets(
+        tutorialId: 'mobile-team-create',
+        keys: <GlobalKey>[
+          _teamInfoKey,
+          _teamColorKey,
+          _teamMembersKey,
+          _teamActionKey,
+        ],
+      );
+      AppTutorialController.registerReplayAction(
+        tutorialId: 'mobile-team-create',
+        action: () => AppTutorialController.replay(
+          context: context,
+          keys: <GlobalKey>[
+            _teamInfoKey,
+            _teamColorKey,
+            _teamMembersKey,
+            _teamActionKey,
+          ],
+        ),
+      );
+      _scheduleTutorial();
+    }
 
     return BlocListener<TeamBloc, TeamState>(
       bloc: _teamBloc,
@@ -168,31 +202,40 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       Icons.info_outline_rounded,
                     ),
                     const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: colorScheme.homeSecondary,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.borderColor!.withValues(
-                            alpha: 0.3,
+                    Showcase(
+                      key: _teamInfoKey,
+                      title: _isItalian(context)
+                          ? 'Nome e descrizione'
+                          : 'Name and description',
+                      description: _isItalian(context)
+                          ? 'Inizia da qui: dai un nome chiaro alla squadra e, se vuoi, aggiungi una descrizione per spiegare lo scopo del gruppo.'
+                          : 'Start here by giving the team a clear name and, if useful, a short description so everyone understands the purpose.',
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: colorScheme.homeSecondary,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.borderColor!.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
-                      ),
-                      child: Column(
-                        children: [
-                          CustomInputField(
-                            hintText: localization.teamName,
-                            controller: nameTeamController,
-                            enabled: !widget.readOnly,
-                          ),
-                          const SizedBox(height: 14),
-                          CustomInputField(
-                            hintText: localization.teamDescription,
-                            controller: descriptionTeamController,
-                            enabled: !widget.readOnly,
-                          ),
-                        ],
+                        child: Column(
+                          children: [
+                            CustomInputField(
+                              hintText: localization.teamName,
+                              controller: nameTeamController,
+                              enabled: !widget.readOnly,
+                            ),
+                            const SizedBox(height: 14),
+                            CustomInputField(
+                              hintText: localization.teamDescription,
+                              controller: descriptionTeamController,
+                              enabled: !widget.readOnly,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 
@@ -205,24 +248,33 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       Icons.palette_rounded,
                     ),
                     const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.homeSecondary,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.borderColor!.withValues(
-                            alpha: 0.3,
+                    Showcase(
+                      key: _teamColorKey,
+                      title: _isItalian(context)
+                          ? 'Colore della squadra'
+                          : 'Team color',
+                      description: _isItalian(context)
+                          ? 'Scegli il colore che renderà la squadra riconoscibile nelle liste e nelle altre schermate dell\'app.'
+                          : 'Pick the color that will make this team easy to recognize throughout the app.',
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.homeSecondary,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.borderColor!.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
-                      ),
-                      child: ListCheckbox(
-                        selectedColor: selectedColor,
-                        isEditMode: _isEditMode,
-                        isEnabled: !widget.readOnly,
+                        child: ListCheckbox(
+                          selectedColor: selectedColor,
+                          isEditMode: _isEditMode,
+                          isEnabled: !widget.readOnly,
+                        ),
                       ),
                     ),
 
@@ -235,28 +287,38 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       Icons.people_rounded,
                     ),
                     const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: colorScheme.homeSecondary,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.borderColor!.withValues(
-                            alpha: 0.3,
+                    Showcase(
+                      key: _teamMembersKey,
+                      title: _isItalian(context)
+                          ? 'Membri della squadra'
+                          : 'Team members',
+                      description: _isItalian(context)
+                          ? 'Qui scegli chi invitare nella squadra. Puoi aggiungere utenti e prepararli prima di creare il team.'
+                          : 'Use this section to choose who should join the team and prepare the invitations before creating it.',
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colorScheme.homeSecondary,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.borderColor!.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
+                        child: _isEditMode
+                            ? TeamMembersSection(
+                                teamId: widget.teamId!,
+                                ownerUserId: _ownerUserId,
+                                forceReadOnly: widget.readOnly,
+                                onPermissionsChanged:
+                                    widget.onPermissionsChanged,
+                              )
+                            : AddUserMobile(
+                                listInviteFormData: listInviteFormData,
+                                teamId: widget.teamId,
+                              ),
                       ),
-                      child: _isEditMode
-                          ? TeamMembersSection(
-                              teamId: widget.teamId!,
-                              ownerUserId: _ownerUserId,
-                              forceReadOnly: widget.readOnly,
-                              onPermissionsChanged: widget.onPermissionsChanged,
-                            )
-                          : AddUserMobile(
-                              listInviteFormData: listInviteFormData,
-                              teamId: widget.teamId,
-                            ),
                     ),
 
                     const SizedBox(height: 32),
@@ -272,35 +334,44 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                         ),
                       )
                     else
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: _onSave,
-                          icon: Icon(
-                            _isEditMode
-                                ? Icons.save_rounded
-                                : Icons.check_rounded,
-                            size: 20,
-                          ),
-                          label: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(
+                      Showcase(
+                        key: _teamActionKey,
+                        title: _isItalian(context)
+                            ? 'Crea la squadra'
+                            : 'Create the team',
+                        description: _isItalian(context)
+                            ? 'Quando nome, colore e membri sono pronti, usa questo pulsante per creare la squadra e inviare gli eventuali inviti.'
+                            : 'Once the name, color, and members are ready, use this button to create the team and send any invitations.',
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: _onSave,
+                            icon: Icon(
                               _isEditMode
-                                  ? localization.editTeam
-                                  : localization.createTeam,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                  ? Icons.save_rounded
+                                  : Icons.check_rounded,
+                              size: 20,
+                            ),
+                            label: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Text(
+                                _isEditMode
+                                    ? localization.editTeam
+                                    : localization.createTeam,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF7C4DFF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF7C4DFF),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                         ),
                       ),
@@ -367,5 +438,32 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         ],
       ),
     );
+  }
+
+  void _scheduleTutorial() {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || !_supportsCreateTutorial) {
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: 'mobile-team-create',
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[
+          _teamInfoKey,
+          _teamColorKey,
+          _teamMembersKey,
+          _teamActionKey,
+        ],
+      );
+    });
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }

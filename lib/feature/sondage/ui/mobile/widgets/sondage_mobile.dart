@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
@@ -8,6 +10,7 @@ import 'package:note_sondage/theme/color_palette.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class SondageMobile extends StatefulWidget {
   const SondageMobile({super.key});
@@ -18,9 +21,13 @@ class SondageMobile extends StatefulWidget {
 
 class _SondageMobileState extends State<SondageMobile>
     with SingleTickerProviderStateMixin {
+  final GlobalKey _summaryKey = GlobalKey();
+  final GlobalKey _statsKey = GlobalKey();
+  final GlobalKey _listKey = GlobalKey();
   late TabController tabController;
   int currentViewType = 1;
   List<SondageEntity> _lastSondages = const <SondageEntity>[];
+  bool _listTutorialScheduled = false;
 
   @override
   void initState() {
@@ -134,6 +141,30 @@ class _SondageMobileState extends State<SondageMobile>
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
 
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'mobile-main-4',
+      action: () => AppTutorialController.replayRegistered(
+        context: context,
+        tutorialId: tabController.index == 0
+            ? 'mobile-sondage-list'
+            : 'mobile-sondage-create',
+      ),
+    );
+    AppTutorialController.registerTargets(
+      tutorialId: 'mobile-sondage-list',
+      keys: <GlobalKey>[_summaryKey, _statsKey, _listKey],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'mobile-sondage-list',
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[_summaryKey, _statsKey, _listKey],
+      ),
+    );
+    if (tabController.index == 0) {
+      _scheduleListTutorial();
+    }
+
     return SafeArea(
       bottom: false,
       child: BlocListener<SondageBloc, SondageState>(
@@ -212,64 +243,91 @@ class _SondageMobileState extends State<SondageMobile>
 
                         return Column(
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Bozze e sondaggi attivi dei tuoi team',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: Colors.grey[700],
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                            Showcase(
+                              key: _summaryKey,
+                              title: _isItalian(context)
+                                  ? 'Panoramica sondaggi'
+                                  : 'Survey overview',
+                              description: _isItalian(context)
+                                  ? 'Questa intestazione ti aiuta a capire subito cosa stai guardando e ti permette di aggiornare il feed.'
+                                  : 'This header explains the feed at a glance and lets you refresh the survey data.',
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Bozze e sondaggi attivi dei tuoi team',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Colors.grey[700],
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
                                   ),
-                                ),
-                                IconButton(
-                                  onPressed: _refreshList,
-                                  icon: const Icon(Icons.refresh_rounded),
-                                  tooltip: 'Aggiorna',
-                                ),
-                              ],
+                                  IconButton(
+                                    onPressed: _refreshList,
+                                    icon: const Icon(Icons.refresh_rounded),
+                                    tooltip: 'Aggiorna',
+                                  ),
+                                ],
+                              ),
                             ),
                             if (isRefreshing)
                               const Padding(
                                 padding: EdgeInsets.only(bottom: 12),
                                 child: LinearProgressIndicator(minHeight: 2),
                               ),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  _buildSummaryChip(
-                                    label: 'Draft',
-                                    value: draftCount,
-                                    color: Colors.orange,
-                                  ),
-                                  _buildSummaryChip(
-                                    label: 'Attivi',
-                                    value: activeCount,
-                                    color: Colors.green,
-                                  ),
-                                  _buildSummaryChip(
-                                    label: 'Chiusi',
-                                    value: completedCount,
-                                    color: Colors.red,
-                                  ),
-                                ],
+                            Showcase(
+                              key: _statsKey,
+                              title: _isItalian(context)
+                                  ? 'Statistiche rapide'
+                                  : 'Quick stats',
+                              description: _isItalian(context)
+                                  ? 'Qui vedi quante bozze, quanti sondaggi attivi e quanti chiusi hai nel feed.'
+                                  : 'See how many draft, active, and closed surveys you currently have in the feed.',
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _buildSummaryChip(
+                                      label: 'Draft',
+                                      value: draftCount,
+                                      color: Colors.orange,
+                                    ),
+                                    _buildSummaryChip(
+                                      label: 'Attivi',
+                                      value: activeCount,
+                                      color: Colors.green,
+                                    ),
+                                    _buildSummaryChip(
+                                      label: 'Chiusi',
+                                      value: completedCount,
+                                      color: Colors.red,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
                             Expanded(
-                              child: SondageDisplay(
-                                sondages: sondages,
-                                onViewChanged: _handleViewTypeChanged,
-                                initialViewType: currentViewType,
-                                onDeleteTap: _confirmDelete,
-                                onEditTap: _openEditSheet,
+                              child: Showcase(
+                                key: _listKey,
+                                title: _isItalian(context)
+                                    ? 'Lista dei sondaggi'
+                                    : 'Survey list',
+                                description: _isItalian(context)
+                                    ? 'Da questa lista puoi aprire, modificare o eliminare i sondaggi che ti competono.'
+                                    : 'Use this list to open, edit, or delete the surveys that belong to you or your teams.',
+                                child: SondageDisplay(
+                                  sondages: sondages,
+                                  onViewChanged: _handleViewTypeChanged,
+                                  initialViewType: currentViewType,
+                                  onDeleteTap: _confirmDelete,
+                                  onEditTap: _openEditSheet,
+                                ),
                               ),
                             ),
                           ],
@@ -287,5 +345,27 @@ class _SondageMobileState extends State<SondageMobile>
         ),
       ),
     );
+  }
+
+  void _scheduleListTutorial() {
+    if (_listTutorialScheduled) {
+      return;
+    }
+    _listTutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || tabController.index != 0) {
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: 'mobile-sondage-list',
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[_summaryKey, _statsKey, _listKey],
+      );
+    });
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }

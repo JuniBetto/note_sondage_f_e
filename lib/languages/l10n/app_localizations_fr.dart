@@ -145,6 +145,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tryAgain => 'Réessayer';
 
   @override
+  String get reviewTutorial => 'Revoir le tutoriel';
+
+  @override
+  String get tutorialPrevious => 'Précédent';
+
+  @override
+  String get tutorialNext => 'Suivant';
+
+  @override
+  String get tutorialSkip => 'Passer';
+
+  @override
   String get webMobileAppOnlyTitle => 'Téléchargez l\'application mobile';
 
   @override
@@ -393,6 +405,195 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsNotification => 'Paramètres de Notification';
+
+  @override
+  String get notificationsSettingsIntro =>
+      'Choisissez comment recevoir les mises à jour et les rappels de service.';
+
+  @override
+  String get notificationsGeneral => 'Général';
+
+  @override
+  String get emailNotifications => 'Notifications par e-mail';
+
+  @override
+  String get receiveUpdatesByEmail => 'Recevez les mises à jour par e-mail';
+
+  @override
+  String get pushNotifications => 'Notifications push';
+
+  @override
+  String get receivePushNotificationsOnYourDevice =>
+      'Recevez des notifications push sur votre appareil';
+
+  @override
+  String get shiftReminders => 'Rappels de service';
+
+  @override
+  String get reminderMode => 'Mode de rappel';
+
+  @override
+  String get notificationReminderModeDescription =>
+      'Choisissez pour chaque service si vous voulez une notification standard ou une alerte plus forte.';
+
+  @override
+  String get webBehavior => 'Comportement web';
+
+  @override
+  String get alarmBehaviorOnWeb =>
+      'Sur le web, le mode Alarme utilise les notifications du navigateur. L\'onglet doit rester ouvert et le navigateur contrôle le comportement final du son et des vibrations.';
+
+  @override
+  String get howItWorks => 'Comment ça marche';
+
+  @override
+  String get notificationAndAlarmDifference =>
+      'La notification affiche un rappel normal. L\'alarme utilise les réglages ci-dessous et sert à des alertes de service plus visibles.';
+
+  @override
+  String get alarmDelivery => 'Diffusion de l\'alarme';
+
+  @override
+  String get alarmStyle => 'Style de l\'alarme';
+
+  @override
+  String get webAlarmDeliveryDescription =>
+      'Les notifications du navigateur sont utilisées tant que cet onglet reste ouvert. Le son et les vibrations sont gérés par le navigateur et le système d\'exploitation.';
+
+  @override
+  String get alarmStyleDescription =>
+      'Choisissez si le mode Alarme doit vibrer ou jouer une sonnerie. Par défaut : vibration.';
+
+  @override
+  String get alarmStyleDescriptionIos =>
+      'Sur iPhone, le mode Alarme utilise une sonnerie. Les alarmes uniquement par vibration ne sont pas disponibles pour les notifications locales.';
+
+  @override
+  String get vibrate => 'Vibration';
+
+  @override
+  String get ringtone => 'Sonnerie';
+
+  @override
+  String get browserNotification => 'Notification du navigateur';
+
+  @override
+  String get notificationVisibility => 'Visibilité de la notification';
+
+  @override
+  String get alarmDuration => 'Durée de l\'alarme';
+
+  @override
+  String get webNotificationVisibilityDescription =>
+      'Cela contrôle combien de temps la notification du navigateur reste visible après son apparition.';
+
+  @override
+  String get alarmDurationAppliesOnlyToAlarmMode =>
+      'Cette durée s\'applique uniquement lorsqu\'un service utilise le mode Alarme.';
+
+  @override
+  String get activity => 'Activité';
+
+  @override
+  String get surveyReminders => 'Rappels de sondage';
+
+  @override
+  String get getRemindedAboutPendingSurveys =>
+      'Recevez des rappels pour les sondages en attente';
+
+  @override
+  String get teamUpdates => 'Mises à jour d\'équipe';
+
+  @override
+  String get notificationsAboutTeamChanges =>
+      'Notifications sur les changements de l\'équipe';
+
+  @override
+  String get clockingAlerts => 'Alertes de pointage';
+
+  @override
+  String get remindersToClockInAndOut =>
+      'Rappels pour pointer l\'entrée et la sortie';
+
+  @override
+  String get shiftNotifications => 'Notifications de service';
+
+  @override
+  String get assignmentsUpdatesAndShiftReminders =>
+      'Affectations, mises à jour et rappels de service';
+
+  @override
+  String get debugTools => 'Outils de débogage';
+
+  @override
+  String get debugToolsBrowserMessage =>
+      'Utilisez ces tests uniquement pendant le débogage des notifications dans ce navigateur.';
+
+  @override
+  String get debugToolsDeviceMessage =>
+      'Utilisez ces tests uniquement pendant le débogage des notifications sur cet appareil.';
+
+  @override
+  String get testNotificationNow => 'Tester la notification maintenant';
+
+  @override
+  String get testAlarmIn10Seconds => 'Tester l\'alarme dans 10 s';
+
+  @override
+  String get testCurrentMode => 'Tester le mode actuel';
+
+  @override
+  String get alarmModeStatus => 'État du mode alarme';
+
+  @override
+  String get pendingRequests => 'Demandes en attente';
+
+  @override
+  String get inspectRealShifts => 'Inspecter les vrais services';
+
+  @override
+  String get privacyPolicy => 'Politique de confidentialité';
+
+  @override
+  String get howWeProtectYourData => 'Comment nous protégeons vos données';
+
+  @override
+  String get dataProtection => 'Protection des données';
+
+  @override
+  String get dataProtectionDescription =>
+      'Vos données sont chiffrées au repos et en transit. Nous utilisons des protocoles de chiffrement standard du secteur pour garantir la sécurité de vos informations.';
+
+  @override
+  String get dataCollection => 'Collecte des données';
+
+  @override
+  String get dataCollectionDescription =>
+      'Nous collectons uniquement les données nécessaires pour fournir nos services. Cela inclut les informations du compte, les réponses aux sondages et les enregistrements de pointage.';
+
+  @override
+  String get dataSharing => 'Partage des données';
+
+  @override
+  String get dataSharingDescription =>
+      'Nous ne partageons jamais vos données personnelles avec des tiers sans votre consentement explicite. Les données d\'équipe sont partagées uniquement au sein de votre organisation.';
+
+  @override
+  String get dataRetention => 'Conservation des données';
+
+  @override
+  String get dataRetentionDescription =>
+      'Vos données sont conservées tant que votre compte est actif. Après la désactivation du compte, les données personnelles sont supprimées définitivement sous 30 jours.';
+
+  @override
+  String get yourRights => 'Vos droits';
+
+  @override
+  String get yourRightsDescription =>
+      'Vous avez le droit d\'accéder, de rectifier ou de supprimer vos données personnelles à tout moment. Contactez notre équipe support pour toute demande liée à la confidentialité.';
+
+  @override
+  String get privacyLastUpdated => 'Dernière mise à jour : janvier 2025';
 
   @override
   String get yourName => 'Votre Nom';

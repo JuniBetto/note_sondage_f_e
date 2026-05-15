@@ -13,6 +13,8 @@ The Flutter build reads `.env.web` directly inside the image build and uses:
 - `API_BASE_URL`
 - `EMAIL_CONFIRMATION_URL`
 - `SENTRY_DSN`
+- `APPLE_STORE_URL`
+- `ANDROID_STORE_URL`
 
 Before going live, also verify:
 - the public web domain is added to Firebase / Google authorized domains
@@ -41,13 +43,13 @@ cp .env.web.lan-https.example .env.web
 2. Start the matching compose file:
 
 ```bash
-podman-compose -f podman-compose.web-public.yml up -d --build
+podman-compose -f podman-compose.web-public.yml up -d --build --no-cache
 ```
 
 or:
 
 ```bash
-podman-compose -f podman-compose.web-lan-http.yml up -d --build
+podman-compose -f podman-compose.web-lan-http.yml up -d --build --no-cache
 ```
 
 Then open:
@@ -59,7 +61,7 @@ http://<server-ip>:8088
 or:
 
 ```bash
-podman-compose -f podman-compose.web-lan-https.yml up -d --build
+podman-compose -f podman-compose.web-lan-https.yml up -d --build --no-cache
 ```
 
 Then open:
@@ -90,3 +92,15 @@ If you change frontend code or `.env.web`, rebuild the image:
 ```bash
 podman-compose -f podman-compose.web-public.yml up -d --build
 ```
+
+## Mobile viewport gate
+
+The web app now blocks the full web UI on very small mobile browsers:
+
+- if viewport width is `< 576px`
+- the user sees a store-download screen instead of the normal web app
+
+So before going live, make sure these values are real:
+
+- `APPLE_STORE_URL`
+- `ANDROID_STORE_URL`

@@ -336,6 +336,30 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get tryAgain;
 
+  /// No description provided for @reviewTutorial.
+  ///
+  /// In en, this message translates to:
+  /// **'Review tutorial'**
+  String get reviewTutorial;
+
+  /// No description provided for @tutorialPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get tutorialPrevious;
+
+  /// No description provided for @tutorialNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get tutorialNext;
+
+  /// No description provided for @tutorialSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get tutorialSkip;
+
   /// No description provided for @webMobileAppOnlyTitle.
   ///
   /// In en, this message translates to:
@@ -809,6 +833,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings Notification'**
   String get settingsNotification;
+
+  /// No description provided for @notificationsSettingsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how updates and shift reminders reach you.'**
+  String get notificationsSettingsIntro;
+
+  /// No description provided for @notificationsGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get notificationsGeneral;
+
+  /// No description provided for @emailNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Notifications'**
+  String get emailNotifications;
+
+  /// No description provided for @receiveUpdatesByEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive updates via email'**
+  String get receiveUpdatesByEmail;
+
+  /// No description provided for @pushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Push Notifications'**
+  String get pushNotifications;
+
+  /// No description provided for @receivePushNotificationsOnYourDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive push notifications on your device'**
+  String get receivePushNotificationsOnYourDevice;
+
+  /// No description provided for @shiftReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift reminders'**
+  String get shiftReminders;
+
+  /// No description provided for @reminderMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder mode'**
+  String get reminderMode;
+
+  /// No description provided for @notificationReminderModeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose in each shift whether you want a standard notification or a stronger alarm.'**
+  String get notificationReminderModeDescription;
+
+  /// No description provided for @webBehavior.
+  ///
+  /// In en, this message translates to:
+  /// **'Web behavior'**
+  String get webBehavior;
+
+  /// No description provided for @alarmBehaviorOnWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'On web, Alarm mode uses browser notifications. The tab must stay open and the browser controls the final sound and vibration behavior.'**
+  String get alarmBehaviorOnWeb;
+
+  /// No description provided for @howItWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'How it works'**
+  String get howItWorks;
+
+  /// No description provided for @notificationAndAlarmDifference.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification shows a normal reminder. Alarm uses the settings below and is meant for stronger shift alerts.'**
+  String get notificationAndAlarmDifference;
+
+  /// No description provided for @alarmDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm delivery'**
+  String get alarmDelivery;
+
+  /// No description provided for @alarmStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm style'**
+  String get alarmStyle;
+
+  /// No description provided for @webAlarmDeliveryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser notifications are used while this tab is open. Sound and vibration are managed by the browser and operating system.'**
+  String get webAlarmDeliveryDescription;
+
+  /// No description provided for @alarmStyleDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether Alarm mode should vibrate or play a ringtone. Default: Vibrate.'**
+  String get alarmStyleDescription;
+
+  /// No description provided for @alarmStyleDescriptionIos.
+  ///
+  /// In en, this message translates to:
+  /// **'On iPhone, Alarm mode uses a ringtone. Vibration-only alarms are not available for local notifications.'**
+  String get alarmStyleDescriptionIos;
+
+  /// No description provided for @vibrate.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrate'**
+  String get vibrate;
+
+  /// No description provided for @ringtone.
+  ///
+  /// In en, this message translates to:
+  /// **'Ringtone'**
+  String get ringtone;
+
+  /// No description provided for @browserNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser notification'**
+  String get browserNotification;
+
+  /// No description provided for @notificationVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification visibility'**
+  String get notificationVisibility;
+
+  /// No description provided for @alarmDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm duration'**
+  String get alarmDuration;
+
+  /// No description provided for @webNotificationVisibilityDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This controls how long the browser notification stays visible after it appears.'**
+  String get webNotificationVisibilityDescription;
+
+  /// No description provided for @alarmDurationAppliesOnlyToAlarmMode.
+  ///
+  /// In en, this message translates to:
+  /// **'This duration applies only when a shift uses Alarm mode.'**
+  String get alarmDurationAppliesOnlyToAlarmMode;
+
+  /// No description provided for @activity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get activity;
+
+  /// No description provided for @surveyReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey Reminders'**
+  String get surveyReminders;
+
+  /// No description provided for @getRemindedAboutPendingSurveys.
+  ///
+  /// In en, this message translates to:
+  /// **'Get reminded about pending surveys'**
+  String get getRemindedAboutPendingSurveys;
+
+  /// No description provided for @teamUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Updates'**
+  String get teamUpdates;
+
+  /// No description provided for @notificationsAboutTeamChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications about team changes'**
+  String get notificationsAboutTeamChanges;
+
+  /// No description provided for @clockingAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocking Alerts'**
+  String get clockingAlerts;
+
+  /// No description provided for @remindersToClockInAndOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders to clock in and out'**
+  String get remindersToClockInAndOut;
+
+  /// No description provided for @shiftNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift Notifications'**
+  String get shiftNotifications;
+
+  /// No description provided for @assignmentsUpdatesAndShiftReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignments, updates and shift reminders'**
+  String get assignmentsUpdatesAndShiftReminders;
+
+  /// No description provided for @debugTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug tools'**
+  String get debugTools;
+
+  /// No description provided for @debugToolsBrowserMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Use these tests only while debugging notifications in this browser.'**
+  String get debugToolsBrowserMessage;
+
+  /// No description provided for @debugToolsDeviceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Use these tests only while debugging notifications on this device.'**
+  String get debugToolsDeviceMessage;
+
+  /// No description provided for @testNotificationNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Test notification now'**
+  String get testNotificationNow;
+
+  /// No description provided for @testAlarmIn10Seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Test alarm in 10s'**
+  String get testAlarmIn10Seconds;
+
+  /// No description provided for @testCurrentMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Test current mode'**
+  String get testCurrentMode;
+
+  /// No description provided for @alarmModeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm mode status'**
+  String get alarmModeStatus;
+
+  /// No description provided for @pendingRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending requests'**
+  String get pendingRequests;
+
+  /// No description provided for @inspectRealShifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect real shifts'**
+  String get inspectRealShifts;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @howWeProtectYourData.
+  ///
+  /// In en, this message translates to:
+  /// **'How we protect your data'**
+  String get howWeProtectYourData;
+
+  /// No description provided for @dataProtection.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Protection'**
+  String get dataProtection;
+
+  /// No description provided for @dataProtectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data is encrypted at rest and in transit. We use industry-standard encryption protocols to ensure your information remains secure.'**
+  String get dataProtectionDescription;
+
+  /// No description provided for @dataCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Collection'**
+  String get dataCollection;
+
+  /// No description provided for @dataCollectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'We collect only the data necessary to provide our services. This includes your account information, survey responses, and clocking records.'**
+  String get dataCollectionDescription;
+
+  /// No description provided for @dataSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Sharing'**
+  String get dataSharing;
+
+  /// No description provided for @dataSharingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'We never share your personal data with third parties without your explicit consent. Team data is shared only within your organization.'**
+  String get dataSharingDescription;
+
+  /// No description provided for @dataRetention.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Retention'**
+  String get dataRetention;
+
+  /// No description provided for @dataRetentionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data is retained for as long as your account is active. After account deactivation, personal data is permanently removed within 30 days.'**
+  String get dataRetentionDescription;
+
+  /// No description provided for @yourRights.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Rights'**
+  String get yourRights;
+
+  /// No description provided for @yourRightsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You have the right to access, rectify, or delete your personal data at any time. Contact our support team for any privacy-related requests.'**
+  String get yourRightsDescription;
+
+  /// No description provided for @privacyLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: January 2025'**
+  String get privacyLastUpdated;
 
   /// No description provided for @yourName.
   ///

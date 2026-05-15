@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/home/domain/entities/dashboard_entity.dart';
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
@@ -12,6 +14,7 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/widgets/pending_notifications_card.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class HomeWeb extends StatefulWidget {
   const HomeWeb({super.key});
@@ -21,7 +24,13 @@ class HomeWeb extends StatefulWidget {
 }
 
 class _HomeWebState extends State<HomeWeb> {
+  final GlobalKey _bannerKey = GlobalKey();
+  final GlobalKey _statsKey = GlobalKey();
+  final GlobalKey _notificationsKey = GlobalKey();
+  final GlobalKey _quickActionsKey = GlobalKey();
+  final GlobalKey _activityKey = GlobalKey();
   StreamSubscription<RealtimeNotification>? _realtimeSub;
+  bool _tutorialScheduled = false;
 
   // Services that contribute to the Recent Activity feed.
   static const _activitySources = {
@@ -58,6 +67,38 @@ class _HomeWebState extends State<HomeWeb> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
 
+    AppTutorialController.registerTargets(
+      tutorialId: 'web-home',
+      keys: <GlobalKey>[
+        _bannerKey,
+        _statsKey,
+        _notificationsKey,
+        _quickActionsKey,
+        _activityKey,
+      ],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-home',
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[
+          _bannerKey,
+          _statsKey,
+          _notificationsKey,
+          _quickActionsKey,
+          _activityKey,
+        ],
+      ),
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-main-0',
+      action: () => AppTutorialController.replayRegistered(
+        context: context,
+        tutorialId: 'web-home',
+      ),
+    );
+    _scheduleTutorial();
+
     return BlocBuilder<DashboardBloc, DashboardState>(
       builder: (context, dashState) {
         final stats = dashState is DashboardLoaded ? dashState.stats : null;
@@ -79,147 +120,176 @@ class _HomeWebState extends State<HomeWeb> {
                   // ═══════════════════════════════
                   // Welcome banner
                   // ═══════════════════════════════
-                  _WelcomeBanner(isNarrow: isNarrow),
+                  Showcase(
+                    key: _bannerKey,
+                    title: _isItalian(context)
+                        ? 'Benvenuto nella dashboard'
+                        : 'Welcome to your dashboard',
+                    description: _isItalian(context)
+                        ? 'Questa parte alta ti dà subito il contesto della giornata e una panoramica iniziale del tuo spazio di lavoro.'
+                        : 'This top section immediately sets the context for the day and gives you a first overview of your workspace.',
+                    child: _WelcomeBanner(isNarrow: isNarrow),
+                  ),
                   const SizedBox(height: 24),
 
                   // ═══════════════════════════════
                   // Stats row
                   // ═══════════════════════════════
-                  isNarrow
-                      ? Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _StatCard(
-                                    icon: Icons.group_rounded,
-                                    label: l.activeTeams,
-                                    value: isLoading
-                                        ? null
-                                        : '${stats?.activeTeams ?? 0}',
-                                    color: Colors.indigo,
+                  Showcase(
+                    key: _statsKey,
+                    title: _isItalian(context)
+                        ? 'Statistiche principali'
+                        : 'Key statistics',
+                    description: _isItalian(context)
+                        ? 'Queste card riassumono subito squadre attive, membri, sondaggi, timbrature e turni del giorno.'
+                        : 'These cards summarize your active teams, members, surveys, clocking activity, and daily shifts at a glance.',
+                    child: isNarrow
+                        ? Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.group_rounded,
+                                      label: l.activeTeams,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.activeTeams ?? 0}',
+                                      color: Colors.indigo,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: _StatCard(
-                                    icon: Icons.people_rounded,
-                                    label: l.totalMembers,
-                                    value: isLoading
-                                        ? null
-                                        : '${stats?.totalMembers ?? 0}',
-                                    color: Colors.teal,
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.people_rounded,
+                                      label: l.totalMembers,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.totalMembers ?? 0}',
+                                      color: Colors.teal,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _StatCard(
-                                    icon: Icons.checklist_rounded,
-                                    label: l.activeSurveys,
-                                    value: isLoading
-                                        ? null
-                                        : '${stats?.activeSurveys ?? 0}',
-                                    color: Colors.orange,
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.checklist_rounded,
+                                      label: l.activeSurveys,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.activeSurveys ?? 0}',
+                                      color: Colors.orange,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: _StatCard(
-                                    icon: Icons.timer_rounded,
-                                    label: l.todayClocking,
-                                    value: isLoading
-                                        ? null
-                                        : '${stats?.todayClocking ?? 0}',
-                                    color: Colors.blue,
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.timer_rounded,
+                                      label: l.todayClocking,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.todayClocking ?? 0}',
+                                      color: Colors.blue,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _StatCard(
-                                    icon: Icons.calendar_month_rounded,
-                                    label: l.myShifts,
-                                    value: isLoading
-                                        ? null
-                                        : '${stats?.todayShifts ?? 0}',
-                                    color: Colors.purple,
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.calendar_month_rounded,
+                                      label: l.myShifts,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.todayShifts ?? 0}',
+                                      color: Colors.purple,
+                                    ),
                                   ),
+                                  const SizedBox(width: 14),
+                                  const Expanded(child: SizedBox()),
+                                ],
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Icons.group_rounded,
+                                  label: l.activeTeams,
+                                  value: isLoading
+                                      ? null
+                                      : '${stats?.activeTeams ?? 0}',
+                                  color: Colors.indigo,
                                 ),
-                                const SizedBox(width: 14),
-                                const Expanded(child: SizedBox()),
-                              ],
-                            ),
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            Expanded(
-                              child: _StatCard(
-                                icon: Icons.group_rounded,
-                                label: l.activeTeams,
-                                value: '4',
-                                color: Colors.indigo,
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _StatCard(
-                                icon: Icons.people_rounded,
-                                label: l.totalMembers,
-                                value: isLoading
-                                    ? null
-                                    : '${stats?.totalMembers ?? 0}',
-                                color: Colors.teal,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Icons.people_rounded,
+                                  label: l.totalMembers,
+                                  value: isLoading
+                                      ? null
+                                      : '${stats?.totalMembers ?? 0}',
+                                  color: Colors.teal,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _StatCard(
-                                icon: Icons.checklist_rounded,
-                                label: l.activeSurveys,
-                                value: isLoading
-                                    ? null
-                                    : '${stats?.activeSurveys ?? 0}',
-                                color: Colors.orange,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Icons.checklist_rounded,
+                                  label: l.activeSurveys,
+                                  value: isLoading
+                                      ? null
+                                      : '${stats?.activeSurveys ?? 0}',
+                                  color: Colors.orange,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _StatCard(
-                                icon: Icons.timer_rounded,
-                                label: l.todayClocking,
-                                value: isLoading
-                                    ? null
-                                    : '${stats?.todayClocking ?? 0}',
-                                color: Colors.blue,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Icons.timer_rounded,
+                                  label: l.todayClocking,
+                                  value: isLoading
+                                      ? null
+                                      : '${stats?.todayClocking ?? 0}',
+                                  color: Colors.blue,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _StatCard(
-                                icon: Icons.calendar_month_rounded,
-                                label: l.myShifts,
-                                value: isLoading
-                                    ? null
-                                    : '${stats?.todayShifts ?? 0}',
-                                color: Colors.purple,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Icons.calendar_month_rounded,
+                                  label: l.myShifts,
+                                  value: isLoading
+                                      ? null
+                                      : '${stats?.todayShifts ?? 0}',
+                                  color: Colors.purple,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                  ),
                   const SizedBox(height: 24),
 
                   // ═══════════════════════════════
                   // Pending notifications
                   // ═══════════════════════════════
-                  const PendingNotificationsCard(maxItems: 5),
+                  Showcase(
+                    key: _notificationsKey,
+                    title: _isItalian(context)
+                        ? 'Notifiche in attesa'
+                        : 'Pending notifications',
+                    description: _isItalian(context)
+                        ? 'Qui trovi inviti, richieste e notifiche che aspettano ancora una tua azione.'
+                        : 'This section contains invites, requests, and notifications that still need your attention.',
+                    child: const PendingNotificationsCard(maxItems: 5),
+                  ),
                   const SizedBox(height: 24),
 
                   // ═══════════════════════════════
@@ -228,24 +298,63 @@ class _HomeWebState extends State<HomeWeb> {
                   isNarrow
                       ? Column(
                           children: [
-                            _QuickActionsCard(),
+                            Showcase(
+                              key: _quickActionsKey,
+                              title: _isItalian(context)
+                                  ? 'Azioni rapide'
+                                  : 'Quick actions',
+                              description: _isItalian(context)
+                                  ? 'Usa questi collegamenti per entrare subito nelle aree principali e iniziare un\'azione.'
+                                  : 'Use these shortcuts to jump directly into the main areas and start an action quickly.',
+                              child: _QuickActionsCard(),
+                            ),
                             const SizedBox(height: 16),
-                            _RecentActivityCard(
-                              activities: activities,
-                              isLoading: isLoading,
+                            Showcase(
+                              key: _activityKey,
+                              title: _isItalian(context)
+                                  ? 'Attività recenti'
+                                  : 'Recent activity',
+                              description: _isItalian(context)
+                                  ? 'Questa lista ti aiuta a seguire cosa è successo di recente tra team, turni, timbrature e sondaggi.'
+                                  : 'This list helps you follow what happened recently across teams, shifts, clocking, and surveys.',
+                              child: _RecentActivityCard(
+                                activities: activities,
+                                isLoading: isLoading,
+                              ),
                             ),
                           ],
                         )
                       : Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(flex: 2, child: _QuickActionsCard()),
+                            Expanded(
+                              flex: 2,
+                              child: Showcase(
+                                key: _quickActionsKey,
+                                title: _isItalian(context)
+                                    ? 'Azioni rapide'
+                                    : 'Quick actions',
+                                description: _isItalian(context)
+                                    ? 'Usa questi collegamenti per entrare subito nelle aree principali e iniziare un\'azione.'
+                                    : 'Use these shortcuts to jump directly into the main areas and start an action quickly.',
+                                child: _QuickActionsCard(),
+                              ),
+                            ),
                             const SizedBox(width: 20),
                             Expanded(
                               flex: 3,
-                              child: _RecentActivityCard(
-                                activities: activities,
-                                isLoading: isLoading,
+                              child: Showcase(
+                                key: _activityKey,
+                                title: _isItalian(context)
+                                    ? 'Attività recenti'
+                                    : 'Recent activity',
+                                description: _isItalian(context)
+                                    ? 'Questa lista ti aiuta a seguire cosa è successo di recente tra team, turni, timbrature e sondaggi.'
+                                    : 'This list helps you follow what happened recently across teams, shifts, clocking, and surveys.',
+                                child: _RecentActivityCard(
+                                  activities: activities,
+                                  isLoading: isLoading,
+                                ),
                               ),
                             ),
                           ],
@@ -257,6 +366,34 @@ class _HomeWebState extends State<HomeWeb> {
         );
       },
     );
+  }
+
+  void _scheduleTutorial() {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: 'web-home',
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[
+          _bannerKey,
+          _statsKey,
+          _notificationsKey,
+          _quickActionsKey,
+          _activityKey,
+        ],
+      );
+    });
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }
 

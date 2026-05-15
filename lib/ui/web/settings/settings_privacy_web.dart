@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class SettingsPrivacyWeb extends StatelessWidget {
@@ -6,6 +7,7 @@ class SettingsPrivacyWeb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
@@ -36,14 +38,14 @@ class SettingsPrivacyWeb extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Privacy Policy',
+                    localization.privacyPolicy,
                     style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'How we protect your data',
+                    localization.howWeProtectYourData,
                     style: textTheme.bodyMedium?.copyWith(
                       color: colorScheme.descriptionColor,
                     ),
@@ -59,41 +61,36 @@ class SettingsPrivacyWeb extends StatelessWidget {
           _PrivacySection(
             icon: Icons.shield_rounded,
             iconColor: const Color(0xFF2196F3),
-            title: 'Data Protection',
-            content:
-                'Your data is encrypted at rest and in transit. We use industry-standard encryption protocols to ensure your information remains secure.',
+            title: localization.dataProtection,
+            content: localization.dataProtectionDescription,
           ),
 
           _PrivacySection(
             icon: Icons.storage_rounded,
             iconColor: const Color(0xFF9C27B0),
-            title: 'Data Collection',
-            content:
-                'We collect only the data necessary to provide our services. This includes your account information, survey responses, and clocking records.',
+            title: localization.dataCollection,
+            content: localization.dataCollectionDescription,
           ),
 
           _PrivacySection(
             icon: Icons.share_rounded,
             iconColor: const Color(0xFFFF9800),
-            title: 'Data Sharing',
-            content:
-                'We never share your personal data with third parties without your explicit consent. Team data is shared only within your organization.',
+            title: localization.dataSharing,
+            content: localization.dataSharingDescription,
           ),
 
           _PrivacySection(
             icon: Icons.delete_sweep_rounded,
             iconColor: const Color(0xFFE91E63),
-            title: 'Data Retention',
-            content:
-                'Your data is retained for as long as your account is active. Upon account deletion, all personal data will be permanently removed within 30 days.',
+            title: localization.dataRetention,
+            content: localization.dataRetentionDescription,
           ),
 
           _PrivacySection(
             icon: Icons.gavel_rounded,
             iconColor: const Color(0xFF00BCD4),
-            title: 'Your Rights',
-            content:
-                'You have the right to access, rectify, or delete your personal data at any time. Contact our support team for any privacy-related requests.',
+            title: localization.yourRights,
+            content: localization.yourRightsDescription,
           ),
 
           const SizedBox(height: 24),
@@ -101,7 +98,7 @@ class SettingsPrivacyWeb extends StatelessWidget {
           // Last updated
           Center(
             child: Text(
-              'Last updated: January 2025',
+              localization.privacyLastUpdated,
               style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.descriptionColor,
               ),

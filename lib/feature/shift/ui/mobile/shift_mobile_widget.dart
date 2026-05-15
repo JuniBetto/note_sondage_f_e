@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/core/archive/user_archive_service.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
@@ -25,6 +26,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 /// Mobile widget embedded inside the clocking section (or standalone).
 class ShiftMobileWidget extends StatefulWidget {
@@ -35,6 +37,8 @@ class ShiftMobileWidget extends StatefulWidget {
 }
 
 class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
+  final GlobalKey _archiveToggleKey = GlobalKey();
+  final GlobalKey _calendarKey = GlobalKey();
   final TeamBloc _teamBloc = GetIt.instance<TeamBloc>();
   final TeamMemberBloc _teamMemberBloc = GetIt.instance<TeamMemberBloc>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
@@ -52,6 +56,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   final Set<String> _loadingTeamRoleIds = <String>{};
   Set<String> _archivedAssignmentIds = <String>{};
   bool _showArchivedOnly = false;
+  bool _tutorialScheduled = false;
 
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid;
   String get _currentEmail =>
@@ -489,6 +494,19 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         .where((assignment) => _archivedAssignmentIds.contains(assignment.id))
         .toList();
 
+    AppTutorialController.registerTargets(
+      tutorialId: 'mobile-shifts',
+      keys: <GlobalKey>[_archiveToggleKey, _calendarKey],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'mobile-shifts',
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[_archiveToggleKey, _calendarKey],
+      ),
+    );
+    _scheduleTutorial();
+
     return MultiBlocListener(
       listeners: [
         BlocListener<ShiftBloc, ShiftState>(
@@ -568,44 +586,90 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
               ],
             ),
             const SizedBox(height: 12),
-            ArchiveViewToggle(
-              showArchivedOnly: _showArchivedOnly,
-              primaryCount: foregroundAssignments.length,
-              archivedCount: archivedAssignments.length,
-              primaryLabel: 'Calendario',
-              archivedLabel: 'Archivio',
-              onChanged: (value) {
-                setState(() => _showArchivedOnly = value);
-              },
+            Showcase(
+              key: _archiveToggleKey,
+              title: _isItalian(context)
+                  ? 'Calendario e archivio'
+                  : 'Calendar and archive',
+              description: _isItalian(context)
+                  ? 'Usa questo selettore per passare dal calendario attivo all\'archivio dei turni nascosti.'
+                  : 'Use this switcher to move between the active calendar and the archive of hidden shifts.',
+              child: ArchiveViewToggle(
+                showArchivedOnly: _showArchivedOnly,
+                primaryCount: foregroundAssignments.length,
+                archivedCount: archivedAssignments.length,
+                primaryLabel: 'Calendario',
+                archivedLabel: 'Archivio',
+                onChanged: (value) {
+                  setState(() => _showArchivedOnly = value);
+                },
+              ),
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: _showArchivedOnly
-                  ? ShiftArchivedAssignmentsList(
-                      assignments: archivedAssignments,
-                      compact: false,
-                      onOpen: (assignment) {
-                        _openDialogForAssignment(
-                          context,
-                          assignment.shiftDate,
-                          existing: assignment,
-                        );
-                      },
-                      onRestore: (assignment) {
-                        _setAssignmentArchived(assignment, false);
-                      },
-                    )
-                  : ShiftCalendarWidget(
-                      assignments: foregroundAssignments,
-                      focusedMonth: _focusedMonth,
-                      onMonthChanged: _onMonthChanged,
-                      onDayTap: (date, assignments) =>
-                          _onDayTap(context, date, assignments),
-                    ),
+              child: Showcase(
+                key: _calendarKey,
+                title: _showArchivedOnly
+                    ? (_isItalian(context) ? 'Archivio turni' : 'Shift archive')
+                    : (_isItalian(context)
+                          ? 'Calendario turni'
+                          : 'Shift calendar'),
+                description: _showArchivedOnly
+                    ? (_isItalian(context)
+                          ? 'Qui ritrovi i turni archiviati e puoi riaprirli quando servono.'
+                          : 'This view shows archived shifts and lets you restore them when needed.')
+                    : (_isItalian(context)
+                          ? 'Tocca un giorno per creare o modificare i turni disponibili in quella data.'
+                          : 'Tap a day to create or edit the shifts available on that date.'),
+                child: _showArchivedOnly
+                    ? ShiftArchivedAssignmentsList(
+                        assignments: archivedAssignments,
+                        compact: false,
+                        onOpen: (assignment) {
+                          _openDialogForAssignment(
+                            context,
+                            assignment.shiftDate,
+                            existing: assignment,
+                          );
+                        },
+                        onRestore: (assignment) {
+                          _setAssignmentArchived(assignment, false);
+                        },
+                      )
+                    : ShiftCalendarWidget(
+                        assignments: foregroundAssignments,
+                        focusedMonth: _focusedMonth,
+                        onMonthChanged: _onMonthChanged,
+                        onDayTap: (date, assignments) =>
+                            _onDayTap(context, date, assignments),
+                      ),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _scheduleTutorial() {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: 'mobile-shifts',
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[_archiveToggleKey, _calendarKey],
+      );
+    });
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }

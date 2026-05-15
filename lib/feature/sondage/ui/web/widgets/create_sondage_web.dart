@@ -23,6 +23,7 @@ class CreateSondageWeb extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: SondageCreateForm(
             onCreated: onsondageCreated,
+            tutorialId: initialSondage == null ? 'web-sondage-create' : null,
             onCloseRequested: () {
               if (!context.mounted) {
                 return;

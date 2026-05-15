@@ -40,6 +40,18 @@ class _SettingsMobileState extends State<SettingsMobile> {
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
 
+    AppTutorialController.registerTargets(
+      tutorialId: 'mobile-settings',
+      keys: <GlobalKey>[_profileCardKey, _preferencesKey, _supportKey],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'mobile-settings',
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[_profileCardKey, _preferencesKey, _supportKey],
+      ),
+    );
+
     if (!_didScheduleTutorial) {
       _didScheduleTutorial = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {

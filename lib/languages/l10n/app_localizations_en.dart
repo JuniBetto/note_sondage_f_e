@@ -142,6 +142,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tryAgain => 'Try again';
 
   @override
+  String get reviewTutorial => 'Review tutorial';
+
+  @override
+  String get tutorialPrevious => 'Previous';
+
+  @override
+  String get tutorialNext => 'Next';
+
+  @override
+  String get tutorialSkip => 'Skip';
+
+  @override
   String get webMobileAppOnlyTitle => 'Get the mobile app';
 
   @override
@@ -389,6 +401,194 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsNotification => 'Settings Notification';
+
+  @override
+  String get notificationsSettingsIntro =>
+      'Choose how updates and shift reminders reach you.';
+
+  @override
+  String get notificationsGeneral => 'General';
+
+  @override
+  String get emailNotifications => 'Email Notifications';
+
+  @override
+  String get receiveUpdatesByEmail => 'Receive updates via email';
+
+  @override
+  String get pushNotifications => 'Push Notifications';
+
+  @override
+  String get receivePushNotificationsOnYourDevice =>
+      'Receive push notifications on your device';
+
+  @override
+  String get shiftReminders => 'Shift reminders';
+
+  @override
+  String get reminderMode => 'Reminder mode';
+
+  @override
+  String get notificationReminderModeDescription =>
+      'Choose in each shift whether you want a standard notification or a stronger alarm.';
+
+  @override
+  String get webBehavior => 'Web behavior';
+
+  @override
+  String get alarmBehaviorOnWeb =>
+      'On web, Alarm mode uses browser notifications. The tab must stay open and the browser controls the final sound and vibration behavior.';
+
+  @override
+  String get howItWorks => 'How it works';
+
+  @override
+  String get notificationAndAlarmDifference =>
+      'Notification shows a normal reminder. Alarm uses the settings below and is meant for stronger shift alerts.';
+
+  @override
+  String get alarmDelivery => 'Alarm delivery';
+
+  @override
+  String get alarmStyle => 'Alarm style';
+
+  @override
+  String get webAlarmDeliveryDescription =>
+      'Browser notifications are used while this tab is open. Sound and vibration are managed by the browser and operating system.';
+
+  @override
+  String get alarmStyleDescription =>
+      'Choose whether Alarm mode should vibrate or play a ringtone. Default: Vibrate.';
+
+  @override
+  String get alarmStyleDescriptionIos =>
+      'On iPhone, Alarm mode uses a ringtone. Vibration-only alarms are not available for local notifications.';
+
+  @override
+  String get vibrate => 'Vibrate';
+
+  @override
+  String get ringtone => 'Ringtone';
+
+  @override
+  String get browserNotification => 'Browser notification';
+
+  @override
+  String get notificationVisibility => 'Notification visibility';
+
+  @override
+  String get alarmDuration => 'Alarm duration';
+
+  @override
+  String get webNotificationVisibilityDescription =>
+      'This controls how long the browser notification stays visible after it appears.';
+
+  @override
+  String get alarmDurationAppliesOnlyToAlarmMode =>
+      'This duration applies only when a shift uses Alarm mode.';
+
+  @override
+  String get activity => 'Activity';
+
+  @override
+  String get surveyReminders => 'Survey Reminders';
+
+  @override
+  String get getRemindedAboutPendingSurveys =>
+      'Get reminded about pending surveys';
+
+  @override
+  String get teamUpdates => 'Team Updates';
+
+  @override
+  String get notificationsAboutTeamChanges =>
+      'Notifications about team changes';
+
+  @override
+  String get clockingAlerts => 'Clocking Alerts';
+
+  @override
+  String get remindersToClockInAndOut => 'Reminders to clock in and out';
+
+  @override
+  String get shiftNotifications => 'Shift Notifications';
+
+  @override
+  String get assignmentsUpdatesAndShiftReminders =>
+      'Assignments, updates and shift reminders';
+
+  @override
+  String get debugTools => 'Debug tools';
+
+  @override
+  String get debugToolsBrowserMessage =>
+      'Use these tests only while debugging notifications in this browser.';
+
+  @override
+  String get debugToolsDeviceMessage =>
+      'Use these tests only while debugging notifications on this device.';
+
+  @override
+  String get testNotificationNow => 'Test notification now';
+
+  @override
+  String get testAlarmIn10Seconds => 'Test alarm in 10s';
+
+  @override
+  String get testCurrentMode => 'Test current mode';
+
+  @override
+  String get alarmModeStatus => 'Alarm mode status';
+
+  @override
+  String get pendingRequests => 'Pending requests';
+
+  @override
+  String get inspectRealShifts => 'Inspect real shifts';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get howWeProtectYourData => 'How we protect your data';
+
+  @override
+  String get dataProtection => 'Data Protection';
+
+  @override
+  String get dataProtectionDescription =>
+      'Your data is encrypted at rest and in transit. We use industry-standard encryption protocols to ensure your information remains secure.';
+
+  @override
+  String get dataCollection => 'Data Collection';
+
+  @override
+  String get dataCollectionDescription =>
+      'We collect only the data necessary to provide our services. This includes your account information, survey responses, and clocking records.';
+
+  @override
+  String get dataSharing => 'Data Sharing';
+
+  @override
+  String get dataSharingDescription =>
+      'We never share your personal data with third parties without your explicit consent. Team data is shared only within your organization.';
+
+  @override
+  String get dataRetention => 'Data Retention';
+
+  @override
+  String get dataRetentionDescription =>
+      'Your data is retained for as long as your account is active. After account deactivation, personal data is permanently removed within 30 days.';
+
+  @override
+  String get yourRights => 'Your Rights';
+
+  @override
+  String get yourRightsDescription =>
+      'You have the right to access, rectify, or delete your personal data at any time. Contact our support team for any privacy-related requests.';
+
+  @override
+  String get privacyLastUpdated => 'Last updated: January 2025';
 
   @override
   String get yourName => 'Your Name';

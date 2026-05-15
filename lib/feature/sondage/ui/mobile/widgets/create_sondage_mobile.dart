@@ -23,6 +23,7 @@ class CreateSondageMobile extends StatelessWidget {
         onCreated: onsondageCreated,
         showHeader: false,
         initialSondage: initialSondage,
+        tutorialId: initialSondage == null ? 'mobile-sondage-create' : null,
         onCloseRequested: () {
           if (!context.mounted) {
             return;

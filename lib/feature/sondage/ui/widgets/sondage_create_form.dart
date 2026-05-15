@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
@@ -10,6 +12,7 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/time_range_picker.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class SondageCreateForm extends StatefulWidget {
   const SondageCreateForm({
@@ -18,12 +21,14 @@ class SondageCreateForm extends StatefulWidget {
     this.onCloseRequested,
     this.showHeader = true,
     this.initialSondage,
+    this.tutorialId,
   });
 
   final VoidCallback? onCreated;
   final VoidCallback? onCloseRequested;
   final bool showHeader;
   final SondageEntity? initialSondage;
+  final String? tutorialId;
 
   @override
   State<SondageCreateForm> createState() => _SondageCreateFormState();
@@ -31,6 +36,11 @@ class SondageCreateForm extends StatefulWidget {
 
 class _SondageCreateFormState extends State<SondageCreateForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey _questionSectionKey = GlobalKey();
+  final GlobalKey _optionsSectionKey = GlobalKey();
+  final GlobalKey _settingsSectionKey = GlobalKey();
+  final GlobalKey _teamSectionKey = GlobalKey();
+  final GlobalKey _submitSectionKey = GlobalKey();
   final TextEditingController _questionController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   late final List<TextEditingController> _optionControllers;
@@ -39,6 +49,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   bool _allowMultipleResponses = false;
   bool _hasExpiry = false;
   bool _isSubmitting = false;
+  bool _tutorialScheduled = false;
   TimeOfDay _start = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _end = const TimeOfDay(hour: 18, minute: 0);
   String? _selectedTeamId;
@@ -432,6 +443,26 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
+    if (widget.tutorialId != null && !_isEditing) {
+      final tutorialKeys = <GlobalKey>[
+        _questionSectionKey,
+        _optionsSectionKey,
+        _settingsSectionKey,
+        _teamSectionKey,
+        _submitSectionKey,
+      ];
+      AppTutorialController.registerTargets(
+        tutorialId: widget.tutorialId!,
+        keys: tutorialKeys,
+      );
+      AppTutorialController.registerReplayAction(
+        tutorialId: widget.tutorialId!,
+        action: () =>
+            AppTutorialController.replay(context: context, keys: tutorialKeys),
+      );
+      _scheduleTutorial(tutorialKeys);
+    }
+
     return BlocListener<SondageBloc, SondageState>(
       listenWhen: (_, current) =>
           current is SondageCreated ||
@@ -526,153 +557,198 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                           ],
                         ),
                       ),
+                      if (widget.tutorialId != null && !_isEditing)
+                        IconButton(
+                          tooltip: localization.reviewTutorial,
+                          onPressed: () =>
+                              AppTutorialController.replayRegistered(
+                                context: context,
+                                tutorialId: widget.tutorialId!,
+                              ),
+                          icon: const Icon(Icons.help_outline_rounded),
+                        ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 20),
             ],
-            _buildSection(
-              context: context,
-              title: localization.askQuestion,
-              icon: Icons.edit_outlined,
-              child: Column(
-                children: [
-                  CustomTextFieldImmersive(
-                    hintText: localization.askQuestion,
-                    maxLines: 3,
-                    controller: _questionController,
-                  ),
-                  const SizedBox(height: 12),
-                  CustomTextFieldImmersive(
-                    hintText: 'Descrizione (opzionale)',
-                    maxLines: 4,
-                    controller: _descriptionController,
-                  ),
-                ],
+            Showcase(
+              key: _questionSectionKey,
+              title: _isItalian(context)
+                  ? 'Domanda del sondaggio'
+                  : 'Survey question',
+              description: _isItalian(context)
+                  ? 'Qui scrivi la domanda principale e, se serve, una breve descrizione per dare contesto.'
+                  : 'Write the main question here and add a short description when you want to give more context.',
+              child: _buildSection(
+                context: context,
+                title: localization.askQuestion,
+                icon: Icons.edit_outlined,
+                child: Column(
+                  children: [
+                    CustomTextFieldImmersive(
+                      hintText: localization.askQuestion,
+                      maxLines: 3,
+                      controller: _questionController,
+                    ),
+                    const SizedBox(height: 12),
+                    CustomTextFieldImmersive(
+                      hintText: 'Descrizione (opzionale)',
+                      maxLines: 4,
+                      controller: _descriptionController,
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            _buildSection(
-              context: context,
-              title: localization.options,
-              icon: Icons.format_list_bulleted_rounded,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Aggiungi da 2 a 10 opzioni. Puoi riordinarle trascinando.',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.descriptionColor,
+            Showcase(
+              key: _optionsSectionKey,
+              title: _isItalian(context)
+                  ? 'Opzioni di risposta'
+                  : 'Answer options',
+              description: _isItalian(context)
+                  ? 'Aggiungi qui le possibili risposte del sondaggio. Puoi riordinarle e tenerne almeno due.'
+                  : 'Add the survey answer choices here. You can reorder them and you should keep at least two.',
+              child: _buildSection(
+                context: context,
+                title: localization.options,
+                icon: Icons.format_list_bulleted_rounded,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Aggiungi da 2 a 10 opzioni. Puoi riordinarle trascinando.',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.descriptionColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  ReorderableListView.builder(
-                    itemCount: _optionControllers.length,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    buildDefaultDragHandles: false,
-                    onReorder: (oldIndex, newIndex) {
-                      setState(() {
-                        if (newIndex > oldIndex) {
-                          newIndex--;
-                        }
-                        final item = _optionControllers.removeAt(oldIndex);
-                        _optionControllers.insert(newIndex, item);
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      final isTrailingEmpty =
-                          index == _optionControllers.length - 1 &&
-                          _optionControllers[index].text.trim().isEmpty;
-                      return Padding(
-                        key: ValueKey(_optionControllers[index]),
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: CustomTextFieldImmersive(
-                                controller: _optionControllers[index],
-                                hintText: '${localization.option} ${index + 1}',
+                    const SizedBox(height: 12),
+                    ReorderableListView.builder(
+                      itemCount: _optionControllers.length,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      buildDefaultDragHandles: false,
+                      onReorder: (oldIndex, newIndex) {
+                        setState(() {
+                          if (newIndex > oldIndex) {
+                            newIndex--;
+                          }
+                          final item = _optionControllers.removeAt(oldIndex);
+                          _optionControllers.insert(newIndex, item);
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        final isTrailingEmpty =
+                            index == _optionControllers.length - 1 &&
+                            _optionControllers[index].text.trim().isEmpty;
+                        return Padding(
+                          key: ValueKey(_optionControllers[index]),
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: CustomTextFieldImmersive(
+                                  controller: _optionControllers[index],
+                                  hintText:
+                                      '${localization.option} ${index + 1}',
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            ReorderableDragStartListener(
-                              index: index,
-                              child: Icon(
-                                Icons.drag_handle_rounded,
-                                color: colorScheme.selectionColor,
-                              ),
-                            ),
-                            if (_optionControllers.length > 2 &&
-                                !isTrailingEmpty)
-                              IconButton(
-                                onPressed: () => _removeOption(index),
-                                icon: Icon(
-                                  Icons.close_rounded,
+                              const SizedBox(width: 8),
+                              ReorderableDragStartListener(
+                                index: index,
+                                child: Icon(
+                                  Icons.drag_handle_rounded,
                                   color: colorScheme.selectionColor,
                                 ),
                               ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                              if (_optionControllers.length > 2 &&
+                                  !isTrailingEmpty)
+                                IconButton(
+                                  onPressed: () => _removeOption(index),
+                                  icon: Icon(
+                                    Icons.close_rounded,
+                                    color: colorScheme.selectionColor,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            _buildSection(
-              context: context,
-              title: 'Impostazioni',
-              icon: Icons.tune_rounded,
-              child: Column(
-                children: [
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(localization.allowMultipleResponses),
-                    value: _allowMultipleResponses,
-                    activeColor: colorScheme.selectionColor,
-                    onChanged: (value) {
-                      setState(() => _allowMultipleResponses = value);
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  CheckboxListTile(
-                    value: _hasExpiry,
-                    onChanged: (value) {
-                      setState(() => _hasExpiry = value ?? false);
-                    },
-                    activeColor: colorScheme.selectionColor,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(localization.setExpiry),
-                  ),
-                  IgnorePointer(
-                    ignoring: !_hasExpiry,
-                    child: Opacity(
-                      opacity: _hasExpiry ? 1 : 0.4,
-                      child: TimeRangePicker(
-                        start: _start,
-                        end: _end,
-                        onStartChanged: (value) {
-                          setState(() => _start = value);
-                        },
-                        onEndChanged: (value) {
-                          setState(() => _end = value);
-                        },
+            Showcase(
+              key: _settingsSectionKey,
+              title: _isItalian(context)
+                  ? 'Impostazioni del sondaggio'
+                  : 'Survey settings',
+              description: _isItalian(context)
+                  ? 'Qui decidi se permettere risposte multiple e se il sondaggio deve scadere a un orario preciso.'
+                  : 'Choose here whether multiple answers are allowed and whether the survey should expire at a specific time.',
+              child: _buildSection(
+                context: context,
+                title: 'Impostazioni',
+                icon: Icons.tune_rounded,
+                child: Column(
+                  children: [
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(localization.allowMultipleResponses),
+                      value: _allowMultipleResponses,
+                      activeColor: colorScheme.selectionColor,
+                      onChanged: (value) {
+                        setState(() => _allowMultipleResponses = value);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    CheckboxListTile(
+                      value: _hasExpiry,
+                      onChanged: (value) {
+                        setState(() => _hasExpiry = value ?? false);
+                      },
+                      activeColor: colorScheme.selectionColor,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(localization.setExpiry),
+                    ),
+                    IgnorePointer(
+                      ignoring: !_hasExpiry,
+                      child: Opacity(
+                        opacity: _hasExpiry ? 1 : 0.4,
+                        child: TimeRangePicker(
+                          start: _start,
+                          end: _end,
+                          onStartChanged: (value) {
+                            setState(() => _start = value);
+                          },
+                          onEndChanged: (value) {
+                            setState(() => _end = value);
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            _buildSection(
-              context: context,
-              title: localization.selectTeam,
-              icon: Icons.groups_rounded,
-              child: _buildTeamsSelector(context, localization, colorScheme),
+            Showcase(
+              key: _teamSectionKey,
+              title: _isItalian(context) ? 'Team destinatario' : 'Target team',
+              description: _isItalian(context)
+                  ? 'Seleziona qui la squadra che riceverà il sondaggio.'
+                  : 'Select here which team should receive this survey.',
+              child: _buildSection(
+                context: context,
+                title: localization.selectTeam,
+                icon: Icons.groups_rounded,
+                child: _buildTeamsSelector(context, localization, colorScheme),
+              ),
             ),
             if (_isEditing && !_canEditCurrentSondage) ...[
               const SizedBox(height: 16),
@@ -701,37 +777,68 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
               ),
             ],
             const SizedBox(height: 24),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.secondary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            Showcase(
+              key: _submitSectionKey,
+              title: _isItalian(context)
+                  ? 'Crea il sondaggio'
+                  : 'Create survey',
+              description: _isItalian(context)
+                  ? 'Quando domanda, opzioni e team sono pronti, usa questo pulsante per creare la bozza del sondaggio.'
+                  : 'Once the question, options, and team are ready, use this button to create the survey draft.',
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.secondary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
-              ),
-              onPressed:
-                  _isSubmitting || (_isEditing && !_canEditCurrentSondage)
-                  ? null
-                  : _submit,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                onPressed:
+                    _isSubmitting || (_isEditing && !_canEditCurrentSondage)
+                    ? null
+                    : _submit,
+                child: _isSubmitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        _isEditing
+                            ? 'Aggiorna ${localization.sondage}'
+                            : '${localization.create} ${localization.sondage}',
                       ),
-                    )
-                  : Text(
-                      _isEditing
-                          ? 'Aggiorna ${localization.sondage}'
-                          : '${localization.create} ${localization.sondage}',
-                    ),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _scheduleTutorial(List<GlobalKey> tutorialKeys) {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || widget.tutorialId == null) {
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: widget.tutorialId!,
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: tutorialKeys,
+      );
+    });
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }

@@ -33,6 +33,20 @@ class _MainMobileState extends State<MainMobile> {
     final loc = AppLocalizations.of(context)!;
     final navBarItem = context.watch<NavigationBloc>().state;
 
+    if (!_isDelegatedTutorialIndex(navBarItem)) {
+      AppTutorialController.registerTargets(
+        tutorialId: 'mobile-main-$navBarItem',
+        keys: <GlobalKey>[_bodyKey, _navigationBarKey],
+      );
+      AppTutorialController.registerReplayAction(
+        tutorialId: 'mobile-main-$navBarItem',
+        action: () => AppTutorialController.replay(
+          context: context,
+          keys: <GlobalKey>[_bodyKey, _navigationBarKey],
+        ),
+      );
+    }
+
     _scheduleTutorialForIndex(navBarItem);
 
     final body = switch (navBarItem) {
@@ -58,6 +72,13 @@ class _MainMobileState extends State<MainMobile> {
             4 => loc.sondage,
             int() => loc.home,
           },
+          closeAction: _supportsTutorial(navBarItem)
+              ? IconButton(
+                  tooltip: loc.reviewTutorial,
+                  onPressed: () => _replayTutorialForIndex(navBarItem),
+                  icon: const Icon(Icons.help_outline_rounded),
+                )
+              : null,
         ),
         backgroundColor: colorScheme.homePrimary,
         body: Showcase(
@@ -77,7 +98,9 @@ class _MainMobileState extends State<MainMobile> {
   }
 
   void _scheduleTutorialForIndex(int navIndex) {
-    if (!_supportsTutorial(navIndex) || _lastScheduledNavIndex == navIndex) {
+    if (!_supportsTutorial(navIndex) ||
+        _isDelegatedTutorialIndex(navIndex) ||
+        _lastScheduledNavIndex == navIndex) {
       return;
     }
 
@@ -96,8 +119,33 @@ class _MainMobileState extends State<MainMobile> {
     });
   }
 
+  void _replayTutorialForIndex(int navIndex) {
+    if (!_supportsTutorial(navIndex)) {
+      return;
+    }
+    if (navIndex == 2) {
+      AppTutorialController.replayRegistered(
+        context: context,
+        tutorialId: 'mobile-settings',
+      );
+      return;
+    }
+    AppTutorialController.replayRegistered(
+      context: context,
+      tutorialId: 'mobile-main-$navIndex',
+    );
+  }
+
   bool _supportsTutorial(int navIndex) {
-    return navIndex == 0 || navIndex == 1 || navIndex == 3 || navIndex == 4;
+    return navIndex == 0 ||
+        navIndex == 1 ||
+        navIndex == 2 ||
+        navIndex == 3 ||
+        navIndex == 4;
+  }
+
+  bool _isDelegatedTutorialIndex(int navIndex) {
+    return navIndex == 1 || navIndex == 3 || navIndex == 4;
   }
 
   String _pageTitle(AppLocalizations localizations, int navIndex) {

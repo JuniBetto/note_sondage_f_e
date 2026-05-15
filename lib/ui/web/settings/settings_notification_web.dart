@@ -106,7 +106,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Choose how updates and shift reminders reach you.',
+                          localization.notificationsSettingsIntro,
                           style: textTheme.bodyMedium?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -119,7 +119,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                 const SizedBox(height: 32),
 
                 // General Notifications
-                _buildSectionTitle(context, 'General'),
+                _buildSectionTitle(context, localization.notificationsGeneral),
                 const SizedBox(height: 12),
                 Container(
                   decoration: BoxDecoration(
@@ -135,8 +135,8 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         context,
                         icon: Icons.email_rounded,
                         iconColor: const Color(0xFF2196F3),
-                        title: 'Email Notifications',
-                        subtitle: 'Receive updates via email',
+                        title: localization.emailNotifications,
+                        subtitle: localization.receiveUpdatesByEmail,
                         value: preferences.emailEnabled,
                         onChanged: (v) => _updatePreferences(
                           context,
@@ -148,8 +148,9 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         context,
                         icon: Icons.phone_iphone_rounded,
                         iconColor: const Color(0xFF4CAF50),
-                        title: 'Push Notifications',
-                        subtitle: 'Receive push notifications on your device',
+                        title: localization.pushNotifications,
+                        subtitle:
+                            localization.receivePushNotificationsOnYourDevice,
                         value: preferences.pushEnabled,
                         onChanged: (v) => _updatePreferences(
                           context,
@@ -163,7 +164,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
 
                 const SizedBox(height: 24),
 
-                _buildSectionTitle(context, 'Shift reminders'),
+                _buildSectionTitle(context, localization.shiftReminders),
                 const SizedBox(height: 12),
                 Container(
                   decoration: BoxDecoration(
@@ -179,14 +180,14 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Reminder mode',
+                          localization.reminderMode,
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Choose in each shift whether you want a standard notification or a stronger alarm.',
+                          localization.notificationReminderModeDescription,
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -197,14 +198,18 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                           icon: kIsWeb
                               ? Icons.language_rounded
                               : Icons.info_outline_rounded,
-                          title: kIsWeb ? 'Web behavior' : 'How it works',
+                          title: kIsWeb
+                              ? localization.webBehavior
+                              : localization.howItWorks,
                           message: kIsWeb
-                              ? 'On web, Alarm mode uses browser notifications. The tab must stay open and the browser controls the final sound and vibration behavior.'
-                              : 'Notification shows a normal reminder. Alarm uses the settings below and is meant for stronger shift alerts.',
+                              ? localization.alarmBehaviorOnWeb
+                              : localization.notificationAndAlarmDifference,
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          kIsWeb ? 'Alarm delivery' : 'Alarm style',
+                          kIsWeb
+                              ? localization.alarmDelivery
+                              : localization.alarmStyle,
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -212,10 +217,10 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         const SizedBox(height: 4),
                         Text(
                           kIsWeb
-                              ? 'Browser notifications are used while this tab is open. Sound and vibration are managed by the browser and operating system.'
+                              ? localization.webAlarmDeliveryDescription
                               : supportsVibrateOnlyShiftAlarmFeedback
-                              ? 'Choose whether Alarm mode should vibrate or play a ringtone. Default: Vibrate.'
-                              : 'Alarm mode uses a ringtone on this platform.',
+                              ? localization.alarmStyleDescription
+                              : localization.alarmStyleDescriptionIos,
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -223,16 +228,16 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         const SizedBox(height: 12),
                         if (supportsVibrateOnlyShiftAlarmFeedback)
                           SegmentedButton<ShiftAlarmFeedback>(
-                            segments: const [
+                            segments: [
                               ButtonSegment(
                                 value: ShiftAlarmFeedback.vibrate,
-                                icon: Icon(Icons.vibration, size: 16),
-                                label: Text('Vibrate'),
+                                icon: const Icon(Icons.vibration, size: 16),
+                                label: Text(localization.vibrate),
                               ),
                               ButtonSegment(
                                 value: ShiftAlarmFeedback.ringtone,
-                                icon: Icon(Icons.music_note, size: 16),
-                                label: Text('Ringtone'),
+                                icon: const Icon(Icons.music_note, size: 16),
+                                label: Text(localization.ringtone),
                               ),
                             ],
                             selected: {_shiftAlarmFeedback},
@@ -274,7 +279,9 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  kIsWeb ? 'Browser notification' : 'Ringtone',
+                                  kIsWeb
+                                      ? localization.browserNotification
+                                      : localization.ringtone,
                                   style: textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: colorScheme.primary,
@@ -285,7 +292,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                           ),
                         const SizedBox(height: 16),
                         Text(
-                          '${kIsWeb ? 'Notification visibility' : 'Alarm duration'}: ${_shiftAlarmDurationSeconds}s',
+                          '${kIsWeb ? localization.notificationVisibility : localization.alarmDuration}: ${_shiftAlarmDurationSeconds}s',
                           style: textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -293,8 +300,10 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         const SizedBox(height: 4),
                         Text(
                           kIsWeb
-                              ? 'This controls how long the browser notification stays visible after it appears.'
-                              : 'This duration applies only when a shift uses Alarm mode.',
+                              ? localization
+                                    .webNotificationVisibilityDescription
+                              : localization
+                                    .alarmDurationAppliesOnlyToAlarmMode,
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -323,7 +332,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                 const SizedBox(height: 24),
 
                 // Activity Notifications
-                _buildSectionTitle(context, 'Activity'),
+                _buildSectionTitle(context, localization.activity),
                 const SizedBox(height: 12),
                 Container(
                   decoration: BoxDecoration(
@@ -339,8 +348,8 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         context,
                         icon: Icons.assignment_rounded,
                         iconColor: const Color(0xFF9C27B0),
-                        title: 'Survey Reminders',
-                        subtitle: 'Get reminded about pending surveys',
+                        title: localization.surveyReminders,
+                        subtitle: localization.getRemindedAboutPendingSurveys,
                         value: preferences.surveyRemindersEnabled,
                         onChanged: (v) => _updatePreferences(
                           context,
@@ -352,8 +361,8 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         context,
                         icon: Icons.groups_rounded,
                         iconColor: const Color(0xFF00BCD4),
-                        title: 'Team Updates',
-                        subtitle: 'Notifications about team changes',
+                        title: localization.teamUpdates,
+                        subtitle: localization.notificationsAboutTeamChanges,
                         value: preferences.teamUpdatesEnabled,
                         onChanged: (v) => _updatePreferences(
                           context,
@@ -365,8 +374,8 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         context,
                         icon: Icons.access_time_rounded,
                         iconColor: const Color(0xFFE91E63),
-                        title: 'Clocking Alerts',
-                        subtitle: 'Reminders to clock in and out',
+                        title: localization.clockingAlerts,
+                        subtitle: localization.remindersToClockInAndOut,
                         value: preferences.clockingAlertsEnabled,
                         onChanged: (v) => _updatePreferences(
                           context,
@@ -378,8 +387,9 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         context,
                         icon: Icons.event_available_rounded,
                         iconColor: const Color(0xFF5C6BC0),
-                        title: 'Shift Notifications',
-                        subtitle: 'Assignments, updates and shift reminders',
+                        title: localization.shiftNotifications,
+                        subtitle:
+                            localization.assignmentsUpdatesAndShiftReminders,
                         value: preferences.shiftAlertsEnabled,
                         onChanged: (v) => _updatePreferences(
                           context,
@@ -393,7 +403,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
 
                 if (kDebugMode) ...[
                   const SizedBox(height: 24),
-                  _buildSectionTitle(context, 'Debug tools'),
+                  _buildSectionTitle(context, localization.debugTools),
                   const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
@@ -409,7 +419,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Use these tests only while debugging notifications in this browser.',
+                            localization.debugToolsBrowserMessage,
                             style: textTheme.bodySmall?.copyWith(
                               color: colorScheme.descriptionColor,
                             ),
@@ -422,20 +432,20 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                               OutlinedButton(
                                 onPressed: () =>
                                     _runDebugNotificationNow(context),
-                                child: const Text('Test notification now'),
+                                child: Text(localization.testNotificationNow),
                               ),
                               OutlinedButton(
                                 onPressed: () => _runDebugShiftAlarm(context),
-                                child: const Text('Test alarm in 10s'),
+                                child: Text(localization.testAlarmIn10Seconds),
                               ),
                               OutlinedButton(
                                 onPressed: () =>
                                     _runDebugCurrentShiftMode(context),
-                                child: const Text('Test current mode'),
+                                child: Text(localization.testCurrentMode),
                               ),
                               OutlinedButton(
                                 onPressed: () => _showAlarmModeStatus(context),
-                                child: const Text('Alarm mode status'),
+                                child: Text(localization.alarmModeStatus),
                               ),
                               OutlinedButton(
                                 onPressed: () =>
@@ -444,12 +454,12 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                               ),
                               OutlinedButton(
                                 onPressed: () => _showPendingRequests(context),
-                                child: const Text('Pending requests'),
+                                child: Text(localization.pendingRequests),
                               ),
                               OutlinedButton(
                                 onPressed: () =>
                                     _inspectRealShiftPlans(context),
-                                child: const Text('Inspect real shifts'),
+                                child: Text(localization.inspectRealShifts),
                               ),
                             ],
                           ),

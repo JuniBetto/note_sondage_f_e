@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/create_team_web.dart';
@@ -7,6 +10,7 @@ import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_dialog.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class TeamsWeb extends StatefulWidget {
   const TeamsWeb({super.key, this.title = "Create Team"});
@@ -17,7 +21,11 @@ class TeamsWeb extends StatefulWidget {
 }
 
 class _TeamsWebState extends State<TeamsWeb> {
+  final GlobalKey _createButtonKey = GlobalKey();
+  final GlobalKey _viewToggleKey = GlobalKey();
+  final GlobalKey _teamListKey = GlobalKey();
   int isGridView = 1;
+  bool _tutorialScheduled = false;
 
   void _handleTeamCreated() {
     getIt<TeamBloc>().add(LoadTeamsEvent());
@@ -28,6 +36,26 @@ class _TeamsWebState extends State<TeamsWeb> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final localization = AppLocalizations.of(context)!;
+
+    AppTutorialController.registerTargets(
+      tutorialId: 'web-team-list',
+      keys: <GlobalKey>[_createButtonKey, _viewToggleKey, _teamListKey],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-team-list',
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[_createButtonKey, _viewToggleKey, _teamListKey],
+      ),
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-main-1',
+      action: () => AppTutorialController.replayRegistered(
+        context: context,
+        tutorialId: 'web-team-list',
+      ),
+    );
+    _scheduleTutorial();
 
     return SizedBox.expand(
       child: Padding(
@@ -48,31 +76,40 @@ class _TeamsWebState extends State<TeamsWeb> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    FilledButton.icon(
-                      onPressed: () {
-                        CustomDialog(
-                          title: widget.title,
-                          width: 700,
-                          child: CreateTeamWeb(onTeamCreated: _handleTeamCreated),
-                        ).show(context);
-                      },
-                      icon: const Icon(Icons.group_add_rounded, size: 20),
-                      label: Text(
-                        localization.createTeam,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                    Showcase(
+                      key: _createButtonKey,
+                      title: _isItalian(context) ? 'Nuova squadra' : 'New team',
+                      description: _isItalian(context)
+                          ? 'Apri qui la sotto-pagina di creazione per configurare una nuova squadra con nome, colore e membri.'
+                          : 'Open the creation subpage here to configure a new team with its name, color, and members.',
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          CustomDialog(
+                            title: widget.title,
+                            width: 700,
+                            child: CreateTeamWeb(
+                              onTeamCreated: _handleTeamCreated,
+                            ),
+                          ).show(context);
+                        },
+                        icon: const Icon(Icons.group_add_rounded, size: 20),
+                        label: Text(
+                          localization.createTeam,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF7C4DFF),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 14,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF7C4DFF),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
                         ),
                       ),
                     ),
@@ -87,51 +124,69 @@ class _TeamsWebState extends State<TeamsWeb> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    VisualType(
-                      isActive1: isGridView == 1,
-                      isActive2: isGridView == 2,
-                      color: colorScheme.cursorColor,
-                      iconData1: Icons.window_sharp,
-                      iconData2: Icons.list,
-                      onTap1: () {
-                        setState(() {
-                          isGridView = 1;
-                        });
-                      },
-                      onTap2: () {
-                        setState(() {
-                          isGridView = 2;
-                        });
-                      },
+                    Showcase(
+                      key: _viewToggleKey,
+                      title: _isItalian(context)
+                          ? 'Vista della lista'
+                          : 'List layout',
+                      description: _isItalian(context)
+                          ? 'Puoi cambiare il modo in cui le squadre vengono mostrate, passando da griglia a lista.'
+                          : 'Switch how teams are displayed here by choosing between a grid and a list layout.',
+                      child: VisualType(
+                        isActive1: isGridView == 1,
+                        isActive2: isGridView == 2,
+                        color: colorScheme.cursorColor,
+                        iconData1: Icons.window_sharp,
+                        iconData2: Icons.list,
+                        onTap1: () {
+                          setState(() {
+                            isGridView = 1;
+                          });
+                        },
+                        onTap2: () {
+                          setState(() {
+                            isGridView = 2;
+                          });
+                        },
+                      ),
                     ),
                   ],
                 ),
               ),
               SizedBox(height: 16),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 8.0,
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.bgNavbarSurface!,
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ResponsiveGridTeams(
-                        items: const <Map<String, dynamic>>[],
-                        isRow: isGridView == 1,
+                child: Showcase(
+                  key: _teamListKey,
+                  title: _isItalian(context)
+                      ? 'Elenco delle squadre'
+                      : 'Teams area',
+                  description: _isItalian(context)
+                      ? 'Qui trovi tutte le squadre disponibili. Un click su una card apre il dettaglio della squadra selezionata.'
+                      : 'This area contains all available teams. Click any card to open the selected team detail page.',
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 8.0,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.bgNavbarSurface!,
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ResponsiveGridTeams(
+                          items: const <Map<String, dynamic>>[],
+                          isRow: isGridView == 1,
+                        ),
                       ),
                     ),
                   ),
@@ -142,5 +197,27 @@ class _TeamsWebState extends State<TeamsWeb> {
         ),
       ),
     );
+  }
+
+  void _scheduleTutorial() {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: 'web-team-list',
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[_createButtonKey, _viewToggleKey, _teamListKey],
+      );
+    });
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }

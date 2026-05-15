@@ -44,6 +44,18 @@ class _SettingsWebState extends State<SettingsWeb> {
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
 
+    AppTutorialController.registerTargets(
+      tutorialId: 'web-settings-$navBarItem',
+      keys: <GlobalKey>[_profileCardKey, _menuKey, _contentKey],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-settings-$navBarItem',
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[_profileCardKey, _menuKey, _contentKey],
+      ),
+    );
+
     _scheduleTutorialForTab(navBarItem);
 
     return BlocListener<SettingNavigationBloc, int>(
@@ -70,6 +82,15 @@ class _SettingsWebState extends State<SettingsWeb> {
             const SizedBox(height: 12),
             const ContactEmailSetupCard(compact: true),
             const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: _replayTutorial,
+                icon: const Icon(Icons.help_outline_rounded, size: 18),
+                label: Text(localizations.reviewTutorial),
+              ),
+            ),
+            const SizedBox(height: 12),
             Expanded(
               child: FullSidebar(
                 leftSectionBuilder: (isExpanded, onToggle, lastIndexes) {
@@ -199,6 +220,13 @@ class _SettingsWebState extends State<SettingsWeb> {
         keys: <GlobalKey>[_profileCardKey, _menuKey, _contentKey],
       );
     });
+  }
+
+  void _replayTutorial() {
+    AppTutorialController.replayRegistered(
+      context: context,
+      tutorialId: 'web-settings-${context.read<SettingNavigationBloc>().state}',
+    );
   }
 
   bool _supportsTutorial(int tabIndex) {

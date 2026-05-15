@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
@@ -11,6 +13,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class CreateTeamWeb extends StatefulWidget {
   const CreateTeamWeb({super.key, this.onTeamCreated});
@@ -23,6 +26,10 @@ class CreateTeamWeb extends StatefulWidget {
 
 class _CreateTeamWebState extends State<CreateTeamWeb> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey _teamInfoKey = GlobalKey();
+  final GlobalKey _teamColorKey = GlobalKey();
+  final GlobalKey _teamMembersKey = GlobalKey();
+  final GlobalKey _teamActionKey = GlobalKey();
   final TextEditingController nameTeamController = TextEditingController();
   final TextEditingController descriptionTeamController =
       TextEditingController();
@@ -36,6 +43,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
 
   List<String> selectedColor = [];
   late final TeamBloc _teamBloc;
+  bool _tutorialScheduled = false;
 
   @override
   void initState() {
@@ -59,6 +67,29 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
+
+    AppTutorialController.registerTargets(
+      tutorialId: 'web-team-create',
+      keys: <GlobalKey>[
+        _teamInfoKey,
+        _teamColorKey,
+        _teamMembersKey,
+        _teamActionKey,
+      ],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-team-create',
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[
+          _teamInfoKey,
+          _teamColorKey,
+          _teamMembersKey,
+          _teamActionKey,
+        ],
+      ),
+    );
+    _scheduleTutorial();
 
     return BlocListener<TeamBloc, TeamState>(
       bloc: _teamBloc,
@@ -134,6 +165,16 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                         ],
                       ),
                     ),
+                    Tooltip(
+                      message: localization.reviewTutorial,
+                      child: IconButton(
+                        onPressed: () => AppTutorialController.replayRegistered(
+                          context: context,
+                          tutorialId: 'web-team-create',
+                        ),
+                        icon: const Icon(Icons.help_outline_rounded),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -142,43 +183,52 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                 // ── Team Info Section ──
                 _buildSectionTitle(context, localization.teamName),
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: colorScheme.homeSecondary,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                Showcase(
+                  key: _teamInfoKey,
+                  title: _isItalian(context)
+                      ? 'Nome e descrizione'
+                      : 'Name and description',
+                  description: _isItalian(context)
+                      ? 'Qui definisci l\'identità della nuova squadra: nome chiaro e descrizione del gruppo.'
+                      : 'Use this section to define the new team identity with a clear name and a short description.',
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.homeSecondary,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: CustomInputField(
-                          hintText: localization.teamName,
-                          controller: nameTeamController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Il nome del team è obbligatorio';
-                            }
-                            return null;
-                          },
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CustomInputField(
+                            hintText: localization.teamName,
+                            controller: nameTeamController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Il nome del team è obbligatorio';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: CustomInputField(
-                          hintText: localization.teamDescription,
-                          controller: descriptionTeamController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'La descrizione è obbligatoria';
-                            }
-                            return null;
-                          },
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: CustomInputField(
+                            hintText: localization.teamDescription,
+                            controller: descriptionTeamController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'La descrizione è obbligatoria';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
 
@@ -187,16 +237,23 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                 // ── Team Color Section ──
                 _buildSectionTitle(context, localization.selectedTeamcolor),
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: colorScheme.homeSecondary,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                Showcase(
+                  key: _teamColorKey,
+                  title: _isItalian(context) ? 'Colore' : 'Color',
+                  description: _isItalian(context)
+                      ? 'Scegli un colore distintivo per riconoscere la squadra più velocemente.'
+                      : 'Choose a distinctive color so the team is easier to recognize across the app.',
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.homeSecondary,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                      ),
                     ),
+                    child: ListCheckbox(selectedColor: selectedColor),
                   ),
-                  child: ListCheckbox(selectedColor: selectedColor),
                 ),
 
                 const SizedBox(height: 24),
@@ -204,48 +261,64 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                 // ── Members Section ──
                 _buildSectionTitle(context, localization.userList),
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: colorScheme.homeSecondary,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                Showcase(
+                  key: _teamMembersKey,
+                  title: _isItalian(context) ? 'Membri' : 'Members',
+                  description: _isItalian(context)
+                      ? 'Aggiungi qui le persone da invitare e prepara la squadra prima del salvataggio finale.'
+                      : 'Add the people you want to invite here so the team is ready before the final save.',
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.homeSecondary,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                      ),
                     ),
+                    child: AddUserWeb(listInviteFormData: listInviteFormData),
                   ),
-                  child: AddUserWeb(listInviteFormData: listInviteFormData),
                 ),
 
                 const SizedBox(height: 32),
 
                 // ── Create Button ──
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.icon(
-                    onPressed: _onSave,
-                    icon: const Icon(Icons.group_add_rounded, size: 20),
-                    label: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        localization.createTeam,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                Showcase(
+                  key: _teamActionKey,
+                  title: _isItalian(context)
+                      ? 'Conferma creazione'
+                      : 'Create action',
+                  description: _isItalian(context)
+                      ? 'Quando tutto è pronto, questo pulsante crea la squadra e invia gli inviti preparati.'
+                      : 'Once everything is ready, use this button to create the team and send the prepared invitations.',
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.icon(
+                      onPressed: _onSave,
+                      icon: const Icon(Icons.group_add_rounded, size: 20),
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        child: Text(
+                          localization.createTeam,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C4DFF),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 16,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C4DFF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -294,5 +367,32 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
       );
       _teamBloc.add(CreateTeamEvent(team, userId: currentUserId));
     }
+  }
+
+  void _scheduleTutorial() {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: 'web-team-create',
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[
+          _teamInfoKey,
+          _teamColorKey,
+          _teamMembersKey,
+          _teamActionKey,
+        ],
+      );
+    });
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }

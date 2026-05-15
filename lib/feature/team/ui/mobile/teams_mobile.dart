@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_team_mobile.dart';
@@ -58,6 +59,16 @@ class _TeamsMobileState extends State<TeamsMobile>
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
+
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'mobile-main-1',
+      action: () => AppTutorialController.replayRegistered(
+        context: context,
+        tutorialId: tabController.index == 0
+            ? 'mobile-team-list'
+            : 'mobile-team-create',
+      ),
+    );
 
     return SafeArea(
       child: Padding(

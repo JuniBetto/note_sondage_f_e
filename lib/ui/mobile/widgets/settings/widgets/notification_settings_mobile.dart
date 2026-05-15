@@ -109,7 +109,7 @@ class _NotificationSettingsMobileState
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Choose how updates and shift reminders reach you.',
+                          localization.notificationsSettingsIntro,
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -123,7 +123,7 @@ class _NotificationSettingsMobileState
               const SizedBox(height: 24),
 
               // ── General Section ──
-              _buildSectionTitle(context, 'General'),
+              _buildSectionTitle(context, localization.notificationsGeneral),
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
@@ -139,8 +139,8 @@ class _NotificationSettingsMobileState
                       context,
                       icon: Icons.email_rounded,
                       iconColor: const Color(0xFF2196F3),
-                      title: 'Email Notifications',
-                      subtitle: 'Receive updates via email',
+                      title: localization.emailNotifications,
+                      subtitle: localization.receiveUpdatesByEmail,
                       value: preferences.emailEnabled,
                       onChanged: (v) => _updatePreferences(
                         context,
@@ -152,8 +152,9 @@ class _NotificationSettingsMobileState
                       context,
                       icon: Icons.phone_iphone_rounded,
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Push Notifications',
-                      subtitle: 'Receive push notifications on your device',
+                      title: localization.pushNotifications,
+                      subtitle:
+                          localization.receivePushNotificationsOnYourDevice,
                       value: preferences.pushEnabled,
                       onChanged: (v) => _updatePreferences(
                         context,
@@ -167,7 +168,7 @@ class _NotificationSettingsMobileState
 
               const SizedBox(height: 20),
 
-              _buildSectionTitle(context, 'Shift reminders'),
+              _buildSectionTitle(context, localization.shiftReminders),
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
@@ -183,14 +184,14 @@ class _NotificationSettingsMobileState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Reminder mode',
+                        localization.reminderMode,
                         style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Choose in each shift whether you want a standard notification or a stronger alarm.',
+                        localization.notificationReminderModeDescription,
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.descriptionColor,
                         ),
@@ -199,13 +200,12 @@ class _NotificationSettingsMobileState
                       _buildInfoNote(
                         context,
                         icon: Icons.info_outline_rounded,
-                        title: 'How it works',
-                        message:
-                            'Notification shows a normal reminder. Alarm uses the settings below and is meant for stronger shift alerts.',
+                        title: localization.howItWorks,
+                        message: localization.notificationAndAlarmDifference,
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Alarm style',
+                        localization.alarmStyle,
                         style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -213,8 +213,8 @@ class _NotificationSettingsMobileState
                       const SizedBox(height: 4),
                       Text(
                         supportsVibrateOnlyShiftAlarmFeedback
-                            ? 'Choose whether Alarm mode should vibrate or play a ringtone. Default: Vibrate.'
-                            : 'On iPhone, Alarm mode uses a ringtone. Vibration-only alarms are not available for local notifications.',
+                            ? localization.alarmStyleDescription
+                            : localization.alarmStyleDescriptionIos,
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.descriptionColor,
                         ),
@@ -222,16 +222,16 @@ class _NotificationSettingsMobileState
                       const SizedBox(height: 12),
                       if (supportsVibrateOnlyShiftAlarmFeedback)
                         SegmentedButton<ShiftAlarmFeedback>(
-                          segments: const [
+                          segments: [
                             ButtonSegment(
                               value: ShiftAlarmFeedback.vibrate,
-                              icon: Icon(Icons.vibration, size: 16),
-                              label: Text('Vibrate'),
+                              icon: const Icon(Icons.vibration, size: 16),
+                              label: Text(localization.vibrate),
                             ),
                             ButtonSegment(
                               value: ShiftAlarmFeedback.ringtone,
-                              icon: Icon(Icons.music_note, size: 16),
-                              label: Text('Ringtone'),
+                              icon: const Icon(Icons.music_note, size: 16),
+                              label: Text(localization.ringtone),
                             ),
                           ],
                           selected: {_shiftAlarmFeedback},
@@ -270,7 +270,7 @@ class _NotificationSettingsMobileState
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                'Ringtone',
+                                localization.ringtone,
                                 style: textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: colorScheme.primary,
@@ -281,14 +281,14 @@ class _NotificationSettingsMobileState
                         ),
                       const SizedBox(height: 16),
                       Text(
-                        'Alarm duration: ${_shiftAlarmDurationSeconds}s',
+                        '${localization.alarmDuration}: ${_shiftAlarmDurationSeconds}s',
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'This duration applies only when a shift uses Alarm mode.',
+                        localization.alarmDurationAppliesOnlyToAlarmMode,
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.descriptionColor,
                         ),
@@ -317,7 +317,7 @@ class _NotificationSettingsMobileState
               const SizedBox(height: 20),
 
               // ── Activity Section ──
-              _buildSectionTitle(context, 'Activity'),
+              _buildSectionTitle(context, localization.activity),
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
@@ -333,8 +333,8 @@ class _NotificationSettingsMobileState
                       context,
                       icon: Icons.assignment_rounded,
                       iconColor: const Color(0xFF9C27B0),
-                      title: 'Survey Reminders',
-                      subtitle: 'Get reminded about pending surveys',
+                      title: localization.surveyReminders,
+                      subtitle: localization.getRemindedAboutPendingSurveys,
                       value: preferences.surveyRemindersEnabled,
                       onChanged: (v) => _updatePreferences(
                         context,
@@ -346,8 +346,8 @@ class _NotificationSettingsMobileState
                       context,
                       icon: Icons.groups_rounded,
                       iconColor: const Color(0xFF00BCD4),
-                      title: 'Team Updates',
-                      subtitle: 'Notifications about team changes',
+                      title: localization.teamUpdates,
+                      subtitle: localization.notificationsAboutTeamChanges,
                       value: preferences.teamUpdatesEnabled,
                       onChanged: (v) => _updatePreferences(
                         context,
@@ -359,8 +359,8 @@ class _NotificationSettingsMobileState
                       context,
                       icon: Icons.access_time_rounded,
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Clocking Alerts',
-                      subtitle: 'Reminders to clock in and out',
+                      title: localization.clockingAlerts,
+                      subtitle: localization.remindersToClockInAndOut,
                       value: preferences.clockingAlertsEnabled,
                       onChanged: (v) => _updatePreferences(
                         context,
@@ -372,8 +372,9 @@ class _NotificationSettingsMobileState
                       context,
                       icon: Icons.event_available_rounded,
                       iconColor: const Color(0xFF5C6BC0),
-                      title: 'Shift Notifications',
-                      subtitle: 'Assignments, updates and shift reminders',
+                      title: localization.shiftNotifications,
+                      subtitle:
+                          localization.assignmentsUpdatesAndShiftReminders,
                       value: preferences.shiftAlertsEnabled,
                       onChanged: (v) => _updatePreferences(
                         context,
@@ -387,7 +388,7 @@ class _NotificationSettingsMobileState
 
               if (kDebugMode) ...[
                 const SizedBox(height: 20),
-                _buildSectionTitle(context, 'Debug tools'),
+                _buildSectionTitle(context, localization.debugTools),
                 const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
@@ -403,7 +404,7 @@ class _NotificationSettingsMobileState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Use these tests only while debugging notifications on this device.',
+                          localization.debugToolsDeviceMessage,
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -416,20 +417,20 @@ class _NotificationSettingsMobileState
                             OutlinedButton(
                               onPressed: () =>
                                   _runDebugNotificationNow(context),
-                              child: const Text('Test notification now'),
+                              child: Text(localization.testNotificationNow),
                             ),
                             OutlinedButton(
                               onPressed: () => _runDebugShiftAlarm(context),
-                              child: const Text('Test alarm in 10s'),
+                              child: Text(localization.testAlarmIn10Seconds),
                             ),
                             OutlinedButton(
                               onPressed: () =>
                                   _runDebugCurrentShiftMode(context),
-                              child: const Text('Test current mode'),
+                              child: Text(localization.testCurrentMode),
                             ),
                             OutlinedButton(
                               onPressed: () => _showAlarmModeStatus(context),
-                              child: const Text('Alarm mode status'),
+                              child: Text(localization.alarmModeStatus),
                             ),
                             OutlinedButton(
                               onPressed: () => _runDebugShiftPipeline(context),
@@ -437,11 +438,11 @@ class _NotificationSettingsMobileState
                             ),
                             OutlinedButton(
                               onPressed: () => _showPendingRequests(context),
-                              child: const Text('Pending requests'),
+                              child: Text(localization.pendingRequests),
                             ),
                             OutlinedButton(
                               onPressed: () => _inspectRealShiftPlans(context),
-                              child: const Text('Inspect real shifts'),
+                              child: Text(localization.inspectRealShifts),
                             ),
                           ],
                         ),

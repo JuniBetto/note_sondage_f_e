@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/mobile/shift_mobile_widget.dart';
@@ -52,6 +53,16 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'mobile-main-3',
+      action: () => AppTutorialController.replayRegistered(
+        context: context,
+        tutorialId: _tabController.index == 0
+            ? 'mobile-clocking'
+            : 'mobile-shifts',
+      ),
+    );
 
     return SafeArea(
       child: Padding(

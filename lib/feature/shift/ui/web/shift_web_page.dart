@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/core/archive/user_archive_service.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
@@ -26,6 +27,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class ShiftWebPage extends StatefulWidget {
   const ShiftWebPage({super.key});
@@ -35,6 +37,9 @@ class ShiftWebPage extends StatefulWidget {
 }
 
 class _ShiftWebPageState extends State<ShiftWebPage> {
+  final GlobalKey _archiveToggleKey = GlobalKey();
+  final GlobalKey _calendarKey = GlobalKey();
+  final GlobalKey _profilesKey = GlobalKey();
   final TeamBloc _teamBloc = GetIt.instance<TeamBloc>();
   final TeamMemberBloc _teamMemberBloc = GetIt.instance<TeamMemberBloc>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
@@ -52,6 +57,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   final Set<String> _loadingTeamRoleIds = <String>{};
   Set<String> _archivedAssignmentIds = <String>{};
   bool _showArchivedOnly = false;
+  bool _tutorialScheduled = false;
 
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid;
   String get _currentEmail =>
@@ -490,6 +496,26 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         .where((assignment) => _archivedAssignmentIds.contains(assignment.id))
         .toList();
 
+    AppTutorialController.registerTargets(
+      tutorialId: 'web-shifts',
+      keys: <GlobalKey>[_archiveToggleKey, _calendarKey, _profilesKey],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-shifts',
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[_archiveToggleKey, _calendarKey, _profilesKey],
+      ),
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-main-5',
+      action: () => AppTutorialController.replayRegistered(
+        context: context,
+        tutorialId: 'web-shifts',
+      ),
+    );
+    _scheduleTutorial();
+
     return MultiBlocListener(
       listeners: [
         BlocListener<ShiftBloc, ShiftState>(
@@ -647,15 +673,24 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              ArchiveViewToggle(
-                showArchivedOnly: _showArchivedOnly,
-                primaryCount: foregroundAssignments.length,
-                archivedCount: archivedAssignments.length,
-                primaryLabel: 'Calendario',
-                archivedLabel: 'Archivio turni',
-                onChanged: (value) {
-                  setState(() => _showArchivedOnly = value);
-                },
+              Showcase(
+                key: _archiveToggleKey,
+                title: _isItalian(context)
+                    ? 'Calendario e archivio'
+                    : 'Calendar and archive',
+                description: _isItalian(context)
+                    ? 'Usa qui il selettore per passare dalla vista calendario all\'archivio dei turni.'
+                    : 'Use this switcher to move from the calendar view to the archived shifts view.',
+                child: ArchiveViewToggle(
+                  showArchivedOnly: _showArchivedOnly,
+                  primaryCount: foregroundAssignments.length,
+                  archivedCount: archivedAssignments.length,
+                  primaryLabel: 'Calendario',
+                  archivedLabel: 'Archivio turni',
+                  onChanged: (value) {
+                    setState(() => _showArchivedOnly = value);
+                  },
+                ),
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -664,37 +699,63 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                   children: [
                     Expanded(
                       flex: 3,
-                      child: _showArchivedOnly
-                          ? ShiftArchivedAssignmentsList(
-                              assignments: archivedAssignments,
-                              onOpen: (assignment) {
-                                _openDialogForAssignment(
-                                  context,
-                                  assignment.shiftDate,
-                                  existing: assignment,
-                                );
-                              },
-                              onRestore: (assignment) {
-                                _setAssignmentArchived(assignment, false);
-                              },
-                            )
-                          : ShiftCalendarWidget(
-                              assignments: foregroundAssignments,
-                              focusedMonth: _focusedMonth,
-                              onMonthChanged: _onMonthChanged,
-                              onDayTap: (date, assignments) =>
-                                  _onDayTap(context, date, assignments),
-                            ),
+                      child: Showcase(
+                        key: _calendarKey,
+                        title: _showArchivedOnly
+                            ? (_isItalian(context)
+                                  ? 'Archivio turni'
+                                  : 'Shift archive')
+                            : (_isItalian(context)
+                                  ? 'Vista calendario'
+                                  : 'Calendar view'),
+                        description: _showArchivedOnly
+                            ? (_isItalian(context)
+                                  ? 'Qui trovi i turni archiviati e puoi ripristinarli.'
+                                  : 'Find archived shifts here and restore them when needed.')
+                            : (_isItalian(context)
+                                  ? 'Tocca un giorno del calendario per creare o modificare i turni.'
+                                  : 'Tap a calendar day to create or edit shifts.'),
+                        child: _showArchivedOnly
+                            ? ShiftArchivedAssignmentsList(
+                                assignments: archivedAssignments,
+                                onOpen: (assignment) {
+                                  _openDialogForAssignment(
+                                    context,
+                                    assignment.shiftDate,
+                                    existing: assignment,
+                                  );
+                                },
+                                onRestore: (assignment) {
+                                  _setAssignmentArchived(assignment, false);
+                                },
+                              )
+                            : ShiftCalendarWidget(
+                                assignments: foregroundAssignments,
+                                focusedMonth: _focusedMonth,
+                                onMonthChanged: _onMonthChanged,
+                                onDayTap: (date, assignments) =>
+                                    _onDayTap(context, date, assignments),
+                              ),
+                      ),
                     ),
                     const SizedBox(width: 24),
-                    SizedBox(
-                      width: 280,
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: ShiftProfileManager(
-                            profiles: _profiles,
-                            isOwner: _isOwnerOfAnyTeam,
+                    Showcase(
+                      key: _profilesKey,
+                      title: _isItalian(context)
+                          ? 'Profili turno'
+                          : 'Shift profiles',
+                      description: _isItalian(context)
+                          ? 'Questa sezione laterale ti permette di creare e riutilizzare profili orari pronti.'
+                          : 'Use this side panel to create and reuse ready-made shift profiles.',
+                      child: SizedBox(
+                        width: 280,
+                        child: Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: ShiftProfileManager(
+                              profiles: _profiles,
+                              isOwner: _isOwnerOfAnyTeam,
+                            ),
                           ),
                         ),
                       ),
@@ -707,5 +768,27 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         ),
       ),
     );
+  }
+
+  void _scheduleTutorial() {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: 'web-shifts',
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[_archiveToggleKey, _calendarKey, _profilesKey],
+      );
+    });
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }

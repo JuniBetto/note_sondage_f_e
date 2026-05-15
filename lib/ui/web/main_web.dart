@@ -51,6 +51,28 @@ class _MainWebState extends State<MainWeb> {
     final bool isDarkMode = currentState is ThemeisDark;
     final currentNavIndex = context.watch<NavigationBloc>().state;
 
+    if (!_isDelegatedTutorialIndex(currentNavIndex)) {
+      AppTutorialController.registerTargets(
+        tutorialId: 'web-main-$currentNavIndex',
+        keys: <GlobalKey>[
+          _navigationKeyForIndex(currentNavIndex),
+          _contentKey,
+          _notificationsKey,
+        ],
+      );
+      AppTutorialController.registerReplayAction(
+        tutorialId: 'web-main-$currentNavIndex',
+        action: () => AppTutorialController.replay(
+          context: context,
+          keys: <GlobalKey>[
+            _navigationKeyForIndex(currentNavIndex),
+            _contentKey,
+            _notificationsKey,
+          ],
+        ),
+      );
+    }
+
     _scheduleTutorialForIndex(currentNavIndex);
 
     return BlocListener<NavigationBloc, int>(
@@ -213,6 +235,19 @@ class _MainWebState extends State<MainWeb> {
                       child: const NotificationCenterButton(),
                     ),
                   ),
+                  if (_supportsTutorial(currentNavIndex))
+                    Positioned(
+                      left: 20,
+                      bottom: 20,
+                      child: Tooltip(
+                        message: localizations.reviewTutorial,
+                        child: IconButton.filledTonal(
+                          onPressed: () =>
+                              _replayTutorialForIndex(currentNavIndex),
+                          icon: const Icon(Icons.help_outline_rounded),
+                        ),
+                      ),
+                    ),
                 ],
               );
             },
@@ -223,7 +258,9 @@ class _MainWebState extends State<MainWeb> {
   }
 
   void _scheduleTutorialForIndex(int navIndex) {
-    if (!_supportsTutorial(navIndex) || _lastScheduledNavIndex == navIndex) {
+    if (!_supportsTutorial(navIndex) ||
+        _isDelegatedTutorialIndex(navIndex) ||
+        _lastScheduledNavIndex == navIndex) {
       return;
     }
 
@@ -246,7 +283,25 @@ class _MainWebState extends State<MainWeb> {
     });
   }
 
+  void _replayTutorialForIndex(int navIndex) {
+    if (!_supportsTutorial(navIndex)) {
+      return;
+    }
+    AppTutorialController.replayRegistered(
+      context: context,
+      tutorialId: 'web-main-$navIndex',
+    );
+  }
+
   bool _supportsTutorial(int navIndex) {
+    return navIndex == 0 ||
+        navIndex == 1 ||
+        navIndex == 3 ||
+        navIndex == 4 ||
+        navIndex == 5;
+  }
+
+  bool _isDelegatedTutorialIndex(int navIndex) {
     return navIndex == 0 ||
         navIndex == 1 ||
         navIndex == 3 ||

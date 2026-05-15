@@ -143,6 +143,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get tryAgain => 'Riprova';
 
   @override
+  String get reviewTutorial => 'Rivedi tutorial';
+
+  @override
+  String get tutorialPrevious => 'Indietro';
+
+  @override
+  String get tutorialNext => 'Avanti';
+
+  @override
+  String get tutorialSkip => 'Salta';
+
+  @override
   String get webMobileAppOnlyTitle => 'Scarica l\'app mobile';
 
   @override
@@ -392,6 +404,195 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsNotification => 'Impostazioni Notifiche';
+
+  @override
+  String get notificationsSettingsIntro =>
+      'Scegli come ricevere aggiornamenti e promemoria dei turni.';
+
+  @override
+  String get notificationsGeneral => 'Generale';
+
+  @override
+  String get emailNotifications => 'Notifiche email';
+
+  @override
+  String get receiveUpdatesByEmail => 'Ricevi aggiornamenti via email';
+
+  @override
+  String get pushNotifications => 'Notifiche push';
+
+  @override
+  String get receivePushNotificationsOnYourDevice =>
+      'Ricevi notifiche push sul tuo dispositivo';
+
+  @override
+  String get shiftReminders => 'Promemoria turni';
+
+  @override
+  String get reminderMode => 'Modalità promemoria';
+
+  @override
+  String get notificationReminderModeDescription =>
+      'Scegli in ogni turno se vuoi una notifica standard o un allarme più forte.';
+
+  @override
+  String get webBehavior => 'Comportamento web';
+
+  @override
+  String get alarmBehaviorOnWeb =>
+      'Sul web, la modalità Allarme usa le notifiche del browser. La scheda deve restare aperta e il browser controlla il comportamento finale di suono e vibrazione.';
+
+  @override
+  String get howItWorks => 'Come funziona';
+
+  @override
+  String get notificationAndAlarmDifference =>
+      'La notifica mostra un promemoria normale. L\'allarme usa le impostazioni qui sotto ed è pensato per avvisi turno più evidenti.';
+
+  @override
+  String get alarmDelivery => 'Consegna allarme';
+
+  @override
+  String get alarmStyle => 'Stile allarme';
+
+  @override
+  String get webAlarmDeliveryDescription =>
+      'Le notifiche del browser vengono usate mentre questa scheda resta aperta. Suono e vibrazione sono gestiti dal browser e dal sistema operativo.';
+
+  @override
+  String get alarmStyleDescription =>
+      'Scegli se la modalità Allarme deve vibrare o riprodurre una suoneria. Predefinito: vibrazione.';
+
+  @override
+  String get alarmStyleDescriptionIos =>
+      'Su iPhone, la modalità Allarme usa una suoneria. Gli allarmi solo vibrazione non sono disponibili per le notifiche locali.';
+
+  @override
+  String get vibrate => 'Vibrazione';
+
+  @override
+  String get ringtone => 'Suoneria';
+
+  @override
+  String get browserNotification => 'Notifica browser';
+
+  @override
+  String get notificationVisibility => 'Visibilità notifica';
+
+  @override
+  String get alarmDuration => 'Durata allarme';
+
+  @override
+  String get webNotificationVisibilityDescription =>
+      'Controlla per quanto tempo la notifica browser resta visibile dopo la comparsa.';
+
+  @override
+  String get alarmDurationAppliesOnlyToAlarmMode =>
+      'Questa durata si applica solo quando un turno usa la modalità Allarme.';
+
+  @override
+  String get activity => 'Attività';
+
+  @override
+  String get surveyReminders => 'Promemoria sondaggi';
+
+  @override
+  String get getRemindedAboutPendingSurveys =>
+      'Ricevi promemoria sui sondaggi in attesa';
+
+  @override
+  String get teamUpdates => 'Aggiornamenti team';
+
+  @override
+  String get notificationsAboutTeamChanges =>
+      'Notifiche sui cambiamenti del team';
+
+  @override
+  String get clockingAlerts => 'Avvisi timbratura';
+
+  @override
+  String get remindersToClockInAndOut =>
+      'Promemoria per timbrare entrata e uscita';
+
+  @override
+  String get shiftNotifications => 'Notifiche turni';
+
+  @override
+  String get assignmentsUpdatesAndShiftReminders =>
+      'Assegnazioni, aggiornamenti e promemoria turni';
+
+  @override
+  String get debugTools => 'Strumenti debug';
+
+  @override
+  String get debugToolsBrowserMessage =>
+      'Usa questi test solo mentre stai verificando le notifiche in questo browser.';
+
+  @override
+  String get debugToolsDeviceMessage =>
+      'Usa questi test solo mentre stai verificando le notifiche su questo dispositivo.';
+
+  @override
+  String get testNotificationNow => 'Testa notifica ora';
+
+  @override
+  String get testAlarmIn10Seconds => 'Testa allarme tra 10s';
+
+  @override
+  String get testCurrentMode => 'Testa modalità attuale';
+
+  @override
+  String get alarmModeStatus => 'Stato modalità allarme';
+
+  @override
+  String get pendingRequests => 'Richieste in attesa';
+
+  @override
+  String get inspectRealShifts => 'Ispeziona turni reali';
+
+  @override
+  String get privacyPolicy => 'Informativa sulla privacy';
+
+  @override
+  String get howWeProtectYourData => 'Come proteggiamo i tuoi dati';
+
+  @override
+  String get dataProtection => 'Protezione dei dati';
+
+  @override
+  String get dataProtectionDescription =>
+      'I tuoi dati sono criptati a riposo e in transito. Usiamo protocolli di cifratura standard del settore per mantenere sicure le tue informazioni.';
+
+  @override
+  String get dataCollection => 'Raccolta dei dati';
+
+  @override
+  String get dataCollectionDescription =>
+      'Raccogliamo solo i dati necessari per fornire i nostri servizi. Questo include informazioni account, risposte ai sondaggi e registrazioni di timbratura.';
+
+  @override
+  String get dataSharing => 'Condivisione dei dati';
+
+  @override
+  String get dataSharingDescription =>
+      'Non condividiamo mai i tuoi dati personali con terze parti senza il tuo consenso esplicito. I dati del team sono condivisi solo all\'interno della tua organizzazione.';
+
+  @override
+  String get dataRetention => 'Conservazione dei dati';
+
+  @override
+  String get dataRetentionDescription =>
+      'I tuoi dati vengono conservati finché il tuo account è attivo. Dopo la disattivazione dell\'account, i dati personali vengono rimossi definitivamente entro 30 giorni.';
+
+  @override
+  String get yourRights => 'I tuoi diritti';
+
+  @override
+  String get yourRightsDescription =>
+      'Hai il diritto di accedere, rettificare o cancellare i tuoi dati personali in qualsiasi momento. Contatta il supporto per richieste legate alla privacy.';
+
+  @override
+  String get privacyLastUpdated => 'Ultimo aggiornamento: gennaio 2025';
 
   @override
   String get yourName => 'Il tuo Nome';

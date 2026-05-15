@@ -59,6 +59,13 @@ That means:
 
 Without changing code again.
 
+Additional web-only runtime values used during image build:
+
+- `APPLE_STORE_URL`
+- `ANDROID_STORE_URL`
+
+These are used by the mobile-web gate shown when the browser width is below `576px`.
+
 Important distinction:
 - `.env.web` is read directly during the web image build
 - mobile APK / IPA do not read `.env.web`

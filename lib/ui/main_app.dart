@@ -403,6 +403,26 @@ class _MainAppState extends State<MainApp> {
                   scaffoldMessengerKey: scaffoldMessengerKey,
                   builder: (context, child) {
                     return ShowCaseWidget(
+                      globalTooltipActionConfig: const TooltipActionConfig(
+                        alignment: MainAxisAlignment.spaceBetween,
+                        position: TooltipActionPosition.inside,
+                      ),
+                      globalTooltipActions: [
+                        TooltipActionButton(
+                          type: TooltipDefaultActionType.skip,
+                          name: AppLocalizations.of(context)!.tutorialSkip,
+                        ),
+                        TooltipActionButton(
+                          type: TooltipDefaultActionType.previous,
+                          name: AppLocalizations.of(context)!.tutorialPrevious,
+                        ),
+                        TooltipActionButton(
+                          type: TooltipDefaultActionType.next,
+                          name: AppLocalizations.of(context)!.tutorialNext,
+                        ),
+                      ],
+                      enableAutoScroll: true,
+                      blurValue: 1,
                       builder: (showcaseContext) {
                         final content = child ?? const SizedBox.shrink();
                         if (!kIsWeb) {
