@@ -143,6 +143,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tryAgain => 'Intentar de nuevo';
 
   @override
+  String get webMobileAppOnlyTitle => 'Descarga la app móvil';
+
+  @override
+  String get webMobileAppOnlyMessage =>
+      'Esta experiencia web solo está disponible en pantallas grandes. En teléfonos con un ancho inferior a 576px, continúa desde la app móvil.';
+
+  @override
+  String get webMobileAppOnlyHint =>
+      'Abre Note Sondage en una tablet o en escritorio, o instala la app desde tu tienda.';
+
+  @override
+  String get downloadOnAppStore => 'Descargar en App Store';
+
+  @override
+  String get getItOnGooglePlay => 'Disponible en Google Play';
+
+  @override
+  String get mobileStoreLinksUnavailable =>
+      'Los enlaces de las tiendas aún no están configurados. Contacta con soporte o abre la app en una pantalla más grande.';
+
+  @override
   String get continueWithGoogle => 'Continuar con Google';
 
   @override

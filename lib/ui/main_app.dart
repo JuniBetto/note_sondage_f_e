@@ -35,6 +35,7 @@ import 'package:note_sondage/languages/l10n/l10n.dart';
 import 'package:note_sondage/ui/app_keys.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
+import 'package:note_sondage/ui/web/widgets/web_mobile_download_gate.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_state.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
@@ -402,8 +403,13 @@ class _MainAppState extends State<MainApp> {
                   scaffoldMessengerKey: scaffoldMessengerKey,
                   builder: (context, child) {
                     return ShowCaseWidget(
-                      builder: (showcaseContext) =>
-                          child ?? const SizedBox.shrink(),
+                      builder: (showcaseContext) {
+                        final content = child ?? const SizedBox.shrink();
+                        if (!kIsWeb) {
+                          return content;
+                        }
+                        return WebMobileDownloadGate(child: content);
+                      },
                     );
                   },
                   theme: themeState.themeData,

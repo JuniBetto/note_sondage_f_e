@@ -336,6 +336,42 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get tryAgain;
 
+  /// No description provided for @webMobileAppOnlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the mobile app'**
+  String get webMobileAppOnlyTitle;
+
+  /// No description provided for @webMobileAppOnlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This web experience is available only on larger screens. On phones smaller than 576px, please continue with the mobile app.'**
+  String get webMobileAppOnlyMessage;
+
+  /// No description provided for @webMobileAppOnlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Note Sondage on tablet or desktop, or install the app from your store.'**
+  String get webMobileAppOnlyHint;
+
+  /// No description provided for @downloadOnAppStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Download on the App Store'**
+  String get downloadOnAppStore;
+
+  /// No description provided for @getItOnGooglePlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Get it on Google Play'**
+  String get getItOnGooglePlay;
+
+  /// No description provided for @mobileStoreLinksUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Store links are not configured yet. Please contact support or open the app on a larger screen.'**
+  String get mobileStoreLinksUnavailable;
+
   /// No description provided for @continueWithGoogle.
   ///
   /// In en, this message translates to:

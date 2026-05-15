@@ -142,6 +142,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tryAgain => 'Try again';
 
   @override
+  String get webMobileAppOnlyTitle => 'Get the mobile app';
+
+  @override
+  String get webMobileAppOnlyMessage =>
+      'This web experience is available only on larger screens. On phones smaller than 576px, please continue with the mobile app.';
+
+  @override
+  String get webMobileAppOnlyHint =>
+      'Open Note Sondage on tablet or desktop, or install the app from your store.';
+
+  @override
+  String get downloadOnAppStore => 'Download on the App Store';
+
+  @override
+  String get getItOnGooglePlay => 'Get it on Google Play';
+
+  @override
+  String get mobileStoreLinksUnavailable =>
+      'Store links are not configured yet. Please contact support or open the app on a larger screen.';
+
+  @override
   String get continueWithGoogle => 'Continue with Google';
 
   @override

@@ -19,6 +19,8 @@ RUN test -f ./.env.web \
     && flutter build web --release \
       --dart-define=API_BASE_URL="${API_BASE_URL}" \
       --dart-define=EMAIL_CONFIRMATION_URL="${EMAIL_CONFIRMATION_URL}" \
+      --dart-define=APPLE_STORE_URL="${APPLE_STORE_URL}" \
+      --dart-define=ANDROID_STORE_URL="${ANDROID_STORE_URL}" \
       --dart-define=SENTRY_DSN="${SENTRY_DSN}"
 
 FROM docker.io/library/nginx:1.27-alpine

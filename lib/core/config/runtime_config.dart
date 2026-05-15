@@ -41,6 +41,16 @@ class RuntimeConfig {
     defaultValue: '',
   );
 
+  static const String appleStoreUrl = String.fromEnvironment(
+    'APPLE_STORE_URL',
+    defaultValue: '',
+  );
+
+  static const String androidStoreUrl = String.fromEnvironment(
+    'ANDROID_STORE_URL',
+    defaultValue: '',
+  );
+
   static const String sentryDsn = String.fromEnvironment(
     'SENTRY_DSN',
     defaultValue: defaultSentryDsn,
@@ -84,6 +94,8 @@ class RuntimeConfig {
   static String get resolvedApiBaseUrl => normalizeBaseUrl(apiBaseUrl.trim());
   static String get resolvedEmailConfirmationUrl => emailConfirmationUrl.trim();
   static String get resolvedPasswordResetUrl => passwordResetUrl.trim();
+  static String get resolvedAppleStoreUrl => appleStoreUrl.trim();
+  static String get resolvedAndroidStoreUrl => androidStoreUrl.trim();
   static String get sentryEnvironment => currentEnvironment.sentryName;
 
   static bool get hasCustomApiBaseUrl => resolvedApiBaseUrl.isNotEmpty;
@@ -91,6 +103,8 @@ class RuntimeConfig {
       resolvedEmailConfirmationUrl.isNotEmpty;
   static bool get hasCustomPasswordResetUrl =>
       resolvedPasswordResetUrl.isNotEmpty;
+  static bool get hasAppleStoreUrl => resolvedAppleStoreUrl.isNotEmpty;
+  static bool get hasAndroidStoreUrl => resolvedAndroidStoreUrl.isNotEmpty;
 
   static AppEnvironment? _environmentFromString(String rawValue) {
     switch (rawValue.trim().toLowerCase()) {
