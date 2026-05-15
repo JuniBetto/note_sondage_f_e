@@ -33,6 +33,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotPassword => 'Forgot Password';
 
   @override
+  String get deleteAccount => 'Deactivate account';
+
+  @override
+  String get accountDeletionDialogMessage =>
+      'Enter the email address of the account you want to deactivate. We will send a confirmation link before disabling it.';
+
+  @override
+  String get sendConfirmationEmail => 'Send confirmation email';
+
+  @override
+  String get accountDeletionRequestSentTitle => 'Check your email';
+
+  @override
+  String get accountDeletionRequestSentMessage =>
+      'If an account exists for this email, we sent a confirmation link to complete the deactivation.';
+
+  @override
+  String get accountDeletionRequestFailedTitle =>
+      'Unable to start deactivation';
+
+  @override
+  String get accountDeletionRequestFailedMessage =>
+      'We could not send the deactivation confirmation email right now. Please try again.';
+
+  @override
+  String get accountDeletionOpenEmailTitle => 'Open the deactivation email';
+
+  @override
+  String get accountDeletionOpenEmailMessage =>
+      'Use the deactivation confirmation link from your email to finish disabling the account.';
+
+  @override
+  String get accountDeletionConfirmedTitle => 'Account deactivated';
+
+  @override
+  String get accountDeletionConfirmedMessage =>
+      'Your account has been disabled successfully. You can close this page.';
+
+  @override
+  String get accountDeletionFailedTitle => 'Deactivation unavailable';
+
+  @override
+  String get accountDeletionFailedMessage =>
+      'We could not confirm this deactivation link. Request a new email and try again.';
+
+  @override
+  String get accountDeletionLoadingTitle => 'Confirming deactivation';
+
+  @override
+  String get accountDeletionLoadingMessage =>
+      'We are validating your account deactivation link...';
+
+  @override
+  String get reactivateAccount => 'Reactivate account';
+
+  @override
+  String get accountReactivationDialogMessage =>
+      'Enter the email address of the account you want to reactivate. We will send a confirmation link before restoring access.';
+
+  @override
+  String get accountReactivationRequestSentTitle => 'Check your email';
+
+  @override
+  String get accountReactivationRequestSentMessage =>
+      'If an account exists for this email, we sent a confirmation link to complete the reactivation.';
+
+  @override
+  String get accountReactivationRequestFailedTitle =>
+      'Unable to start reactivation';
+
+  @override
+  String get accountReactivationRequestFailedMessage =>
+      'We could not send the reactivation confirmation email right now. Please try again.';
+
+  @override
+  String get accountReactivationOpenEmailTitle => 'Open the reactivation email';
+
+  @override
+  String get accountReactivationOpenEmailMessage =>
+      'Use the reactivation confirmation link from your email to restore access to your account.';
+
+  @override
+  String get accountReactivationConfirmedTitle => 'Account reactivated';
+
+  @override
+  String get accountReactivationConfirmedMessage =>
+      'Your account is active again. You can sign in now.';
+
+  @override
+  String get accountReactivationFailedTitle => 'Reactivation unavailable';
+
+  @override
+  String get accountReactivationFailedMessage =>
+      'We could not confirm this reactivation link. Request a new email and try again.';
+
+  @override
+  String get accountReactivationLoadingTitle => 'Confirming reactivation';
+
+  @override
+  String get accountReactivationLoadingMessage =>
+      'We are validating your account reactivation link...';
+
+  @override
+  String get backToLogin => 'Back to login';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
   String get continueWithGoogle => 'Continue with Google';
 
   @override
@@ -164,6 +273,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editTeam => 'Edit team';
 
   @override
+  String get teamDetails => 'Team details';
+
+  @override
   String get language => 'Language';
 
   @override
@@ -270,6 +382,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get submit => 'Submit';
 
   @override
+  String get contactUsDescription =>
+      'Tell us what happened and we will open your email app with a ready-to-send draft.';
+
+  @override
+  String get contactUsDraftHint =>
+      'Your email app will open with Junibetto@gmail.com already selected as recipient.';
+
+  @override
+  String get contactUsReplyTime => 'We usually reply within 1-2 business days.';
+
+  @override
+  String get supportEmail => 'Support email';
+
+  @override
+  String get sendEmail => 'Send email';
+
+  @override
+  String get copyEmail => 'Copy email';
+
+  @override
+  String get emailCopied => 'Support email copied to clipboard.';
+
+  @override
+  String get couldNotOpenEmailApp =>
+      'We could not open your email app. Copy the address and send the message manually.';
+
+  @override
+  String get contactUsEmailSubject => 'Note Sondage support request';
+
+  @override
+  String get contactUsTopicsTitle => 'Bugs, feedback, product ideas';
+
+  @override
+  String get contactUsTopicsBody =>
+      'Use this space to report issues, ask for help, or share improvements you would love to see.';
+
+  @override
+  String get contactUsFormHint =>
+      'The draft will include your details so support can reply faster.';
+
+  @override
   String get none => 'None';
 
   @override
@@ -329,6 +482,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancel => 'Cancel';
+
+  @override
+  String get close => 'Close';
 
   @override
   String get confirm => 'Confirm';
@@ -619,6 +775,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overnightShift => 'Overnight Shift';
+
+  @override
+  String get shiftRepeatUntil => 'Repeat until';
+
+  @override
+  String get shiftRepeatUntilHelp =>
+      'A shift will be created for each day in the selected interval.';
+
+  @override
+  String get shiftEndMustBeAfterStart =>
+      'End time must be after start time. If the shift ends the next day, enable Overnight Shift.';
 
   @override
   String get alarms => 'Alarms';

@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_display.d
 import 'package:note_sondage/theme/color_palette.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class SondageMobile extends StatefulWidget {
   const SondageMobile({super.key});
@@ -138,9 +139,7 @@ class _SondageMobileState extends State<SondageMobile>
       child: BlocListener<SondageBloc, SondageState>(
         listener: (context, state) {
           if (state is SondageError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            AppSnackBar.showError(context, state.message);
           }
         },
         child: Padding(
@@ -153,10 +152,7 @@ class _SondageMobileState extends State<SondageMobile>
                       current is SondagesLoaded || current is SondageLoading,
                   builder: (context, _) => Text(
                     'Lista ${localization.sondage}',
-                    style: TextStyle(
-                      color: tabController.index == 0
-                          ? ColorPalette.primary[6]
-                          : Colors.grey[600],
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -164,10 +160,7 @@ class _SondageMobileState extends State<SondageMobile>
                 ),
                 childTab2: Text(
                   'Create ${localization.sondage}',
-                  style: TextStyle(
-                    color: tabController.index == 1
-                        ? ColorPalette.primary[6]
-                        : Colors.grey[600],
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),

@@ -18,6 +18,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.d
 import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class TeamSectionPermissions {
@@ -74,11 +75,13 @@ class TeamSectionPermissions {
 class TeamMembersSection extends StatefulWidget {
   final String teamId;
   final String? ownerUserId;
+  final bool forceReadOnly;
   final ValueChanged<TeamSectionPermissions>? onPermissionsChanged;
   const TeamMembersSection({
     super.key,
     required this.teamId,
     this.ownerUserId,
+    this.forceReadOnly = false,
     this.onPermissionsChanged,
   });
 
@@ -193,6 +196,25 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
   }
 
   void _updatePermissions(List<TeamMemberEntity> members) {
+    if (widget.forceReadOnly) {
+      const readOnlyPermissions = TeamSectionPermissions(
+        roleCode: 'VIEWER',
+        canEditTeamBasics: false,
+        canEditTeamColor: false,
+        canInviteMembers: false,
+        canCancelInvitations: false,
+        canRemoveMembers: false,
+        canChangeMemberRoles: false,
+        canManageRoleDefinitions: false,
+        canAccessRoleManager: false,
+      );
+      if (!_hasSamePermissions(_permissions, readOnlyPermissions)) {
+        _permissions = readOnlyPermissions;
+        widget.onPermissionsChanged?.call(readOnlyPermissions);
+      }
+      return;
+    }
+
     final currentUserId = getIt<AuthBloc>().state.user.uid.trim();
     if (widget.ownerUserId != null &&
         widget.ownerUserId!.trim().isNotEmpty &&
@@ -300,23 +322,16 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
             }
             if (state is TeamMemberInvited) {
               _reload();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(AppLocalizations.of(context)!.invitationSent),
-                  backgroundColor: Colors.green,
-                ),
+              AppSnackBar.showSuccess(
+                context,
+                AppLocalizations.of(context)!.invitationSent,
               );
             }
             if (state is TeamMemberDeleted || state is TeamMemberUpdated) {
               _memberBloc.add(LoadTeamMembersByTeamIdEvent(widget.teamId));
             }
             if (state is TeamMemberError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              AppSnackBar.showError(context, state.message);
             }
           },
         ),
@@ -334,12 +349,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
               _inviteBloc.add(LoadTeamInvitationsEvent(widget.teamId));
             }
             if (state is TeamMemberError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              AppSnackBar.showError(context, state.message);
             }
           },
         ),
@@ -994,15 +1004,22 @@ class _EmptyPlaceholder extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 6,
         children: [
           Icon(icon, color: colorScheme.descriptionColor, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.descriptionColor,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              softWrap: true,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.descriptionColor,
+              ),
             ),
           ),
         ],

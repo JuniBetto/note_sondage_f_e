@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/domain/use_case/sondage_use_case.dart';
 import 'package:note_sondage/feature/sondage/infrastructure/data_source/data_source_local/sondage_local_data_source.dart';
@@ -44,8 +45,16 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       _cachedSondages = sondages;
       emit(SondagesLoaded(sondages));
     } catch (e) {
-      if (_cachedSondages.isEmpty) {
-        emit(SondageError(e.toString()));
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not refresh the surveys right now.',
+          ),
+        ),
+      );
+      if (_cachedSondages.isNotEmpty) {
+        emit(SondagesLoaded(_cachedSondages));
       }
     }
   }
@@ -66,8 +75,16 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       _cachedSondages = sondages;
       emit(SondagesLoaded(sondages));
     } catch (e) {
-      if (_cachedSondages.isEmpty) {
-        emit(SondageError(e.toString()));
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not refresh the surveys right now.',
+          ),
+        ),
+      );
+      if (_cachedSondages.isNotEmpty) {
+        emit(SondagesLoaded(_cachedSondages));
       }
     }
   }
@@ -85,7 +102,14 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
         emit(const SondageError('Sondage not found'));
       }
     } catch (e) {
-      emit(SondageError(e.toString()));
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load this survey right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -102,7 +126,14 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       await Future.delayed(const Duration(milliseconds: 350));
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
-      emit(SondageError(e.toString()));
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not create the survey right now.',
+          ),
+        ),
+      );
       if (_cachedSondages.isNotEmpty) {
         emit(SondagesLoaded(_cachedSondages));
       }
@@ -121,7 +152,14 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       }).toList();
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
-      emit(SondageError(e.toString()));
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not update the survey right now.',
+          ),
+        ),
+      );
       if (_cachedSondages.isNotEmpty) {
         emit(SondagesLoaded(_cachedSondages));
       }
@@ -138,7 +176,14 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       _cachedSondages = _cachedSondages.where((s) => s.id != event.id).toList();
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
-      emit(SondageError(e.toString()));
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not delete the survey right now.',
+          ),
+        ),
+      );
       if (_cachedSondages.isNotEmpty) {
         emit(SondagesLoaded(_cachedSondages));
       }
@@ -155,7 +200,14 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       emit(SondageActionSuccess(sondage));
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
-      emit(SondageError(e.toString()));
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not publish the survey right now.',
+          ),
+        ),
+      );
       if (_cachedSondages.isNotEmpty) emit(SondagesLoaded(_cachedSondages));
     }
   }
@@ -170,7 +222,14 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       emit(SondageActionSuccess(sondage));
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
-      emit(SondageError(e.toString()));
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not close the survey right now.',
+          ),
+        ),
+      );
       if (_cachedSondages.isNotEmpty) emit(SondagesLoaded(_cachedSondages));
     }
   }
@@ -188,7 +247,14 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       emit(SondageActionSuccess(sondage));
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
-      emit(SondageError(e.toString()));
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not save your vote right now.',
+          ),
+        ),
+      );
       if (_cachedSondages.isNotEmpty) emit(SondagesLoaded(_cachedSondages));
     }
   }

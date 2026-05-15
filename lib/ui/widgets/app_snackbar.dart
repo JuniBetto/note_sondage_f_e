@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/ui/app_keys.dart';
 
 enum AppSnackBarType { success, warning, error }
@@ -24,6 +25,19 @@ class AppSnackBar {
 
   static void showError(BuildContext context, String message, {String? title}) {
     _show(context, message, type: AppSnackBarType.error, title: title);
+  }
+
+  static void showResolvedError(
+    BuildContext context,
+    Object error, {
+    String? title,
+    String fallback = 'We could not complete this action. Please try again.',
+  }) {
+    showError(
+      context,
+      AppErrorMessageResolver.resolve(error, fallback: fallback),
+      title: title,
+    );
   }
 
   static void _show(

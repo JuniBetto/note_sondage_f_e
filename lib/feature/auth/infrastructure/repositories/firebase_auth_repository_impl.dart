@@ -440,6 +440,52 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> requestAccountDeletion({required String email}) async {
+    await _backendAuth.requestAccountDeletion(email.trim());
+  }
+
+  @override
+  Future<void> confirmAccountDeletion({required String token}) async {
+    final response = await _backendAuth.confirmAccountDeletion(token.trim());
+    final deletedFirebaseUid = response['firebaseUid']?.toString().trim();
+    final currentUser = _firebaseAuth.currentUser;
+
+    if (currentUser != null &&
+        deletedFirebaseUid != null &&
+        deletedFirebaseUid.isNotEmpty &&
+        currentUser.uid == deletedFirebaseUid) {
+      await signOut();
+      return;
+    }
+
+    try {
+      await currentUser?.reload();
+    } catch (_) {
+      // Ignore reload failures for public confirmation flows.
+    }
+  }
+
+  @override
+  Future<void> requestAccountReactivation({required String email}) async {
+    await _backendAuth.requestAccountReactivation(email.trim());
+  }
+
+  @override
+  Future<void> confirmAccountReactivation({required String token}) async {
+    final response = await _backendAuth.confirmAccountReactivation(token.trim());
+    final reactivatedFirebaseUid = response['firebaseUid']?.toString().trim();
+    final currentUser = _firebaseAuth.currentUser;
+
+    if (currentUser != null &&
+        reactivatedFirebaseUid != null &&
+        reactivatedFirebaseUid.isNotEmpty &&
+        currentUser.uid == reactivatedFirebaseUid) {
+      await _exchangeTokenWithBackend(currentUser, propagateErrors: true);
+      return;
+    }
+  }
+
+  @override
   Future<void> updateContactEmail({required String email}) async {
     await _backendAuth.updateContactEmail(email);
     await refreshBackendSession();

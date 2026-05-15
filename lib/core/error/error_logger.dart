@@ -9,6 +9,12 @@ class ErrorLogger {
   static DateTime? _lastDebugMessageAt;
   static int _suppressedDebugDuplicates = 0;
 
+  /// Registra un errore Flutter arricchito con contesto widget/layout.
+  static Future<void> logFlutterError(FlutterErrorDetails details) async {
+    final context = _buildFlutterErrorContext(details);
+    await log(details.exception, details.stack, context: context);
+  }
+
   /// Inizializza Sentry.
   /// Chiamare in main.dart
   static Future<void> init({required String dsn, bool? enabled}) async {
@@ -47,11 +53,18 @@ class ErrorLogger {
   }
 
   /// Registra un errore su Sentry.
-  static Future<void> log(Object error, StackTrace? stackTrace) async {
+  static Future<void> log(
+    Object error,
+    StackTrace? stackTrace, {
+    ErrorLogContext? context,
+  }) async {
     // In release/profile stampa anche in console locale per facilitare il debug.
     if (!kDebugMode) {
       debugPrint("--- ERRORE CATTURATO ---");
       debugPrint(error.toString());
+      if (context?.component != null) {
+        debugPrint("Component: ${context!.component}");
+      }
       debugPrint(stackTrace?.toString() ?? "Stack non disponibile");
       debugPrint("------------------------");
     }
@@ -63,10 +76,100 @@ class ErrorLogger {
     }
 
     try {
-      await Sentry.captureException(error, stackTrace: stackTrace);
+      await Sentry.captureException(
+        error,
+        stackTrace: stackTrace,
+        withScope: (scope) {
+          if (context?.component != null) {
+            scope.setTag('component', context!.component!);
+            scope.setExtra('component', context.component);
+          }
+          if (context?.category != null) {
+            scope.setTag('error_category', context!.category!);
+          }
+          if (context?.hint != null) {
+            scope.setExtra('error_hint', context!.hint);
+          }
+          context?.extras.forEach(scope.setExtra);
+        },
+      );
     } catch (e) {
       debugPrint("[ErrorLogger] Errore durante l'invio a Sentry: $e");
     }
+  }
+
+  static ErrorLogContext _buildFlutterErrorContext(
+    FlutterErrorDetails details,
+  ) {
+    final extras = <String, Object?>{};
+    final component = _extractRelevantWidget(details);
+    final contextDescription = details.context?.toDescription();
+    final library = details.library;
+
+    if (library != null && library.isNotEmpty) {
+      extras['flutter_library'] = library;
+    }
+    if (contextDescription != null && contextDescription.isNotEmpty) {
+      extras['flutter_context'] = contextDescription;
+    }
+
+    final information = <String>[];
+    final collector = details.informationCollector;
+    if (collector != null) {
+      try {
+        for (final node in collector()) {
+          final description = node.toDescription();
+          if (description.isNotEmpty) {
+            information.add(description);
+          }
+        }
+      } catch (_) {
+        // Ignoriamo collector difettosi per non rompere il logging.
+      }
+    }
+    if (information.isNotEmpty) {
+      extras['flutter_information'] = information.join(' | ');
+    }
+
+    return ErrorLogContext(
+      component: component,
+      category: 'flutter',
+      hint: contextDescription ?? library,
+      extras: extras,
+    );
+  }
+
+  static String? _extractRelevantWidget(FlutterErrorDetails details) {
+    final collector = details.informationCollector;
+    if (collector != null) {
+      try {
+        for (final node in collector()) {
+          final text = node.toDescription();
+          final match = RegExp(
+            r'(?:The relevant error-causing widget was|The ownership chain for the affected widget is):\s*(.+)',
+            caseSensitive: false,
+          ).firstMatch(text);
+          if (match != null) {
+            return match.group(1)?.trim();
+          }
+          final widgetMatch = RegExp(
+            r'^([A-Z][A-Za-z0-9_<>]+)\b',
+          ).firstMatch(text.trim());
+          if (widgetMatch != null) {
+            return widgetMatch.group(1)?.trim();
+          }
+        }
+      } catch (_) {
+        // Ignora e prova con il contesto sotto.
+      }
+    }
+
+    final contextDescription = details.context?.toDescription();
+    if (contextDescription != null && contextDescription.isNotEmpty) {
+      return contextDescription;
+    }
+
+    return null;
   }
 
   static void _debugPrint(String message) {
@@ -102,4 +205,18 @@ class ErrorLogger {
     _suppressedDebugDuplicates = 0;
     debugPrint('----error debug :  $normalizedMessage');
   }
+}
+
+class ErrorLogContext {
+  const ErrorLogContext({
+    this.component,
+    this.category,
+    this.hint,
+    this.extras = const <String, Object?>{},
+  });
+
+  final String? component;
+  final String? category;
+  final String? hint;
+  final Map<String, Object?> extras;
 }

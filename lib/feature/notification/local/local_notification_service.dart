@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:note_sondage/feature/notification/local/browser_notification_bridge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
@@ -34,6 +35,7 @@ const Duration _immediateShiftAlarmFallbackDelay = Duration(seconds: 5);
 const int _defaultShiftAlarmDurationSeconds = 5;
 const int _maxShiftAlarmDurationSeconds = 30;
 const int _maxShiftAlarmDurationSecondsIos = 29;
+const int _defaultWebNotificationDurationSeconds = 5;
 
 /// Esito della richiesta di permessi per la modalità **Sveglia** su Android.
 class AlarmPermissionStatus {
@@ -75,14 +77,18 @@ class LocalNotificationService {
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  final BrowserNotificationBridge _browserNotifications =
+      createBrowserNotificationBridge();
   final StreamController<NotificationActionIntent> _actionController =
       StreamController<NotificationActionIntent>.broadcast();
+  final Map<int, _WebScheduledNotification> _webScheduledNotifications =
+      <int, _WebScheduledNotification>{};
 
   bool _initialized = false;
   bool _available = true;
 
   Stream<NotificationActionIntent> get actions => _actionController.stream;
-  bool get supportsVibrateOnlyShiftAlarmFeedback => !_isIos;
+  bool get supportsVibrateOnlyShiftAlarmFeedback => _isAndroid;
   int get maxShiftAlarmDurationSeconds =>
       _isIos ? _maxShiftAlarmDurationSecondsIos : _maxShiftAlarmDurationSeconds;
 
@@ -95,6 +101,17 @@ class LocalNotificationService {
     if (!_supportsLocalNotifications) {
       _initialized = true;
       _available = false;
+      return;
+    }
+
+    if (_isWeb) {
+      _initialized = true;
+      _available = _browserNotifications.isSupported;
+      if (!_available) {
+        debugPrint(
+          '[LocalNotificationService] browser notifications are not supported on this browser.',
+        );
+      }
       return;
     }
 
@@ -266,6 +283,18 @@ class LocalNotificationService {
   Future<void> showDebugNotificationNow() async {
     if (!_initialized || !_available || !_supportsLocalNotifications) return;
 
+    if (_isWeb) {
+      await _showBrowserNotification(
+        id: 'debug_notification_now'.hashCode,
+        title: 'Debug notification',
+        body: 'If you can read this, browser notifications are working.',
+        autoCloseAfter: const Duration(
+          seconds: _defaultWebNotificationDurationSeconds,
+        ),
+      );
+      return;
+    }
+
     final androidDetails = AndroidNotificationDetails(
       'team_updates',
       'Team updates',
@@ -295,6 +324,20 @@ class LocalNotificationService {
     Duration delay = const Duration(seconds: 10),
   }) async {
     if (!_initialized || !_available || !_supportsLocalNotifications) return;
+
+    if (_isWeb) {
+      final alarmTime = DateTime.now().add(delay);
+      await _scheduleWebNotification(
+        id: _shiftFallbackNotificationId('debug-shift-alarm-manual'),
+        title: '⏰ Debug shift alarm',
+        body: 'This is a browser alarm test scheduled in a few seconds.',
+        scheduledAt: alarmTime,
+        autoCloseAfter: const Duration(
+          seconds: _defaultWebNotificationDurationSeconds,
+        ),
+      );
+      return;
+    }
 
     final now = tz.TZDateTime.now(tz.local);
     final alarmTime = now.add(delay);
@@ -359,8 +402,9 @@ class LocalNotificationService {
       alarmOffsets: const <int>[0],
     );
     final pending = await pendingNotificationRequests();
-    final summary =
-        'mode=${alarmType.name}, feedback=${alarmFeedback.name}, duration=${durationSeconds}s, exactAlarm=${permissionStatus.exactAlarm}, fullScreenIntent=${permissionStatus.fullScreenIntent}, pending=${pending.length}, tz=${tz.local.name}';
+    final summary = _isWeb
+        ? 'mode=${alarmType.name}, feedback=${alarmFeedback.name}, duration=${durationSeconds}s, browserPermission=${(await _browserNotifications.getPermissionStatus()).name}, pending=${pending.length}, tz=${tz.local.name}'
+        : 'mode=${alarmType.name}, feedback=${alarmFeedback.name}, duration=${durationSeconds}s, exactAlarm=${permissionStatus.exactAlarm}, fullScreenIntent=${permissionStatus.fullScreenIntent}, pending=${pending.length}, tz=${tz.local.name}';
     debugPrint('[ShiftAlarmDebug] $summary');
     return summary;
   }
@@ -374,8 +418,9 @@ class LocalNotificationService {
     final durationSeconds = await getShiftAlarmDurationSeconds();
     final permissionStatus = await requestAlarmModePermissions();
     final pending = await pendingNotificationRequests();
-    final summary =
-        'mode=${alarmType.name}, feedback=${alarmFeedback.name}, duration=${durationSeconds}s, exactAlarm=${permissionStatus.exactAlarm}, fullScreenIntent=${permissionStatus.fullScreenIntent}, pending=${pending.length}, tz=${tz.local.name}';
+    final summary = _isWeb
+        ? 'mode=${alarmType.name}, feedback=${alarmFeedback.name}, duration=${durationSeconds}s, browserPermission=${(await _browserNotifications.getPermissionStatus()).name}, pending=${pending.length}, tz=${tz.local.name}'
+        : 'mode=${alarmType.name}, feedback=${alarmFeedback.name}, duration=${durationSeconds}s, exactAlarm=${permissionStatus.exactAlarm}, fullScreenIntent=${permissionStatus.fullScreenIntent}, pending=${pending.length}, tz=${tz.local.name}';
     debugPrint('[ShiftAlarmDebug] $summary');
     return summary;
   }
@@ -398,6 +443,18 @@ class LocalNotificationService {
   Future<List<PendingNotificationRequest>> pendingNotificationRequests() async {
     if (!_initialized || !_available || !_supportsLocalNotifications) {
       return const <PendingNotificationRequest>[];
+    }
+    if (_isWeb) {
+      return _webScheduledNotifications.values
+          .map(
+            (notification) => PendingNotificationRequest(
+              notification.id,
+              notification.title,
+              notification.body,
+              notification.payload,
+            ),
+          )
+          .toList(growable: false);
     }
     return _plugin.pendingNotificationRequests();
   }
@@ -460,6 +517,22 @@ class LocalNotificationService {
     final alarmType = await getShiftAlarmType();
     final alarmFeedback = await getShiftAlarmFeedback();
     final durationSeconds = await getShiftAlarmDurationSeconds();
+    if (_isWeb) {
+      final title = '⏰ Turno tra $minutesBefore min';
+      final body = profileName.isNotEmpty
+          ? 'Shift "$profileName" — $shiftDate'
+          : 'Il tuo turno inizia tra $minutesBefore minuti';
+      await _showBrowserNotification(
+        id: 'shift_alarm_$shiftId'.hashCode,
+        title: title,
+        body: body,
+        autoCloseAfter: _resolveWebNotificationAutoClose(
+          alarmType: alarmType,
+          durationSeconds: durationSeconds,
+        ),
+      );
+      return;
+    }
     final config = _resolveShiftNotificationConfig(
       alarmType: alarmType,
       feedback: alarmFeedback,
@@ -538,6 +611,103 @@ class LocalNotificationService {
     final alarmType = await getShiftAlarmType();
     final alarmFeedback = await getShiftAlarmFeedback();
     final durationSeconds = await getShiftAlarmDurationSeconds();
+    if (_isWeb) {
+      await cancelShiftAlarms(shiftId: shiftId, alarmOffsets: alarmOffsets);
+      final now = DateTime.now();
+      var scheduledAtLeastOne = false;
+
+      for (final offsetMinutes in alarmOffsets) {
+        final alarmAt = shiftStart.add(Duration(minutes: offsetMinutes));
+        if (alarmAt.isBefore(now)) {
+          debugPrint(
+            '[ShiftAlarm] Skip web offset $offsetMinutes for $shiftId: $alarmAt already passed.',
+          );
+          continue;
+        }
+
+        final minutesBefore = offsetMinutes.abs();
+        final notifId = '${shiftId}_$offsetMinutes'.hashCode;
+        final title = '⏰ Turno tra $minutesBefore min';
+        final body = profileName.isNotEmpty
+            ? 'Shift "$profileName" inizia alle ${_formatTime(shiftStart)}'
+            : 'Il tuo turno inizia tra $minutesBefore minuti';
+
+        await _scheduleWebNotification(
+          id: notifId,
+          title: title,
+          body: body,
+          scheduledAt: alarmAt,
+          payload: jsonEncode({
+            'notificationId': notifId.toString(),
+            'eventType': 'SHIFT_ALARM',
+            'sourceService': 'shift_web',
+            'title': title,
+            'body': body,
+            'occurredAt': alarmAt.toIso8601String(),
+            'metadata': {
+              'assignmentId': shiftId,
+              'shiftDate': shiftStart.toIso8601String(),
+              'profileName': profileName,
+            },
+          }),
+          autoCloseAfter: _resolveWebNotificationAutoClose(
+            alarmType: alarmType,
+            durationSeconds: durationSeconds,
+          ),
+        );
+        scheduledAtLeastOne = true;
+        debugPrint('[ShiftAlarm] Scheduled web alarm $notifId at $alarmAt');
+      }
+
+      if (scheduledAtLeastOne) {
+        return;
+      }
+
+      if (!shiftStart.isAfter(now)) {
+        debugPrint(
+          '[ShiftAlarm] No web schedule for $shiftId: shift start already passed.',
+        );
+        return;
+      }
+
+      final fallbackId = _shiftFallbackNotificationId(shiftId);
+      final fallbackTime = now.add(_immediateShiftAlarmFallbackDelay);
+      final minutesBefore = shiftStart.difference(now).inMinutes.clamp(0, 9999);
+      final title = minutesBefore <= 1
+          ? '⏰ Turno imminente'
+          : '⏰ Turno tra $minutesBefore min';
+      final body = profileName.isNotEmpty
+          ? 'Shift "$profileName" inizia alle ${_formatTime(shiftStart)}'
+          : 'Il tuo turno inizia presto';
+      await _scheduleWebNotification(
+        id: fallbackId,
+        title: title,
+        body: body,
+        scheduledAt: fallbackTime,
+        payload: jsonEncode({
+          'notificationId': fallbackId.toString(),
+          'eventType': 'SHIFT_ALARM',
+          'sourceService': 'shift_web',
+          'title': title,
+          'body': body,
+          'occurredAt': fallbackTime.toIso8601String(),
+          'metadata': {
+            'assignmentId': shiftId,
+            'shiftDate': shiftStart.toIso8601String(),
+            'profileName': profileName,
+            'fallback': 'true',
+          },
+        }),
+        autoCloseAfter: _resolveWebNotificationAutoClose(
+          alarmType: alarmType,
+          durationSeconds: durationSeconds,
+        ),
+      );
+      debugPrint(
+        '[ShiftAlarm] Scheduled immediate web fallback $fallbackId at $fallbackTime',
+      );
+      return;
+    }
     final config = _resolveShiftNotificationConfig(
       alarmType: alarmType,
       feedback: alarmFeedback,
@@ -735,6 +905,14 @@ class LocalNotificationService {
     required List<int> alarmOffsets,
   }) async {
     if (!_initialized || !_available || !_supportsLocalNotifications) return;
+    if (_isWeb) {
+      for (final offset in alarmOffsets) {
+        final notifId = '${shiftId}_$offset'.hashCode;
+        _cancelWebScheduledNotification(notifId);
+      }
+      _cancelWebScheduledNotification(_shiftFallbackNotificationId(shiftId));
+      return;
+    }
     for (final offset in alarmOffsets) {
       final notifId = '${shiftId}_$offset'.hashCode;
       await _plugin.cancel(notifId);
@@ -789,7 +967,7 @@ class LocalNotificationService {
   }
 
   Future<ShiftAlarmFeedback> getShiftAlarmFeedback() async {
-    if (_isIos) {
+    if (_isIos || _isWeb) {
       return ShiftAlarmFeedback.ringtone;
     }
     final prefs = await SharedPreferences.getInstance();
@@ -828,6 +1006,14 @@ class LocalNotificationService {
   /// il permesso non è ancora concesso.
   Future<AlarmPermissionStatus> requestAlarmModePermissions() async {
     if (!_initialized || !_available || !_supportsLocalNotifications) {
+      return const AlarmPermissionStatus(
+        exactAlarm: true,
+        fullScreenIntent: true,
+      );
+    }
+
+    if (_isWeb) {
+      await _browserNotifications.requestPermission();
       return const AlarmPermissionStatus(
         exactAlarm: true,
         fullScreenIntent: true,
@@ -1043,11 +1229,13 @@ class LocalNotificationService {
   }
 
   bool get _supportsLocalNotifications =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS);
+      _isWeb ||
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
 
   bool get _isIos => defaultTargetPlatform == TargetPlatform.iOS;
+  bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
+  bool get _isWeb => kIsWeb;
 
   int _normalizeShiftAlarmDurationSeconds(int seconds) {
     return seconds.clamp(1, maxShiftAlarmDurationSeconds).toInt();
@@ -1056,10 +1244,87 @@ class LocalNotificationService {
   ShiftAlarmFeedback _normalizedShiftAlarmFeedback(
     ShiftAlarmFeedback feedback,
   ) {
-    if (_isIos) {
+    if (_isIos || _isWeb) {
       return ShiftAlarmFeedback.ringtone;
     }
     return feedback;
+  }
+
+  Duration _resolveWebNotificationAutoClose({
+    required ShiftAlarmType alarmType,
+    required int durationSeconds,
+  }) {
+    if (alarmType == ShiftAlarmType.alarm) {
+      return Duration(
+        seconds: _normalizeShiftAlarmDurationSeconds(durationSeconds),
+      );
+    }
+    return const Duration(seconds: _defaultWebNotificationDurationSeconds);
+  }
+
+  Future<void> _scheduleWebNotification({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledAt,
+    required Duration autoCloseAfter,
+    String? payload,
+  }) async {
+    _cancelWebScheduledNotification(id);
+    final delay = scheduledAt.difference(DateTime.now());
+    if (delay.inMicroseconds <= 0) {
+      await _showBrowserNotification(
+        id: id,
+        title: title,
+        body: body,
+        autoCloseAfter: autoCloseAfter,
+      );
+      return;
+    }
+
+    final timer = Timer(delay, () async {
+      _webScheduledNotifications.remove(id);
+      await _showBrowserNotification(
+        id: id,
+        title: title,
+        body: body,
+        autoCloseAfter: autoCloseAfter,
+      );
+    });
+
+    _webScheduledNotifications[id] = _WebScheduledNotification(
+      id: id,
+      title: title,
+      body: body,
+      payload: payload,
+      timer: timer,
+    );
+  }
+
+  Future<void> _showBrowserNotification({
+    required int id,
+    required String title,
+    required String body,
+    Duration? autoCloseAfter,
+  }) async {
+    final permission = await _browserNotifications.requestPermission();
+    if (permission != BrowserNotificationPermissionStatus.granted) {
+      debugPrint(
+        '[LocalNotificationService] Browser notification skipped for $id: permission=${permission.name}',
+      );
+      return;
+    }
+    _browserNotifications.showNotification(
+      title: title,
+      body: body,
+      tag: id.toString(),
+      autoCloseAfter: autoCloseAfter,
+    );
+  }
+
+  void _cancelWebScheduledNotification(int id) {
+    final scheduled = _webScheduledNotifications.remove(id);
+    scheduled?.timer.cancel();
   }
 
   DarwinNotificationDetails _buildDarwinShiftNotificationDetails({
@@ -1095,6 +1360,22 @@ class LocalNotificationService {
     }
     _actionController.add(intent);
   }
+}
+
+class _WebScheduledNotification {
+  const _WebScheduledNotification({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.payload,
+    required this.timer,
+  });
+
+  final int id;
+  final String title;
+  final String body;
+  final String? payload;
+  final Timer timer;
 }
 
 class _ShiftAlarmChannelConfig {

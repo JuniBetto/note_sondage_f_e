@@ -16,6 +16,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class SondageDetailMobile extends StatefulWidget {
   const SondageDetailMobile({super.key, required this.sondageId});
@@ -256,9 +257,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
           }
           _handleBlocState(state);
           if (state is SondageError && context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            AppSnackBar.showError(context, state.message);
           }
         },
         child: !_hasInitialContent

@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'shift_event.dart';
 
@@ -27,7 +28,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       final profiles = await _repository.getProfiles();
       emit(ShiftProfilesLoaded(profiles));
     } catch (e) {
-      emit(ShiftError(e.toString()));
+      emit(
+        ShiftError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the shift profiles right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -48,7 +56,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       );
       emit(ShiftProfileCreated(profile));
     } catch (e) {
-      emit(ShiftError(e.toString()));
+      emit(
+        ShiftError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not create the shift profile right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -70,7 +85,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       );
       emit(ShiftProfileUpdated(profile));
     } catch (e) {
-      emit(ShiftError(e.toString()));
+      emit(
+        ShiftError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not update the shift profile right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -82,7 +104,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       await _repository.deleteProfile(event.profileId);
       emit(ShiftProfileDeleted());
     } catch (e) {
-      emit(ShiftError(e.toString()));
+      emit(
+        ShiftError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not delete the shift profile right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -98,7 +127,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       );
       emit(ShiftAssignmentsLoaded(assignments));
     } catch (e) {
-      emit(ShiftError(e.toString()));
+      emit(
+        ShiftError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the shifts right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -121,7 +157,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       );
       emit(ShiftAssigned(assignment));
     } catch (e) {
-      emit(ShiftError(e.toString()));
+      emit(
+        ShiftError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not save the shift right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -144,7 +187,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       );
       emit(ShiftAssignmentUpdated(assignment));
     } catch (e) {
-      emit(ShiftError(e.toString()));
+      emit(
+        ShiftError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not update the shift right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -156,7 +206,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       await _repository.deleteAssignment(event.assignmentId);
       emit(ShiftAssignmentDeleted());
     } catch (e) {
-      emit(ShiftError(e.toString()));
+      emit(
+        ShiftError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not delete the shift right now.',
+          ),
+        ),
+      );
     }
   }
 }

@@ -20,7 +20,7 @@ class SettingsNotificationWeb extends StatefulWidget {
 }
 
 class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
-  ShiftAlarmFeedback _shiftAlarmFeedback = ShiftAlarmFeedback.vibrate;
+  ShiftAlarmFeedback _shiftAlarmFeedback = ShiftAlarmFeedback.ringtone;
   int _shiftAlarmDurationSeconds = 5;
 
   @override
@@ -54,6 +54,11 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
 
   @override
   Widget build(BuildContext context) {
+    final localNotificationService = getIt<LocalNotificationService>();
+    final supportsVibrateOnlyShiftAlarmFeedback =
+        localNotificationService.supportsVibrateOnlyShiftAlarmFeedback;
+    final maxShiftAlarmDurationSeconds =
+        localNotificationService.maxShiftAlarmDurationSeconds;
     final localization = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
@@ -101,7 +106,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Configure how you want to be notified',
+                          'Choose how updates and shift reminders reach you.',
                           style: textTheme.bodyMedium?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -158,7 +163,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
 
                 const SizedBox(height: 24),
 
-                _buildSectionTitle(context, 'Shift alarm'),
+                _buildSectionTitle(context, 'Shift reminders'),
                 const SizedBox(height: 12),
                 Container(
                   decoration: BoxDecoration(
@@ -174,54 +179,130 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Alarm feedback',
+                          'Reminder mode',
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Choose whether shift alarms should vibrate or play a ringtone. Default: vibrate.',
+                          'Choose in each shift whether you want a standard notification or a stronger alarm.',
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        SegmentedButton<ShiftAlarmFeedback>(
-                          segments: const [
-                            ButtonSegment(
-                              value: ShiftAlarmFeedback.vibrate,
-                              icon: Icon(Icons.vibration, size: 16),
-                              label: Text('Vibrate'),
-                            ),
-                            ButtonSegment(
-                              value: ShiftAlarmFeedback.ringtone,
-                              icon: Icon(Icons.music_note, size: 16),
-                              label: Text('Ringtone'),
-                            ),
-                          ],
-                          selected: {_shiftAlarmFeedback},
-                          onSelectionChanged: (selection) async {
-                            final feedback = selection.first;
-                            await getIt<LocalNotificationService>()
-                                .setShiftAlarmFeedback(feedback);
-                            if (!mounted) return;
-                            setState(() {
-                              _shiftAlarmFeedback = feedback;
-                            });
-                          },
+                        _buildInfoNote(
+                          context,
+                          icon: kIsWeb
+                              ? Icons.language_rounded
+                              : Icons.info_outline_rounded,
+                          title: kIsWeb ? 'Web behavior' : 'How it works',
+                          message: kIsWeb
+                              ? 'On web, Alarm mode uses browser notifications. The tab must stay open and the browser controls the final sound and vibration behavior.'
+                              : 'Notification shows a normal reminder. Alarm uses the settings below and is meant for stronger shift alerts.',
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Duration: ${_shiftAlarmDurationSeconds}s',
+                          kIsWeb ? 'Alarm delivery' : 'Alarm style',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          kIsWeb
+                              ? 'Browser notifications are used while this tab is open. Sound and vibration are managed by the browser and operating system.'
+                              : supportsVibrateOnlyShiftAlarmFeedback
+                              ? 'Choose whether Alarm mode should vibrate or play a ringtone. Default: Vibrate.'
+                              : 'Alarm mode uses a ringtone on this platform.',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.descriptionColor,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (supportsVibrateOnlyShiftAlarmFeedback)
+                          SegmentedButton<ShiftAlarmFeedback>(
+                            segments: const [
+                              ButtonSegment(
+                                value: ShiftAlarmFeedback.vibrate,
+                                icon: Icon(Icons.vibration, size: 16),
+                                label: Text('Vibrate'),
+                              ),
+                              ButtonSegment(
+                                value: ShiftAlarmFeedback.ringtone,
+                                icon: Icon(Icons.music_note, size: 16),
+                                label: Text('Ringtone'),
+                              ),
+                            ],
+                            selected: {_shiftAlarmFeedback},
+                            onSelectionChanged: (selection) async {
+                              final feedback = selection.first;
+                              await getIt<LocalNotificationService>()
+                                  .setShiftAlarmFeedback(feedback);
+                              if (!mounted) return;
+                              setState(() {
+                                _shiftAlarmFeedback = feedback;
+                              });
+                            },
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(
+                                alpha: 0.08,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.18,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  kIsWeb
+                                      ? Icons.language_rounded
+                                      : Icons.music_note_rounded,
+                                  size: 18,
+                                  color: colorScheme.primary,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  kIsWeb ? 'Browser notification' : 'Ringtone',
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '${kIsWeb ? 'Notification visibility' : 'Alarm duration'}: ${_shiftAlarmDurationSeconds}s',
                           style: textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          kIsWeb
+                              ? 'This controls how long the browser notification stays visible after it appears.'
+                              : 'This duration applies only when a shift uses Alarm mode.',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.descriptionColor,
+                          ),
+                        ),
                         Slider(
                           min: 1,
-                          max: 30,
-                          divisions: 29,
+                          max: maxShiftAlarmDurationSeconds.toDouble(),
+                          divisions: maxShiftAlarmDurationSeconds - 1,
                           value: _shiftAlarmDurationSeconds.toDouble(),
                           label: '${_shiftAlarmDurationSeconds}s',
                           onChanged: (value) async {
@@ -312,7 +393,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
 
                 if (kDebugMode) ...[
                   const SizedBox(height: 24),
-                  _buildSectionTitle(context, 'Debug'),
+                  _buildSectionTitle(context, 'Debug tools'),
                   const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
@@ -328,7 +409,7 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Run local notification self-tests on this device.',
+                            'Use these tests only while debugging notifications in this browser.',
                             style: textTheme.bodySmall?.copyWith(
                               color: colorScheme.descriptionColor,
                             ),
@@ -559,6 +640,55 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
           letterSpacing: 1.2,
           color: theme.colorScheme.descriptionColor,
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoNote(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String message,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.14)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  message,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.descriptionColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

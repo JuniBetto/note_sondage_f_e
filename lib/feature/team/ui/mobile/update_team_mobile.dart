@@ -10,8 +10,9 @@ import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 
 class UpdateTeamMobile extends StatefulWidget {
-  const UpdateTeamMobile({super.key, this.teamId});
+  const UpdateTeamMobile({super.key, this.teamId, this.readOnly = false});
   final String? teamId;
+  final bool readOnly;
 
   @override
   State<UpdateTeamMobile> createState() => _UpdateTeamMobileState();
@@ -55,11 +56,11 @@ class _UpdateTeamMobileState extends State<UpdateTeamMobile> {
         ),
         centerTitle: true,
         title: Text(
-          localization.editTeam,
+          widget.readOnly ? localization.teamDetails : localization.editTeam,
           style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         actions: [
-          if (_canOpenRoleManager)
+          if (_canOpenRoleManager && !widget.readOnly)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: IconButton(
@@ -85,6 +86,7 @@ class _UpdateTeamMobileState extends State<UpdateTeamMobile> {
       body: SafeArea(
         child: CreateTeamMobile(
           teamId: widget.teamId,
+          readOnly: widget.readOnly,
           onPermissionsChanged: (permissions) {
             if (!mounted) return;
             setState(() {

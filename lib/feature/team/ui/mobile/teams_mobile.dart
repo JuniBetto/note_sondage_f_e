@@ -3,7 +3,6 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/team_display.dart';
-import 'package:note_sondage/theme/color_palette.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
@@ -68,20 +67,14 @@ class _TeamsMobileState extends State<TeamsMobile>
             TabBarComponent(
               childTab1: Text(
                 localization.selectedTeam,
-                style: TextStyle(
-                  color: tabController.index == 0
-                      ? ColorPalette.primary[6]
-                      : Colors.grey[600],
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               childTab2: Text(
                 localization.createTeam,
-                style: TextStyle(
-                  color: tabController.index == 1
-                      ? ColorPalette.primary[6]
-                      : Colors.grey[600],
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

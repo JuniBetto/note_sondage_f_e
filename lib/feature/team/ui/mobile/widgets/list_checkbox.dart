@@ -26,10 +26,12 @@ class ListCheckbox extends StatefulWidget {
     super.key,
     required this.selectedColor,
     this.isEditMode = false,
+    this.isEnabled = true,
     this.onColorChanged,
   });
   final List<String> selectedColor;
   final bool? isEditMode;
+  final bool isEnabled;
   final ValueChanged<String>? onColorChanged;
 
   @override
@@ -90,7 +92,9 @@ class _ListCheckboxState extends State<ListCheckbox> {
                       final ColorOption colorOption = e;
                       return ColorCheckboxCard(
                         colorOption: colorOption,
+                        isEnabled: widget.isEnabled,
                         onChanged: (value) {
+                          if (!widget.isEnabled) return;
                           setState(() {
                             for (var option in colorOptions) {
                               option.isSelected = false;
@@ -120,11 +124,13 @@ class _ListCheckboxState extends State<ListCheckbox> {
 
 class ColorCheckboxCard extends StatelessWidget {
   final ColorOption colorOption;
+  final bool isEnabled;
   final ValueChanged<bool?> onChanged;
 
   const ColorCheckboxCard({
     Key? key,
     required this.colorOption,
+    this.isEnabled = true,
     required this.onChanged,
   }) : super(key: key);
 
@@ -142,6 +148,7 @@ class ColorCheckboxCard extends StatelessWidget {
           ),
         ),
         onTap: () {
+          if (!isEnabled) return;
           onChanged(!colorOption.isSelected);
         },
         child: Padding(

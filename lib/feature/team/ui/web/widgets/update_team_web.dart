@@ -8,8 +8,6 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
-import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
@@ -22,7 +20,7 @@ import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:uuid/uuid.dart';
 
 class UpdateTeamWeb extends StatefulWidget {
-  const UpdateTeamWeb({super.key, this.teamId});
+  const UpdateTeamWeb({super.key, this.teamId, required bool readOnly});
   final String? teamId;
 
   @override
@@ -53,20 +51,13 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
 
   List<String> selectedColor = [];
   late final TeamBloc _teamBloc;
-  late final TeamBloc _globalTeamBloc;
   bool _isLoading = true;
-  String? _ownerUserId;
-  TeamSectionPermissions _teamPermissions = TeamSectionPermissions.readOnly();
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   @override
   void initState() {
     super.initState();
-    _teamBloc = TeamBloc(
-      teamUseCase: getIt<TeamUseCase>(),
-      teamLocalDataSource: getIt<TeamLocalDataSource>(),
-    );
-    _globalTeamBloc = getIt<TeamBloc>();
+    _teamBloc = getIt<TeamBloc>();
     _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
     _realtimeSubscription = getIt<RealtimeNotificationService>().stream.listen(
       _handleRealtimeNotification,
@@ -76,7 +67,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   @override
   void dispose() {
     _realtimeSubscription?.cancel();
-    _teamBloc.close();
     nameTeamController.dispose();
     focusTeamController.dispose();
     super.dispose();
@@ -96,9 +86,6 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
     }
   }
 
-  bool get _canOpenRoleManager =>
-      widget.teamId != null && _teamPermissions.canAccessRoleManager;
-
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
@@ -115,12 +102,10 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
           focusTeamController.text = team.description;
           setState(() {
             selectedColor = team.color != null ? [team.color!] : [];
-            _ownerUserId = team.createdByUserId;
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated) {
-          _globalTeamBloc.add(LoadTeamsEvent());
-          context.go(RouterPaths.team);
+          context.go(RouterPaths.team, extra: widget.teamId);
         } else if (teamState is TeamError) {
           setState(() => _isLoading = false);
         }
@@ -172,7 +157,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                       ),
                     ),
                     // Role Manager button
-                    if (_canOpenRoleManager)
+                    if (widget.teamId != null)
                       FilledButton.tonalIcon(
                         onPressed: () {
                           context.go(
@@ -281,16 +266,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                     ),
                   ),
                   child: widget.teamId != null
-                      ? TeamMembersSection(
-                          teamId: widget.teamId!,
-                          ownerUserId: _ownerUserId,
-                          onPermissionsChanged: (permissions) {
-                            if (!mounted) return;
-                            setState(() {
-                              _teamPermissions = permissions;
-                            });
-                          },
-                        )
+                      ? TeamMembersSection(teamId: widget.teamId!)
                       : AddUserWeb(
                           listInviteFormData: listInviteFormData,
                           teamId: widget.teamId,

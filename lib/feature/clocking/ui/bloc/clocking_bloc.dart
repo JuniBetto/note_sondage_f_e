@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_entity.dart';
 import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 
@@ -12,6 +13,8 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
   List<ClockingRecordEntity> _cachedMyRecords = [];
   List<ClockingRecordEntity> _cachedTeamRecords = [];
   String? _selectedTeamId;
+
+  String? get selectedTeamId => _selectedTeamId;
 
   ClockingBloc({required this.clockingUseCase}) : super(ClockingInitial()) {
     on<LoadClockingRecordsEvent>(_onLoadRecords);
@@ -43,8 +46,16 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
       await _reloadDashboard();
       emit(_loadedState());
     } catch (e) {
-      if (_cachedMyRecords.isEmpty && _cachedTeamRecords.isEmpty) {
-        emit(ClockingError(e.toString()));
+      emit(
+        ClockingError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not refresh the clocking records right now.',
+          ),
+        ),
+      );
+      if (_cachedMyRecords.isNotEmpty || _cachedTeamRecords.isNotEmpty) {
+        emit(_loadedState());
       }
     }
   }
@@ -59,7 +70,14 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
       _cachedTeamRecords = [];
       emit(_loadedState());
     } catch (e) {
-      emit(ClockingError(e.toString()));
+      emit(
+        ClockingError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the clocking records for this date.',
+          ),
+        ),
+      );
     }
   }
 
@@ -73,7 +91,14 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
       _cachedTeamRecords = [];
       emit(_loadedState());
     } catch (e) {
-      emit(ClockingError(e.toString()));
+      emit(
+        ClockingError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the clocking records for this user.',
+          ),
+        ),
+      );
     }
   }
 
@@ -84,10 +109,19 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     _selectedTeamId = event.teamId;
     emit(ClockingLoading());
     try {
-      _cachedTeamRecords = await clockingUseCase.getRecordsByTeamId(event.teamId);
+      _cachedTeamRecords = await clockingUseCase.getRecordsByTeamId(
+        event.teamId,
+      );
       emit(_loadedState());
     } catch (e) {
-      emit(ClockingError(e.toString()));
+      emit(
+        ClockingError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the team clocking records right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -178,7 +212,14 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
       await _reloadDashboard();
       emit(_loadedState());
     } catch (e) {
-      emit(ClockingError(e.toString()));
+      emit(
+        ClockingError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not delete the clocking record right now.',
+          ),
+        ),
+      );
       if (_cachedMyRecords.isNotEmpty || _cachedTeamRecords.isNotEmpty) {
         emit(_loadedState());
       }
@@ -203,7 +244,14 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
       );
       emit(_loadedState());
     } catch (e) {
-      emit(ClockingError(e.toString()));
+      emit(
+        ClockingError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not save the clocking change right now.',
+          ),
+        ),
+      );
       try {
         await _reloadDashboard();
       } catch (_) {}

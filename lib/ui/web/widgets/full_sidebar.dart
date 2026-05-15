@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 /// Typedef per il builder della sidebar sinistra.
 /// Riceve [isExpanded], [onToggle] e [lastIndexes] per costruire il widget.
@@ -54,6 +55,15 @@ class _FullSidebarState extends State<FullSidebar> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final separatorColor = colorScheme.brightness == Brightness.dark
+        ? colorScheme.outlineVariant.withValues(alpha: 0.9)
+        : (colorScheme.borderColor?.withValues(alpha: 0.85) ??
+              colorScheme.outlineVariant);
+    final rightPanelColor = colorScheme.brightness == Brightness.dark
+        ? colorScheme.surface.withValues(alpha: 0.08)
+        : Colors.transparent;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final autoExpanded = constraints.maxWidth > widget.breakpoint;
@@ -76,7 +86,22 @@ class _FullSidebarState extends State<FullSidebar> {
                       lastIndexes,
                     ),
                   ),
-                  Expanded(flex: 3, child: widget.rightSection),
+                  Container(
+                    width: 1,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    color: separatorColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 3,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: rightPanelColor,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: widget.rightSection,
+                    ),
+                  ),
                 ],
               ),
             ),

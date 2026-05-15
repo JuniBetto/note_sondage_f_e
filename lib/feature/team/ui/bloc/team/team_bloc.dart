@@ -1,6 +1,7 @@
 // team_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
@@ -58,7 +59,11 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
           if (!isClosed) {
             add(
               _TeamsRefreshFailedEvent(
-                message: error.toString(),
+                message: AppErrorMessageResolver.resolve(
+                  error,
+                  fallback:
+                      'We could not refresh your teams right now. Please try again.',
+                ),
                 hadLocalData: hadLocalData,
               ),
             );
@@ -96,7 +101,11 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
           if (!isClosed) {
             add(
               _TeamsRefreshFailedEvent(
-                message: error.toString(),
+                message: AppErrorMessageResolver.resolve(
+                  error,
+                  fallback:
+                      'We could not refresh your teams right now. Please try again.',
+                ),
                 hadLocalData: hadLocalData,
               ),
             );
@@ -115,9 +124,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     _TeamsRefreshFailedEvent event,
     Emitter<TeamState> emit,
   ) async {
-    if (!event.hadLocalData) {
-      emit(TeamError(event.message));
-    }
+    emit(TeamError(event.message));
   }
 
   Future<void> _onLoadTeamById(
@@ -140,7 +147,16 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
         if (cached == null) emit(const TeamError('Team not found'));
       }
     } catch (e) {
-      if (cached == null) emit(TeamError(e.toString()));
+      if (cached == null) {
+        emit(
+          TeamError(
+            AppErrorMessageResolver.resolve(
+              e,
+              fallback: 'We could not load this team right now.',
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -162,7 +178,14 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       await teamLocalDataSource.saveAll(_cachedTeams);
       emit(TeamsLoaded(_cachedTeams));
     } catch (e) {
-      emit(TeamError(e.toString()));
+      emit(
+        TeamError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not create the team right now.',
+          ),
+        ),
+      );
       // Re-emit cached teams so UI doesn't break
       if (_cachedTeams.isNotEmpty) {
         emit(TeamsLoaded(_cachedTeams));
@@ -185,7 +208,14 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       await teamLocalDataSource.saveAll(_cachedTeams);
       emit(TeamsLoaded(_cachedTeams));
     } catch (e) {
-      emit(TeamError(e.toString()));
+      emit(
+        TeamError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not update the team right now.',
+          ),
+        ),
+      );
       if (_cachedTeams.isNotEmpty) {
         emit(TeamsLoaded(_cachedTeams));
       }
@@ -206,13 +236,20 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
         await teamLocalDataSource.saveAll(_cachedTeams);
         emit(TeamsLoaded(_cachedTeams));
       } else {
-        emit(const TeamError('Failed to delete team'));
+        emit(const TeamError('We could not delete the team right now.'));
         if (_cachedTeams.isNotEmpty) {
           emit(TeamsLoaded(_cachedTeams));
         }
       }
     } catch (e) {
-      emit(TeamError(e.toString()));
+      emit(
+        TeamError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not delete the team right now.',
+          ),
+        ),
+      );
       if (_cachedTeams.isNotEmpty) {
         emit(TeamsLoaded(_cachedTeams));
       }

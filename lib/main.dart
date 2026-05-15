@@ -79,7 +79,7 @@ void main() {
         debugPrint("Stack:\n${details.stack}");
         debugPrint("━━━━━━━━━━━━━━━━━━━");
         // Inoltra l'errore al nostro logger
-        ErrorLogger.log(details.exception, details.stack);
+        ErrorLogger.logFlutterError(details);
       };
 
       // 6. Costruisce un widget personalizzato in caso di errore

@@ -103,6 +103,38 @@ class AuthUseCase {
     }
   }
 
+  Future<void> requestAccountDeletion({required String email}) async {
+    try {
+      return await _repository.requestAccountDeletion(email: email);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> confirmAccountDeletion({required String token}) async {
+    try {
+      return await _repository.confirmAccountDeletion(token: token);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> requestAccountReactivation({required String email}) async {
+    try {
+      return await _repository.requestAccountReactivation(email: email);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> confirmAccountReactivation({required String token}) async {
+    try {
+      return await _repository.confirmAccountReactivation(token: token);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> updateContactEmail({required String email}) async {
     try {
       return await _repository.updateContactEmail(email: email);

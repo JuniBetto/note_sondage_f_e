@@ -5,7 +5,6 @@ import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/mobile/shift_mobile_widget.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
-import 'package:note_sondage/theme/color_palette.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 
 /// Tab page that hosts "Clock In/Out" and "My Shifts" as two tabs,
@@ -65,20 +64,14 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
               setToUpdate: setState,
               childTab1: Text(
                 loc.clockingInOut,
-                style: TextStyle(
-                  color: _tabController.index == 0
-                      ? ColorPalette.primary[6]
-                      : Colors.grey[600],
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               childTab2: Text(
                 loc.myShifts,
-                style: TextStyle(
-                  color: _tabController.index == 1
-                      ? ColorPalette.primary[6]
-                      : Colors.grey[600],
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

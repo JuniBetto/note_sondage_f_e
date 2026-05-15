@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
@@ -38,7 +39,14 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
       final members = await teamMemberUseCase.getAllMembers();
       emit(TeamMembersLoaded(members));
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the team members right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -55,7 +63,14 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
       );
       emit(TeamMembersLoaded(members));
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the team members right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -72,7 +87,14 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
         emit(const TeamMemberError('Team member not found'));
       }
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load this team member right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -99,7 +121,14 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
       // Ricarica la lista dopo la creazione
       add(LoadTeamMembersByTeamIdEvent(event.teamId));
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not add the team member right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -141,7 +170,14 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
       // Ricarica la lista dopo la creazione
       add(LoadTeamMembersByTeamIdEvent(event.teamId));
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not add the team member right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -155,7 +191,14 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
       emit(TeamMemberUpdated(member));
       // Reload is triggered by the BlocListener in the UI on TeamMemberUpdated
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not update the team member right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -171,10 +214,21 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
         // Ricarica la lista dopo l'eliminazione
         add(LoadTeamMembersByTeamIdEvent(event.teamId));
       } else {
-        emit(const TeamMemberError('Failed to delete team member'));
+        emit(
+          const TeamMemberError(
+            'We could not remove the team member right now.',
+          ),
+        );
       }
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not remove the team member right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -194,10 +248,21 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
         // Ricarica la lista dopo l'invito
         add(LoadTeamMembersByTeamIdEvent(event.teamId));
       } else {
-        emit(const TeamMemberError('Failed to invite team member'));
+        emit(
+          const TeamMemberError(
+            'We could not send the team invitation right now.',
+          ),
+        );
       }
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not send the team invitation right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -217,7 +282,14 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
       emit(TeamMemberUpdated(member));
       add(LoadTeamMembersByTeamIdEvent(event.teamId));
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not update the team member image right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -231,7 +303,14 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
       );
       emit(TeamInvitationsLoaded(invitations));
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the pending invitations right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -247,7 +326,14 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
       emit(TeamInvitationCancelled());
       add(LoadTeamInvitationsEvent(event.teamId));
     } catch (e) {
-      emit(TeamMemberError(e.toString()));
+      emit(
+        TeamMemberError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not cancel the invitation right now.',
+          ),
+        ),
+      );
     }
   }
 }

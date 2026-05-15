@@ -33,6 +33,116 @@ class AppLocalizationsIt extends AppLocalizations {
   String get forgotPassword => 'Password dimenticata';
 
   @override
+  String get deleteAccount => 'Disattiva account';
+
+  @override
+  String get accountDeletionDialogMessage =>
+      'Inserisci l\'email dell\'account che vuoi disattivare. Ti invieremo un link di conferma prima di bloccarlo.';
+
+  @override
+  String get sendConfirmationEmail => 'Invia email di conferma';
+
+  @override
+  String get accountDeletionRequestSentTitle => 'Controlla la tua email';
+
+  @override
+  String get accountDeletionRequestSentMessage =>
+      'Se esiste un account con questa email, abbiamo inviato un link di conferma per completare la disattivazione.';
+
+  @override
+  String get accountDeletionRequestFailedTitle =>
+      'Impossibile avviare la disattivazione';
+
+  @override
+  String get accountDeletionRequestFailedMessage =>
+      'Non siamo riusciti a inviare l\'email di conferma della disattivazione. Riprova tra poco.';
+
+  @override
+  String get accountDeletionOpenEmailTitle => 'Apri l\'email di disattivazione';
+
+  @override
+  String get accountDeletionOpenEmailMessage =>
+      'Usa il link di conferma ricevuto via email per completare la disattivazione dell\'account.';
+
+  @override
+  String get accountDeletionConfirmedTitle => 'Account disattivato';
+
+  @override
+  String get accountDeletionConfirmedMessage =>
+      'Il tuo account è stato disattivato con successo. Ora puoi chiudere questa pagina.';
+
+  @override
+  String get accountDeletionFailedTitle => 'Disattivazione non disponibile';
+
+  @override
+  String get accountDeletionFailedMessage =>
+      'Non siamo riusciti a confermare questo link di disattivazione. Richiedi una nuova email e riprova.';
+
+  @override
+  String get accountDeletionLoadingTitle => 'Conferma disattivazione';
+
+  @override
+  String get accountDeletionLoadingMessage =>
+      'Stiamo verificando il link di disattivazione del tuo account...';
+
+  @override
+  String get reactivateAccount => 'Riattiva account';
+
+  @override
+  String get accountReactivationDialogMessage =>
+      'Inserisci l\'email dell\'account che vuoi riattivare. Ti invieremo un link di conferma prima di ripristinare l\'accesso.';
+
+  @override
+  String get accountReactivationRequestSentTitle => 'Controlla la tua email';
+
+  @override
+  String get accountReactivationRequestSentMessage =>
+      'Se esiste un account con questa email, abbiamo inviato un link di conferma per completare la riattivazione.';
+
+  @override
+  String get accountReactivationRequestFailedTitle =>
+      'Impossibile avviare la riattivazione';
+
+  @override
+  String get accountReactivationRequestFailedMessage =>
+      'Non siamo riusciti a inviare l\'email di conferma della riattivazione. Riprova tra poco.';
+
+  @override
+  String get accountReactivationOpenEmailTitle =>
+      'Apri l\'email di riattivazione';
+
+  @override
+  String get accountReactivationOpenEmailMessage =>
+      'Usa il link di conferma ricevuto via email per ripristinare l\'accesso al tuo account.';
+
+  @override
+  String get accountReactivationConfirmedTitle => 'Account riattivato';
+
+  @override
+  String get accountReactivationConfirmedMessage =>
+      'Il tuo account è di nuovo attivo. Ora puoi accedere.';
+
+  @override
+  String get accountReactivationFailedTitle => 'Riattivazione non disponibile';
+
+  @override
+  String get accountReactivationFailedMessage =>
+      'Non siamo riusciti a confermare questo link di riattivazione. Richiedi una nuova email e riprova.';
+
+  @override
+  String get accountReactivationLoadingTitle => 'Conferma riattivazione';
+
+  @override
+  String get accountReactivationLoadingMessage =>
+      'Stiamo verificando il link di riattivazione del tuo account...';
+
+  @override
+  String get backToLogin => 'Torna al login';
+
+  @override
+  String get tryAgain => 'Riprova';
+
+  @override
   String get continueWithGoogle => 'Continua con Google';
 
   @override
@@ -165,6 +275,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get editTeam => 'Modificare squadra';
 
   @override
+  String get teamDetails => 'Dettagli squadra';
+
+  @override
   String get language => 'Lingua';
 
   @override
@@ -272,6 +385,49 @@ class AppLocalizationsIt extends AppLocalizations {
   String get submit => 'Invia';
 
   @override
+  String get contactUsDescription =>
+      'Raccontaci cosa è successo e apriremo la tua app email con una bozza già pronta da inviare.';
+
+  @override
+  String get contactUsDraftHint =>
+      'La tua app email si aprirà con Junibetto@gmail.com già selezionata come destinatario.';
+
+  @override
+  String get contactUsReplyTime =>
+      'Di solito rispondiamo entro 1-2 giorni lavorativi.';
+
+  @override
+  String get supportEmail => 'Email supporto';
+
+  @override
+  String get sendEmail => 'Invia email';
+
+  @override
+  String get copyEmail => 'Copia email';
+
+  @override
+  String get emailCopied =>
+      'L\'email di supporto è stata copiata negli appunti.';
+
+  @override
+  String get couldNotOpenEmailApp =>
+      'Non siamo riusciti ad aprire la tua app email. Copia l\'indirizzo e invia il messaggio manualmente.';
+
+  @override
+  String get contactUsEmailSubject => 'Richiesta supporto Note Sondage';
+
+  @override
+  String get contactUsTopicsTitle => 'Bug, feedback, idee prodotto';
+
+  @override
+  String get contactUsTopicsBody =>
+      'Usa questo spazio per segnalare problemi, chiedere aiuto o condividere miglioramenti che vorresti vedere nell\'app.';
+
+  @override
+  String get contactUsFormHint =>
+      'La bozza includerà i tuoi dettagli, così il supporto potrà risponderti più velocemente.';
+
+  @override
   String get none => 'Nessuno';
 
   @override
@@ -330,6 +486,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get cancel => 'Annulla';
+
+  @override
+  String get close => 'Chiudi';
 
   @override
   String get confirm => 'Conferma';
@@ -622,6 +781,17 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get overnightShift => 'Turno notturno';
+
+  @override
+  String get shiftRepeatUntil => 'Ripeti fino al';
+
+  @override
+  String get shiftRepeatUntilHelp =>
+      'Verrà creato un turno per ogni giorno dell\'intervallo selezionato.';
+
+  @override
+  String get shiftEndMustBeAfterStart =>
+      'L\'orario di fine deve essere successivo all\'orario di inizio. Se il turno finisce il giorno dopo, attiva Turno notturno.';
 
   @override
   String get alarms => 'Allarmi';

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/archive/user_archive_service.dart';
+import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/utils/extention_color.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_card.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_row.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
@@ -77,6 +80,10 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
     return BlocConsumer<TeamBloc, TeamState>(
       bloc: _teamBloc,
       listener: (context, state) {
+        if (state is TeamError) {
+          AppSnackBar.showError(context, state.message);
+        }
+
         if (state is TeamsLoaded) {
           final newTeams = state.teams
               .map((team) => TeamEntityForView(team: team, members: []))
@@ -250,6 +257,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
                           ),
                         )
                       : viewScrollWebMobile(
+                          context,
                           _teamBloc,
                           displayedItems,
                           widget.isRow,
@@ -270,6 +278,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
 }
 
 Widget viewScrollWebMobile(
+  BuildContext context,
   TeamBloc teamBloc,
   List<Map<String, dynamic>> items,
   bool isRow,
@@ -307,7 +316,7 @@ Widget viewScrollWebMobile(
                   isArchived: isArchived,
                   onTap: isSelectionMode
                       ? () => onTeamSelected?.call(item)
-                      : () {},
+                      : () => context.go(RouterPaths.teamDetail, extra: teamId),
                   colorTeam: item["color"],
                   onArchiveTap: isSelectionMode
                       ? null
@@ -328,7 +337,7 @@ Widget viewScrollWebMobile(
                   isArchived: isArchived,
                   onTap: isSelectionMode
                       ? () => onTeamSelected?.call(item)
-                      : () {},
+                      : () => context.go(RouterPaths.teamDetail, extra: teamId),
                   colorTeam: item["color"],
                   teamId: teamId,
                   onArchiveTap: isSelectionMode

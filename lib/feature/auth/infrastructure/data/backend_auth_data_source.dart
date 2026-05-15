@@ -87,6 +87,76 @@ class BackendAuthDataSource {
     }
   }
 
+  Future<void> requestAccountDeletion(String email) async {
+    try {
+      await _dio.post(
+        '/public/api/account-deletion/request',
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Account deletion request failed: ${e.message}');
+      final responseData = e.response?.data;
+      throw Exception(
+        'Failed to request account deletion: '
+        '${e.response?.statusCode ?? 'no status'} – ${responseData ?? e.message}',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> confirmAccountDeletion(String token) async {
+    try {
+      final response = await _dio.post(
+        '/public/api/account-deletion/confirm',
+        data: {'token': token},
+      );
+      return Map<String, dynamic>.from(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      debugPrint(
+        '[BackendAuth] Account deletion confirmation failed: ${e.message}',
+      );
+      throw Exception(
+        'Failed to confirm account deletion: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.response?.data ?? e.message}',
+      );
+    }
+  }
+
+  Future<void> requestAccountReactivation(String email) async {
+    try {
+      await _dio.post(
+        '/public/api/account-deletion/reactivation/request',
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      debugPrint(
+        '[BackendAuth] Account reactivation request failed: ${e.message}',
+      );
+      final responseData = e.response?.data;
+      throw Exception(
+        'Failed to request account reactivation: '
+        '${e.response?.statusCode ?? 'no status'} – ${responseData ?? e.message}',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> confirmAccountReactivation(String token) async {
+    try {
+      final response = await _dio.post(
+        '/public/api/account-deletion/reactivation/confirm',
+        data: {'token': token},
+      );
+      return Map<String, dynamic>.from(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      debugPrint(
+        '[BackendAuth] Account reactivation confirmation failed: ${e.message}',
+      );
+      throw Exception(
+        'Failed to confirm account reactivation: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.response?.data ?? e.message}',
+      );
+    }
+  }
+
   Future<String> uploadProfileImage({
     required String firebaseUid,
     required List<int> imageBytes,

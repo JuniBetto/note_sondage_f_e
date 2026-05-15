@@ -6,7 +6,11 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class StatusClocking extends StatelessWidget {
-  const StatusClocking({super.key, this.isCompact = false, this.selectedTeamId});
+  const StatusClocking({
+    super.key,
+    this.isCompact = false,
+    this.selectedTeamId,
+  });
   final bool isCompact;
   final String? selectedTeamId;
 
@@ -32,35 +36,41 @@ class StatusClocking extends StatelessWidget {
             break;
           }
         }
-        final latestRecord = activeRecord ?? (records.isNotEmpty ? records.first : null);
+        final latestRecord =
+            activeRecord ?? (records.isNotEmpty ? records.first : null);
 
         final items = [
           _StatusItem(
             icon: Icons.login_rounded,
             label: localization.clockedInAt,
-            time: latestRecord?.clockInFormatted ?? '--:--',
+            time: activeRecord != null
+                ? latestRecord?.clockInFormatted ?? '--:--'
+                : '--:--',
             color: Colors.green,
           ),
           _StatusItem(
             icon: Icons.coffee_rounded,
             label: localization.startBreakAt,
-            time: _formatTime(
-              activeRecord?.currentBreakStartedAt ?? latestRecord?.lastBreakStartedAt,
-            ),
+            time: activeRecord != null
+                ? _formatTime(
+              activeRecord?.currentBreakStartedAt ??
+                  latestRecord?.lastBreakStartedAt,
+            ): '--:--',
             color: Colors.orange,
           ),
           _StatusItem(
             icon: Icons.play_circle_outline,
             label: localization.endBreakAt,
-            time: _formatTime(latestRecord?.lastBreakEndedAt),
+            time:  activeRecord != null
+                ? _formatTime(latestRecord?.lastBreakEndedAt): '--:--',
             color: Colors.blue,
           ),
           _StatusItem(
             icon: Icons.logout_rounded,
             label: localization.clockedOutAt,
             time: activeRecord != null
-                ? '--:--'
-                : (latestRecord?.clockOutFormatted ?? '--:--'),
+                ?
+                 (latestRecord?.clockOutFormatted ?? '--:--'):'--:--',
             color: Colors.red,
           ),
         ];

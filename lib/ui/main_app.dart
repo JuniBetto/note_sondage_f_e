@@ -335,10 +335,11 @@ class _MainAppState extends State<MainApp> {
   }
 
   String? _selectedClockingTeamId(ClockingState state) {
+    final blocSelectedTeamId = getIt<ClockingBloc>().selectedTeamId;
     if (state is ClockingRecordsLoaded) return state.selectedTeamId;
     if (state is ClockingActionInProgress) return state.selectedTeamId;
     if (state is ClockingActionSuccess) return state.selectedTeamId;
-    return null;
+    return blocSelectedTeamId;
   }
 
   bool _isDuplicateNotification(String notificationId) {

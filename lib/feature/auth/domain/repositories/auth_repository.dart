@@ -47,6 +47,18 @@ abstract class AuthRepository {
   /// Invia o reinvia l'email di verifica per l'utente autenticato.
   Future<void> sendEmailVerification();
 
+  /// Richiede l'invio dell'email di conferma per cancellare l'account.
+  Future<void> requestAccountDeletion({required String email});
+
+  /// Conferma la cancellazione dell'account usando il token ricevuto via email.
+  Future<void> confirmAccountDeletion({required String token});
+
+  /// Richiede l'invio dell'email di conferma per riattivare l'account.
+  Future<void> requestAccountReactivation({required String email});
+
+  /// Conferma la riattivazione dell'account usando il token ricevuto via email.
+  Future<void> confirmAccountReactivation({required String token});
+
   /// Aggiorna l'email di contatto usata da inviti e notifiche.
   Future<void> updateContactEmail({required String email});
 

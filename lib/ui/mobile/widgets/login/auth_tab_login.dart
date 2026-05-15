@@ -14,6 +14,8 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/auth/mfa_sign_in_dialog.dart';
 import 'package:note_sondage/ui/widgets/auth/phone_sign_in_dialog.dart';
+import 'package:note_sondage/ui/widgets/auth/request_account_deletion_dialog.dart';
+import 'package:note_sondage/ui/widgets/auth/request_account_reactivation_dialog.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
@@ -150,6 +152,24 @@ class _AuthTabLoginState extends State<AuthTabLogin>
       context,
       'Your account has been verified and you are now signed in.',
       title: 'Phone sign-in completed',
+    );
+  }
+
+  Future<void> _openAccountDeletionDialog() async {
+    await showDialog<bool>(
+      context: context,
+      builder: (_) => RequestAccountDeletionDialog(
+        initialEmail: _loginEmailController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> _openAccountReactivationDialog() async {
+    await showDialog<bool>(
+      context: context,
+      builder: (_) => RequestAccountReactivationDialog(
+        initialEmail: _loginEmailController.text.trim(),
+      ),
     );
   }
 
@@ -309,18 +329,39 @@ class _AuthTabLoginState extends State<AuthTabLogin>
             ),
             const SizedBox(height: 16),
             Row(
-              mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CustomAppButton(
-                  type: ButtonType.elevated,
-                  backgroundColor: Colors.transparent,
-                  onPressed: () {
-                    context.pushNamed(RouterPaths.forgotPassword);
-                    //context.goNamed(RouterPaths.forgotPassword);
-                  },
-                  isActive: true,
-                  child: Text(localization.forgotPassword),
+                Expanded(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      CustomAppButton(
+                        type: ButtonType.elevated,
+                        backgroundColor: Colors.transparent,
+                        onPressed: () {
+                          context.pushNamed(RouterPaths.forgotPassword);
+                        },
+                        isActive: true,
+                        child: Text(localization.forgotPassword),
+                      ),
+                      CustomAppButton(
+                        type: ButtonType.elevated,
+                        backgroundColor: Colors.transparent,
+                        onPressed: _openAccountDeletionDialog,
+                        isActive: true,
+                        child: Text(localization.deleteAccount),
+                      ),
+                      CustomAppButton(
+                        type: ButtonType.elevated,
+                        backgroundColor: Colors.transparent,
+                        onPressed: _openAccountReactivationDialog,
+                        isActive: true,
+                        child: Text(localization.reactivateAccount),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

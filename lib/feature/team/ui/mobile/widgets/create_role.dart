@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.d
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class CreateRoleWidget extends StatefulWidget {
   const CreateRoleWidget({super.key, this.teamId});
@@ -75,18 +76,11 @@ class _CreateRoleWidgetState extends State<CreateRoleWidget> {
       bloc: _roleBloc,
       listener: (context, state) {
         if (state is RoleError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${localization.errorPrefix} ${state.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.showError(context, state.message);
         } else if (state is RoleCreated) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(localization.roleCreatedSuccessfully),
-              backgroundColor: Colors.green,
-            ),
+          AppSnackBar.showSuccess(
+            context,
+            localization.roleCreatedSuccessfully,
           );
           // Reset form dopo creazione
           nameController.clear();

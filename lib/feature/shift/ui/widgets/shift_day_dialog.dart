@@ -39,6 +39,7 @@ class ShiftDayDialogResult {
     this.isPublic = false,
     this.teamId,
     this.targetUserIds = const [],
+    this.scheduledDates = const [],
   });
 
   final String? profileId;
@@ -59,6 +60,9 @@ class ShiftDayDialogResult {
   /// One entry = assign to that specific member.
   /// Multiple entries = assign to all selected members.
   final List<String> targetUserIds;
+
+  /// Days on which the shift should be created.
+  final List<DateTime> scheduledDates;
 }
 
 /// Modal bottom-sheet / dialog for assigning or editing a shift on a single day.
@@ -137,6 +141,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   ShiftAlarmType _alarmType = ShiftAlarmType.alarm;
   late bool _isPublic;
   late bool _readOnly;
+  late DateTime _rangeEndDate;
   final _noteCtrl = TextEditingController();
   final Map<String, List<TeamMemberforView>> _membersByTeamId =
       <String, List<TeamMemberforView>>{};
@@ -215,6 +220,35 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     return _selectedMemberIds.isNotEmpty;
   }
 
+  bool get _hasValidTimeRange {
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    if (_overnight) {
+      return startMinutes != endMinutes;
+    }
+    return endMinutes > startMinutes;
+  }
+
+  List<DateTime> get _scheduledDates {
+    final start = DateTime(
+      widget.date.year,
+      widget.date.month,
+      widget.date.day,
+    );
+    final end = DateTime(
+      _rangeEndDate.year,
+      _rangeEndDate.month,
+      _rangeEndDate.day,
+    );
+    final dates = <DateTime>[];
+    var current = start;
+    while (!current.isAfter(end)) {
+      dates.add(current);
+      current = DateTime(current.year, current.month, current.day + 1);
+    }
+    return dates;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -236,6 +270,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       _overnight = ex.overnight;
       _alarmOffsets = List.from(ex.alarmOffsets);
       _isPublic = ex.isPublic;
+      _rangeEndDate = widget.date;
       _noteCtrl.text = ex.note ?? '';
       if (ex.teamId != null) {
         _selectedTeam = widget.ownerTeams
@@ -255,12 +290,35 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       _overnight = false;
       _alarmOffsets = [-30, -15];
       _isPublic = false;
+      _rangeEndDate = widget.date;
     }
     // Non-owners cannot edit existing public shifts
     _readOnly =
         !widget.canManagePublicShifts &&
         widget.existing != null &&
         (widget.existing!.isPublic);
+  }
+
+  Future<void> _pickRangeEndDate(AppLocalizations loc) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _rangeEndDate,
+      firstDate: DateTime(widget.date.year, widget.date.month, widget.date.day),
+      lastDate: DateTime(widget.date.year + 2, 12, 31),
+      helpText: loc.shiftRepeatUntil,
+    );
+    if (picked == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _rangeEndDate = DateTime(picked.year, picked.month, picked.day);
+    });
+  }
+
+  String _formatDateLabel(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 
   @override
@@ -450,7 +508,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                         Icons.close,
                         color: colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
-                      tooltip: 'Chiudi',
+                      tooltip: loc.close,
                       onPressed: () => Navigator.of(context).pop(null),
                     ),
                   ],
@@ -568,7 +626,26 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       ),
                     ),
                   ],
-                ),
+                ),const SizedBox(height: 16),
+                if (!widget.useDialogLayout && widget.existing == null)
+                  const SizedBox(height: 12),
+                if (widget.existing == null)
+                  InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: _readOnly ? null : () => _pickRangeEndDate(loc),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: loc.shiftRepeatUntil,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        isDense: true,
+                        suffixIcon: const Icon(Icons.calendar_today_outlined),
+                        helperText: loc.shiftRepeatUntilHelp,
+                      ),
+                      child: Text(_formatDateLabel(_rangeEndDate)),
+                    ),
+                  ),
                 const SizedBox(height: 8),
 
                 // ── Overnight toggle ──────────────────────────────────────────
@@ -583,6 +660,17 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       ? null
                       : (v) => setState(() => _overnight = v),
                 ),
+                if (!_hasValidTimeRange)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      loc.shiftEndMustBeAfterStart,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: appError,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
 
                 // ── Alarm offsets ─────────────────────────────────────────────
                 Text(
@@ -756,10 +844,11 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: const Text('Chiudi'),
+                          child: Text(loc.close),
                         )
                       : FilledButton(
-                          onPressed: !_hasValidTeamSelection
+                          onPressed:
+                              !_hasValidTeamSelection || !_hasValidTimeRange
                               ? null
                               : () async {
                                   if (_alarmOffsets.isNotEmpty &&
@@ -785,6 +874,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                                           _selectedTeam?.team.id ??
                                           widget.existing?.teamId,
                                       targetUserIds: _resolvedTargetUserIds,
+                                      scheduledDates: _scheduledDates,
                                     ),
                                   );
                                 },

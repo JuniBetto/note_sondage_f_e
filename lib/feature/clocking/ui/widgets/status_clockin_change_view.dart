@@ -12,6 +12,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class StatusClockInChangeView extends StatefulWidget {
@@ -260,14 +261,11 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           child: _WebRecordRow(
                             record: record,
                             isOwner: isOwner,
-                            isArchived: _archivedRecordIds.contains(
-                              record.id,
-                            ),
+                            isArchived: _archivedRecordIds.contains(record.id),
                             onDecommit: () => _decommitRecord(record),
                             onCommit: () => _commitRecord(record),
                             onEdit: () => _editRecord(record),
-                            onArchive: () =>
-                                _toggleArchiveRecord(record.id),
+                            onArchive: () => _toggleArchiveRecord(record.id),
                           ),
                         ),
                       )
@@ -542,9 +540,11 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+    if (color == Colors.red) {
+      AppSnackBar.showResolvedError(context, message);
+      return;
+    }
+    AppSnackBar.showWarning(context, message);
   }
 
   Future<void> _exportPdf(

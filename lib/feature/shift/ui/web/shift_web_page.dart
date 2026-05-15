@@ -24,6 +24,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 
 class ShiftWebPage extends StatefulWidget {
@@ -367,24 +368,29 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       return;
     }
 
+    final scheduledDates = result.scheduledDates.isEmpty
+        ? <DateTime>[date]
+        : result.scheduledDates;
     final targetUserIds = result.targetUserIds.isEmpty
         ? const <String?>[null]
         : result.targetUserIds.cast<String?>();
-    for (final targetUserId in targetUserIds) {
-      context.read<ShiftBloc>().add(
-        AssignShiftEvent(
-          shiftDate: date,
-          profileId: result.profileId,
-          startTime: result.startTime,
-          endTime: result.endTime,
-          overnight: result.overnight,
-          note: result.note,
-          alarmOffsets: result.alarmOffsets,
-          isPublic: result.isPublic,
-          teamId: result.isPublic ? result.teamId : null,
-          targetUserId: targetUserId,
-        ),
-      );
+    for (final scheduledDate in scheduledDates) {
+      for (final targetUserId in targetUserIds) {
+        context.read<ShiftBloc>().add(
+          AssignShiftEvent(
+            shiftDate: scheduledDate,
+            profileId: result.profileId,
+            startTime: result.startTime,
+            endTime: result.endTime,
+            overnight: result.overnight,
+            note: result.note,
+            alarmOffsets: result.alarmOffsets,
+            isPublic: result.isPublic,
+            teamId: result.isPublic ? result.teamId : null,
+            targetUserId: targetUserId,
+          ),
+        );
+      }
     }
   }
 
@@ -507,12 +513,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
               _loadProfiles();
             }
             if (state is ShiftError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: colorScheme.errorColor,
-                ),
-              );
+              AppSnackBar.showError(context, state.message);
             }
           },
         ),
@@ -590,9 +591,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                         children: [
                           Text(
                             loc.shiftCalendar,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
+                            style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.iconLabel,
@@ -601,9 +600,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                           const SizedBox(height: 2),
                           Text(
                             loc.shiftCalendarSubtitle,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(color: Colors.grey[500]),
                           ),
                         ],

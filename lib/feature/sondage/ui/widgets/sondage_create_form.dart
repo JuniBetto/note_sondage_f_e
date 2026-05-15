@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/team_mapper.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/time_range_picker.dart';
 
@@ -197,9 +198,15 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: backgroundColor),
-    );
+    if (backgroundColor == Colors.red) {
+      AppSnackBar.showResolvedError(context, message);
+      return;
+    }
+    if (backgroundColor != null) {
+      AppSnackBar.showSuccess(context, message);
+      return;
+    }
+    AppSnackBar.showWarning(context, message);
   }
 
   Future<List<TeamEntity>> _loadCreatableTeams() async {

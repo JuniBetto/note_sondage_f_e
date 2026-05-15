@@ -18,10 +18,12 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class CreateTeamMobile extends StatefulWidget {
   final String? teamId;
+  final bool readOnly;
   final Function()? onTeamCreated;
   final ValueChanged<TeamSectionPermissions>? onPermissionsChanged;
 
@@ -29,6 +31,7 @@ class CreateTeamMobile extends StatefulWidget {
     super.key,
     this.onTeamCreated,
     this.teamId,
+    this.readOnly = false,
     this.onPermissionsChanged,
   });
 
@@ -100,6 +103,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
     final localization = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return BlocListener<TeamBloc, TeamState>(
       bloc: _teamBloc,
@@ -119,11 +123,9 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
           context.go(RouterPaths.home);
         } else if (teamState is TeamCreated) {
           _teamBloc.add(LoadTeamsEvent());
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(localization.teamCreatedSuccessfully),
-              backgroundColor: Colors.green,
-            ),
+          AppSnackBar.showSuccess(
+            context,
+            localization.teamCreatedSuccessfully,
           );
           setState(() {
             listInviteFormData.clear();
@@ -141,12 +143,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
           }
         } else if (teamState is TeamError) {
           if (_isLoading) setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${localization.errorPrefix} ${teamState.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.showError(context, teamState.message);
         }
       },
       child: Form(
@@ -187,11 +184,13 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                           CustomInputField(
                             hintText: localization.teamName,
                             controller: nameTeamController,
+                            enabled: !widget.readOnly,
                           ),
                           const SizedBox(height: 14),
                           CustomInputField(
                             hintText: localization.teamDescription,
                             controller: descriptionTeamController,
+                            enabled: !widget.readOnly,
                           ),
                         ],
                       ),
@@ -223,6 +222,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       child: ListCheckbox(
                         selectedColor: selectedColor,
                         isEditMode: _isEditMode,
+                        isEnabled: !widget.readOnly,
                       ),
                     ),
 
@@ -250,6 +250,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                           ? TeamMembersSection(
                               teamId: widget.teamId!,
                               ownerUserId: _ownerUserId,
+                              forceReadOnly: widget.readOnly,
                               onPermissionsChanged: widget.onPermissionsChanged,
                             )
                           : AddUserMobile(
@@ -261,38 +262,48 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                     const SizedBox(height: 32),
 
                     // ── Save / Create Button ──
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _onSave,
-                        icon: Icon(
-                          _isEditMode
-                              ? Icons.save_rounded
-                              : Icons.check_rounded,
-                          size: 20,
+                    if (widget.readOnly)
+                      Center(
+                        child: Text(
+                          'This team is in read-only mode.',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.descriptionColor,
+                          ),
                         ),
-                        label: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Text(
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _onSave,
+                          icon: Icon(
                             _isEditMode
-                                ? localization.editTeam
-                                : localization.createTeam,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                                ? Icons.save_rounded
+                                : Icons.check_rounded,
+                            size: 20,
+                          ),
+                          label: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              _isEditMode
+                                  ? localization.editTeam
+                                  : localization.createTeam,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF7C4DFF),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF7C4DFF),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),

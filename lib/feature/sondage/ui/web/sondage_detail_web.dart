@@ -14,6 +14,7 @@ import 'package:note_sondage/feature/sondage/ui/widgets/sondage_detail_sections.
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class SondageDetailWeb extends StatefulWidget {
   const SondageDetailWeb({super.key, required this.sondageId});
@@ -248,9 +249,7 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
           }
           _handleBlocState(state);
           if (state is SondageError && context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            AppSnackBar.showError(context, state.message);
           }
         },
         child: !_hasInitialContent

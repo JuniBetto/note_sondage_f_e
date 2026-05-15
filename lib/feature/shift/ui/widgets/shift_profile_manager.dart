@@ -49,140 +49,169 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
     bool overnight = existing?.overnight ?? false;
     bool isPublic = existing?.isPublic ?? false;
 
+    bool hasValidTimeRange() {
+      final startMinutes = startTime.hour * 60 + startTime.minute;
+      final endMinutes = endTime.hour * 60 + endTime.minute;
+      if (overnight) {
+        return startMinutes != endMinutes;
+      }
+      return endMinutes > startMinutes;
+    }
+
     await showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: Text(
-            existing == null ? loc.createCustomProfile : loc.editShiftProfile,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  decoration: InputDecoration(
-                    labelText: loc.shiftProfileName,
-                    border: const OutlineInputBorder(),
+        builder: (ctx, setS) {
+          final canSubmit =
+              nameCtrl.text.trim().isNotEmpty && hasValidTimeRange();
+          return AlertDialog(
+            title: Text(
+              existing == null ? loc.createCustomProfile : loc.editShiftProfile,
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    onChanged: (_) => setS(() {}),
+                    decoration: InputDecoration(
+                      labelText: loc.shiftProfileName,
+                      border: const OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: colorCtrl,
-                  decoration: InputDecoration(
-                    labelText: loc.shiftColor,
-                    border: const OutlineInputBorder(),
-                    prefixIcon: _ColorPreview(hex: colorCtrl.text),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: colorCtrl,
+                    decoration: InputDecoration(
+                      labelText: loc.shiftColor,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: _ColorPreview(hex: colorCtrl.text),
+                    ),
+                    onChanged: (_) => setS(() {}),
                   ),
-                  onChanged: (_) => setS(() {}),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TimePickerTile(
-                        label: loc.shiftStart,
-                        time: startTime,
-                        onPicked: (t) => setS(() => startTime = t),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _TimePickerTile(
+                          label: loc.shiftStart,
+                          time: startTime,
+                          onPicked: (t) => setS(() => startTime = t),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _TimePickerTile(
+                          label: loc.shiftEnd,
+                          time: endTime,
+                          onPicked: (t) => setS(() => endTime = t),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SwitchListTile(
+                    value: overnight,
+                    onChanged: (v) => setS(() => overnight = v),
+                    title: Text(loc.overnightShift),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  if (!hasValidTimeRange())
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        loc.shiftEndMustBeAfterStart,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.errorColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _TimePickerTile(
-                        label: loc.shiftEnd,
-                        time: endTime,
-                        onPicked: (t) => setS(() => endTime = t),
-                      ),
-                    ),
-                  ],
-                ),
-                SwitchListTile(
-                  value: overnight,
-                  onChanged: (v) => setS(() => overnight = v),
-                  title: Text(loc.overnightShift),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                // ── Visibility toggle (owner only) ────────────────────
-                if (widget.isOwner)
-                  Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    decoration: BoxDecoration(
-                      color: isPublic
-                          ? Colors.blue.withValues(alpha: 0.08)
-                          : Colors.grey.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
+                  // ── Visibility toggle (owner only) ────────────────────
+                  if (widget.isOwner)
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      decoration: BoxDecoration(
                         color: isPublic
-                            ? Colors.blue.withValues(alpha: 0.4)
-                            : Colors.grey.withValues(alpha: 0.3),
+                            ? Colors.blue.withValues(alpha: 0.08)
+                            : Colors.grey.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isPublic
+                              ? Colors.blue.withValues(alpha: 0.4)
+                              : Colors.grey.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: SwitchListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ),
+                        value: isPublic,
+                        onChanged: (v) => setS(() => isPublic = v),
+                        secondary: Icon(
+                          isPublic ? Icons.public : Icons.lock_outline,
+                          size: 18,
+                          color: isPublic ? Colors.blue : Colors.grey,
+                        ),
+                        title: Text(
+                          isPublic ? 'Pubblico' : 'Privato',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        subtitle: Text(
+                          isPublic
+                              ? 'Visibile a tutti i membri del team'
+                              : 'Visibile solo a te',
+                          style: const TextStyle(fontSize: 11),
+                        ),
                       ),
                     ),
-                    child: SwitchListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      value: isPublic,
-                      onChanged: (v) => setS(() => isPublic = v),
-                      secondary: Icon(
-                        isPublic ? Icons.public : Icons.lock_outline,
-                        size: 18,
-                        color: isPublic ? Colors.blue : Colors.grey,
-                      ),
-                      title: Text(
-                        isPublic ? 'Pubblico' : 'Privato',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                      subtitle: Text(
-                        isPublic
-                            ? 'Visibile a tutti i membri del team'
-                            : 'Visibile solo a te',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(loc.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                final name = nameCtrl.text.trim();
-                if (name.isEmpty) return;
-                if (existing == null) {
-                  context.read<ShiftBloc>().add(
-                    CreateShiftProfileEvent(
-                      name: name,
-                      color: colorCtrl.text.trim(),
-                      startTime: startTime,
-                      endTime: endTime,
-                      overnight: overnight,
-                      alarmOffsets: const [],
-                      isPublic: isPublic,
-                    ),
-                  );
-                } else {
-                  context.read<ShiftBloc>().add(
-                    UpdateShiftProfileEvent(
-                      profileId: existing.id,
-                      name: name,
-                      color: colorCtrl.text.trim(),
-                      startTime: startTime,
-                      endTime: endTime,
-                      overnight: overnight,
-                      alarmOffsets: const [],
-                      isPublic: isPublic,
-                    ),
-                  );
-                }
-                Navigator.pop(ctx);
-              },
-              child: Text(loc.save),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(loc.cancel),
+              ),
+              FilledButton(
+                onPressed: !canSubmit
+                    ? null
+                    : () {
+                        final name = nameCtrl.text.trim();
+                        if (existing == null) {
+                          context.read<ShiftBloc>().add(
+                            CreateShiftProfileEvent(
+                              name: name,
+                              color: colorCtrl.text.trim(),
+                              startTime: startTime,
+                              endTime: endTime,
+                              overnight: overnight,
+                              alarmOffsets: const [],
+                              isPublic: isPublic,
+                            ),
+                          );
+                        } else {
+                          context.read<ShiftBloc>().add(
+                            UpdateShiftProfileEvent(
+                              profileId: existing.id,
+                              name: name,
+                              color: colorCtrl.text.trim(),
+                              startTime: startTime,
+                              endTime: endTime,
+                              overnight: overnight,
+                              alarmOffsets: const [],
+                              isPublic: isPublic,
+                            ),
+                          );
+                        }
+                        Navigator.pop(ctx);
+                      },
+                child: Text(loc.save),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

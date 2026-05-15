@@ -8,6 +8,7 @@ import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/widgets/role_permission_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'dart:async';
 
@@ -98,9 +99,7 @@ class _ListRolePermissionState extends State<ListRolePermission> {
             setState(() {
               _isLoading = false;
             });
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            AppSnackBar.showError(context, state.message);
           }
         },
         builder: (context, state) {

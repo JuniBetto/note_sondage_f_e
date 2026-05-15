@@ -6,6 +6,7 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class ButtonClocking extends StatefulWidget {
   const ButtonClocking({
@@ -31,14 +32,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
       listenWhen: (previous, current) => current is ClockingError,
       listener: (context, state) {
         if (state is! ClockingError) return;
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
+        AppSnackBar.showError(context, state.message);
       },
       child: BlocBuilder<TeamBloc, TeamState>(
         builder: (context, teamState) {

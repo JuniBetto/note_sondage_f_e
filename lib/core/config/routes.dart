@@ -32,6 +32,8 @@ import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_web.dart';
 import 'package:note_sondage/ui/app_keys.dart';
 import 'package:note_sondage/ui/widgets/about_page.dart';
+import 'package:note_sondage/ui/widgets/auth/confirm_account_deletion_page.dart';
+import 'package:note_sondage/ui/widgets/auth/confirm_account_reactivation_page.dart';
 import 'package:note_sondage/ui/widgets/auth/confirm_registration_page.dart';
 import 'package:note_sondage/ui/widgets/auth/reset_password_page.dart';
 import 'package:note_sondage/ui/widgets/splash_screen/splash_sreen_begin.dart';
@@ -161,7 +163,18 @@ GoRouter createRouter(BuildContext context) {
               path: RouterPaths.updateTeam,
               name: RouterPaths.updateTeam,
               pageBuilder: (context, state) => NoTransitionPage<void>(
-                child: UpdateTeamWeb(teamId: state.extra as String?),
+                child: UpdateTeamWeb(teamId: state.extra as String?,
+                readOnly: true,),
+              ),
+            ),
+            GoRoute(
+              path: RouterPaths.teamDetail,
+              name: RouterPaths.teamDetail,
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                child: UpdateTeamWeb(
+                  teamId: state.extra as String?,
+                  readOnly: true,
+                ),
               ),
             ),
             GoRoute(
@@ -274,6 +287,16 @@ GoRouter createRouter(BuildContext context) {
           ),
         ),
         GoRoute(
+          path: RouterPaths.teamDetail,
+          name: RouterPaths.teamDetail,
+          pageBuilder: (context, state) => NoTransitionPage<void>(
+            child: UpdateTeamMobile(
+              teamId: state.extra as String?,
+              readOnly: true,
+            ),
+          ),
+        ),
+        GoRoute(
           path: RouterPaths.sondageDetail,
           name: RouterPaths.sondageDetail,
           pageBuilder: (context, state) {
@@ -356,6 +379,24 @@ GoRouter createRouter(BuildContext context) {
         ),
       ),
       GoRoute(
+        path: RouterPaths.confirmAccountDeletion,
+        name: RouterPaths.confirmAccountDeletion,
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          child: ConfirmAccountDeletionPage(
+            queryParameters: state.uri.queryParameters,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: RouterPaths.confirmAccountReactivation,
+        name: RouterPaths.confirmAccountReactivation,
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          child: ConfirmAccountReactivationPage(
+            queryParameters: state.uri.queryParameters,
+          ),
+        ),
+      ),
+      GoRoute(
         path: RouterPaths.splashScreen,
         name: RouterPaths.splashScreen,
         pageBuilder: (context, state) =>
@@ -374,11 +415,16 @@ GoRouter createRouter(BuildContext context) {
       final isAuthenticated = authBloc.isAuthenticated;
       final currentPath = state.fullPath;
 
-      final isPublicRoute =
+      final isGuestOnlyRoute =
           currentPath == RouterPaths.login ||
           currentPath == RouterPaths.splashScreen ||
-          currentPath == RouterPaths.forgotPassword ||
+          currentPath == RouterPaths.forgotPassword;
+
+      final isPublicRoute =
+          isGuestOnlyRoute ||
           currentPath == RouterPaths.confirmRegistration ||
+          currentPath == RouterPaths.confirmAccountDeletion ||
+          currentPath == RouterPaths.confirmAccountReactivation ||
           currentPath == RouterPaths.resetPassword;
 
       // 0. Operazione in corso (login/register/SSO): non toccare la rotta
@@ -393,7 +439,7 @@ GoRouter createRouter(BuildContext context) {
       // 2. Se l'utente è loggato (Authenticated):
       if (isAuthenticated) {
         // Se è su una rotta pubblica (login o splash), reindirizza a home
-        return isPublicRoute ? RouterPaths.home : null;
+        return isGuestOnlyRoute ? RouterPaths.home : null;
       }
 
       // 3. Se l'utente NON è loggato (Unauthenticated):
@@ -433,6 +479,8 @@ abstract class RouterPaths {
   static const login = '/login';
   static const about = '/about';
   static const confirmRegistration = '/confirm-registration';
+  static const confirmAccountDeletion = '/confirm-account-deletion';
+  static const confirmAccountReactivation = '/confirm-account-reactivation';
   static const resetPassword = '/reset-password';
   static const team = '/team';
   static const forgotPassword = '/forgot_password';
@@ -447,6 +495,7 @@ abstract class RouterPaths {
   static const shifts = '/shifts';
   static const createTeam = '/create_team';
   static const updateTeam = '/update_team';
+  static const teamDetail = '/team_detail';
   static const permissionPage = '/permission_page';
   static const rolePage = '/role_page';
   static const sondageDetail = '/sondage_detail';

@@ -150,6 +150,192 @@ abstract class AppLocalizations {
   /// **'Forgot Password'**
   String get forgotPassword;
 
+  /// No description provided for @deleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate account'**
+  String get deleteAccount;
+
+  /// No description provided for @accountDeletionDialogMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the email address of the account you want to deactivate. We will send a confirmation link before disabling it.'**
+  String get accountDeletionDialogMessage;
+
+  /// No description provided for @sendConfirmationEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send confirmation email'**
+  String get sendConfirmationEmail;
+
+  /// No description provided for @accountDeletionRequestSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email'**
+  String get accountDeletionRequestSentTitle;
+
+  /// No description provided for @accountDeletionRequestSentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'If an account exists for this email, we sent a confirmation link to complete the deactivation.'**
+  String get accountDeletionRequestSentMessage;
+
+  /// No description provided for @accountDeletionRequestFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to start deactivation'**
+  String get accountDeletionRequestFailedTitle;
+
+  /// No description provided for @accountDeletionRequestFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not send the deactivation confirmation email right now. Please try again.'**
+  String get accountDeletionRequestFailedMessage;
+
+  /// No description provided for @accountDeletionOpenEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the deactivation email'**
+  String get accountDeletionOpenEmailTitle;
+
+  /// No description provided for @accountDeletionOpenEmailMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the deactivation confirmation link from your email to finish disabling the account.'**
+  String get accountDeletionOpenEmailMessage;
+
+  /// No description provided for @accountDeletionConfirmedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deactivated'**
+  String get accountDeletionConfirmedTitle;
+
+  /// No description provided for @accountDeletionConfirmedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been disabled successfully. You can close this page.'**
+  String get accountDeletionConfirmedMessage;
+
+  /// No description provided for @accountDeletionFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivation unavailable'**
+  String get accountDeletionFailedTitle;
+
+  /// No description provided for @accountDeletionFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not confirm this deactivation link. Request a new email and try again.'**
+  String get accountDeletionFailedMessage;
+
+  /// No description provided for @accountDeletionLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming deactivation'**
+  String get accountDeletionLoadingTitle;
+
+  /// No description provided for @accountDeletionLoadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We are validating your account deactivation link...'**
+  String get accountDeletionLoadingMessage;
+
+  /// No description provided for @reactivateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivate account'**
+  String get reactivateAccount;
+
+  /// No description provided for @accountReactivationDialogMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the email address of the account you want to reactivate. We will send a confirmation link before restoring access.'**
+  String get accountReactivationDialogMessage;
+
+  /// No description provided for @accountReactivationRequestSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email'**
+  String get accountReactivationRequestSentTitle;
+
+  /// No description provided for @accountReactivationRequestSentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'If an account exists for this email, we sent a confirmation link to complete the reactivation.'**
+  String get accountReactivationRequestSentMessage;
+
+  /// No description provided for @accountReactivationRequestFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to start reactivation'**
+  String get accountReactivationRequestFailedTitle;
+
+  /// No description provided for @accountReactivationRequestFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not send the reactivation confirmation email right now. Please try again.'**
+  String get accountReactivationRequestFailedMessage;
+
+  /// No description provided for @accountReactivationOpenEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the reactivation email'**
+  String get accountReactivationOpenEmailTitle;
+
+  /// No description provided for @accountReactivationOpenEmailMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the reactivation confirmation link from your email to restore access to your account.'**
+  String get accountReactivationOpenEmailMessage;
+
+  /// No description provided for @accountReactivationConfirmedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account reactivated'**
+  String get accountReactivationConfirmedTitle;
+
+  /// No description provided for @accountReactivationConfirmedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is active again. You can sign in now.'**
+  String get accountReactivationConfirmedMessage;
+
+  /// No description provided for @accountReactivationFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivation unavailable'**
+  String get accountReactivationFailedTitle;
+
+  /// No description provided for @accountReactivationFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not confirm this reactivation link. Request a new email and try again.'**
+  String get accountReactivationFailedMessage;
+
+  /// No description provided for @accountReactivationLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming reactivation'**
+  String get accountReactivationLoadingTitle;
+
+  /// No description provided for @accountReactivationLoadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We are validating your account reactivation link...'**
+  String get accountReactivationLoadingMessage;
+
+  /// No description provided for @backToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to login'**
+  String get backToLogin;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
   /// No description provided for @continueWithGoogle.
   ///
   /// In en, this message translates to:
@@ -396,6 +582,12 @@ abstract class AppLocalizations {
   /// **'Edit team'**
   String get editTeam;
 
+  /// No description provided for @teamDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Team details'**
+  String get teamDetails;
+
   /// No description provided for @language.
   ///
   /// In en, this message translates to:
@@ -606,6 +798,78 @@ abstract class AppLocalizations {
   /// **'Submit'**
   String get submit;
 
+  /// No description provided for @contactUsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what happened and we will open your email app with a ready-to-send draft.'**
+  String get contactUsDescription;
+
+  /// No description provided for @contactUsDraftHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your email app will open with Junibetto@gmail.com already selected as recipient.'**
+  String get contactUsDraftHint;
+
+  /// No description provided for @contactUsReplyTime.
+  ///
+  /// In en, this message translates to:
+  /// **'We usually reply within 1-2 business days.'**
+  String get contactUsReplyTime;
+
+  /// No description provided for @supportEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Support email'**
+  String get supportEmail;
+
+  /// No description provided for @sendEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send email'**
+  String get sendEmail;
+
+  /// No description provided for @copyEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy email'**
+  String get copyEmail;
+
+  /// No description provided for @emailCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Support email copied to clipboard.'**
+  String get emailCopied;
+
+  /// No description provided for @couldNotOpenEmailApp.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not open your email app. Copy the address and send the message manually.'**
+  String get couldNotOpenEmailApp;
+
+  /// No description provided for @contactUsEmailSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Note Sondage support request'**
+  String get contactUsEmailSubject;
+
+  /// No description provided for @contactUsTopicsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bugs, feedback, product ideas'**
+  String get contactUsTopicsTitle;
+
+  /// No description provided for @contactUsTopicsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this space to report issues, ask for help, or share improvements you would love to see.'**
+  String get contactUsTopicsBody;
+
+  /// No description provided for @contactUsFormHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The draft will include your details so support can reply faster.'**
+  String get contactUsFormHint;
+
   /// No description provided for @none.
   ///
   /// In en, this message translates to:
@@ -725,6 +989,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancel;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
 
   /// No description provided for @confirm.
   ///
@@ -1289,6 +1559,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Overnight Shift'**
   String get overnightShift;
+
+  /// No description provided for @shiftRepeatUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat until'**
+  String get shiftRepeatUntil;
+
+  /// No description provided for @shiftRepeatUntilHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A shift will be created for each day in the selected interval.'**
+  String get shiftRepeatUntilHelp;
+
+  /// No description provided for @shiftEndMustBeAfterStart.
+  ///
+  /// In en, this message translates to:
+  /// **'End time must be after start time. If the shift ends the next day, enable Overnight Shift.'**
+  String get shiftEndMustBeAfterStart;
 
   /// No description provided for @alarms.
   ///

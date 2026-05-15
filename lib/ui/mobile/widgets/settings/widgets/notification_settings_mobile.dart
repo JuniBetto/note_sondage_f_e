@@ -109,7 +109,7 @@ class _NotificationSettingsMobileState
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Configure how you want to be notified',
+                          'Choose how updates and shift reminders reach you.',
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -167,7 +167,7 @@ class _NotificationSettingsMobileState
 
               const SizedBox(height: 20),
 
-              _buildSectionTitle(context, 'Shift alarm'),
+              _buildSectionTitle(context, 'Shift reminders'),
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
@@ -183,7 +183,29 @@ class _NotificationSettingsMobileState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Alarm feedback',
+                        'Reminder mode',
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Choose in each shift whether you want a standard notification or a stronger alarm.',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.descriptionColor,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoNote(
+                        context,
+                        icon: Icons.info_outline_rounded,
+                        title: 'How it works',
+                        message:
+                            'Notification shows a normal reminder. Alarm uses the settings below and is meant for stronger shift alerts.',
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Alarm style',
                         style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -191,8 +213,8 @@ class _NotificationSettingsMobileState
                       const SizedBox(height: 4),
                       Text(
                         supportsVibrateOnlyShiftAlarmFeedback
-                            ? 'Choose whether shift alarms should vibrate or play a ringtone. Default: vibrate.'
-                            : 'On iPhone, shift alarms use a ringtone. Vibration-only mode is not available for local alarms.',
+                            ? 'Choose whether Alarm mode should vibrate or play a ringtone. Default: Vibrate.'
+                            : 'On iPhone, Alarm mode uses a ringtone. Vibration-only alarms are not available for local notifications.',
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.descriptionColor,
                         ),
@@ -259,9 +281,16 @@ class _NotificationSettingsMobileState
                         ),
                       const SizedBox(height: 16),
                       Text(
-                        'Duration: ${_shiftAlarmDurationSeconds}s',
+                        'Alarm duration: ${_shiftAlarmDurationSeconds}s',
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'This duration applies only when a shift uses Alarm mode.',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.descriptionColor,
                         ),
                       ),
                       Slider(
@@ -358,7 +387,7 @@ class _NotificationSettingsMobileState
 
               if (kDebugMode) ...[
                 const SizedBox(height: 20),
-                _buildSectionTitle(context, 'Debug'),
+                _buildSectionTitle(context, 'Debug tools'),
                 const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
@@ -374,7 +403,7 @@ class _NotificationSettingsMobileState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Run local notification self-tests on this device.',
+                          'Use these tests only while debugging notifications on this device.',
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -602,6 +631,55 @@ class _NotificationSettingsMobileState
           letterSpacing: 1.2,
           color: theme.colorScheme.descriptionColor,
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoNote(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String message,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.14)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  message,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.descriptionColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

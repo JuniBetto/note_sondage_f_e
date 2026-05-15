@@ -1,6 +1,7 @@
 // role_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
 
@@ -28,7 +29,14 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       final roles = await roleUseCase.getAllRoles();
       emit(RolesLoaded(roles));
     } catch (e) {
-      emit(RoleError(e.toString()));
+      emit(
+        RoleError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the roles right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -41,7 +49,14 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       final roles = await roleUseCase.getAllRolesByTeamId(event.teamId);
       emit(RolesLoaded(roles));
     } catch (e) {
-      emit(RoleError(e.toString()));
+      emit(
+        RoleError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load the roles right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -58,7 +73,14 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
         emit(RoleError('Role not found'));
       }
     } catch (e) {
-      emit(RoleError(e.toString()));
+      emit(
+        RoleError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not load this role right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -74,7 +96,14 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       //add(LoadRolesEvent());
       add(LoadRolesEventByTeamId(event.teamId));
     } catch (e) {
-      emit(RoleError(e.toString()));
+      emit(
+        RoleError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not create the role right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -89,7 +118,14 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       // Ricarica la lista dopo l'aggiornamento
       add(LoadRolesEventByTeamId(event.role.teamId));
     } catch (e) {
-      emit(RoleError(e.toString()));
+      emit(
+        RoleError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not update the role right now.',
+          ),
+        ),
+      );
     }
   }
 
@@ -105,10 +141,17 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
         // Ricarica la lista dopo l'eliminazione
         add(LoadRolesEventByTeamId(event.teamId));
       } else {
-        emit(RoleError('Failed to delete role'));
+        emit(RoleError('We could not delete the role right now.'));
       }
     } catch (e) {
-      emit(RoleError(e.toString()));
+      emit(
+        RoleError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not delete the role right now.',
+          ),
+        ),
+      );
     }
   }
 }

@@ -9,6 +9,7 @@ import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/add_user_web.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class CreateTeamWeb extends StatefulWidget {
@@ -23,7 +24,8 @@ class CreateTeamWeb extends StatefulWidget {
 class _CreateTeamWebState extends State<CreateTeamWeb> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController nameTeamController = TextEditingController();
-  final TextEditingController descriptionTeamController = TextEditingController();
+  final TextEditingController descriptionTeamController =
+      TextEditingController();
 
   final List<InviteFormData> listInviteFormData = [
     InviteFormData(
@@ -62,11 +64,9 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
       bloc: _teamBloc,
       listener: (context, teamState) {
         if (teamState is TeamCreated) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(localization.teamCreatedSuccessfully),
-              backgroundColor: Colors.green,
-            ),
+          AppSnackBar.showSuccess(
+            context,
+            localization.teamCreatedSuccessfully,
           );
           setState(() {
             listInviteFormData.clear();
@@ -85,12 +85,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
             Navigator.of(context).pop();
           }
         } else if (teamState is TeamError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${localization.errorPrefix} ${teamState.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.showError(context, teamState.message);
         }
       },
       child: Align(
@@ -125,14 +120,16 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                         children: [
                           Text(
                             localization.createTeam,
-                            style: textTheme.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
+                            style: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Set up a new team with members and roles',
-                            style: textTheme.bodyMedium
-                                ?.copyWith(color: colorScheme.descriptionColor),
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.descriptionColor,
+                            ),
                           ),
                         ],
                       ),
@@ -228,11 +225,16 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                     onPressed: _onSave,
                     icon: const Icon(Icons.group_add_rounded, size: 20),
                     label: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
                       child: Text(
                         localization.createTeam,
-                        style:
-                            const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     style: FilledButton.styleFrom(
@@ -241,7 +243,10 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
                     ),
                   ),
                 ),
