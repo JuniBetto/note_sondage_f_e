@@ -604,11 +604,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contactUsDescription =>
-      'Tell us what happened and we will open your email app with a ready-to-send draft.';
+      'Tell us what happened and we will send it directly to our support team.';
 
   @override
   String get contactUsDraftHint =>
-      'Your email app will open with Junibetto@gmail.com already selected as recipient.';
+      'Your message will be sent directly to contactus@teammanagement.it.';
 
   @override
   String get contactUsReplyTime => 'We usually reply within 1-2 business days.';
@@ -641,7 +641,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contactUsFormHint =>
-      'The draft will include your details so support can reply faster.';
+      'The message will include your details so support can reply faster.';
+
+  @override
+  String get contactUsSentSuccess => 'Your message has been sent to support.';
+
+  @override
+  String get contactUsSendFailed =>
+      'We could not send your message right now. Please try again shortly.';
 
   @override
   String get none => 'None';

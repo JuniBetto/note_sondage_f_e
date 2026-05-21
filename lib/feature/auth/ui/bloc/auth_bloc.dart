@@ -66,7 +66,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } on AuthMfaRequiredException catch (e) {
       emit(AuthState.mfaRequired(e.factors, e.message));
     } catch (e) {
-      emit(AuthState.error(AuthUserMessageResolver.resolve(e)));
+      final message = AuthUserMessageResolver.resolve(e);
+      final lowered = message.toLowerCase();
+      if (lowered.contains('confirm your registration before signing in') ||
+          lowered.contains('verify your email address before logging in')) {
+        emit(AuthState.verificationEmailRequired(event.email));
+        return;
+      }
+      emit(AuthState.error(message));
     }
   }
 

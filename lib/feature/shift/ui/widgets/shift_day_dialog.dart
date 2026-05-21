@@ -25,6 +25,13 @@ class ShiftTeamMember {
   });
 }
 
+class ShiftMemberAssignmentPlan {
+  const ShiftMemberAssignmentPlan({required this.targetUserId, this.profileId});
+
+  final String targetUserId;
+  final String? profileId;
+}
+
 /// Result of the day dialog.
 class ShiftDayDialogResult {
   const ShiftDayDialogResult({
@@ -39,6 +46,7 @@ class ShiftDayDialogResult {
     this.isPublic = false,
     this.teamId,
     this.targetUserIds = const [],
+    this.memberAssignmentPlans = const [],
     this.scheduledDates = const [],
   });
 
@@ -60,6 +68,10 @@ class ShiftDayDialogResult {
   /// One entry = assign to that specific member.
   /// Multiple entries = assign to all selected members.
   final List<String> targetUserIds;
+
+  /// Optional member-specific assignments. When present, each selected member
+  /// can receive a different shift profile while reusing the same day/team flow.
+  final List<ShiftMemberAssignmentPlan> memberAssignmentPlans;
 
   /// Days on which the shift should be created.
   final List<DateTime> scheduledDates;
@@ -151,6 +163,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   TeamEntityForView? _selectedTeam;
   final Set<String> _selectedMemberIds = <String>{};
   bool _assignToAllMembers = true;
+  bool _useMemberSpecificProfiles = false;
+  final Map<String, String?> _memberProfileIds = <String, String?>{};
 
   bool get _hasOwnerTeams => widget.ownerTeams.isNotEmpty;
   bool get _isTeamScopedSelection => _selectedTeam != null;
@@ -218,6 +232,32 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       return _teamMembers.isNotEmpty;
     }
     return _selectedMemberIds.isNotEmpty;
+  }
+
+  List<ShiftTeamMember> get _selectedSpecificMembers => _teamMembers
+      .where(
+        (member) =>
+            member.userId != null &&
+            _selectedMemberIds.contains(member.userId) &&
+            member.isAssignable,
+      )
+      .toList();
+
+  List<ShiftMemberAssignmentPlan> get _memberAssignmentPlans {
+    if (!_useMemberSpecificProfiles ||
+        _selectedTeam == null ||
+        _assignToAllMembers ||
+        _selectedMemberIds.length < 2) {
+      return const [];
+    }
+    return _selectedSpecificMembers
+        .map(
+          (member) => ShiftMemberAssignmentPlan(
+            targetUserId: member.userId!,
+            profileId: _memberProfileIds[member.userId!],
+          ),
+        )
+        .toList();
   }
 
   bool get _hasValidTimeRange {
@@ -626,7 +666,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       ),
                     ),
                   ],
-                ),const SizedBox(height: 16),
+                ),
+                const SizedBox(height: 16),
                 if (!widget.useDialogLayout && widget.existing == null)
                   const SizedBox(height: 12),
                 if (widget.existing == null)
@@ -752,6 +793,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       setState(() {
                         _selectedTeam = team;
                         _assignToAllMembers = true;
+                        _useMemberSpecificProfiles = false;
                         _selectedMemberIds.clear();
                         if (team == null && widget.existing == null) {
                           _isPublic = false;
@@ -762,6 +804,9 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                     onAssignToAllChanged: (value) => setState(() {
                       _assignToAllMembers = value;
                       if (value) {
+                        _useMemberSpecificProfiles = false;
+                      }
+                      if (value) {
                         _selectedMemberIds.clear();
                       }
                     }),
@@ -771,8 +816,73 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                         _selectedMemberIds.add(uid);
                       } else {
                         _selectedMemberIds.remove(uid);
+                        _memberProfileIds.remove(uid);
+                      }
+                      if (_selectedMemberIds.length < 2) {
+                        _useMemberSpecificProfiles = false;
                       }
                     }),
+                  ),
+                ],
+                if (!_readOnly &&
+                    widget.existing == null &&
+                    _selectedTeam != null &&
+                    !_assignToAllMembers &&
+                    _selectedMemberIds.length > 1) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: mutedSurface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SwitchListTile.adaptive(
+                          contentPadding: EdgeInsets.zero,
+                          value: _useMemberSpecificProfiles,
+                          onChanged: (value) => setState(() {
+                            _useMemberSpecificProfiles = value;
+                          }),
+                          title: const Text(
+                            'Usa profili diversi per i membri selezionati',
+                          ),
+                          subtitle: Text(
+                            'Perfetto per assegnare mattina, pomeriggio e sera a persone diverse nello stesso team.',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.descriptionColor,
+                            ),
+                          ),
+                        ),
+                        if (_useMemberSpecificProfiles) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Se lasci "Turno comune", quel membro usera il turno impostato sopra.',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.descriptionColor,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          ..._selectedSpecificMembers.map((member) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _MemberSpecificProfileTile(
+                                label: member.displayName,
+                                subtitle: member.subtitle,
+                                profiles: widget.profiles,
+                                selectedProfileId:
+                                    _memberProfileIds[member.userId!],
+                                onProfileChanged: (profileId) => setState(() {
+                                  _memberProfileIds[member.userId!] = profileId;
+                                }),
+                              ),
+                            );
+                          }),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -874,6 +984,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                                           _selectedTeam?.team.id ??
                                           widget.existing?.teamId,
                                       targetUserIds: _resolvedTargetUserIds,
+                                      memberAssignmentPlans:
+                                          _memberAssignmentPlans,
                                       scheduledDates: _scheduledDates,
                                     ),
                                   );
@@ -1182,6 +1294,75 @@ class _MemberRadioTile extends StatelessWidget {
               Icon(Icons.check_circle, size: 16, color: appPrimary),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MemberSpecificProfileTile extends StatelessWidget {
+  const _MemberSpecificProfileTile({
+    required this.label,
+    this.subtitle,
+    required this.profiles,
+    required this.selectedProfileId,
+    required this.onProfileChanged,
+  });
+
+  final String label;
+  final String? subtitle;
+  final List<ShiftProfileEntity> profiles;
+  final String? selectedProfileId;
+  final ValueChanged<String?> onProfileChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(subtitle!, style: theme.textTheme.labelSmall),
+          ],
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String?>(
+            value: selectedProfileId,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: 'Profilo turno',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              isDense: true,
+            ),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Turno comune'),
+              ),
+              ...profiles.map(
+                (profile) => DropdownMenuItem<String?>(
+                  value: profile.id,
+                  child: Text(profile.name, overflow: TextOverflow.ellipsis),
+                ),
+              ),
+            ],
+            onChanged: onProfileChanged,
+          ),
+        ],
       ),
     );
   }

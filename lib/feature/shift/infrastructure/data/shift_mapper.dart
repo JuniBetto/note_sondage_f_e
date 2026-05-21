@@ -37,6 +37,7 @@ class ShiftMapper {
       userName: json['userName'] as String?,
       shiftDate: DateTime.parse(json['shiftDate'] as String),
       teamId: json['teamId'] as String?,
+      teamShiftGroupId: json['teamShiftGroupId'] as String?,
       profileId: json['profileId'] as String?,
       profileName: json['profileName'] as String?,
       profileColor: json['profileColor'] as String?,
@@ -81,6 +82,7 @@ class ShiftMapper {
     List<int>? alarmOffsets,
     bool isPublic = false,
     String? teamId,
+    String? teamShiftGroupId,
     String? targetFirebaseUid,
   }) {
     String? _fmt(TimeOfDay? t) => t == null
@@ -96,6 +98,7 @@ class ShiftMapper {
       if (note != null) 'note': note,
       if (alarmOffsets != null) 'alarmOffsets': alarmOffsets,
       if (teamId != null) 'teamId': teamId,
+      if (teamShiftGroupId != null) 'teamShiftGroupId': teamShiftGroupId,
       'isPublic': isPublic,
       if (targetFirebaseUid != null) 'targetFirebaseUid': targetFirebaseUid,
     };

@@ -609,11 +609,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get contactUsDescription =>
-      'Expliquez-nous ce qui s\'est passé et nous ouvrirons votre application e-mail avec un brouillon prêt à envoyer.';
+      'Expliquez-nous ce qui s\'est passé et nous enverrons le message directement à notre équipe support.';
 
   @override
   String get contactUsDraftHint =>
-      'Votre application e-mail s\'ouvrira avec Junibetto@gmail.com déjà sélectionné comme destinataire.';
+      'Votre message sera envoyé directement à contactus@teammanagement.it.';
 
   @override
   String get contactUsReplyTime =>
@@ -648,7 +648,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get contactUsFormHint =>
-      'Le brouillon inclura vos informations afin que le support puisse répondre plus rapidement.';
+      'Le message inclura vos informations afin que le support puisse répondre plus rapidement.';
+
+  @override
+  String get contactUsSentSuccess =>
+      'Votre message a bien été envoyé au support.';
+
+  @override
+  String get contactUsSendFailed =>
+      'Nous n\'avons pas pu envoyer votre message pour le moment. Réessayez dans un instant.';
 
   @override
   String get none => 'Aucun';

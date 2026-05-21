@@ -28,6 +28,7 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'package:uuid/uuid.dart';
 
 class ShiftWebPage extends StatefulWidget {
   const ShiftWebPage({super.key});
@@ -331,11 +332,15 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     }
 
     if (result.deleted && existing != null) {
-      final assignmentsToDelete = _relatedPublicAssignments(existing);
-      for (final assignment in assignmentsToDelete) {
-        context.read<ShiftBloc>().add(
-          DeleteShiftAssignmentEvent(assignment.id),
-        );
+      if (existing.teamShiftGroupId != null && existing.isPublic) {
+        context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(existing.id));
+      } else {
+        final assignmentsToDelete = _relatedPublicAssignments(existing);
+        for (final assignment in assignmentsToDelete) {
+          context.read<ShiftBloc>().add(
+            DeleteShiftAssignmentEvent(assignment.id),
+          );
+        }
       }
       return;
     }
@@ -344,7 +349,10 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       // ── public → privato: cancella tutti i turni degli altri membri ──────
       final wasPublic = existing.isPublic;
       final nowPrivate = !result.isPublic;
-      if (wasPublic && nowPrivate && existing.teamId != null) {
+      if (wasPublic &&
+          nowPrivate &&
+          existing.teamId != null &&
+          existing.teamShiftGroupId == null) {
         final toDelete = _relatedPublicAssignments(
           existing,
         ).where((assignment) => assignment.id != existing.id);
@@ -365,6 +373,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
           alarmOffsets: result.alarmOffsets,
           isPublic: result.isPublic,
           teamId: result.isPublic ? result.teamId : null,
+          teamShiftGroupId: existing.teamShiftGroupId,
           // Pass the new target only when the manager picked a different member.
           targetUserId: result.isPublic && result.targetUserIds.length == 1
               ? result.targetUserIds.first
@@ -380,7 +389,30 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     final targetUserIds = result.targetUserIds.isEmpty
         ? const <String?>[null]
         : result.targetUserIds.cast<String?>();
+    final uuid = const Uuid();
+    final hasMemberSpecificPlans = result.memberAssignmentPlans.isNotEmpty;
     for (final scheduledDate in scheduledDates) {
+      if (hasMemberSpecificPlans) {
+        for (final plan in result.memberAssignmentPlans) {
+          context.read<ShiftBloc>().add(
+            AssignShiftEvent(
+              shiftDate: scheduledDate,
+              profileId: plan.profileId ?? result.profileId,
+              startTime: plan.profileId == null ? result.startTime : null,
+              endTime: plan.profileId == null ? result.endTime : null,
+              overnight: plan.profileId == null ? result.overnight : null,
+              note: result.note,
+              alarmOffsets: plan.profileId == null ? result.alarmOffsets : null,
+              isPublic: result.isPublic,
+              teamId: result.isPublic ? result.teamId : null,
+              teamShiftGroupId: result.isPublic ? uuid.v4() : null,
+              targetUserId: plan.targetUserId,
+            ),
+          );
+        }
+        continue;
+      }
+      final sharedGroupId = result.isPublic ? uuid.v4() : null;
       for (final targetUserId in targetUserIds) {
         context.read<ShiftBloc>().add(
           AssignShiftEvent(
@@ -393,6 +425,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
             alarmOffsets: result.alarmOffsets,
             isPublic: result.isPublic,
             teamId: result.isPublic ? result.teamId : null,
+            teamShiftGroupId: sharedGroupId,
             targetUserId: targetUserId,
           ),
         );
@@ -412,10 +445,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
           assignment.isPublic &&
           assignment.teamId == existing.teamId &&
           _isSameShiftDate(assignment.shiftDate, existing.shiftDate) &&
-          _isSameShiftTime(assignment, existing) &&
-          assignment.overnight == existing.overnight &&
-          (assignment.profileId == existing.profileId ||
-              assignment.profileName == existing.profileName),
+          (existing.teamShiftGroupId != null
+              ? assignment.teamShiftGroupId == existing.teamShiftGroupId
+              : _isSameShiftTime(assignment, existing) &&
+                    assignment.overnight == existing.overnight &&
+                    (assignment.profileId == existing.profileId ||
+                        assignment.profileName == existing.profileName)),
     );
   }
 

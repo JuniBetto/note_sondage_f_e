@@ -153,6 +153,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         alarmOffsets: event.alarmOffsets,
         isPublic: event.isPublic,
         teamId: event.teamId,
+        teamShiftGroupId: event.teamShiftGroupId,
         targetUserId: event.targetUserId,
       );
       emit(ShiftAssigned(assignment));
@@ -183,6 +184,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         alarmOffsets: event.alarmOffsets,
         isPublic: event.isPublic,
         teamId: event.teamId,
+        teamShiftGroupId: event.teamShiftGroupId,
         targetUserId: event.targetUserId,
       );
       emit(ShiftAssignmentUpdated(assignment));

@@ -73,6 +73,7 @@ class ShiftRepositoryImpl implements ShiftRepository {
     List<int>? alarmOffsets,
     bool isPublic = false,
     String? teamId,
+    String? teamShiftGroupId,
     String? targetUserId,
   }) => _remote.assign(
     shiftDate: shiftDate,
@@ -84,6 +85,7 @@ class ShiftRepositoryImpl implements ShiftRepository {
     alarmOffsets: alarmOffsets,
     isPublic: isPublic,
     teamId: teamId,
+    teamShiftGroupId: teamShiftGroupId,
     targetUserId: targetUserId,
   );
 
@@ -98,6 +100,7 @@ class ShiftRepositoryImpl implements ShiftRepository {
     List<int>? alarmOffsets,
     bool isPublic = false,
     String? teamId,
+    String? teamShiftGroupId,
     String? targetUserId,
   }) => _remote.updateAssignment(
     assignmentId,
@@ -109,6 +112,7 @@ class ShiftRepositoryImpl implements ShiftRepository {
     alarmOffsets: alarmOffsets,
     isPublic: isPublic,
     teamId: teamId,
+    teamShiftGroupId: teamShiftGroupId,
     targetUserId: targetUserId,
   );
 

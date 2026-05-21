@@ -108,6 +108,7 @@ class ShiftRemoteDataSource {
     List<int>? alarmOffsets,
     bool isPublic = false,
     String? teamId,
+    String? teamShiftGroupId,
     String? targetUserId,
   }) async {
     final response = await _dio.post(
@@ -122,6 +123,7 @@ class ShiftRemoteDataSource {
         alarmOffsets: alarmOffsets,
         isPublic: isPublic,
         teamId: teamId,
+        teamShiftGroupId: teamShiftGroupId,
         targetFirebaseUid: targetUserId,
       ),
     );
@@ -140,6 +142,7 @@ class ShiftRemoteDataSource {
     List<int>? alarmOffsets,
     bool isPublic = false,
     String? teamId,
+    String? teamShiftGroupId,
     String? targetUserId,
   }) async {
     final response = await _dio.put(
@@ -154,6 +157,7 @@ class ShiftRemoteDataSource {
         alarmOffsets: alarmOffsets,
         isPublic: isPublic,
         teamId: teamId,
+        teamShiftGroupId: teamShiftGroupId,
         targetFirebaseUid: targetUserId,
       ),
     );

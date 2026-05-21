@@ -43,6 +43,7 @@ abstract class ShiftRepository {
     List<int>? alarmOffsets,
     bool isPublic = false,
     String? teamId,
+    String? teamShiftGroupId,
     String? targetUserId,
   });
 
@@ -56,6 +57,7 @@ abstract class ShiftRepository {
     List<int>? alarmOffsets,
     bool isPublic = false,
     String? teamId,
+    String? teamShiftGroupId,
     String? targetUserId,
   });
 

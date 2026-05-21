@@ -9,6 +9,7 @@ class ShiftAssignmentEntity {
     this.userName,
     required this.shiftDate,
     this.teamId,
+    this.teamShiftGroupId,
     this.profileId,
     this.profileName,
     this.profileColor,
@@ -26,6 +27,7 @@ class ShiftAssignmentEntity {
   final String? userName;
   final DateTime shiftDate;
   final String? teamId;
+  final String? teamShiftGroupId;
   final String? profileId;
   final String? profileName;
   final String? profileColor;
@@ -61,6 +63,7 @@ class ShiftAssignmentEntity {
     ShiftProfileEntity? profile,
     bool? isPublic,
     String? teamId,
+    String? teamShiftGroupId,
   }) {
     return ShiftAssignmentEntity(
       id: id,
@@ -68,6 +71,7 @@ class ShiftAssignmentEntity {
       userName: userName ?? this.userName,
       shiftDate: shiftDate,
       teamId: teamId ?? this.teamId,
+      teamShiftGroupId: teamShiftGroupId ?? this.teamShiftGroupId,
       profileId: profileId,
       profileName: profileName,
       profileColor: profileColor,

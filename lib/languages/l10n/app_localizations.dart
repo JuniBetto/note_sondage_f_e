@@ -1197,13 +1197,13 @@ abstract class AppLocalizations {
   /// No description provided for @contactUsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Tell us what happened and we will open your email app with a ready-to-send draft.'**
+  /// **'Tell us what happened and we will send it directly to our support team.'**
   String get contactUsDescription;
 
   /// No description provided for @contactUsDraftHint.
   ///
   /// In en, this message translates to:
-  /// **'Your email app will open with Junibetto@gmail.com already selected as recipient.'**
+  /// **'Your message will be sent directly to contactus@teammanagement.it.'**
   String get contactUsDraftHint;
 
   /// No description provided for @contactUsReplyTime.
@@ -1263,8 +1263,20 @@ abstract class AppLocalizations {
   /// No description provided for @contactUsFormHint.
   ///
   /// In en, this message translates to:
-  /// **'The draft will include your details so support can reply faster.'**
+  /// **'The message will include your details so support can reply faster.'**
   String get contactUsFormHint;
+
+  /// No description provided for @contactUsSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Your message has been sent to support.'**
+  String get contactUsSentSuccess;
+
+  /// No description provided for @contactUsSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not send your message right now. Please try again shortly.'**
+  String get contactUsSendFailed;
 
   /// No description provided for @none.
   ///

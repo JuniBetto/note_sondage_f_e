@@ -1,11 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
+import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ContactSupportView extends StatefulWidget {
   const ContactSupportView({super.key, this.compact = false});
@@ -17,13 +20,14 @@ class ContactSupportView extends StatefulWidget {
 }
 
 class _ContactSupportViewState extends State<ContactSupportView> {
-  static const _supportEmail = 'Junibetto@gmail.com';
+  static const _supportEmail = 'contactus@teammanagement.it';
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
 
   bool _didPrefillUser = false;
+  bool _isSubmitting = false;
 
   @override
   void didChangeDependencies() {
@@ -54,32 +58,45 @@ class _ContactSupportViewState extends State<ContactSupportView> {
     super.dispose();
   }
 
+  bool get _canSubmit =>
+      !_isSubmitting &&
+      _emailController.text.trim().isNotEmpty &&
+      _messageController.text.trim().isNotEmpty;
+
   Future<void> _sendEmail() async {
     final loc = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final message = _messageController.text.trim();
+    if (!_canSubmit) {
+      return;
+    }
 
-    final subject = name.isEmpty
-        ? loc.contactUsEmailSubject
-        : '${loc.contactUsEmailSubject} - $name';
-    final body = <String>[
-      '${loc.yourName}: ${name.isEmpty ? '-' : name}',
-      '${loc.yourEmail}: ${email.isEmpty ? '-' : email}',
-      '',
-      '${loc.message}:',
-      message,
-    ].join('\n');
-
-    final uri = Uri(
-      scheme: 'mailto',
-      path: _supportEmail,
-      query: _encodeQueryParameters({'subject': subject, 'body': body}),
-    );
-
-    final launched = await launchUrl(uri);
-    if (!launched && mounted) {
-      AppSnackBar.showWarning(context, loc.couldNotOpenEmailApp);
+    setState(() => _isSubmitting = true);
+    try {
+      await DioClient().dio.post(
+        '/api/aggregate/notifications/contact-support',
+        data: {
+          'name': name.isEmpty ? null : name,
+          'email': email,
+          'message': message,
+          'page': 'settings/contact_us',
+        },
+      );
+      _messageController.clear();
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showSuccess(context, loc.contactUsSentSuccess);
+    } on DioException {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showWarning(context, loc.contactUsSendFailed);
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -90,15 +107,6 @@ class _ContactSupportViewState extends State<ContactSupportView> {
       return;
     }
     AppSnackBar.showSuccess(context, loc.emailCopied, title: loc.supportEmail);
-  }
-
-  String _encodeQueryParameters(Map<String, String> params) {
-    return params.entries
-        .map(
-          (entry) =>
-              '${Uri.encodeComponent(entry.key)}=${Uri.encodeComponent(entry.value)}',
-        )
-        .join('&');
   }
 
   InputDecoration _buildDecoration(
@@ -197,6 +205,9 @@ class _ContactSupportViewState extends State<ContactSupportView> {
                           buildDecoration: _buildDecoration,
                           onSendEmail: _sendEmail,
                           onCopyEmail: _copyEmail,
+                          onMessageChanged: (_) => setState(() {}),
+                          canSend: _canSubmit,
+                          isSubmitting: _isSubmitting,
                           sendLabel: loc.sendEmail,
                           copyLabel: loc.copyEmail,
                           yourNameLabel: loc.yourName,
@@ -226,6 +237,9 @@ class _ContactSupportViewState extends State<ContactSupportView> {
                         buildDecoration: _buildDecoration,
                         onSendEmail: _sendEmail,
                         onCopyEmail: _copyEmail,
+                        onMessageChanged: (_) => setState(() {}),
+                        canSend: _canSubmit,
+                        isSubmitting: _isSubmitting,
                         sendLabel: loc.sendEmail,
                         copyLabel: loc.copyEmail,
                         yourNameLabel: loc.yourName,
@@ -531,6 +545,9 @@ class _SupportFormCard extends StatelessWidget {
     required this.buildDecoration,
     required this.onSendEmail,
     required this.onCopyEmail,
+    required this.onMessageChanged,
+    required this.canSend,
+    required this.isSubmitting,
     required this.sendLabel,
     required this.copyLabel,
     required this.yourNameLabel,
@@ -551,8 +568,11 @@ class _SupportFormCard extends StatelessWidget {
     Color? fillColor,
   })
   buildDecoration;
-  final VoidCallback onSendEmail;
+  final Future<void> Function() onSendEmail;
   final VoidCallback onCopyEmail;
+  final ValueChanged<String> onMessageChanged;
+  final bool canSend;
+  final bool isSubmitting;
   final String sendLabel;
   final String copyLabel;
   final String yourNameLabel;
@@ -628,6 +648,7 @@ class _SupportFormCard extends StatelessWidget {
             controller: messageController,
             maxLines: 7,
             minLines: 5,
+            onChanged: onMessageChanged,
             decoration: buildDecoration(context, messageLabel, maxLines: 7),
           ),
           const SizedBox(height: 18),
@@ -636,8 +657,17 @@ class _SupportFormCard extends StatelessWidget {
             runSpacing: 12,
             children: [
               FilledButton.icon(
-                onPressed: onSendEmail,
-                icon: const Icon(Icons.send_rounded),
+                onPressed: canSend ? () => unawaited(onSendEmail()) : null,
+                icon: isSubmitting
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colorScheme.onPrimary,
+                        ),
+                      )
+                    : const Icon(Icons.send_rounded),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,

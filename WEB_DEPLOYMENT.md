@@ -40,6 +40,18 @@ or:
 cp .env.web.lan-https.example .env.web
 ```
 
+or:
+
+```bash
+cp .env.web.duckdns.example .env.web
+```
+
+or:
+
+```bash
+cp .env.web.cloudflare-tunnel.example .env.web
+```
+
 2. Start the matching compose file:
 
 ```bash
@@ -70,6 +82,44 @@ Then open:
 https://<server-ip>:8443
 ```
 
+or for DuckDNS:
+
+```bash
+podman network create note-sondage-public
+podman-compose -f podman-compose.web-duckdns.yml up -d --build --no-cache
+```
+
+Then open:
+
+```text
+https://<your-app-host>.duckdns.org
+```
+
+or for Cloudflare Tunnel:
+
+```bash
+podman network create note-sondage-public
+podman-compose -f podman-compose.web-duckdns.yml up -d --build --no-cache
+cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage
+cp cloudflared/config.yml.example cloudflared/config.yml
+cp .env.cloudflare-tunnel.edge.example .env.cloudflare-tunnel.edge
+podman-compose --env-file .env.cloudflare-tunnel.edge -f podman-compose.cloudflared.yml up -d
+```
+
+Then open:
+
+```text
+https://<your-app-host>
+```
+
+For rootless Podman:
+
+- local edge HTTP port: `8080`
+- local edge HTTPS port: `8443`
+- router mapping:
+  - WAN `80` -> LAN `<server-ip>:8080`
+  - WAN `443` -> LAN `<server-ip>:8443`
+
 ## First public HTTPS certificate
 
 After `.env.web` points to the real public domain:
@@ -79,6 +129,20 @@ cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
 podman-compose -f podman-compose.web-public.yml up -d web-nginx
 podman-compose -f podman-compose.web-public.yml run --rm --service-ports certbot certonly --webroot -w /var/www/certbot -d "$PUBLIC_WEB_DOMAIN" --email your@email.com --agree-tos --no-eff-email
 podman-compose -f podman-compose.web-public.yml up -d
+```
+
+## DuckDNS certificate
+
+After `.env.web` points to your real DuckDNS web hostname:
+
+```bash
+cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
+podman-compose -f podman-compose.web-duckdns.yml up -d web-nginx
+cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage
+cp .env.duckdns.edge.example .env.duckdns.edge
+podman-compose -f podman-compose.duckdns-edge.yml --env-file .env.duckdns.edge up -d edge-nginx
+podman-compose -f podman-compose.duckdns-edge.yml --env-file .env.duckdns.edge run --rm --service-ports certbot certonly --webroot -w /var/www/certbot -d "$PUBLIC_WEB_DOMAIN" --email your@email.com --agree-tos --no-eff-email
+podman-compose -f podman-compose.duckdns-edge.yml --env-file .env.duckdns.edge up -d edge-nginx certbot
 ```
 
 ## Operational note

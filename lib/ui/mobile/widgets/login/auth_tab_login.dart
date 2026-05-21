@@ -230,6 +230,19 @@ class _AuthTabLoginState extends State<AuthTabLogin>
           return;
         }
 
+        if (state.verificationEmailRequired) {
+          _tabController.animateTo(0);
+          _loginPasswordController.clear();
+          AppSnackBar.showWarning(
+            context,
+            'Confirm the registration email sent to '
+            '${state.verificationEmail ?? _loginEmailController.text.trim()}, '
+            'then sign in again.',
+            title: 'Check your email',
+          );
+          return;
+        }
+
         if (state.errorMessage != null) {
           final isRegisterTab = _tabController.index == 1;
           AppSnackBar.showError(

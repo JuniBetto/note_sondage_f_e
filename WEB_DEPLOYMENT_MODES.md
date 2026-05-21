@@ -12,6 +12,46 @@ When to use:
 - real domain
 - Let's Encrypt
 
+## 1b. DuckDNS HTTPS
+
+Use:
+- [.env.web.duckdns.example](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/.env.web.duckdns.example)
+- [podman-compose.web-duckdns.yml](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/podman-compose.web-duckdns.yml)
+- [podman-compose.duckdns-edge.yml](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/podman-compose.duckdns-edge.yml)
+
+When to use:
+- no custom domain yet
+- real external browser access is needed
+- backend is already exposed on a DuckDNS API hostname
+
+Requirements:
+- a DuckDNS hostname for the web app
+- router port forwarding for 80 and 443
+- the hostname resolves to your public IP
+- the shared `note-sondage-public` Podman network
+
+Rootless Podman note:
+- keep the edge proxy on local `8080/8443`
+- map router public `80/443` to those local ports
+
+## 1c. Cloudflare Tunnel
+
+Use:
+- [.env.web.cloudflare-tunnel.example](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/.env.web.cloudflare-tunnel.example)
+- [podman-compose.web-duckdns.yml](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/podman-compose.web-duckdns.yml)
+- [podman-compose.cloudflared.yml](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/podman-compose.cloudflared.yml)
+- [cloudflared/config.yml.example](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/cloudflared/config.yml.example)
+
+When to use:
+- the backend is exposed through Cloudflare Tunnel
+- you want the web app public without opening home router ports
+- your app is behind CGNAT
+
+Requirements:
+- a Cloudflare-managed hostname for the web app
+- the shared `note-sondage-public` Podman network
+- the same `cloudflared` tunnel used by the backend, or another named tunnel
+
 ## 2. LAN HTTP
 
 Use:

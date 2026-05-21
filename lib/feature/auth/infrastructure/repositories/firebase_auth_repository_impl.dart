@@ -122,6 +122,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   Stream<AuthUserEntity> get authStateChanges {
     return _firebaseAuth.authStateChanges().map((firebaseUser) {
       if (firebaseUser != null) {
+        if (_shouldTreatAsPendingEmailVerification(firebaseUser)) {
+          _backendExchangeInFlight = null;
+          _backendExchangeUid = null;
+          _lastSuccessfulExchangeAt = null;
+          _lastSuccessfulExchangeUid = null;
+          unawaited(_tokenService.clearToken());
+          return AuthUserEntity.empty;
+        }
         unawaited(_exchangeTokenWithBackend(firebaseUser));
       } else {
         _backendExchangeInFlight = null;
@@ -156,6 +164,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       await credential.user?.reload();
       final currentUser = _firebaseAuth.currentUser ?? credential.user;
       if (currentUser != null) {
+        if (_shouldTreatAsPendingEmailVerification(currentUser)) {
+          await signOut();
+          throw const AuthException(
+            code: 'email-not-verified',
+            message:
+                'Check your email and confirm your registration before signing in.',
+          );
+        }
         await _exchangeTokenWithBackend(currentUser, propagateErrors: true);
         await _syncBackendProfile(
           currentUser: currentUser,
@@ -472,7 +488,9 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> confirmAccountReactivation({required String token}) async {
-    final response = await _backendAuth.confirmAccountReactivation(token.trim());
+    final response = await _backendAuth.confirmAccountReactivation(
+      token.trim(),
+    );
     final reactivatedFirebaseUid = response['firebaseUid']?.toString().trim();
     final currentUser = _firebaseAuth.currentUser;
 
@@ -1206,12 +1224,23 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   }
 
   AuthException _mapBackendExchangeError(Object error) {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser != null &&
+        _shouldTreatAsPendingEmailVerification(currentUser)) {
+      return const AuthException(
+        code: 'email-not-verified',
+        message:
+            'Check your email and confirm your registration before signing in.',
+      );
+    }
+
     final message = error.toString();
     final lowered = message.toLowerCase();
     if (lowered.contains('403') && lowered.contains('email not verified')) {
       return const AuthException(
         code: 'email-not-verified',
-        message: 'Please verify your email address before logging in.',
+        message:
+            'Check your email and confirm your registration before signing in.',
       );
     }
 
@@ -1233,6 +1262,11 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         lowered.contains('failed host lookup') ||
         lowered.contains('connection error') ||
         lowered.contains('no status');
+  }
+
+  bool _shouldTreatAsPendingEmailVerification(firebase.User user) {
+    final mappedUser = AuthMapper.fromFirebaseUser(user);
+    return mappedUser.provider == AuthProvider.email && !user.emailVerified;
   }
 
   List<MfaFactorHintEntity> _mapFactorHints(

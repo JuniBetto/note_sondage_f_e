@@ -10,6 +10,7 @@ class AuthState extends Equatable {
   final String? errorMessage;
   final bool passwordResetSent;
   final bool verificationEmailSent;
+  final bool verificationEmailRequired;
   final String? verificationEmail;
   final List<MfaFactorHintEntity> pendingMfaFactors;
 
@@ -19,6 +20,7 @@ class AuthState extends Equatable {
     this.errorMessage,
     this.passwordResetSent = false,
     this.verificationEmailSent = false,
+    this.verificationEmailRequired = false,
     this.verificationEmail,
     this.pendingMfaFactors = const [],
   });
@@ -55,6 +57,13 @@ class AuthState extends Equatable {
         verificationEmail: email,
       );
 
+  const AuthState.verificationEmailRequired(String email)
+    : this._(
+        status: AuthStatus.unauthenticated,
+        verificationEmailRequired: true,
+        verificationEmail: email,
+      );
+
   const AuthState.mfaRequired(List<MfaFactorHintEntity> factors, String message)
     : this._(
         status: AuthStatus.unauthenticated,
@@ -69,6 +78,7 @@ class AuthState extends Equatable {
     errorMessage,
     passwordResetSent,
     verificationEmailSent,
+    verificationEmailRequired,
     verificationEmail,
     pendingMfaFactors,
   ];
