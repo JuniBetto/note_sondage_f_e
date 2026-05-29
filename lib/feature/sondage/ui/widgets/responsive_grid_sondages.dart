@@ -5,6 +5,7 @@ import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
+import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_component_card.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_component_row.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
@@ -31,6 +32,7 @@ class ResponsiveGridSondages extends StatefulWidget {
 
 class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
   final UserArchiveService _archiveService = getIt<UserArchiveService>();
+  final SondageBloc _sondageBloc = getIt<SondageBloc>();
   String? _selectedSondageId;
   bool _showArchivedOnly = false;
   Set<String> _archivedSondageIds = <String>{};
@@ -174,6 +176,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
           colorSondage: item.color,
           canDelete: item.canDelete,
           canEdit: canEditAsCreator,
+          isSyncing: _sondageBloc.syncingSondageIds.contains(sondageId),
           isArchived: isArchived,
           isActive: _selectedSondageId == sondageId,
           onTap: () {
@@ -218,6 +221,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
           colorSondage: item.color,
           canDelete: item.canDelete,
           canEdit: canEditAsCreator,
+          isSyncing: _sondageBloc.syncingSondageIds.contains(sondageId),
           isArchived: isArchived,
           isActive: _selectedSondageId == sondageId,
           onTap: () {

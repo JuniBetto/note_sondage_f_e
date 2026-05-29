@@ -10,10 +10,12 @@ import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 
 class ShiftProfileManager extends StatefulWidget {
   final List<ShiftProfileEntity> profiles;
+  final Set<String> syncingProfileIds;
   final bool isOwner;
   const ShiftProfileManager({
     super.key,
     required this.profiles,
+    this.syncingProfileIds = const <String>{},
     this.isOwner = false,
   });
 
@@ -101,9 +103,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
-          final colorScheme = Theme
-              .of(ctx)
-              .colorScheme;
+          final colorScheme = Theme.of(ctx).colorScheme;
           final canSubmit =
               nameCtrl.text.trim().isNotEmpty && hasValidTimeRange();
           return SubmitOnEnterScope(
@@ -151,10 +151,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                             Expanded(
                               child: Text(
                                 selectedColorHex,
-                                style: Theme
-                                    .of(ctx)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(ctx).textTheme.bodyMedium
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                             ),
@@ -205,10 +202,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                         child: Text(
                           loc.shiftEndMustBeAfterStart,
                           style: TextStyle(
-                            color: Theme
-                                .of(context)
-                                .colorScheme
-                                .errorColor,
+                            color: Theme.of(context).colorScheme.errorColor,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -275,42 +269,38 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
     );
   }
 
-  Future<String?> _pickShiftColor(BuildContext context, {
+  Future<String?> _pickShiftColor(
+    BuildContext context, {
     required String initialHex,
   }) async {
-    final isCompact = MediaQuery
-        .sizeOf(context)
-        .width < 700;
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
     if (isCompact) {
       return showModalBottomSheet<String>(
         context: context,
         isScrollControlled: true,
         showDragHandle: true,
-        builder: (sheetContext) =>
-            _ShiftColorPickerSheet(
-              colors: _shiftPalette,
-              selectedHex: initialHex,
-            ),
+        builder: (sheetContext) => _ShiftColorPickerSheet(
+          colors: _shiftPalette,
+          selectedHex: initialHex,
+        ),
       );
     }
     return showDialog<String>(
       context: context,
-      builder: (dialogContext) =>
-          Dialog(
-            insetPadding: const EdgeInsets.symmetric(
-                horizontal: 24, vertical: 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460, maxHeight: 520),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: _ShiftColorPickerSheet(
-                  colors: _shiftPalette,
-                  selectedHex: initialHex,
-                  showCloseButton: true,
-                ),
-              ),
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460, maxHeight: 520),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: _ShiftColorPickerSheet(
+              colors: _shiftPalette,
+              selectedHex: initialHex,
+              showCloseButton: true,
             ),
           ),
+        ),
+      ),
     );
   }
 
@@ -378,10 +368,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
           CustomAppButton(
             onPressed: () => Navigator.pop(ctx, true),
             type: ButtonType.filled,
-            backgroundColor: Theme
-                .of(ctx)
-                .colorScheme
-                .error,
+            backgroundColor: Theme.of(ctx).colorScheme.error,
             isActive: true,
             child: Text(loc.removeAction),
           ),
@@ -418,7 +405,11 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...systemProfiles.map(
-                  (p) => _ProfileTile(profile: p, isSystem: true),
+                  (p) => _ProfileTile(
+                    profile: p,
+                    isSystem: true,
+                    isSyncing: widget.syncingProfileIds.contains(p.id),
+                  ),
                 ),
                 const Divider(height: 24),
                 Row(
@@ -433,8 +424,8 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                       icon: Icon(Icons.add, size: 18),
                       tooltip: loc.createCustomProfile,
                       style: IconButton.styleFrom(
-                          backgroundColor: colorScheme.bgNavbarbutton,
-                          foregroundColor: colorScheme.textInvertedColor
+                        backgroundColor: colorScheme.bgNavbarbutton,
+                        foregroundColor: colorScheme.textInvertedColor,
                       ),
                     ),
                   ],
@@ -456,6 +447,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                     profile: p,
                     isSystem: false,
                     isOwner: widget.isOwner,
+                    isSyncing: widget.syncingProfileIds.contains(p.id),
                     onEdit: () => _showEditDialog(p),
                     onDelete: () => _confirmDelete(p),
                   ),
@@ -473,6 +465,7 @@ class _ProfileTile extends StatelessWidget {
   final ShiftProfileEntity profile;
   final bool isSystem;
   final bool isOwner;
+  final bool isSyncing;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -480,6 +473,7 @@ class _ProfileTile extends StatelessWidget {
     required this.profile,
     required this.isSystem,
     this.isOwner = false,
+    this.isSyncing = false,
     this.onEdit,
     this.onDelete,
   });
@@ -491,95 +485,124 @@ class _ProfileTile extends StatelessWidget {
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme= theme.textTheme;
-    return ListTile(
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-      leading: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          if (profile.isPublic)
-            Positioned(
-              bottom: -4,
-              right: -6,
-              child: Icon(Icons.public, size: 10, color: Colors.blue.shade600),
-            ),
-        ],
-      ),
-      title: Row(
-        children: [
-          Flexible(
-            child: Text(profile.name, style: const TextStyle(fontSize: 14)),
-          ),
-          if (profile.isPublic) ...[
-            const SizedBox(width: 6),
+    final textTheme = theme.textTheme;
+    return Opacity(
+      opacity: isSyncing ? 0.78 : 1,
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+        leading: Stack(
+          clipBehavior: Clip.none,
+          children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            if (profile.isPublic)
+              Positioned(
+                bottom: -4,
+                right: -6,
+                child: Icon(
+                  Icons.public,
+                  size: 10,
+                  color: Colors.blue.shade600,
+                ),
               ),
-              child: Row(
+          ],
+        ),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(profile.name, style: const TextStyle(fontSize: 14)),
+            ),
+            if (profile.isPublic) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.public, size: 9, color: Colors.blue.shade700),
+                    const SizedBox(width: 2),
+                    Text(
+                      'Pubblico',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (isSyncing) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: Colors.amber.withValues(alpha: 0.34),
+                  ),
+                ),
+                child: Text(
+                  'Syncing',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: Colors.amber.shade900,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        subtitle: Text(
+          '${profile.startTime.hour.toString().padLeft(2, '0')}:${profile.startTime.minute.toString().padLeft(2, '0')}'
+          ' – '
+          '${profile.endTime.hour.toString().padLeft(2, '0')}:${profile.endTime.minute.toString().padLeft(2, '0')}',
+          style: const TextStyle(fontSize: 12),
+        ),
+        trailing: isSystem
+            ? Chip(
+                label: Text(
+                  loc.systemProfile,
+                  style: textTheme.bodySmall!.copyWith(
+                    color: colorScheme.textColor,
+                  ), //const TextStyle(fontSize: 10),
+                ),
+                backgroundColor: color,
+                padding: EdgeInsets.zero,
+                elevation: 6,
+                shape: const StadiumBorder(),
+                // Forma a stadio
+                side: BorderSide.none,
+              )
+            : (profile.isPublic && !isOwner)
+            ? const SizedBox.shrink()
+            : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.public, size: 9, color: Colors.blue.shade700),
-                  const SizedBox(width: 2),
-                  Text(
-                    'Pubblico',
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    onPressed: isSyncing ? null : onEdit,
+                    tooltip: loc.editShiftProfile,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 16),
+                    onPressed: isSyncing ? null : onDelete,
+                    tooltip: loc.deleteShiftProfileConfirm,
                   ),
                 ],
               ),
-            ),
-          ],
-        ],
       ),
-      subtitle: Text(
-        '${profile.startTime.hour.toString().padLeft(2, '0')}:${profile.startTime.minute.toString().padLeft(2, '0')}'
-        ' – '
-        '${profile.endTime.hour.toString().padLeft(2, '0')}:${profile.endTime.minute.toString().padLeft(2, '0')}',
-        style: const TextStyle(fontSize: 12),
-      ),
-      trailing: isSystem
-          ? Chip(
-              label: Text(
-                loc.systemProfile,
-                style:  textTheme.bodySmall!.copyWith(color: colorScheme.textColor) //const TextStyle(fontSize: 10),
-              ),
-        backgroundColor: color,
-        padding: EdgeInsets.zero,
-        elevation: 6,
-        shape: const StadiumBorder(),
-        // Forma a stadio
-        side: BorderSide.none,
-            )
-          : (profile.isPublic && !isOwner)
-          ? const SizedBox.shrink()
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 16),
-                  onPressed: onEdit,
-                  tooltip: loc.editShiftProfile,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 16),
-                  onPressed: onDelete,
-                  tooltip: loc.deleteShiftProfileConfirm,
-                ),
-              ],
-            ),
     );
   }
 }
@@ -660,9 +683,7 @@ class _ShiftColorPickerSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final isCompact = MediaQuery
-        .sizeOf(context)
-        .width < 700;
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
 
     return SafeArea(
       child: Column(
@@ -709,8 +730,8 @@ class _ShiftColorPickerSheet extends StatelessWidget {
                 final color = _ShiftProfileManagerState._colorFromHex(hex);
                 final isSelected = hex == selectedHex;
                 final onColor =
-                ThemeData.estimateBrightnessForColor(color) ==
-                    Brightness.dark
+                    ThemeData.estimateBrightnessForColor(color) ==
+                        Brightness.dark
                     ? Colors.white
                     : Colors.black87;
                 return InkWell(
@@ -737,12 +758,12 @@ class _ShiftColorPickerSheet extends StatelessWidget {
                     ),
                     child: isSelected
                         ? Center(
-                      child: Icon(
-                        Icons.check_rounded,
-                        color: onColor,
-                        size: 22,
-                      ),
-                    )
+                            child: Icon(
+                              Icons.check_rounded,
+                              color: onColor,
+                              size: 22,
+                            ),
+                          )
                         : null,
                   ),
                 );

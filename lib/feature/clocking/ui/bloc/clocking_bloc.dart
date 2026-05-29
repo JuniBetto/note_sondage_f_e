@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
@@ -10,21 +12,31 @@ part 'clocking_state.dart';
 
 class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
   final ClockingUseCase clockingUseCase;
+  final ClockingLocalDataSource _clockingLocalDataSource;
 
   List<ClockingRecordEntity> _cachedMyRecords = [];
   List<ClockingRecordEntity> _cachedTeamRecords = [];
+  final Set<String> _syncingRecordIds = <String>{};
   String? _selectedTeamId;
 
   String? get selectedTeamId => _selectedTeamId;
+  Set<String> get syncingRecordIds => Set.unmodifiable(_syncingRecordIds);
 
   ClockingBloc({
     required this.clockingUseCase,
     required ClockingLocalDataSource clockingLocalDataSource,
-  }) : super(ClockingInitial()) {
+  }) : _clockingLocalDataSource = clockingLocalDataSource,
+       super(ClockingInitial()) {
     on<LoadClockingRecordsEvent>(_onLoadRecords);
     on<LoadClockingByDateEvent>(_onLoadByDate);
     on<LoadClockingByUserIdEvent>(_onLoadByUserId);
     on<LoadClockingByTeamIdEvent>(_onLoadByTeamId);
+    on<CreateManualClockingEntriesEvent>(_onCreateManualClockingEntries);
+    on<_ClockingRecordCommittedEvent>(_onRecordCommitted);
+    on<_ClockingRecordDeletedCommittedEvent>(_onRecordDeletedCommitted);
+    on<_ClockingMutationFailedEvent>(_onMutationFailed);
+    on<_ManualClockingEntriesCommittedEvent>(_onManualEntriesCommitted);
+    on<_ManualClockingEntriesFailedEvent>(_onManualEntriesFailed);
     on<ClockInEvent>(_onClockIn);
     on<ClockOutEvent>(_onClockOut);
     on<StartBreakEvent>(_onStartBreak);
@@ -45,7 +57,13 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     if (_cachedMyRecords.isNotEmpty || _cachedTeamRecords.isNotEmpty) {
       emit(_loadedState());
     } else {
-      emit(ClockingLoading());
+      final local = await _clockingLocalDataSource.getAll();
+      if (local.isNotEmpty) {
+        _cachedMyRecords = local;
+        emit(_loadedState());
+      } else {
+        emit(ClockingLoading());
+      }
     }
 
     try {
@@ -74,6 +92,7 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     try {
       _cachedMyRecords = await clockingUseCase.getRecordsByDate(event.date);
       _cachedTeamRecords = [];
+      await _clockingLocalDataSource.saveAll(_cachedMyRecords);
       emit(_loadedState());
     } catch (e) {
       emit(
@@ -95,6 +114,7 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     try {
       _cachedMyRecords = await clockingUseCase.getRecordsByUserId(event.userId);
       _cachedTeamRecords = [];
+      await _clockingLocalDataSource.saveAll(_cachedMyRecords);
       emit(_loadedState());
     } catch (e) {
       emit(
@@ -207,61 +227,274 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     UpdateClockingRecordEvent event,
     Emitter<ClockingState> emit,
   ) async {
-    await _performAction(
-      emit,
-      () => clockingUseCase.updateTeamRecord(
-        id: event.id,
-        clockInAt: event.clockInAt,
-        clockOutAt: event.clockOutAt,
-        totalBreakMinutes: event.totalBreakMinutes,
-        note: event.note,
-      ),
+    final rollbackMyRecords = List<ClockingRecordEntity>.from(_cachedMyRecords);
+    final rollbackTeamRecords = List<ClockingRecordEntity>.from(
+      _cachedTeamRecords,
     );
+    final previous = _findRecordById(event.id);
+    if (previous == null) {
+      await _performAction(
+        emit,
+        () => clockingUseCase.updateTeamRecord(
+          id: event.id,
+          clockInAt: event.clockInAt,
+          clockOutAt: event.clockOutAt,
+          totalBreakMinutes: event.totalBreakMinutes,
+          note: event.note,
+        ),
+      );
+      return;
+    }
+
+    final optimisticRecord = previous.copyWith(
+      clockInTime: event.clockInAt ?? previous.clockInTime,
+      clockOutTime: event.clockOutAt ?? previous.clockOutTime,
+      note: event.note ?? previous.note,
+      totalBreakMinutes: event.totalBreakMinutes ?? previous.totalBreakMinutes,
+    );
+    await _applyOptimisticRecordMutation(emit, optimisticRecord);
+
+    unawaited(() async {
+      try {
+        final record = await clockingUseCase.updateTeamRecord(
+          id: event.id,
+          clockInAt: event.clockInAt,
+          clockOutAt: event.clockOutAt,
+          totalBreakMinutes: event.totalBreakMinutes,
+          note: event.note,
+        );
+        if (!isClosed) {
+          add(
+            _ClockingRecordCommittedEvent(previousId: event.id, record: record),
+          );
+        }
+      } catch (e) {
+        if (!isClosed) {
+          add(
+            _ClockingMutationFailedEvent(
+              message: AppErrorMessageResolver.resolve(
+                e,
+                fallback: 'We could not save the clocking change right now.',
+              ),
+              rollbackMyRecords: rollbackMyRecords,
+              rollbackTeamRecords: rollbackTeamRecords,
+              syncingIdsToClear: {event.id},
+            ),
+          );
+        }
+      }
+    }());
+  }
+
+  Future<void> _onCreateManualClockingEntries(
+    CreateManualClockingEntriesEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    final rollbackMyRecords = List<ClockingRecordEntity>.from(_cachedMyRecords);
+    final rollbackTeamRecords = List<ClockingRecordEntity>.from(
+      _cachedTeamRecords,
+    );
+    final syncingIds = event.optimisticRecords
+        .map((record) => record.id)
+        .toSet();
+
+    _syncingRecordIds.addAll(syncingIds);
+    _cachedMyRecords = [
+      ...event.optimisticRecords,
+      ..._cachedMyRecords.where(
+        (existing) => !syncingIds.contains(existing.id),
+      ),
+    ]..sort((a, b) => _recordSortDate(b).compareTo(_recordSortDate(a)));
+
+    if (_selectedTeamId != null &&
+        _selectedTeamId!.isNotEmpty &&
+        _selectedTeamId == event.teamId) {
+      _cachedTeamRecords = [
+        ...event.optimisticRecords,
+        ..._cachedTeamRecords.where(
+          (existing) => !syncingIds.contains(existing.id),
+        ),
+      ]..sort((a, b) => _recordSortDate(b).compareTo(_recordSortDate(a)));
+    }
+
+    await _clockingLocalDataSource.saveAll(_cachedMyRecords);
+    emit(_loadedState());
+
+    unawaited(() async {
+      try {
+        await clockingUseCase.createManualClockingEntries(
+          teamId: event.teamId,
+          dates: event.dates,
+          clockInMinutes: event.clockInMinutes,
+          clockOutMinutes: event.clockOutMinutes,
+          breakMinutes: event.breakMinutes,
+          note: event.note,
+        );
+        if (!isClosed) {
+          add(_ManualClockingEntriesCommittedEvent(syncingIds));
+        }
+      } catch (e) {
+        if (!isClosed) {
+          add(
+            _ManualClockingEntriesFailedEvent(
+              message: AppErrorMessageResolver.resolve(
+                e,
+                fallback:
+                    'We could not save the manual clocking entries right now.',
+              ),
+              rollbackMyRecords: rollbackMyRecords,
+              rollbackTeamRecords: rollbackTeamRecords,
+              syncingIdsToClear: syncingIds,
+            ),
+          );
+        }
+      }
+    }());
   }
 
   Future<void> _onDecommitRecord(
     DecommitClockingRecordEvent event,
     Emitter<ClockingState> emit,
   ) async {
-    await _performAction(
-      emit,
-      () => clockingUseCase.decommitTeamRecord(event.id),
+    final previous = _findRecordById(event.id);
+    if (previous == null) {
+      await _performAction(
+        emit,
+        () => clockingUseCase.decommitTeamRecord(event.id),
+      );
+      return;
+    }
+    final rollbackMyRecords = List<ClockingRecordEntity>.from(_cachedMyRecords);
+    final rollbackTeamRecords = List<ClockingRecordEntity>.from(
+      _cachedTeamRecords,
     );
+    final optimisticRecord = previous.copyWith(
+      status: ClockingStatus.decommitted,
+      decommittedAt: DateTime.now(),
+      committedAt: null,
+      canCommit: true,
+      canDecommit: false,
+    );
+    await _applyOptimisticRecordMutation(emit, optimisticRecord);
+
+    unawaited(() async {
+      try {
+        final record = await clockingUseCase.decommitTeamRecord(event.id);
+        if (!isClosed) {
+          add(
+            _ClockingRecordCommittedEvent(previousId: event.id, record: record),
+          );
+        }
+      } catch (e) {
+        if (!isClosed) {
+          add(
+            _ClockingMutationFailedEvent(
+              message: AppErrorMessageResolver.resolve(
+                e,
+                fallback: 'We could not save the clocking change right now.',
+              ),
+              rollbackMyRecords: rollbackMyRecords,
+              rollbackTeamRecords: rollbackTeamRecords,
+              syncingIdsToClear: {event.id},
+            ),
+          );
+        }
+      }
+    }());
   }
 
   Future<void> _onCommitRecord(
     CommitClockingRecordEvent event,
     Emitter<ClockingState> emit,
   ) async {
-    await _performAction(
-      emit,
-      () => clockingUseCase.commitTeamRecord(event.id),
+    final previous = _findRecordById(event.id);
+    if (previous == null) {
+      await _performAction(
+        emit,
+        () => clockingUseCase.commitTeamRecord(event.id),
+      );
+      return;
+    }
+    final rollbackMyRecords = List<ClockingRecordEntity>.from(_cachedMyRecords);
+    final rollbackTeamRecords = List<ClockingRecordEntity>.from(
+      _cachedTeamRecords,
     );
+    final optimisticRecord = previous.copyWith(
+      status: ClockingStatus.committed,
+      committedAt: DateTime.now(),
+      decommittedAt: null,
+      canCommit: false,
+      canDecommit: true,
+    );
+    await _applyOptimisticRecordMutation(emit, optimisticRecord);
+
+    unawaited(() async {
+      try {
+        final record = await clockingUseCase.commitTeamRecord(event.id);
+        if (!isClosed) {
+          add(
+            _ClockingRecordCommittedEvent(previousId: event.id, record: record),
+          );
+        }
+      } catch (e) {
+        if (!isClosed) {
+          add(
+            _ClockingMutationFailedEvent(
+              message: AppErrorMessageResolver.resolve(
+                e,
+                fallback: 'We could not save the clocking change right now.',
+              ),
+              rollbackMyRecords: rollbackMyRecords,
+              rollbackTeamRecords: rollbackTeamRecords,
+              syncingIdsToClear: {event.id},
+            ),
+          );
+        }
+      }
+    }());
   }
 
   Future<void> _onDelete(
     DeleteClockingRecordEvent event,
     Emitter<ClockingState> emit,
   ) async {
-    try {
-      emit(_inProgressState());
-      await clockingUseCase.deleteRecord(event.id);
-      emit(ClockingDeleted());
-      await _reloadDashboard();
-      emit(_loadedState());
-    } catch (e) {
-      emit(
-        ClockingError(
-          AppErrorMessageResolver.resolve(
-            e,
-            fallback: 'We could not delete the clocking record right now.',
-          ),
-        ),
-      );
-      if (_cachedMyRecords.isNotEmpty || _cachedTeamRecords.isNotEmpty) {
-        emit(_loadedState());
+    final rollbackMyRecords = List<ClockingRecordEntity>.from(_cachedMyRecords);
+    final rollbackTeamRecords = List<ClockingRecordEntity>.from(
+      _cachedTeamRecords,
+    );
+    _syncingRecordIds.add(event.id);
+    _cachedMyRecords = _cachedMyRecords
+        .where((record) => record.id != event.id)
+        .toList();
+    _cachedTeamRecords = _cachedTeamRecords
+        .where((record) => record.id != event.id)
+        .toList();
+    await _clockingLocalDataSource.saveAll(_cachedMyRecords);
+    emit(ClockingDeleted());
+    emit(_loadedState());
+
+    unawaited(() async {
+      try {
+        await clockingUseCase.deleteRecord(event.id);
+        if (!isClosed) {
+          add(_ClockingRecordDeletedCommittedEvent(event.id));
+        }
+      } catch (e) {
+        if (!isClosed) {
+          add(
+            _ClockingMutationFailedEvent(
+              message: AppErrorMessageResolver.resolve(
+                e,
+                fallback: 'We could not delete the clocking record right now.',
+              ),
+              rollbackMyRecords: rollbackMyRecords,
+              rollbackTeamRecords: rollbackTeamRecords,
+              syncingIdsToClear: {event.id},
+            ),
+          );
+        }
       }
-    }
+    }());
   }
 
   Future<void> _performAction(
@@ -296,6 +529,7 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
           myRecords: List<ClockingRecordEntity>.from(_cachedMyRecords),
           teamRecords: List<ClockingRecordEntity>.from(_cachedTeamRecords),
           selectedTeamId: _selectedTeamId,
+          syncingRecordIds: Set<String>.from(_syncingRecordIds),
         ),
       );
 
@@ -324,6 +558,7 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
 
   Future<void> _reloadDashboard() async {
     _cachedMyRecords = await clockingUseCase.getAllRecords();
+    await _clockingLocalDataSource.saveAll(_cachedMyRecords);
     if (_selectedTeamId != null && _selectedTeamId!.isNotEmpty) {
       _cachedTeamRecords = await clockingUseCase.getRecordsByTeamId(
         _selectedTeamId!,
@@ -338,6 +573,7 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
       myRecords: List<ClockingRecordEntity>.from(_cachedMyRecords),
       teamRecords: List<ClockingRecordEntity>.from(_cachedTeamRecords),
       selectedTeamId: _selectedTeamId,
+      syncingRecordIds: Set<String>.from(_syncingRecordIds),
     );
   }
 
@@ -346,6 +582,128 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
       myRecords: List<ClockingRecordEntity>.from(_cachedMyRecords),
       teamRecords: List<ClockingRecordEntity>.from(_cachedTeamRecords),
       selectedTeamId: _selectedTeamId,
+      syncingRecordIds: Set<String>.from(_syncingRecordIds),
     );
+  }
+
+  DateTime _recordSortDate(ClockingRecordEntity record) {
+    return record.clockOutTime ??
+        record.currentBreakStartedAt ??
+        record.clockInTime ??
+        record.date;
+  }
+
+  Future<void> _applyOptimisticRecordMutation(
+    Emitter<ClockingState> emit,
+    ClockingRecordEntity record,
+  ) async {
+    _syncingRecordIds.add(record.id);
+    _upsertRecord(record);
+    await _clockingLocalDataSource.saveAll(_cachedMyRecords);
+    emit(_inProgressState());
+    emit(
+      ClockingActionSuccess(
+        record: record,
+        myRecords: List<ClockingRecordEntity>.from(_cachedMyRecords),
+        teamRecords: List<ClockingRecordEntity>.from(_cachedTeamRecords),
+        selectedTeamId: _selectedTeamId,
+        syncingRecordIds: Set<String>.from(_syncingRecordIds),
+      ),
+    );
+  }
+
+  void _upsertRecord(ClockingRecordEntity record) {
+    final myIndex = _cachedMyRecords.indexWhere((item) => item.id == record.id);
+    if (myIndex >= 0) {
+      _cachedMyRecords = List<ClockingRecordEntity>.from(_cachedMyRecords)
+        ..[myIndex] = record;
+    }
+    final teamIndex = _cachedTeamRecords.indexWhere(
+      (item) => item.id == record.id,
+    );
+    if (teamIndex >= 0) {
+      _cachedTeamRecords = List<ClockingRecordEntity>.from(_cachedTeamRecords)
+        ..[teamIndex] = record;
+    }
+  }
+
+  ClockingRecordEntity? _findRecordById(String id) {
+    final inMyRecords = _cachedMyRecords
+        .where((record) => record.id == id)
+        .firstOrNull;
+    if (inMyRecords != null) {
+      return inMyRecords;
+    }
+    return _cachedTeamRecords.where((record) => record.id == id).firstOrNull;
+  }
+
+  Future<void> _onRecordCommitted(
+    _ClockingRecordCommittedEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    _syncingRecordIds.remove(event.previousId);
+    _upsertRecord(event.record);
+    await _clockingLocalDataSource.saveAll(_cachedMyRecords);
+    emit(
+      ClockingActionSuccess(
+        record: event.record,
+        myRecords: List<ClockingRecordEntity>.from(_cachedMyRecords),
+        teamRecords: List<ClockingRecordEntity>.from(_cachedTeamRecords),
+        selectedTeamId: _selectedTeamId,
+        syncingRecordIds: Set<String>.from(_syncingRecordIds),
+      ),
+    );
+    emit(_loadedState());
+  }
+
+  Future<void> _onRecordDeletedCommitted(
+    _ClockingRecordDeletedCommittedEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    _syncingRecordIds.remove(event.recordId);
+    await _clockingLocalDataSource.saveAll(_cachedMyRecords);
+    emit(_loadedState());
+  }
+
+  Future<void> _onMutationFailed(
+    _ClockingMutationFailedEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    _cachedMyRecords = List<ClockingRecordEntity>.from(event.rollbackMyRecords);
+    _cachedTeamRecords = List<ClockingRecordEntity>.from(
+      event.rollbackTeamRecords,
+    );
+    _syncingRecordIds.removeAll(event.syncingIdsToClear);
+    await _clockingLocalDataSource.saveAll(_cachedMyRecords);
+    emit(ClockingError(event.message));
+    emit(_loadedState());
+  }
+
+  Future<void> _onManualEntriesCommitted(
+    _ManualClockingEntriesCommittedEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    _syncingRecordIds.removeAll(event.syncingIdsToClear);
+    try {
+      await _reloadDashboard();
+    } catch (_) {}
+    emit(_loadedState());
+  }
+
+  Future<void> _onManualEntriesFailed(
+    _ManualClockingEntriesFailedEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    _cachedMyRecords = List<ClockingRecordEntity>.from(event.rollbackMyRecords);
+    _cachedTeamRecords = List<ClockingRecordEntity>.from(
+      event.rollbackTeamRecords,
+    );
+    _syncingRecordIds.removeAll(event.syncingIdsToClear);
+    await _clockingLocalDataSource.saveAll(_cachedMyRecords);
+    emit(ClockingError(event.message));
+    try {
+      await _reloadDashboard();
+    } catch (_) {}
+    emit(_loadedState());
   }
 }

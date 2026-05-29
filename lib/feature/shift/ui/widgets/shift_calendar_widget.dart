@@ -17,12 +17,14 @@ class ShiftCalendarWidget extends StatelessWidget {
   const ShiftCalendarWidget({
     super.key,
     required this.assignments,
+    this.syncingAssignmentIds = const <String>{},
     required this.focusedMonth,
     required this.onMonthChanged,
     required this.onDayTap,
   });
 
   final List<ShiftAssignmentEntity> assignments;
+  final Set<String> syncingAssignmentIds;
   final DateTime focusedMonth;
   final ValueChanged<DateTime> onMonthChanged;
 
@@ -170,6 +172,7 @@ class ShiftCalendarWidget extends StatelessWidget {
                     day: dayNumber,
                     isToday: isToday,
                     assignments: dayAssignments,
+                    syncingAssignmentIds: syncingAssignmentIds,
                     onTap: () => onDayTap(date, dayAssignments),
                   ),
                 );
@@ -313,12 +316,14 @@ class _DayCell extends StatelessWidget {
     required this.day,
     required this.isToday,
     required this.assignments,
+    required this.syncingAssignmentIds,
     required this.onTap,
   });
 
   final int day;
   final bool isToday;
   final List<ShiftAssignmentEntity> assignments;
+  final Set<String> syncingAssignmentIds;
   final VoidCallback onTap;
 
   @override
@@ -329,102 +334,120 @@ class _DayCell extends StatelessWidget {
     final shiftColor = assignment?.displayColor;
     final publicCount = assignments.where((item) => item.isPublic).length;
     final hasMore = assignments.length > 2;
+    final hasSyncingAssignments = assignments.any(
+      (item) => syncingAssignmentIds.contains(item.id),
+    );
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: shiftColor != null
-              ? shiftColor.withValues(alpha: 0.15)
-              : colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isToday
-                ? Theme.of(context).colorScheme.primary
-                : shiftColor != null
-                ? shiftColor.withValues(alpha: 0.4)
-                : colorScheme.outlineVariant.withValues(alpha: 0.3),
-            width: isToday ? 2 : 1,
+      child: Opacity(
+        opacity: hasSyncingAssignments ? 0.82 : 1,
+        child: Container(
+          margin: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: shiftColor != null
+                ? shiftColor.withValues(alpha: 0.15)
+                : colorScheme.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isToday
+                  ? Theme.of(context).colorScheme.primary
+                  : shiftColor != null
+                  ? shiftColor.withValues(alpha: 0.4)
+                  : colorScheme.outlineVariant.withValues(alpha: 0.3),
+              width: isToday ? 2 : 1,
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Day number + visibility icon on same row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$day',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
-                      color: isToday
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  if (assignments.isNotEmpty) ...[
-                    const SizedBox(width: 1),
-                    Tooltip(
-                      message: publicCount > 0
-                          ? '$publicCount turno/i pubblico/i visibili al team'
-                          : 'Turni privati',
-                      child: Icon(
-                        publicCount > 0 ? Icons.public : Icons.lock_outline,
-                        size: 8,
-                        color: publicCount > 0
-                            ? appPrimary
-                            : colorScheme.outline.withValues(alpha: 0.5),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Day number + visibility icon on same row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$day',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
+                        color: isToday
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                  ],
-                ],
-              ),
-              if (assignments.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                ...assignments.take(2).map((item) {
-                  final label = item.userName?.trim().isNotEmpty == true
-                      ? '${_abbreviate(item.profileName ?? '?')} ${_initials(item.userName!)}'
-                      : _abbreviate(item.profileName ?? '?');
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 2,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: item.displayColor.withValues(alpha: 0.84),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                    if (assignments.isNotEmpty) ...[
+                      const SizedBox(width: 1),
+                      Tooltip(
+                        message: publicCount > 0
+                            ? '$publicCount turno/i pubblico/i visibili al team'
+                            : 'Turni privati',
+                        child: Icon(
+                          publicCount > 0 ? Icons.public : Icons.lock_outline,
+                          size: 8,
+                          color: publicCount > 0
+                              ? appPrimary
+                              : colorScheme.outline.withValues(alpha: 0.5),
                         ),
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (hasSyncingAssignments) ...[
+                        const SizedBox(width: 3),
+                        Icon(
+                          Icons.sync_rounded,
+                          size: 8,
+                          color: Colors.amber.shade800,
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+                if (assignments.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  ...assignments.take(2).map((item) {
+                    final label = item.userName?.trim().isNotEmpty == true
+                        ? '${_abbreviate(item.profileName ?? '?')} ${_initials(item.userName!)}'
+                        : _abbreviate(item.profileName ?? '?');
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 2,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: item.displayColor.withValues(
+                            alpha: syncingAssignmentIds.contains(item.id)
+                                ? 0.58
+                                : 0.84,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    );
+                  }),
+                  if (hasMore)
+                    Text(
+                      '+${assignments.length - 2} altri',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontSize: 8,
+                        color: colorScheme.descriptionColor,
                       ),
                     ),
-                  );
-                }),
-                if (hasMore)
-                  Text(
-                    '+${assignments.length - 2} altri',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontSize: 8,
-                      color: colorScheme.descriptionColor,
-                    ),
-                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

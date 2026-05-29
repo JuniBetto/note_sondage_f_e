@@ -16,6 +16,7 @@ import 'package:note_sondage/feature/team/ui/web/widgets/add_user_web.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_members_section.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:uuid/uuid.dart';
 
@@ -105,6 +106,11 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated) {
+          AppSnackBar.showWarning(
+            context,
+            'Aggiornamento del team in sincronizzazione...',
+            title: 'Sync in corso',
+          );
           context.go(RouterPaths.team, extra: widget.teamId);
         } else if (teamState is TeamError) {
           setState(() => _isLoading = false);

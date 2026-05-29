@@ -97,9 +97,10 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
       bloc: _teamBloc,
       listener: (context, teamState) {
         if (teamState is TeamCreated) {
-          AppSnackBar.showSuccess(
+          AppSnackBar.showWarning(
             context,
-            localization.teamCreatedSuccessfully,
+            'Creazione del team in sincronizzazione...',
+            title: 'Sync in corso',
           );
           setState(() {
             listInviteFormData.clear();
@@ -113,12 +114,9 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
             descriptionTeamController.clear();
           });
           widget.onTeamCreated?.call();
-          _teamBloc.add(LoadTeamsEvent());
           if (mounted) {
             Navigator.of(context).pop();
           }
-        } else if (teamState is TeamError) {
-          AppSnackBar.showError(context, teamState.message);
         }
       },
       child: Align(

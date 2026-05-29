@@ -50,6 +50,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
   TimeOfDay _manualClockInTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _manualClockOutTime = const TimeOfDay(hour: 18, minute: 0);
   bool _manualActionInProgress = false;
+  final Set<String> _pendingManualOptimisticIds = <String>{};
   bool _canManageClocking = false;
   String? _resolvedTeamId;
   final Set<DateTime> _dismissedManualEntryDates = {};
@@ -70,12 +71,16 @@ class _ButtonClockingState extends State<ButtonClocking> {
   @override
   void didUpdateWidget(covariant ButtonClocking oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final previousDate = _normalizeDate(oldWidget.selectedDate ?? DateTime.now());
+    final previousDate = _normalizeDate(
+      oldWidget.selectedDate ?? DateTime.now(),
+    );
     if (!_isSameDay(previousDate, _effectiveSelectedDate)) {
       _syncManualDatesFromSelectedDate();
     }
     if (oldWidget.selectedTeamId != widget.selectedTeamId) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _syncClockingAccess());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _syncClockingAccess(),
+      );
     }
   }
 
@@ -135,17 +140,24 @@ class _ButtonClockingState extends State<ButtonClocking> {
     final localization = AppLocalizations.of(context)!;
 
     return BlocListener<ClockingBloc, ClockingState>(
-      listenWhen: (previous, current) => current is ClockingError,
+      listenWhen: (previous, current) =>
+          current is ClockingError || _pendingManualOptimisticIds.isNotEmpty,
       listener: (context, state) {
-        if (state is! ClockingError) return;
-        AppSnackBar.showError(context, state.message);
+        if (state is ClockingError) {
+          AppSnackBar.showError(context, state.message);
+        }
+        _syncManualOptimisticProgress(state);
       },
       child: BlocBuilder<TeamBloc, TeamState>(
         builder: (context, teamState) {
-          final teams = teamState is TeamsLoaded ? teamState.teams : <TeamEntity>[];
+          final teams = teamState is TeamsLoaded
+              ? teamState.teams
+              : <TeamEntity>[];
           _ensureSelectedTeam(teams);
           if (widget.selectedTeamId != _resolvedTeamId) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => _syncClockingAccess());
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _syncClockingAccess(),
+            );
           }
 
           return BlocBuilder<ClockingBloc, ClockingState>(
@@ -161,7 +173,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
               );
               final activeRecordForSelectedDate = recordsForSelectedDate
                   .cast<ClockingRecordEntity?>()
-                  .firstWhere((record) => record?.isActive == true, orElse: () => null);
+                  .firstWhere(
+                    (record) => record?.isActive == true,
+                    orElse: () => null,
+                  );
               final activeRecord = _activeRecord(records);
               final hasOpenRecordOutsideSelectedDate =
                   activeRecord != null && activeRecordForSelectedDate == null;
@@ -170,13 +185,15 @@ class _ButtonClockingState extends State<ButtonClocking> {
                 _normalizeDate(DateTime.now()),
               );
               final isBusy =
-                  clockingState is ClockingActionInProgress || _manualActionInProgress;
+                  clockingState is ClockingActionInProgress ||
+                  _manualActionInProgress;
               final isClockingReady =
                   clockingState is ClockingRecordsLoaded ||
                   clockingState is ClockingActionInProgress ||
                   clockingState is ClockingActionSuccess;
               final hasSelectedTeam =
-                  widget.selectedTeamId != null && widget.selectedTeamId!.isNotEmpty;
+                  widget.selectedTeamId != null &&
+                  widget.selectedTeamId!.isNotEmpty;
               final hasApprovedManualClockingRequest =
                   _hasApprovedManualClockingRequest(context);
               final hasVacationOnSelectedDate = recordsForSelectedDate.any(
@@ -185,7 +202,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
               final useManualEntryMode =
                   !selectedDateIsToday &&
                   !hasVacationOnSelectedDate &&
-                  !_dismissedManualEntryDates.contains(_effectiveSelectedDate) &&
+                  !_dismissedManualEntryDates.contains(
+                    _effectiveSelectedDate,
+                  ) &&
                   (!hasSelectedTeam ||
                       _canManageClocking ||
                       hasApprovedManualClockingRequest);
@@ -196,10 +215,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   !_canManageClocking &&
                   !hasApprovedManualClockingRequest;
 
-              final clockColor =
-                  activeRecordForSelectedDate != null ? Colors.red : Colors.green;
-              final breakColor =
-                  activeRecordForSelectedDate?.isOnBreak == true
+              final clockColor = activeRecordForSelectedDate != null
+                  ? Colors.red
+                  : Colors.green;
+              final breakColor = activeRecordForSelectedDate?.isOnBreak == true
                   ? Colors.orange
                   : Colors.blue;
 
@@ -207,14 +226,15 @@ class _ButtonClockingState extends State<ButtonClocking> {
                 return _buildManualEntrySection(
                   records: records,
                   hasVacationOnSelectedDate: hasVacationOnSelectedDate,
-                  hasOpenRecordOutsideSelectedDate: hasOpenRecordOutsideSelectedDate,
+                  hasOpenRecordOutsideSelectedDate:
+                      hasOpenRecordOutsideSelectedDate,
                   isClockingReady: isClockingReady,
                 );
               }
 
               final actionButtons = widget.isCompact
                   ? Row(
-                mainAxisSize: MainAxisSize.min,
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       spacing: 8.0,
                       children: [
@@ -225,7 +245,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
                                   !requiresApprovalForPastDate &&
                                   !hasOpenRecordOutsideSelectedDate &&
                                   !hasVacationOnSelectedDate
-                              ? () => _onClockAction(activeRecordForSelectedDate)
+                              ? () =>
+                                    _onClockAction(activeRecordForSelectedDate)
                               : null,
                           color: clockColor,
                           icon: activeRecordForSelectedDate != null
@@ -240,11 +261,13 @@ class _ButtonClockingState extends State<ButtonClocking> {
                                     .trim(),
                           subtitle: _primaryActionSubtitle(
                             localization: localization,
-                            activeRecordForSelectedDate: activeRecordForSelectedDate,
+                            activeRecordForSelectedDate:
+                                activeRecordForSelectedDate,
                             hasOpenRecordOutsideSelectedDate:
                                 hasOpenRecordOutsideSelectedDate,
                             selectedDateRecord: selectedDateRecord,
-                            hasVacationOnSelectedDate: hasVacationOnSelectedDate,
+                            hasVacationOnSelectedDate:
+                                hasVacationOnSelectedDate,
                             isClockingReady: isClockingReady,
                             selectedDateIsToday: selectedDateIsToday,
                             hasApprovedManualClockingRequest:
@@ -265,7 +288,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
                                   selectedDateIsToday &&
                                   !isBusy &&
                                   isClockingReady
-                              ? () => _onBreakAction(activeRecordForSelectedDate)
+                              ? () =>
+                                    _onBreakAction(activeRecordForSelectedDate)
                               : null,
                           color: breakColor,
                           icon: Icons.coffee_rounded,
@@ -304,7 +328,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
                                     !requiresApprovalForPastDate &&
                                     !hasOpenRecordOutsideSelectedDate &&
                                     !hasVacationOnSelectedDate
-                                ? () => _onClockAction(activeRecordForSelectedDate)
+                                ? () => _onClockAction(
+                                    activeRecordForSelectedDate,
+                                  )
                                 : null,
                             color: clockColor,
                             icon: activeRecordForSelectedDate != null
@@ -324,7 +350,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
                               hasOpenRecordOutsideSelectedDate:
                                   hasOpenRecordOutsideSelectedDate,
                               selectedDateRecord: selectedDateRecord,
-                              hasVacationOnSelectedDate: hasVacationOnSelectedDate,
+                              hasVacationOnSelectedDate:
+                                  hasVacationOnSelectedDate,
                               isClockingReady: isClockingReady,
                               selectedDateIsToday: selectedDateIsToday,
                               hasApprovedManualClockingRequest:
@@ -347,7 +374,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
                                     selectedDateIsToday &&
                                     !isBusy &&
                                     isClockingReady
-                                ? () => _onBreakAction(activeRecordForSelectedDate)
+                                ? () => _onBreakAction(
+                                    activeRecordForSelectedDate,
+                                  )
                                 : null,
                             color: breakColor,
                             icon: Icons.coffee_rounded,
@@ -389,11 +418,18 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   ),
                   const SizedBox(height: 12),
                   actionButtons,
-                  if (widget.selectedTeamId == null || widget.selectedTeamId!.isEmpty) ...[
+                  if (widget.selectedTeamId == null ||
+                      widget.selectedTeamId!.isEmpty) ...[
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        Expanded(child: Divider(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.35))),
+                        Expanded(
+                          child: Divider(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.35),
+                          ),
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Row(
@@ -407,15 +443,24 @@ class _ButtonClockingState extends State<ButtonClocking> {
                               const SizedBox(width: 4),
                               Text(
                                 localization.personal,
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.outline,
-                                  letterSpacing: 0.8,
-                                ),
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outline,
+                                      letterSpacing: 0.8,
+                                    ),
                               ),
                             ],
                           ),
                         ),
-                        Expanded(child: Divider(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.35))),
+                        Expanded(
+                          child: Divider(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.35),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -519,10 +564,11 @@ class _ButtonClockingState extends State<ButtonClocking> {
     List<ClockingRecordEntity> records,
     DateTime selectedDate,
   ) {
-    final filtered = records
-        .where((record) => _isSameDay(record.date, selectedDate))
-        .toList()
-      ..sort((a, b) => _recordSortDate(b).compareTo(_recordSortDate(a)));
+    final filtered =
+        records
+            .where((record) => _isSameDay(record.date, selectedDate))
+            .toList()
+          ..sort((a, b) => _recordSortDate(b).compareTo(_recordSortDate(a)));
     return filtered;
   }
 
@@ -548,13 +594,19 @@ class _ButtonClockingState extends State<ButtonClocking> {
 
   void _onBreakAction(ClockingRecordEntity activeRecord) {
     if (activeRecord.isOnBreak) {
-      context.read<ClockingBloc>().add(StopBreakEvent(teamId: activeRecord.teamId));
+      context.read<ClockingBloc>().add(
+        StopBreakEvent(teamId: activeRecord.teamId),
+      );
       return;
     }
-    context.read<ClockingBloc>().add(StartBreakEvent(teamId: activeRecord.teamId));
+    context.read<ClockingBloc>().add(
+      StartBreakEvent(teamId: activeRecord.teamId),
+    );
   }
 
-  Future<void> _showClockOutNoteDialog(ClockingRecordEntity activeRecord) async {
+  Future<void> _showClockOutNoteDialog(
+    ClockingRecordEntity activeRecord,
+  ) async {
     final localization = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: activeRecord.note ?? '');
     final note = await showDialog<String?>(
@@ -577,7 +629,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
             child: Text(localization.cancel),
           ),
           CustomAppButton(
-            onPressed: () => Navigator.of(dialogContext).pop(controller.text.trim()),
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(controller.text.trim()),
             type: ButtonType.filled,
             isActive: true,
             child: Text(localization.save),
@@ -602,7 +655,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
   Future<void> _onVacationAction() async {
     final localization = AppLocalizations.of(context)!;
     if (_requiresManagerApprovalForSelectedDate()) {
-      AppSnackBar.showWarning(context, localization.manualClockingRequiresApproval);
+      AppSnackBar.showWarning(
+        context,
+        localization.manualClockingRequiresApproval,
+      );
       return;
     }
 
@@ -661,7 +717,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
   Future<void> _onPermissionAction() async {
     final localization = AppLocalizations.of(context)!;
     if (_requiresManagerApprovalForSelectedDate()) {
-      AppSnackBar.showWarning(context, localization.manualClockingRequiresApproval);
+      AppSnackBar.showWarning(
+        context,
+        localization.manualClockingRequiresApproval,
+      );
       return;
     }
 
@@ -673,7 +732,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
           title: Text(
-            localization.markPermissionForDate(_formatDateLabel(_effectiveSelectedDate)),
+            localization.markPermissionForDate(
+              _formatDateLabel(_effectiveSelectedDate),
+            ),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -694,7 +755,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
                         type: ButtonType.outlined,
                         isActive: true,
                         fullWidth: true,
-                        child: Text('${localization.start}: ${start.format(dialogContext)}'),
+                        child: Text(
+                          '${localization.start}: ${start.format(dialogContext)}',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -711,7 +774,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
                         type: ButtonType.outlined,
                         isActive: true,
                         fullWidth: true,
-                        child: Text('${localization.end}: ${end.format(dialogContext)}'),
+                        child: Text(
+                          '${localization.end}: ${end.format(dialogContext)}',
+                        ),
                       ),
                     ),
                   ],
@@ -762,7 +827,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
             '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}:00',
         endTime:
             '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}:00',
-        note: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
       ),
     );
   }
@@ -772,7 +839,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
     if (teamId == null || teamId.isEmpty) {
       return false;
     }
-    final notifications = context.watch<NotificationCenterCubit>().state.notifications;
+    final notifications = context
+        .watch<NotificationCenterCubit>()
+        .state
+        .notifications;
     for (final item in notifications) {
       if (item.supportsApprovedManualClockingFor(
         currentUserId: _currentUserId,
@@ -858,7 +928,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }) {
     final theme = Theme.of(context);
     final localization = AppLocalizations.of(context)!;
-    final hasConflict = hasVacationOnSelectedDate || hasOpenRecordOutsideSelectedDate;
+    final hasConflict =
+        hasVacationOnSelectedDate || hasOpenRecordOutsideSelectedDate;
     final useWideLayout = !widget.isCompact;
 
     final dateSelector = Row(
@@ -894,7 +965,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
       children: [
         Expanded(
           child: CustomAppButton(
-            onPressed: hasConflict || !isClockingReady || _manualActionInProgress
+            onPressed:
+                hasConflict || !isClockingReady || _manualActionInProgress
                 ? null
                 : () => _pickManualTime(isClockIn: true),
             type: ButtonType.outlined,
@@ -908,7 +980,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
         const SizedBox(width: 12),
         Expanded(
           child: CustomAppButton(
-            onPressed: hasConflict || !isClockingReady || _manualActionInProgress
+            onPressed:
+                hasConflict || !isClockingReady || _manualActionInProgress
                 ? null
                 : () => _pickManualTime(isClockIn: false),
             type: ButtonType.outlined,
@@ -932,9 +1005,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
         filled: true,
         fillColor: theme.colorScheme.surface,
         prefixIcon: const Icon(Icons.timer_outlined),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
 
@@ -948,9 +1019,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
         alignLabelWithHint: true,
         filled: true,
         fillColor: theme.colorScheme.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
 
@@ -973,7 +1042,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
           ),
         ),
         const SizedBox(height: 12),
-        if (widget.selectedTeamId == null || widget.selectedTeamId!.isEmpty) ...[
+        if (widget.selectedTeamId == null ||
+            widget.selectedTeamId!.isEmpty) ...[
           CustomAppButton(
             onPressed:
                 !hasVacationOnSelectedDate &&
@@ -1132,12 +1202,17 @@ class _ButtonClockingState extends State<ButtonClocking> {
     );
   }
 
-  Future<void> _saveManualClockingEntries(List<ClockingRecordEntity> records) async {
+  Future<void> _saveManualClockingEntries(
+    List<ClockingRecordEntity> records,
+  ) async {
     final localization = AppLocalizations.of(context)!;
     final selectedDate = _effectiveSelectedDate;
     final today = _normalizeDate(DateTime.now());
     if (_isSameDay(selectedDate, today)) {
-      AppSnackBar.showWarning(context, localization.manualClockingTodayLiveOnly);
+      AppSnackBar.showWarning(
+        context,
+        localization.manualClockingTodayLiveOnly,
+      );
       return;
     }
 
@@ -1150,7 +1225,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
       orElse: () => null,
     );
     if (conflictingDate != null) {
-      AppSnackBar.showWarning(context, localization.selectedDayMarkedAsVacation);
+      AppSnackBar.showWarning(
+        context,
+        localization.selectedDayMarkedAsVacation,
+      );
       return;
     }
 
@@ -1220,7 +1298,6 @@ class _ButtonClockingState extends State<ButtonClocking> {
         if (!mounted) return;
         if (confirmed != true) return;
 
-        // Trim the existing record's clock-out to newClockIn
         try {
           await _clockingUseCase.updateTeamRecord(
             id: conflicting.id,
@@ -1233,40 +1310,43 @@ class _ButtonClockingState extends State<ButtonClocking> {
     }
     // ─────────────────────────────────────────────────────────────────────
 
-    setState(() => _manualActionInProgress = true);
-    try {
-      final createdCount = await _clockingUseCase.createManualClockingEntries(
+    final note = _manualNoteController.text.trim().isEmpty
+        ? null
+        : _manualNoteController.text.trim();
+    final optimisticRecords = _buildOptimisticManualRecords(
+      selectedDates: _manualSelectedDates,
+      clockInMinutes: clockInMinutes,
+      clockOutMinutes: clockOutMinutes,
+      breakMinutes: breakMinutes,
+      note: note,
+    );
+    final optimisticIds = optimisticRecords.map((record) => record.id).toSet();
+
+    setState(() {
+      _manualActionInProgress = true;
+      _pendingManualOptimisticIds
+        ..clear()
+        ..addAll(optimisticIds);
+    });
+
+    context.read<ClockingBloc>().add(
+      CreateManualClockingEntriesEvent(
         teamId: widget.selectedTeamId,
-        dates: _manualSelectedDates,
+        dates: List<DateTime>.from(_manualSelectedDates),
         clockInMinutes: clockInMinutes,
         clockOutMinutes: clockOutMinutes,
         breakMinutes: breakMinutes,
-        note: _manualNoteController.text.trim().isEmpty
-            ? null
-            : _manualNoteController.text.trim(),
-      );
-      if (!mounted) return;
-      AppSnackBar.showSuccess(
-        context,
-        createdCount == 1
-            ? localization.manualClockingSavedSingle
-            : localization.manualClockingSavedMultiple(createdCount),
-      );
-      context.read<ClockingBloc>().add(
-        LoadClockingRecordsEvent(teamId: widget.selectedTeamId),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      AppSnackBar.showResolvedError(
-        context,
-        error,
-        fallback: localization.manualClockingSaveError,
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _manualActionInProgress = false);
-      }
-    }
+        note: note,
+        optimisticRecords: optimisticRecords,
+      ),
+    );
+
+    AppSnackBar.showSuccess(
+      context,
+      optimisticRecords.length == 1
+          ? localization.manualClockingSavedSingle
+          : localization.manualClockingSavedMultiple(optimisticRecords.length),
+    );
   }
 
   DateTime _resolvedActionDateTime(DateTime selectedDate, {DateTime? minimum}) {
@@ -1401,11 +1481,17 @@ class _ButtonClockingState extends State<ButtonClocking> {
     }
     final normalized = _normalizeDate(picked);
     if (_isSameDay(normalized, today)) {
-      AppSnackBar.showWarning(context, localization.manualClockingTodayLiveOnly);
+      AppSnackBar.showWarning(
+        context,
+        localization.manualClockingTodayLiveOnly,
+      );
       return;
     }
     if (vacationDates.contains(normalized)) {
-      AppSnackBar.showWarning(context, localization.selectedDayMarkedAsVacation);
+      AppSnackBar.showWarning(
+        context,
+        localization.selectedDayMarkedAsVacation,
+      );
       return;
     }
     if (_manualSelectedDates.any((date) => _isSameDay(date, normalized))) {
@@ -1449,7 +1535,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
       return true;
     }
 
-    final preferredDates = <DateTime>[_effectiveSelectedDate, ..._manualSelectedDates];
+    final preferredDates = <DateTime>[
+      _effectiveSelectedDate,
+      ..._manualSelectedDates,
+    ];
     for (final candidate in preferredDates) {
       if (candidate.isBefore(firstDate) || candidate.isAfter(lastDate)) {
         continue;
@@ -1471,6 +1560,99 @@ class _ButtonClockingState extends State<ButtonClocking> {
     }
 
     return today.subtract(const Duration(days: 1));
+  }
+
+  void _syncManualOptimisticProgress(ClockingState state) {
+    if (_pendingManualOptimisticIds.isEmpty || !mounted) {
+      return;
+    }
+
+    if (state is ClockingError) {
+      setState(() {
+        _manualActionInProgress = false;
+        _pendingManualOptimisticIds.clear();
+      });
+      return;
+    }
+
+    final syncingIds = switch (state) {
+      ClockingRecordsLoaded(:final syncingRecordIds) => syncingRecordIds,
+      ClockingActionInProgress(:final syncingRecordIds) => syncingRecordIds,
+      ClockingActionSuccess(:final syncingRecordIds) => syncingRecordIds,
+      _ => const <String>{},
+    };
+
+    final stillSyncing = _pendingManualOptimisticIds.any(syncingIds.contains);
+    if (stillSyncing) {
+      return;
+    }
+
+    setState(() {
+      _manualActionInProgress = false;
+      _pendingManualOptimisticIds.clear();
+    });
+  }
+
+  List<ClockingRecordEntity> _buildOptimisticManualRecords({
+    required List<DateTime> selectedDates,
+    required int clockInMinutes,
+    required int clockOutMinutes,
+    required int breakMinutes,
+    required String? note,
+  }) {
+    final authUser = context.read<AuthBloc>().state.user;
+    final userName = authUser.displayName?.trim().isNotEmpty == true
+        ? authUser.displayName!.trim()
+        : authUser.email.trim();
+    final teamName = _resolveSelectedTeamName();
+    final workedMinutes = clockOutMinutes - clockInMinutes - breakMinutes;
+
+    return selectedDates.map((date) {
+      final normalizedDate = _normalizeDate(date);
+      final clockInAt = normalizedDate.add(Duration(minutes: clockInMinutes));
+      final clockOutAt = normalizedDate.add(Duration(minutes: clockOutMinutes));
+      return ClockingRecordEntity(
+        id: 'local_clocking_${normalizedDate.microsecondsSinceEpoch}_${clockInMinutes}_$clockOutMinutes',
+        userId: _currentUserId,
+        userName: userName,
+        teamName: teamName,
+        teamId: widget.selectedTeamId,
+        clockInTime: clockInAt,
+        clockOutTime: clockOutAt,
+        timeWorked: Duration(minutes: workedMinutes < 0 ? 0 : workedMinutes),
+        status: ClockingStatus.committed,
+        date: normalizedDate,
+        note: note,
+        totalBreakMinutes: breakMinutes,
+        committedAt: clockOutAt,
+        ownerEditable: true,
+        canCommit: false,
+        canDecommit: false,
+      );
+    }).toList()..sort((a, b) {
+      final left = a.clockOutTime ?? a.clockInTime ?? a.date;
+      final right = b.clockOutTime ?? b.clockInTime ?? b.date;
+      return right.compareTo(left);
+    });
+  }
+
+  String _resolveSelectedTeamName() {
+    final selectedTeamId = widget.selectedTeamId;
+    if (selectedTeamId == null || selectedTeamId.isEmpty) {
+      return 'Personal';
+    }
+    final teamState = context.read<TeamBloc>().state;
+    if (teamState is TeamsLoaded) {
+      final team = teamState.teams.cast<TeamEntity?>().firstWhere(
+        (item) => item?.id == selectedTeamId,
+        orElse: () => null,
+      );
+      final resolvedName = team?.name.trim();
+      if (resolvedName != null && resolvedName.isNotEmpty) {
+        return resolvedName;
+      }
+    }
+    return selectedTeamId;
   }
 
   int _timeOfDayToMinutes(TimeOfDay value) {
@@ -1642,7 +1824,8 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
                                 onTap: () => _selectTeam(null, close),
                               );
                             }
-                            final teamIndex = index - (_showNoTeamOption ? 1 : 0);
+                            final teamIndex =
+                                index - (_showNoTeamOption ? 1 : 0);
                             if (_filteredTeams.isEmpty) {
                               return Container(
                                 padding: const EdgeInsets.symmetric(
@@ -1667,9 +1850,11 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
                                     Expanded(
                                       child: Text(
                                         'Nessun team trovato',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: colorScheme.onSurfaceVariant,
-                                        ),
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -1886,9 +2071,15 @@ class _ClockActionButtonState extends State<_ClockActionButton> {
       }),
       child: GestureDetector(
         onTap: widget.isDisabled ? null : widget.onTap,
-        onTapDown: widget.isDisabled ? null : (_) => setState(() => _isPressed = true),
-        onTapUp: widget.isDisabled ? null : (_) => setState(() => _isPressed = false),
-        onTapCancel: widget.isDisabled ? null : () => setState(() => _isPressed = false),
+        onTapDown: widget.isDisabled
+            ? null
+            : (_) => setState(() => _isPressed = true),
+        onTapUp: widget.isDisabled
+            ? null
+            : (_) => setState(() => _isPressed = false),
+        onTapCancel: widget.isDisabled
+            ? null
+            : () => setState(() => _isPressed = false),
         child: AnimatedScale(
           scale: _isPressed ? 0.95 : 1.0,
           duration: const Duration(milliseconds: 80),
@@ -1905,8 +2096,8 @@ class _ClockActionButtonState extends State<_ClockActionButton> {
                 alpha: _isPressed
                     ? 0.22
                     : _isHovered
-                        ? 0.18
-                        : 0.1 * opacity,
+                    ? 0.18
+                    : 0.1 * opacity,
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -1923,48 +2114,48 @@ class _ClockActionButtonState extends State<_ClockActionButton> {
                     ]
                   : [],
             ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: widget.color.withValues(alpha: 0.15 * opacity),
-                  shape: BoxShape.circle,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: 0.15 * opacity),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    size: widget.isCompact ? 24 : 30,
+                    color: widget.color.withValues(alpha: opacity),
+                  ),
                 ),
-                child: Icon(
-                  widget.icon,
-                  size: widget.isCompact ? 24 : 30,
-                  color: widget.color.withValues(alpha: opacity),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.label,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: widget.color.withValues(alpha: opacity),
-                  fontWeight: FontWeight.w700,
-                  fontSize: widget.isCompact ? 12 : 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 2),
-              SizedBox(
-                width: widget.isCompact ? 120 : 150,
-                child: Text(
-                  widget.subtitle,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: widget.color.withValues(
-                      alpha: widget.isDisabled ? 0.45 : 0.75,
-                    ),
-                    fontSize: widget.isCompact ? 10 : 11,
+                const SizedBox(height: 8),
+                Text(
+                  widget.label,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: widget.color.withValues(alpha: opacity),
+                    fontWeight: FontWeight.w700,
+                    fontSize: widget.isCompact ? 12 : 14,
                   ),
                   textAlign: TextAlign.center,
                 ),
-              ),
-            ],
+                const SizedBox(height: 2),
+                SizedBox(
+                  width: widget.isCompact ? 120 : 150,
+                  child: Text(
+                    widget.subtitle,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: widget.color.withValues(
+                        alpha: widget.isDisabled ? 0.45 : 0.75,
+                      ),
+                      fontSize: widget.isCompact ? 10 : 11,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
         ), // AnimatedScale
       ),
     );

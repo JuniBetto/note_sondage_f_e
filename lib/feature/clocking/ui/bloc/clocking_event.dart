@@ -130,6 +130,37 @@ class MarkPermissionEvent extends ClockingEvent {
   ];
 }
 
+class CreateManualClockingEntriesEvent extends ClockingEvent {
+  final String? teamId;
+  final List<DateTime> dates;
+  final int clockInMinutes;
+  final int clockOutMinutes;
+  final int breakMinutes;
+  final String? note;
+  final List<ClockingRecordEntity> optimisticRecords;
+
+  const CreateManualClockingEntriesEvent({
+    required this.teamId,
+    required this.dates,
+    required this.clockInMinutes,
+    required this.clockOutMinutes,
+    required this.breakMinutes,
+    this.note,
+    required this.optimisticRecords,
+  });
+
+  @override
+  List<Object?> get props => [
+    teamId,
+    dates,
+    clockInMinutes,
+    clockOutMinutes,
+    breakMinutes,
+    note,
+    optimisticRecords,
+  ];
+}
+
 class UpdateClockingRecordEvent extends ClockingEvent {
   final String id;
   final DateTime? clockInAt;
@@ -180,4 +211,79 @@ class DeleteClockingRecordEvent extends ClockingEvent {
 
   @override
   List<Object?> get props => [id];
+}
+
+class _ClockingRecordCommittedEvent extends ClockingEvent {
+  final String previousId;
+  final ClockingRecordEntity record;
+
+  const _ClockingRecordCommittedEvent({
+    required this.previousId,
+    required this.record,
+  });
+
+  @override
+  List<Object?> get props => [previousId, record];
+}
+
+class _ClockingRecordDeletedCommittedEvent extends ClockingEvent {
+  final String recordId;
+
+  const _ClockingRecordDeletedCommittedEvent(this.recordId);
+
+  @override
+  List<Object?> get props => [recordId];
+}
+
+class _ClockingMutationFailedEvent extends ClockingEvent {
+  final String message;
+  final List<ClockingRecordEntity> rollbackMyRecords;
+  final List<ClockingRecordEntity> rollbackTeamRecords;
+  final Set<String> syncingIdsToClear;
+
+  const _ClockingMutationFailedEvent({
+    required this.message,
+    required this.rollbackMyRecords,
+    required this.rollbackTeamRecords,
+    required this.syncingIdsToClear,
+  });
+
+  @override
+  List<Object?> get props => [
+    message,
+    rollbackMyRecords,
+    rollbackTeamRecords,
+    syncingIdsToClear,
+  ];
+}
+
+class _ManualClockingEntriesCommittedEvent extends ClockingEvent {
+  final Set<String> syncingIdsToClear;
+
+  const _ManualClockingEntriesCommittedEvent(this.syncingIdsToClear);
+
+  @override
+  List<Object?> get props => [syncingIdsToClear];
+}
+
+class _ManualClockingEntriesFailedEvent extends ClockingEvent {
+  final String message;
+  final List<ClockingRecordEntity> rollbackMyRecords;
+  final List<ClockingRecordEntity> rollbackTeamRecords;
+  final Set<String> syncingIdsToClear;
+
+  const _ManualClockingEntriesFailedEvent({
+    required this.message,
+    required this.rollbackMyRecords,
+    required this.rollbackTeamRecords,
+    required this.syncingIdsToClear,
+  });
+
+  @override
+  List<Object?> get props => [
+    message,
+    rollbackMyRecords,
+    rollbackTeamRecords,
+    syncingIdsToClear,
+  ];
 }

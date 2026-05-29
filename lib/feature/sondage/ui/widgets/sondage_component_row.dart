@@ -15,6 +15,7 @@ class SondageComponentRow extends StatefulWidget {
   final bool isActive;
   final bool canDelete;
   final bool canEdit;
+  final bool isSyncing;
   final bool isArchived;
   final VoidCallback onTap;
   final VoidCallback? onEditTap;
@@ -35,6 +36,7 @@ class SondageComponentRow extends StatefulWidget {
     this.isActive = false,
     this.canDelete = false,
     this.canEdit = false,
+    this.isSyncing = false,
     this.isArchived = false,
     required this.onTap,
     this.onEditTap,
@@ -64,183 +66,193 @@ class _SondageComponentRowState extends State<SondageComponentRow> {
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: EdgeInsets.symmetric(vertical: 4),
-          decoration: BoxDecoration(
-            color: colorScheme.bgNavbarSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: showBorder
-                  ? colorScheme.selectionColor!
-                  : widget.colorSondage,
-              width: showBorder ? 3 : 2,
+        child: Opacity(
+          opacity: widget.isSyncing ? 0.78 : 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: colorScheme.bgNavbarSurface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: showBorder
+                    ? colorScheme.selectionColor!
+                    : widget.colorSondage,
+                width: showBorder ? 3 : 2,
+              ),
+              boxShadow: _isHovered
+                  ? [
+                      BoxShadow(
+                        color: colorScheme.selectionColor!.withValues(
+                          alpha: 0.3,
+                        ),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
             ),
-            boxShadow: _isHovered
-                ? [
-                    BoxShadow(
-                      color: colorScheme.selectionColor!.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 4),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  // Colore indicatore
+                  Container(
+                    width: 4,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: widget.colorSondage,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
+                  ),
+                  SizedBox(width: 16),
+
+                  // Contenuto principale
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (widget.isSyncing) ...[
+                          const _SyncBadge(),
+                          const SizedBox(height: 8),
+                        ],
+                        Text(
+                          widget.sondageName,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.iconLabel,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          widget.sondageFocus,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                  ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                // Colore indicatore
-                Container(
-                  width: 4,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: widget.colorSondage,
-                    borderRadius: BorderRadius.circular(2),
                   ),
-                ),
-                SizedBox(width: 16),
 
-                // Contenuto principale
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.sondageName,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.iconLabel,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        widget.sondageFocus,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Status badge
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(
+                  // Status badge
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(
+                        widget.status,
+                      ).withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
                       widget.status,
-                    ).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    widget.status,
-                    style: TextStyle(
-                      color: _getStatusColor(widget.status),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      style: TextStyle(
+                        color: _getStatusColor(widget.status),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 16),
+                  SizedBox(width: 16),
 
-                // Info risposte
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.people, size: 18, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          '${widget.responses} ${localization.responses}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w500,
+                  // Info risposte
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.people, size: 18, color: Colors.grey),
+                        SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            '${widget.responses} ${localization.responses}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                SizedBox(width: 12),
+                  SizedBox(width: 12),
 
-                // Info domande
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.quiz, size: 18, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          '${widget.totalQuestions} ${localization.questions}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w500,
+                  // Info domande
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.quiz, size: 18, color: Colors.grey),
+                        SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            '${widget.totalQuestions} ${localization.questions}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                SizedBox(width: 16),
+                  SizedBox(width: 16),
 
-                // Bottone delete
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {},
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.canEdit)
+                  // Bottone delete
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {},
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.canEdit)
+                          IconButton(
+                            icon: Icon(
+                              Icons.edit_outlined,
+                              color: colorScheme.selectionColor,
+                            ),
+                            tooltip: 'Modifica sondaggio',
+                            onPressed: widget.onEditTap,
+                          ),
                         IconButton(
                           icon: Icon(
-                            Icons.edit_outlined,
-                            color: colorScheme.selectionColor,
+                            widget.isArchived
+                                ? Icons.unarchive_outlined
+                                : Icons.archive_outlined,
+                            color: Colors.blueGrey,
                           ),
-                          tooltip: 'Modifica sondaggio',
-                          onPressed: widget.onEditTap,
+                          tooltip: widget.isArchived
+                              ? 'Ripristina sondaggio'
+                              : 'Archivia sondaggio',
+                          onPressed: widget.onArchiveTap,
                         ),
-                      IconButton(
-                        icon: Icon(
-                          widget.isArchived
-                              ? Icons.unarchive_outlined
-                              : Icons.archive_outlined,
-                          color: Colors.blueGrey,
-                        ),
-                        tooltip: widget.isArchived
-                            ? 'Ripristina sondaggio'
-                            : 'Archivia sondaggio',
-                        onPressed: widget.onArchiveTap,
-                      ),
-                      if (widget.canDelete)
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
+                        if (widget.canDelete)
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                            ),
+                            onPressed: () =>
+                                widget.onDeleteTap(widget.sondageId),
                           ),
-                          onPressed: () => widget.onDeleteTap(widget.sondageId),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -260,5 +272,40 @@ class _SondageComponentRowState extends State<SondageComponentRow> {
       default:
         return Colors.grey;
     }
+  }
+}
+
+class _SyncBadge extends StatelessWidget {
+  const _SyncBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF4DB),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFF1C972)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 6),
+          Text(
+            'Syncing',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF8A5A00),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

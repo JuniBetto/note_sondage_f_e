@@ -72,11 +72,7 @@ class _SondageWebState extends State<SondageWeb> {
     CustomDialog(
       title: widget.title,
       width: 760,
-      child: CreateSondageWeb(
-        onsondageCreated: () {
-          context.read<SondageBloc>().add(LoadSondagesEvent());
-        },
-      ),
+      child: const CreateSondageWeb(),
     ).show(context);
   }
 
@@ -84,12 +80,7 @@ class _SondageWebState extends State<SondageWeb> {
     CustomDialog(
       title: 'Modifica sondaggio',
       width: 760,
-      child: CreateSondageWeb(
-        initialSondage: sondage,
-        onsondageCreated: () {
-          context.read<SondageBloc>().add(LoadSondagesEvent());
-        },
-      ),
+      child: CreateSondageWeb(initialSondage: sondage),
     ).show(context);
   }
 

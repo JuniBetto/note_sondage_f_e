@@ -138,6 +138,9 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
             "teamId": teamView.team.id ?? '',
             "ownerUserId": teamView.team.createdByUserId,
             "memberCount": teamView.team.memberCount,
+            "isSyncing": _teamBloc.syncingTeamIds.contains(
+              teamView.team.id ?? '',
+            ),
             "members": teamView.members
                 .map(
                   (m) => {
@@ -293,6 +296,7 @@ Widget viewScrollWebMobile(
               teamId: teamId,
               members: item["members"],
               memberCount: item["memberCount"] as int?,
+              isSyncing: item["isSyncing"] as bool? ?? false,
               isOwner: isOwner,
               isArchived: isArchived,
               currentUserId: currentUserId,
@@ -318,6 +322,7 @@ Widget viewScrollWebMobile(
               teamFocus: item["teamFocus"],
               members: item["members"],
               memberCount: item["memberCount"] as int?,
+              isSyncing: item["isSyncing"] as bool? ?? false,
               isOwner: isOwner,
               isArchived: isArchived,
               currentUserId: currentUserId,

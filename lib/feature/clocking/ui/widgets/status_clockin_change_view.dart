@@ -236,9 +236,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                 runSpacing: 6,
                 children: [
                   SizedBox(
-                    width: widget.isMobile
-                        ? double.infinity
-                        : null,
+                    width: widget.isMobile ? double.infinity : null,
                     child: IntrinsicWidth(
                       child: CustomAppButton(
                         onPressed: displayedRecords.isNotEmpty
@@ -261,8 +259,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                     IntrinsicWidth(
                       child: CustomAppButton(
                         onPressed:
-                            widget.selectedTeamId == null ||
-                                !canManageClocking
+                            widget.selectedTeamId == null || !canManageClocking
                             ? null
                             : _assignVacationToTeamMember,
                         type: ButtonType.outlined,
@@ -280,8 +277,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                     IntrinsicWidth(
                       child: CustomAppButton(
                         onPressed:
-                            widget.selectedTeamId == null ||
-                                canManageClocking
+                            widget.selectedTeamId == null || canManageClocking
                             ? null
                             : _requestClockingForTeamMember,
                         type: ButtonType.outlined,
@@ -298,8 +294,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                     ),
                     IntrinsicWidth(
                       child: CustomAppButton(
-                        onPressed:
-                            widget.selectedTeamId == null
+                        onPressed: widget.selectedTeamId == null
                             ? null
                             : canManageClocking
                             ? _assignPermissionToTeamMember
@@ -321,8 +316,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                     if (!canManageClocking)
                       IntrinsicWidth(
                         child: CustomAppButton(
-                          onPressed:
-                              widget.selectedTeamId == null
+                          onPressed: widget.selectedTeamId == null
                               ? null
                               : _requestVacationForSelf,
                           type: ButtonType.outlined,
@@ -453,6 +447,10 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _MobileRecordCard(
                             record: record,
+                            isSyncing: context
+                                .read<ClockingBloc>()
+                                .syncingRecordIds
+                                .contains(record.id),
                             isOwner: isOwner,
                             isArchived: _archivedRecordIds.contains(record.id),
                             onDecommit: () => _decommitRecord(record),
@@ -472,6 +470,10 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _WebRecordRow(
                             record: record,
+                            isSyncing: context
+                                .read<ClockingBloc>()
+                                .syncingRecordIds
+                                .contains(record.id),
                             isOwner: isOwner,
                             isArchived: _archivedRecordIds.contains(record.id),
                             onDecommit: () => _decommitRecord(record),
@@ -1532,6 +1534,7 @@ class _InfoState extends StatelessWidget {
 class _WebRecordRow extends StatelessWidget {
   const _WebRecordRow({
     required this.record,
+    this.isSyncing = false,
     required this.isOwner,
     required this.isArchived,
     required this.onDecommit,
@@ -1541,6 +1544,7 @@ class _WebRecordRow extends StatelessWidget {
   });
 
   final ClockingRecordEntity record;
+  final bool isSyncing;
   final bool isOwner;
   final bool isArchived;
   final VoidCallback onDecommit;
@@ -1561,6 +1565,7 @@ class _WebRecordRow extends StatelessWidget {
         if (useStackedLayout) {
           return _MobileRecordCard(
             record: record,
+            isSyncing: isSyncing,
             isOwner: isOwner,
             isArchived: isArchived,
             onDecommit: onDecommit,
@@ -1570,76 +1575,83 @@ class _WebRecordRow extends StatelessWidget {
           );
         }
 
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 2, child: _RecordSummary(record: record)),
-              Expanded(
-                child: _RecordTimeColumn(
-                  label: 'Date',
-                  value: DateFormat('dd/MM/yyyy').format(record.date),
+        return Opacity(
+          opacity: isSyncing ? 0.78 : 1,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: _RecordSummary(record: record, isSyncing: isSyncing),
                 ),
-              ),
-              Expanded(
-                child: _RecordTimeColumn(
-                  label: 'Clock-in',
-                  value: record.clockInFormatted,
-                ),
-              ),
-              Expanded(
-                child: _RecordTimeColumn(
-                  label: 'Clock-out',
-                  value: record.clockOutFormatted,
-                ),
-              ),
-              Expanded(
-                child: _RecordTimeColumn(
-                  label: 'Worked',
-                  value: record.timeWorkedFormatted,
-                ),
-              ),
-              if (record.note != null && record.note!.trim().isNotEmpty)
                 Expanded(
                   child: _RecordTimeColumn(
-                    label: AppLocalizations.of(context)!.note,
-                    value: record.note!.trim(),
+                    label: 'Date',
+                    value: DateFormat('dd/MM/yyyy').format(record.date),
                   ),
                 ),
-              Expanded(
-                child: _RecordTimeColumn(
-                  label: 'Break',
-                  value: record.breakWorkedFormatted,
+                Expanded(
+                  child: _RecordTimeColumn(
+                    label: 'Clock-in',
+                    value: record.clockInFormatted,
+                  ),
                 ),
-              ),
-              SizedBox(
-                width: 210,
-                child: _OwnerActions(
-                  record: record,
-                  isOwner: isOwner,
-                  onDecommit: onDecommit,
-                  onCommit: onCommit,
-                  onEdit: onEdit,
+                Expanded(
+                  child: _RecordTimeColumn(
+                    label: 'Clock-out',
+                    value: record.clockOutFormatted,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
-                onPressed: onArchive,
-                icon: Icon(
-                  isArchived
-                      ? Icons.unarchive_outlined
-                      : Icons.archive_outlined,
-                  color: Colors.blueGrey,
+                Expanded(
+                  child: _RecordTimeColumn(
+                    label: 'Worked',
+                    value: record.timeWorkedFormatted,
+                  ),
                 ),
-              ),
-            ],
+                if (record.note != null && record.note!.trim().isNotEmpty)
+                  Expanded(
+                    child: _RecordTimeColumn(
+                      label: AppLocalizations.of(context)!.note,
+                      value: record.note!.trim(),
+                    ),
+                  ),
+                Expanded(
+                  child: _RecordTimeColumn(
+                    label: 'Break',
+                    value: record.breakWorkedFormatted,
+                  ),
+                ),
+                SizedBox(
+                  width: 210,
+                  child: _OwnerActions(
+                    record: record,
+                    isSyncing: isSyncing,
+                    isOwner: isOwner,
+                    onDecommit: onDecommit,
+                    onCommit: onCommit,
+                    onEdit: onEdit,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
+                  onPressed: onArchive,
+                  icon: Icon(
+                    isArchived
+                        ? Icons.unarchive_outlined
+                        : Icons.archive_outlined,
+                    color: Colors.blueGrey,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -1650,6 +1662,7 @@ class _WebRecordRow extends StatelessWidget {
 class _MobileRecordCard extends StatelessWidget {
   const _MobileRecordCard({
     required this.record,
+    this.isSyncing = false,
     required this.isOwner,
     required this.isArchived,
     required this.onDecommit,
@@ -1659,6 +1672,7 @@ class _MobileRecordCard extends StatelessWidget {
   });
 
   final ClockingRecordEntity record;
+  final bool isSyncing;
   final bool isOwner;
   final bool isArchived;
   final VoidCallback onDecommit;
@@ -1669,72 +1683,79 @@ class _MobileRecordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _RecordSummary(record: record)),
-              IconButton(
-                tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
-                onPressed: onArchive,
-                icon: Icon(
-                  isArchived
-                      ? Icons.unarchive_outlined
-                      : Icons.archive_outlined,
-                  color: Colors.blueGrey,
+    return Opacity(
+      opacity: isSyncing ? 0.78 : 1,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _RecordSummary(record: record, isSyncing: isSyncing),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              _MiniInfo(
-                label: 'Date',
-                value: DateFormat('dd/MM/yyyy').format(record.date),
-              ),
-              _MiniInfo(label: 'Clock-in', value: record.clockInFormatted),
-              _MiniInfo(label: 'Clock-out', value: record.clockOutFormatted),
-              _MiniInfo(label: 'Worked', value: record.timeWorkedFormatted),
-              if (record.note != null && record.note!.trim().isNotEmpty)
+                IconButton(
+                  tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
+                  onPressed: onArchive,
+                  icon: Icon(
+                    isArchived
+                        ? Icons.unarchive_outlined
+                        : Icons.archive_outlined,
+                    color: Colors.blueGrey,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [
                 _MiniInfo(
-                  label: AppLocalizations.of(context)!.note,
-                  value: record.note!.trim(),
+                  label: 'Date',
+                  value: DateFormat('dd/MM/yyyy').format(record.date),
                 ),
-              _MiniInfo(label: 'Break', value: record.breakWorkedFormatted),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _OwnerActions(
-            record: record,
-            isOwner: isOwner,
-            onDecommit: onDecommit,
-            onCommit: onCommit,
-            onEdit: onEdit,
-            compact: true,
-          ),
-        ],
+                _MiniInfo(label: 'Clock-in', value: record.clockInFormatted),
+                _MiniInfo(label: 'Clock-out', value: record.clockOutFormatted),
+                _MiniInfo(label: 'Worked', value: record.timeWorkedFormatted),
+                if (record.note != null && record.note!.trim().isNotEmpty)
+                  _MiniInfo(
+                    label: AppLocalizations.of(context)!.note,
+                    value: record.note!.trim(),
+                  ),
+                _MiniInfo(label: 'Break', value: record.breakWorkedFormatted),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _OwnerActions(
+              record: record,
+              isSyncing: isSyncing,
+              isOwner: isOwner,
+              onDecommit: onDecommit,
+              onCommit: onCommit,
+              onEdit: onEdit,
+              compact: true,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _RecordSummary extends StatelessWidget {
-  const _RecordSummary({required this.record});
+  const _RecordSummary({required this.record, this.isSyncing = false});
 
   final ClockingRecordEntity record;
+  final bool isSyncing;
 
   @override
   Widget build(BuildContext context) {
@@ -1793,6 +1814,7 @@ class _RecordSummary extends StatelessWidget {
               label: record.statusLabel,
               color: _statusColor(record.status),
             ),
+            if (isSyncing) _StatusBadge(label: 'Syncing', color: Colors.amber),
             if (record.note != null && record.note!.trim().isNotEmpty)
               _StatusBadge(
                 label: AppLocalizations.of(context)!.note,
@@ -1808,6 +1830,7 @@ class _RecordSummary extends StatelessWidget {
 class _OwnerActions extends StatelessWidget {
   const _OwnerActions({
     required this.record,
+    this.isSyncing = false,
     required this.isOwner,
     required this.onDecommit,
     required this.onCommit,
@@ -1816,6 +1839,7 @@ class _OwnerActions extends StatelessWidget {
   });
 
   final ClockingRecordEntity record;
+  final bool isSyncing;
   final bool isOwner;
   final VoidCallback onDecommit;
   final VoidCallback onCommit;
@@ -1837,23 +1861,23 @@ class _OwnerActions extends StatelessWidget {
     final buttons = <Widget>[
       if (record.canDecommit)
         CustomAppButton(
-          onPressed: onDecommit,
+          onPressed: isSyncing ? null : onDecommit,
           type: ButtonType.outlined,
-          isActive: true,
+          isActive: !isSyncing,
           child: Text(loc.decommit),
         ),
       if (record.canCommit)
         CustomAppButton(
-          onPressed: onCommit,
+          onPressed: isSyncing ? null : onCommit,
           type: ButtonType.filledTonal,
-          isActive: true,
+          isActive: !isSyncing,
           child: Text(loc.commit),
         ),
       if (record.ownerEditable)
         CustomAppButton(
-          onPressed: onEdit,
+          onPressed: isSyncing ? null : onEdit,
           type: ButtonType.filled,
-          isActive: true,
+          isActive: !isSyncing,
           child: Text(loc.editAction),
         ),
     ];

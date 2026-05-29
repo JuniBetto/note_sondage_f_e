@@ -154,14 +154,18 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated && _isEditMode) {
-          _teamBloc.add(LoadTeamsEvent());
+          AppSnackBar.showWarning(
+            context,
+            'Aggiornamento del team in sincronizzazione...',
+            title: 'Sync in corso',
+          );
           context.read<NavigationBloc>().add(NavigationPositionChanged(1));
           context.go(RouterPaths.home);
         } else if (teamState is TeamCreated) {
-          _teamBloc.add(LoadTeamsEvent());
-          AppSnackBar.showSuccess(
+          AppSnackBar.showWarning(
             context,
-            localization.teamCreatedSuccessfully,
+            'Creazione del team in sincronizzazione...',
+            title: 'Sync in corso',
           );
           setState(() {
             listInviteFormData.clear();
@@ -179,7 +183,6 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
           }
         } else if (teamState is TeamError) {
           if (_isLoading) setState(() => _isLoading = false);
-          AppSnackBar.showError(context, teamState.message);
         }
       },
       child: SubmitOnEnterScope(

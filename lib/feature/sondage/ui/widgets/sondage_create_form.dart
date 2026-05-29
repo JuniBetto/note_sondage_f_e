@@ -610,6 +610,10 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         }
         setState(() => _isSubmitting = false);
         if (state is SondageCreated) {
+          _showSnackBar(
+            'Creazione del sondaggio in sincronizzazione...',
+            backgroundColor: const Color(0xFFFFC107),
+          );
           if (widget.onCloseRequested != null) {
             widget.onCloseRequested!.call();
             final onCreated = widget.onCreated;
@@ -630,6 +634,10 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         }
 
         if (state is SondageUpdated) {
+          _showSnackBar(
+            'Aggiornamento del sondaggio in sincronizzazione...',
+            backgroundColor: const Color(0xFFFFC107),
+          );
           if (widget.onCloseRequested != null) {
             widget.onCloseRequested!.call();
             final onCreated = widget.onCreated;

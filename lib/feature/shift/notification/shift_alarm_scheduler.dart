@@ -68,6 +68,13 @@ class ShiftAlarmScheduler {
 
   /// Schedula allarmi per un singolo turno.
   Future<void> _scheduleOne(ShiftAssignmentEntity assignment) async {
+    if (assignment.id.startsWith('local_')) {
+      debugPrint(
+        '[ShiftAlarmScheduler] Skip ${assignment.id}: waiting for server confirmation.',
+      );
+      return;
+    }
+
     if (assignment.alarmOffsets.isEmpty) {
       debugPrint(
         '[ShiftAlarmScheduler] Skip ${assignment.id}: no alarm offsets.',

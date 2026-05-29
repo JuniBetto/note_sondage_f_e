@@ -85,3 +85,38 @@ class VoteSondageEvent extends SondageEvent {
 class ResetSondageCacheEvent extends SondageEvent {
   const ResetSondageCacheEvent();
 }
+
+class _SondageCreateCommittedEvent extends SondageEvent {
+  final String temporaryId;
+  final SondageEntity sondage;
+
+  const _SondageCreateCommittedEvent(this.temporaryId, this.sondage);
+
+  @override
+  List<Object?> get props => [temporaryId, sondage];
+}
+
+class _SondageUpdateCommittedEvent extends SondageEvent {
+  final String sondageId;
+  final SondageEntity sondage;
+
+  const _SondageUpdateCommittedEvent(this.sondageId, this.sondage);
+
+  @override
+  List<Object?> get props => [sondageId, sondage];
+}
+
+class _SondageMutationFailedEvent extends SondageEvent {
+  final String message;
+  final List<SondageEntity> rollbackSondages;
+  final Set<String> syncingIdsToClear;
+
+  const _SondageMutationFailedEvent({
+    required this.message,
+    required this.rollbackSondages,
+    required this.syncingIdsToClear,
+  });
+
+  @override
+  List<Object?> get props => [message, rollbackSondages, syncingIdsToClear];
+}

@@ -172,6 +172,89 @@ class DeleteShiftAssignmentEvent extends ShiftEvent {
   List<Object?> get props => [assignmentId];
 }
 
+class ShiftProfileCreateCommittedEvent extends ShiftEvent {
+  final String temporaryId;
+  final ShiftProfileEntity profile;
+
+  ShiftProfileCreateCommittedEvent(this.temporaryId, this.profile);
+
+  @override
+  List<Object?> get props => [temporaryId, profile];
+}
+
+class ShiftProfileUpdateCommittedEvent extends ShiftEvent {
+  final String profileId;
+  final ShiftProfileEntity profile;
+
+  ShiftProfileUpdateCommittedEvent(this.profileId, this.profile);
+
+  @override
+  List<Object?> get props => [profileId, profile];
+}
+
+class ShiftProfileDeleteCommittedEvent extends ShiftEvent {
+  final String profileId;
+
+  ShiftProfileDeleteCommittedEvent(this.profileId);
+
+  @override
+  List<Object?> get props => [profileId];
+}
+
+class ShiftAssignmentCreateCommittedEvent extends ShiftEvent {
+  final String temporaryId;
+  final ShiftAssignmentEntity assignment;
+
+  ShiftAssignmentCreateCommittedEvent(this.temporaryId, this.assignment);
+
+  @override
+  List<Object?> get props => [temporaryId, assignment];
+}
+
+class ShiftAssignmentUpdateCommittedEvent extends ShiftEvent {
+  final String assignmentId;
+  final ShiftAssignmentEntity assignment;
+
+  ShiftAssignmentUpdateCommittedEvent(this.assignmentId, this.assignment);
+
+  @override
+  List<Object?> get props => [assignmentId, assignment];
+}
+
+class ShiftAssignmentDeleteCommittedEvent extends ShiftEvent {
+  final String assignmentId;
+
+  ShiftAssignmentDeleteCommittedEvent(this.assignmentId);
+
+  @override
+  List<Object?> get props => [assignmentId];
+}
+
+class ShiftMutationFailedEvent extends ShiftEvent {
+  final String message;
+  final List<ShiftProfileEntity>? rollbackProfiles;
+  final List<ShiftAssignmentEntity>? rollbackAssignments;
+  final Set<String> syncingProfileIdsToClear;
+  final Set<String> syncingAssignmentIdsToClear;
+
+  ShiftMutationFailedEvent({
+    required this.message,
+    this.rollbackProfiles,
+    this.rollbackAssignments,
+    this.syncingProfileIdsToClear = const <String>{},
+    this.syncingAssignmentIdsToClear = const <String>{},
+  });
+
+  @override
+  List<Object?> get props => [
+    message,
+    rollbackProfiles,
+    rollbackAssignments,
+    syncingProfileIdsToClear,
+    syncingAssignmentIdsToClear,
+  ];
+}
+
 // ── States ────────────────────────────────────────────────────────────────────
 
 abstract class ShiftState extends Equatable {

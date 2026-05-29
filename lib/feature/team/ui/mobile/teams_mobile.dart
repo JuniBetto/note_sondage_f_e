@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/team_display.dart';
-import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 // 3. Modifica il tuo TeamsMobile widget per utilizzare i nuovi componenti
 class TeamsMobile extends StatefulWidget {
@@ -18,15 +19,17 @@ class TeamsMobile extends StatefulWidget {
 
 class _TeamsMobileState extends State<TeamsMobile>
     with SingleTickerProviderStateMixin {
+  late final TeamBloc _teamBloc;
   late TabController tabController;
   int currentViewType = 1;
 
   @override
   void initState() {
     super.initState();
+    _teamBloc = getIt<TeamBloc>();
     tabController = TabController(length: 2, vsync: this);
     tabController.addListener(_handleTabChange);
-    getIt<TeamBloc>().add(LoadTeamsEvent());
+    _teamBloc.add(LoadTeamsEvent());
   }
 
   void _handleTabChange() {
@@ -45,8 +48,8 @@ class _TeamsMobileState extends State<TeamsMobile>
   }
 
   void _handleTeamCreated() {
-    getIt<TeamBloc>().add(LoadTeamsEvent());
-    // Torna alla tab dei team selezionati
+    // Torna alla tab dei team selezionati: la lista e la cache sono gia'
+    // aggiornate ottimisticamente dal bloc.
     tabController.animateTo(0);
   }
 
@@ -60,9 +63,6 @@ class _TeamsMobileState extends State<TeamsMobile>
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
-    final theme = context.theme;
-    final texttheme= theme.textTheme;
-    final colorScheme= theme.colorScheme;
 
     AppTutorialController.registerReplayAction(
       tutorialId: 'mobile-main-1',
@@ -74,51 +74,60 @@ class _TeamsMobileState extends State<TeamsMobile>
       ),
     );
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TabBarComponent(
-              childTab1: Text(
-                localization.selectedTeam,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              childTab2: Text(
-                localization.createTeam,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              tabController: tabController,
-              setToUpdate: setState,
-            ),
-            SizedBox(height: 8),
-            Divider(height: 2, color: Colors.grey[400]),
-            SizedBox(height: 16),
-
-            // Contenuto dinamico basato sulla tab selezionata
-            Expanded(
-              child: TabBarView(
-                controller: tabController,
-                children: [
-                  // Prima tab: Visualizzazione team
-                  TeamsDisplay(
-                    teams: const <Map<String, dynamic>>[],
-                    onViewChanged: _handleViewTypeChanged,
-                    initialViewType: currentViewType,
+    return BlocListener<TeamBloc, TeamState>(
+      bloc: _teamBloc,
+      listenWhen: (_, current) => current is TeamError,
+      listener: (context, state) {
+        if (state is TeamError) {
+          AppSnackBar.showError(context, state.message);
+        }
+      },
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TabBarComponent(
+                childTab1: Text(
+                  localization.selectedTeam,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
-
-                  // Seconda tab: Creazione team
-                  CreateTeamMobile(onTeamCreated: _handleTeamCreated),
-                ],
+                ),
+                childTab2: Text(
+                  localization.createTeam,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                tabController: tabController,
+                setToUpdate: setState,
               ),
-            ),
-          ],
+              SizedBox(height: 8),
+              Divider(height: 2, color: Colors.grey[400]),
+              SizedBox(height: 16),
+
+              // Contenuto dinamico basato sulla tab selezionata
+              Expanded(
+                child: TabBarView(
+                  controller: tabController,
+                  children: [
+                    // Prima tab: Visualizzazione team
+                    TeamsDisplay(
+                      teams: const <Map<String, dynamic>>[],
+                      onViewChanged: _handleViewTypeChanged,
+                      initialViewType: currentViewType,
+                    ),
+
+                    // Seconda tab: Creazione team
+                    CreateTeamMobile(onTeamCreated: _handleTeamCreated),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // team_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -15,7 +17,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
 
   /// In-memory cache to avoid flickering on CRUD operations
   List<TeamEntity> _cachedTeams = [];
+  final Set<String> _syncingTeamIds = <String>{};
   String? _teamsRefreshKey;
+
+  Set<String> get syncingTeamIds => Set.unmodifiable(_syncingTeamIds);
 
   TeamBloc({required this.teamUseCase, required this.teamLocalDataSource})
     : super(TeamInitial()) {
@@ -24,6 +29,9 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     on<LoadTeamByIdEvent>(_onLoadTeamById);
     on<_TeamsRefreshedEvent>(_onTeamsRefreshed);
     on<_TeamsRefreshFailedEvent>(_onTeamsRefreshFailed);
+    on<_TeamCreateCommittedEvent>(_onTeamCreateCommitted);
+    on<_TeamUpdateCommittedEvent>(_onTeamUpdateCommitted);
+    on<_TeamMutationFailedEvent>(_onTeamMutationFailed);
     on<CreateTeamEvent>(_onCreateTeam);
     on<UpdateTeamEvent>(_onUpdateTeam);
     on<DeleteTeamEvent>(_onDeleteTeam);
@@ -185,62 +193,104 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     CreateTeamEvent event,
     Emitter<TeamState> emit,
   ) async {
-    try {
-      final TeamEntity team;
-      if (event.userId != null && event.userId!.isNotEmpty) {
-        team = await teamUseCase.createTeamByUser(event.team, event.userId!);
-      } else {
-        team = await teamUseCase.createTeam(event.team);
-      }
-      emit(TeamCreated(team));
+    final rollbackTeams = List<TeamEntity>.from(_cachedTeams);
+    final optimisticTeam = TeamEntity(
+      _temporaryId('team'),
+      event.team.color,
+      event.team.pendingInvitations,
+      name: event.team.name,
+      description: event.team.description,
+      createdByUserId: event.team.createdByUserId,
+      memberCount: event.team.memberCount,
+      createdAt: event.team.createdAt,
+    );
 
-      // Optimistic update: add to cache immediately
-      _cachedTeams = [..._cachedTeams, team];
-      await teamLocalDataSource.saveAll(_cachedTeams);
-      emit(TeamsLoaded(_cachedTeams));
-    } catch (e) {
-      emit(
-        TeamError(
-          AppErrorMessageResolver.resolve(
-            e,
-            fallback: 'We could not create the team right now.',
-          ),
-        ),
-      );
-      // Re-emit cached teams so UI doesn't break
-      if (_cachedTeams.isNotEmpty) {
-        emit(TeamsLoaded(_cachedTeams));
+    _syncingTeamIds.add(optimisticTeam.id ?? '');
+    _cachedTeams = [..._cachedTeams, optimisticTeam];
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamCreated(optimisticTeam));
+    emit(TeamsLoaded(_cachedTeams));
+
+    unawaited(() async {
+      try {
+        final TeamEntity created;
+        if (event.userId != null && event.userId!.isNotEmpty) {
+          created = await teamUseCase.createTeamByUser(
+            event.team,
+            event.userId!,
+          );
+        } else {
+          created = await teamUseCase.createTeam(event.team);
+        }
+        if (!isClosed) {
+          add(_TeamCreateCommittedEvent(optimisticTeam.id ?? '', created));
+        }
+      } catch (e) {
+        if (!isClosed) {
+          add(
+            _TeamMutationFailedEvent(
+              message: AppErrorMessageResolver.resolve(
+                e,
+                fallback: 'We could not create the team right now.',
+              ),
+              rollbackTeams: rollbackTeams,
+              syncingIdsToClear: {optimisticTeam.id ?? ''},
+            ),
+          );
+        }
       }
-    }
+    }());
   }
 
   Future<void> _onUpdateTeam(
     UpdateTeamEvent event,
     Emitter<TeamState> emit,
   ) async {
-    try {
-      final team = await teamUseCase.updateTeam(event.team);
-      emit(TeamUpdated(team));
+    final rollbackTeams = List<TeamEntity>.from(_cachedTeams);
+    final previousTeam = _cachedTeams
+        .where((t) => t.id == event.team.id)
+        .firstOrNull;
+    final optimisticTeam = _teamEntityFromUpdate(
+      event.team,
+      previous: previousTeam,
+    );
 
-      // Optimistic update: replace in cache
-      _cachedTeams = _cachedTeams.map((t) {
-        return t.id == team.id ? team : t;
-      }).toList();
-      await teamLocalDataSource.saveAll(_cachedTeams);
-      emit(TeamsLoaded(_cachedTeams));
-    } catch (e) {
-      emit(
-        TeamError(
-          AppErrorMessageResolver.resolve(
-            e,
-            fallback: 'We could not update the team right now.',
-          ),
-        ),
-      );
-      if (_cachedTeams.isNotEmpty) {
-        emit(TeamsLoaded(_cachedTeams));
-      }
+    _syncingTeamIds.add(optimisticTeam.id ?? '');
+    final existingIndex = _cachedTeams.indexWhere(
+      (team) => team.id == optimisticTeam.id,
+    );
+    if (existingIndex == -1) {
+      _cachedTeams = [..._cachedTeams, optimisticTeam];
+    } else {
+      _cachedTeams = List<TeamEntity>.from(_cachedTeams)
+        ..[existingIndex] = optimisticTeam;
     }
+
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamUpdated(optimisticTeam));
+    emit(TeamsLoaded(_cachedTeams));
+
+    unawaited(() async {
+      try {
+        final updated = await teamUseCase.updateTeam(event.team);
+        if (!isClosed) {
+          add(_TeamUpdateCommittedEvent(optimisticTeam.id ?? '', updated));
+        }
+      } catch (e) {
+        if (!isClosed) {
+          add(
+            _TeamMutationFailedEvent(
+              message: AppErrorMessageResolver.resolve(
+                e,
+                fallback: 'We could not update the team right now.',
+              ),
+              rollbackTeams: rollbackTeams,
+              syncingIdsToClear: {optimisticTeam.id ?? ''},
+            ),
+          );
+        }
+      }
+    }());
   }
 
   Future<void> _onDeleteTeam(
@@ -284,5 +334,75 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     _cachedTeams = [];
     await teamLocalDataSource.clearAll();
     emit(TeamInitial());
+  }
+
+  Future<void> _onTeamCreateCommitted(
+    _TeamCreateCommittedEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    final existingIndex = _cachedTeams.indexWhere(
+      (team) => team.id == event.temporaryId,
+    );
+    if (existingIndex == -1) {
+      _cachedTeams = [..._cachedTeams, event.team];
+    } else {
+      _cachedTeams = List<TeamEntity>.from(_cachedTeams)
+        ..[existingIndex] = event.team;
+    }
+    _syncingTeamIds.remove(event.temporaryId);
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamsLoaded(_cachedTeams));
+  }
+
+  Future<void> _onTeamUpdateCommitted(
+    _TeamUpdateCommittedEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    final existingIndex = _cachedTeams.indexWhere(
+      (team) => team.id == event.teamId,
+    );
+    final current = existingIndex == -1 ? null : _cachedTeams[existingIndex];
+    final confirmedTeam = _teamEntityFromUpdate(event.team, previous: current);
+
+    if (existingIndex == -1) {
+      _cachedTeams = [..._cachedTeams, confirmedTeam];
+    } else {
+      _cachedTeams = List<TeamEntity>.from(_cachedTeams)
+        ..[existingIndex] = confirmedTeam;
+    }
+
+    _syncingTeamIds.remove(event.teamId);
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamsLoaded(_cachedTeams));
+  }
+
+  Future<void> _onTeamMutationFailed(
+    _TeamMutationFailedEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    _cachedTeams = List<TeamEntity>.from(event.rollbackTeams);
+    _syncingTeamIds.removeAll(event.syncingIdsToClear);
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamError(event.message));
+    emit(TeamsLoaded(_cachedTeams));
+  }
+
+  String _temporaryId(String prefix) {
+    return 'local_${prefix}_${DateTime.now().microsecondsSinceEpoch}';
+  }
+
+  TeamEntity _teamEntityFromUpdate(TeamUpdate update, {TeamEntity? previous}) {
+    return TeamEntity(
+      update.id,
+      update.color,
+      previous?.pendingInvitations,
+      name: update.name,
+      description: update.description,
+      createdByUserId: update.createdByUserId.isNotEmpty
+          ? update.createdByUserId
+          : (previous?.createdByUserId ?? ''),
+      memberCount: previous?.memberCount ?? 0,
+      createdAt: previous?.createdAt ?? update.createdAt,
+    );
   }
 }

@@ -55,11 +55,6 @@ class _SondageMobileState extends State<SondageMobile>
 
   void _handleSondageCreated() {
     tabController.animateTo(0);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<SondageBloc>().add(LoadSondagesEvent());
-      }
-    });
   }
 
   Future<void> _openEditSheet(SondageEntity sondage) async {

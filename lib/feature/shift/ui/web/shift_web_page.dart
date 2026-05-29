@@ -542,6 +542,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       date: date,
       assignments: sortedAssignments,
       canCreate: true,
+      syncingAssignmentIds: context.read<ShiftBloc>().syncingAssignmentIds,
     );
     if (!mounted || action == null) return;
 
@@ -614,7 +615,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
               _tryConsumeShiftOpenIntent(context);
             }
             if (state is ShiftAssigned) {
-              if (state.assignment.isPublic &&
+              final isSyncing = context
+                  .read<ShiftBloc>()
+                  .syncingAssignmentIds
+                  .contains(state.assignment.id);
+              if (!isSyncing &&
+                  state.assignment.isPublic &&
                   state.assignment.teamShiftGroupId != null) {
                 _loadAssignments();
               } else {
@@ -622,7 +628,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
               }
             }
             if (state is ShiftAssignmentUpdated) {
-              if (state.assignment.isPublic &&
+              final isSyncing = context
+                  .read<ShiftBloc>()
+                  .syncingAssignmentIds
+                  .contains(state.assignment.id);
+              if (!isSyncing &&
+                  state.assignment.isPublic &&
                   state.assignment.teamShiftGroupId != null) {
                 _loadAssignments();
               } else {
@@ -825,6 +836,9 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                               )
                             : ShiftCalendarWidget(
                                 assignments: foregroundAssignments,
+                                syncingAssignmentIds: context
+                                    .read<ShiftBloc>()
+                                    .syncingAssignmentIds,
                                 focusedMonth: _focusedMonth,
                                 onMonthChanged: _onMonthChanged,
                                 onDayTap: (date, assignments) =>
@@ -848,6 +862,9 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                             padding: const EdgeInsets.all(16),
                             child: ShiftProfileManager(
                               profiles: _profiles,
+                              syncingProfileIds: context
+                                  .read<ShiftBloc>()
+                                  .syncingProfileIds,
                               isOwner: _isOwnerOfAnyTeam,
                             ),
                           ),

@@ -82,3 +82,38 @@ class _TeamsRefreshFailedEvent extends TeamEvent {
   @override
   List<Object?> get props => [message, hadLocalData];
 }
+
+class _TeamCreateCommittedEvent extends TeamEvent {
+  final String temporaryId;
+  final TeamEntity team;
+
+  const _TeamCreateCommittedEvent(this.temporaryId, this.team);
+
+  @override
+  List<Object?> get props => [temporaryId, team];
+}
+
+class _TeamUpdateCommittedEvent extends TeamEvent {
+  final String teamId;
+  final TeamUpdate team;
+
+  const _TeamUpdateCommittedEvent(this.teamId, this.team);
+
+  @override
+  List<Object?> get props => [teamId, team];
+}
+
+class _TeamMutationFailedEvent extends TeamEvent {
+  final String message;
+  final List<TeamEntity> rollbackTeams;
+  final Set<String> syncingIdsToClear;
+
+  const _TeamMutationFailedEvent({
+    required this.message,
+    required this.rollbackTeams,
+    required this.syncingIdsToClear,
+  });
+
+  @override
+  List<Object?> get props => [message, rollbackTeams, syncingIdsToClear];
+}
