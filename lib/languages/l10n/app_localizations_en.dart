@@ -162,7 +162,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get webMobileAppOnlyHint =>
-      'Open Note Sondage on tablet or desktop, or install the app from your store.';
+      'Open TeamManagement on tablet or desktop, or install the app from your store.';
 
   @override
   String get downloadOnAppStore => 'Download on the App Store';
@@ -630,7 +630,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'We could not open your email app. Copy the address and send the message manually.';
 
   @override
-  String get contactUsEmailSubject => 'Note Sondage support request';
+  String get contactUsEmailSubject => 'TeamManagement support request';
 
   @override
   String get contactUsTopicsTitle => 'Bugs, feedback, product ideas';
@@ -1042,4 +1042,261 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get systemProfile => 'System Profiles';
+
+  @override
+  String get clockingDateLabel => 'Clocking date';
+
+  @override
+  String get calendarWeek => 'Week';
+
+  @override
+  String get calendarMonth => 'Month';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get clockingOverviewTitle => 'Clocking overview';
+
+  @override
+  String get clockingOverviewDescription =>
+      'This header introduces the clocking area and its main purpose.';
+
+  @override
+  String get clockingCurrentStatusTitle => 'Current status';
+
+  @override
+  String get clockingCurrentStatusDescription =>
+      'This section gives you an instant view of your clocking status and the main information for the current day.';
+
+  @override
+  String get personal => 'Personal';
+
+  @override
+  String get markVacation => 'Mark vacation';
+
+  @override
+  String get markPermission => 'Mark permission';
+
+  @override
+  String get requestClocking => 'Request clocking';
+
+  @override
+  String get requestVacation => 'Request vacation';
+
+  @override
+  String get requestPermission => 'Request permission';
+
+  @override
+  String get vacationStatus => 'Vacation';
+
+  @override
+  String get clockingOpenRecordAnotherDay =>
+      'You have an open clocking on another day. Select it to continue.';
+
+  @override
+  String dayAlreadyHasClocking(String date) {
+    return 'A clocking already exists for $date.';
+  }
+
+  @override
+  String get manualClockingUseInlineForPastDays =>
+      'For days other than today, use the manual entry section below.';
+
+  @override
+  String get manualClockingRequiresApproval =>
+      'For this date, ask a manager for clocking approval or use a team you manage.';
+
+  @override
+  String get selectedDayMarkedAsVacation =>
+      'The selected day is marked as vacation.';
+
+  @override
+  String get clockingCurrentTimeOverlapsExistingRecord =>
+      'The current time falls inside a clocking or permission already recorded today.';
+
+  @override
+  String createClockingForDate(String date) {
+    return 'Create a clocking for $date';
+  }
+
+  @override
+  String get breakOnlyCurrentDay =>
+      'Breaks are available only for the current day.';
+
+  @override
+  String get manualClockingTitle => 'Add clocking';
+
+  @override
+  String manualClockingDescription(String date) {
+    return 'Fill in the clocking for $date or add more past days.';
+  }
+
+  @override
+  String get manualClockingResolveOpenRecord =>
+      'You have an open clocking on another day. Close it or select that day before saving a manual clocking.';
+
+  @override
+  String get selectedDays => 'Selected days';
+
+  @override
+  String get addDay => 'Add day';
+
+  @override
+  String get clockInLabel => 'Clock-in';
+
+  @override
+  String get clockOutLabel => 'Clock-out';
+
+  @override
+  String get optionalNoteHint => 'Optional note';
+
+  @override
+  String get saving => 'Saving...';
+
+  @override
+  String get saveClocking => 'Save clocking';
+
+  @override
+  String get manualClockingTodayLiveOnly =>
+      'For today, use the live clock-in, break, and clock-out actions.';
+
+  @override
+  String get invalidBreakMinutes => 'Break time must be a valid number.';
+
+  @override
+  String get clockOutMustBeAfterClockIn =>
+      'Clock-out time must be after clock-in.';
+
+  @override
+  String get breakMustBeShorterThanShift =>
+      'Break must be shorter than shift duration.';
+
+  @override
+  String get manualClockingSavedSingle => 'Clocking saved successfully.';
+
+  @override
+  String manualClockingSavedMultiple(int count) {
+    return '$count clockings saved successfully.';
+  }
+
+  @override
+  String get manualClockingSaveError =>
+      'We couldn\'t save the manual clocking.';
+
+  @override
+  String get noTeamSelected => 'No team selected';
+
+  @override
+  String get changeOrSearchTeam => 'Open to change team or search for one';
+
+  @override
+  String get teamAvailableForClocking => 'Team available for clocking';
+
+  @override
+  String get searchTeam => 'Search team...';
+
+  @override
+  String get noTeamFound => 'No team found';
+
+  @override
+  String get selectTeamFirst => 'Select a team first.';
+
+  @override
+  String get selectTeamBeforeVacation =>
+      'Select a team before marking vacation.';
+
+  @override
+  String markSelectedDateAsVacation(String date) {
+    return 'Mark $date as vacation';
+  }
+
+  @override
+  String get markSelectedDayAsVacationDescription =>
+      'This action will mark the selected day as vacation.';
+
+  @override
+  String markPermissionForDate(String date) {
+    return 'Mark permission for $date';
+  }
+
+  @override
+  String get start => 'Start';
+
+  @override
+  String get end => 'End';
+
+  @override
+  String get permissionInvalidRange =>
+      'End time must be after start time for permission.';
+
+  @override
+  String get noAssignableMembersForTeam =>
+      'No assignable members found for this team.';
+
+  @override
+  String get assignVacationToMember => 'Mark vacation for a member';
+
+  @override
+  String get userLabel => 'User';
+
+  @override
+  String optionalNoteFor(String name) {
+    return 'Optional note for $name';
+  }
+
+  @override
+  String get optionalRequestNoteHint => 'Optional note for the request';
+
+  @override
+  String get clockingApprovalRequestHint =>
+      'You can request clocking, vacation, or permission for the selected team and date.';
+
+  @override
+  String requestClockingForSelectedDate(String date) {
+    return 'Request clocking for $date';
+  }
+
+  @override
+  String get noMembersAvailableForClockingRequest =>
+      'No members available for the clocking request.';
+
+  @override
+  String get sendRequest => 'Send request';
+
+  @override
+  String get clockingRequestSentSuccess =>
+      'Clocking request sent successfully.';
+
+  @override
+  String get clockingRequestSentError =>
+      'We couldn\'t send the clocking request to the team member.';
+
+  @override
+  String get vacationRequestSentSuccess =>
+      'Vacation request sent successfully.';
+
+  @override
+  String get vacationRequestSentError =>
+      'We couldn\'t send the vacation request.';
+
+  @override
+  String get permissionRequestSentSuccess =>
+      'Permission request sent successfully.';
+
+  @override
+  String get permissionRequestSentError =>
+      'We couldn\'t send the permission request.';
+
+  @override
+  String get approveRequest => 'Approve';
+
+  @override
+  String get rejectRequest => 'Reject';
+
+  @override
+  String get clockInDateTimeLabel => 'Clock-in (YYYY-MM-DD HH:MM)';
+
+  @override
+  String get clockOutDateTimeLabel => 'Clock-out (YYYY-MM-DD HH:MM)';
 }

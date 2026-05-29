@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -151,6 +152,12 @@ class _UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedUrl = photoUrl != null
+        ? DioClient.resolveImageUrl(photoUrl!)
+        : null;
+    final requiresAuth =
+        photoUrl != null && DioClient.usesAuthenticatedImageProxy(photoUrl!);
+
     return Container(
       width: size,
       height: size,
@@ -160,18 +167,53 @@ class _UserAvatar extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(size * 0.3),
-        child: CircleAvatar(
-          backgroundColor: Colors.transparent,
-          foregroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
-          child: photoUrl == null
-              ? Text(
+        child: FutureBuilder<Map<String, String>?>(
+          future: requiresAuth
+              ? DioClient.resolveImageHeaders(photoUrl!)
+              : Future.value(null),
+          builder: (context, snapshot) {
+            if (requiresAuth &&
+                snapshot.connectionState != ConnectionState.done) {
+              return CircleAvatar(
+                backgroundColor: Colors.transparent,
+                child: SizedBox(
+                  width: size * 0.45,
+                  height: size * 0.45,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            }
+
+            if (requiresAuth &&
+                (snapshot.data == null || snapshot.data!.isEmpty)) {
+              return CircleAvatar(
+                backgroundColor: Colors.transparent,
+                child: Text(
                   _buildInitials(displayName),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
-                )
-              : const Icon(Icons.person_rounded, color: Colors.white),
+                ),
+              );
+            }
+
+            return CircleAvatar(
+              backgroundColor: Colors.transparent,
+              foregroundImage: resolvedUrl != null
+                  ? NetworkImage(resolvedUrl, headers: snapshot.data)
+                  : null,
+              child: photoUrl == null
+                  ? Text(
+                      _buildInitials(displayName),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    )
+                  : const Icon(Icons.person_rounded, color: Colors.white),
+            );
+          },
         ),
       ),
     );

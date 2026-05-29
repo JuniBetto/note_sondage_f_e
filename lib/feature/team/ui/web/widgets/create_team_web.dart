@@ -12,7 +12,9 @@ import 'package:note_sondage/feature/team/ui/web/widgets/add_user_web.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
+import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 class CreateTeamWeb extends StatefulWidget {
@@ -123,208 +125,221 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
         alignment: Alignment.topLeft,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Header ──
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
+          child: SubmitOnEnterScope(
+            onSubmit: _onSave,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Header ──
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF7C4DFF,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(
+                          Icons.group_add_rounded,
+                          color: Color(0xFF7C4DFF),
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              localization.createTeam,
+                              style: textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Set up a new team with members and roles',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.descriptionColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Tooltip(
+                        message: localization.reviewTutorial,
+                        child: IconButton(
+                          onPressed: () =>
+                              AppTutorialController.replayRegistered(
+                                context: context,
+                                tutorialId: 'web-team-create',
+                              ),
+                          icon: const Icon(Icons.help_outline_rounded),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // ── Team Info Section ──
+                  _buildSectionTitle(context, localization.teamName),
+                  const SizedBox(height: 12),
+                  Showcase(
+                    key: _teamInfoKey,
+                    title: _isItalian(context)
+                        ? 'Nome e descrizione'
+                        : 'Name and description',
+                    description: _isItalian(context)
+                        ? 'Qui definisci l\'identità della nuova squadra: nome chiaro e descrizione del gruppo.'
+                        : 'Use this section to define the new team identity with a clear name and a short description.',
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF7C4DFF).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
+                        color: colorScheme.homeSecondary,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.borderColor!.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.group_add_rounded,
-                        color: Color(0xFF7C4DFF),
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            localization.createTeam,
-                            style: textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: CustomInputField(
+                              hintText: localization.teamName,
+                              controller: nameTeamController,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Il nome del team è obbligatorio';
+                                }
+                                return null;
+                              },
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Set up a new team with members and roles',
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.descriptionColor,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: CustomInputField(
+                              hintText: localization.teamDescription,
+                              controller: descriptionTeamController,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'La descrizione è obbligatoria';
+                                }
+                                return null;
+                              },
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Tooltip(
-                      message: localization.reviewTutorial,
-                      child: IconButton(
-                        onPressed: () => AppTutorialController.replayRegistered(
-                          context: context,
-                          tutorialId: 'web-team-create',
-                        ),
-                        icon: const Icon(Icons.help_outline_rounded),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-
-                // ── Team Info Section ──
-                _buildSectionTitle(context, localization.teamName),
-                const SizedBox(height: 12),
-                Showcase(
-                  key: _teamInfoKey,
-                  title: _isItalian(context)
-                      ? 'Nome e descrizione'
-                      : 'Name and description',
-                  description: _isItalian(context)
-                      ? 'Qui definisci l\'identità della nuova squadra: nome chiaro e descrizione del gruppo.'
-                      : 'Use this section to define the new team identity with a clear name and a short description.',
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.homeSecondary,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: CustomInputField(
-                            hintText: localization.teamName,
-                            controller: nameTeamController,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Il nome del team è obbligatorio';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: CustomInputField(
-                            hintText: localization.teamDescription,
-                            controller: descriptionTeamController,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'La descrizione è obbligatoria';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                ),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // ── Team Color Section ──
-                _buildSectionTitle(context, localization.selectedTeamcolor),
-                const SizedBox(height: 12),
-                Showcase(
-                  key: _teamColorKey,
-                  title: _isItalian(context) ? 'Colore' : 'Color',
-                  description: _isItalian(context)
-                      ? 'Scegli un colore distintivo per riconoscere la squadra più velocemente.'
-                      : 'Choose a distinctive color so the team is easier to recognize across the app.',
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.homeSecondary,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: ListCheckbox(selectedColor: selectedColor),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── Members Section ──
-                _buildSectionTitle(context, localization.userList),
-                const SizedBox(height: 12),
-                Showcase(
-                  key: _teamMembersKey,
-                  title: _isItalian(context) ? 'Membri' : 'Members',
-                  description: _isItalian(context)
-                      ? 'Aggiungi qui le persone da invitare e prepara la squadra prima del salvataggio finale.'
-                      : 'Add the people you want to invite here so the team is ready before the final save.',
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.homeSecondary,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: AddUserWeb(listInviteFormData: listInviteFormData),
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // ── Create Button ──
-                Showcase(
-                  key: _teamActionKey,
-                  title: _isItalian(context)
-                      ? 'Conferma creazione'
-                      : 'Create action',
-                  description: _isItalian(context)
-                      ? 'Quando tutto è pronto, questo pulsante crea la squadra e invia gli inviti preparati.'
-                      : 'Once everything is ready, use this button to create the team and send the prepared invitations.',
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton.icon(
-                      onPressed: _onSave,
-                      icon: const Icon(Icons.group_add_rounded, size: 20),
-                      label: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        child: Text(
-                          localization.createTeam,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                  // ── Team Color Section ──
+                  _buildSectionTitle(context, localization.selectedTeamcolor),
+                  const SizedBox(height: 12),
+                  Showcase(
+                    key: _teamColorKey,
+                    title: _isItalian(context) ? 'Colore' : 'Color',
+                    description: _isItalian(context)
+                        ? 'Scegli un colore distintivo per riconoscere la squadra più velocemente.'
+                        : 'Choose a distinctive color so the team is easier to recognize across the app.',
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: colorScheme.homeSecondary,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.borderColor!.withValues(
+                            alpha: 0.3,
                           ),
                         ),
                       ),
-                      style: FilledButton.styleFrom(
+                      child: ListCheckbox(selectedColor: selectedColor),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Members Section ──
+                  _buildSectionTitle(context, localization.userList),
+                  const SizedBox(height: 12),
+                  Showcase(
+                    key: _teamMembersKey,
+                    title: _isItalian(context) ? 'Membri' : 'Members',
+                    description: _isItalian(context)
+                        ? 'Aggiungi qui le persone da invitare e prepara la squadra prima del salvataggio finale.'
+                        : 'Add the people you want to invite here so the team is ready before the final save.',
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: colorScheme.homeSecondary,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.borderColor!.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ),
+                      child: AddUserWeb(listInviteFormData: listInviteFormData),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // ── Create Button ──
+                  Showcase(
+                    key: _teamActionKey,
+                    title: _isItalian(context)
+                        ? 'Conferma creazione'
+                        : 'Create action',
+                    description: _isItalian(context)
+                        ? 'Quando tutto è pronto, questo pulsante crea la squadra e invia gli inviti preparati.'
+                        : 'Once everything is ready, use this button to create the team and send the prepared invitations.',
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: CustomAppButton(
+                        onPressed: _onSave,
+                        type: ButtonType.filled,
                         backgroundColor: const Color(0xFF7C4DFF),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        borderRadius: 12,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 16,
                         ),
+                        isActive: true,
+                        leadingIcon: const Icon(
+                          Icons.group_add_rounded,
+                          size: 20,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          child: Text(
+                            localization.createTeam,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 32),
-              ],
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           ),
         ),

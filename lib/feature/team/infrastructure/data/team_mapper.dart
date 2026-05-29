@@ -26,6 +26,7 @@ class TeamMapper {
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       createdByUserId: createdByUserId,
+      memberCount: (json['memberCount'] as num?)?.toInt() ?? 0,
       createdAt: createdAt,
     );
   }

@@ -19,6 +19,8 @@ class ContactSupportView extends StatefulWidget {
   State<ContactSupportView> createState() => _ContactSupportViewState();
 }
 
+enum _ContactSupportSubmissionStatus { success, error }
+
 class _ContactSupportViewState extends State<ContactSupportView> {
   static const _supportEmail = 'contactus@teammanagement.it';
 
@@ -28,6 +30,8 @@ class _ContactSupportViewState extends State<ContactSupportView> {
 
   bool _didPrefillUser = false;
   bool _isSubmitting = false;
+  _ContactSupportSubmissionStatus? _submissionStatus;
+  String? _submissionMessage;
 
   @override
   void didChangeDependencies() {
@@ -63,6 +67,27 @@ class _ContactSupportViewState extends State<ContactSupportView> {
       _emailController.text.trim().isNotEmpty &&
       _messageController.text.trim().isNotEmpty;
 
+  void _setSubmissionFeedback(
+    _ContactSupportSubmissionStatus status,
+    String message,
+  ) {
+    setState(() {
+      _submissionStatus = status;
+      _submissionMessage = message;
+    });
+  }
+
+  void _clearSubmissionFeedback() {
+    if (_submissionStatus == null && (_submissionMessage?.isEmpty ?? true)) {
+      return;
+    }
+
+    setState(() {
+      _submissionStatus = null;
+      _submissionMessage = null;
+    });
+  }
+
   Future<void> _sendEmail() async {
     final loc = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
@@ -87,11 +112,19 @@ class _ContactSupportViewState extends State<ContactSupportView> {
       if (!mounted) {
         return;
       }
+      _setSubmissionFeedback(
+        _ContactSupportSubmissionStatus.success,
+        loc.contactUsSentSuccess,
+      );
       AppSnackBar.showSuccess(context, loc.contactUsSentSuccess);
     } on DioException {
       if (!mounted) {
         return;
       }
+      _setSubmissionFeedback(
+        _ContactSupportSubmissionStatus.error,
+        loc.contactUsSendFailed,
+      );
       AppSnackBar.showWarning(context, loc.contactUsSendFailed);
     } finally {
       if (mounted) {
@@ -205,9 +238,14 @@ class _ContactSupportViewState extends State<ContactSupportView> {
                           buildDecoration: _buildDecoration,
                           onSendEmail: _sendEmail,
                           onCopyEmail: _copyEmail,
-                          onMessageChanged: (_) => setState(() {}),
+                          onMessageChanged: (_) {
+                            _clearSubmissionFeedback();
+                            setState(() {});
+                          },
                           canSend: _canSubmit,
                           isSubmitting: _isSubmitting,
+                          submissionStatus: _submissionStatus,
+                          submissionMessage: _submissionMessage,
                           sendLabel: loc.sendEmail,
                           copyLabel: loc.copyEmail,
                           yourNameLabel: loc.yourName,
@@ -237,9 +275,14 @@ class _ContactSupportViewState extends State<ContactSupportView> {
                         buildDecoration: _buildDecoration,
                         onSendEmail: _sendEmail,
                         onCopyEmail: _copyEmail,
-                        onMessageChanged: (_) => setState(() {}),
+                        onMessageChanged: (_) {
+                          _clearSubmissionFeedback();
+                          setState(() {});
+                        },
                         canSend: _canSubmit,
                         isSubmitting: _isSubmitting,
+                        submissionStatus: _submissionStatus,
+                        submissionMessage: _submissionMessage,
                         sendLabel: loc.sendEmail,
                         copyLabel: loc.copyEmail,
                         yourNameLabel: loc.yourName,
@@ -548,6 +591,8 @@ class _SupportFormCard extends StatelessWidget {
     required this.onMessageChanged,
     required this.canSend,
     required this.isSubmitting,
+    required this.submissionStatus,
+    required this.submissionMessage,
     required this.sendLabel,
     required this.copyLabel,
     required this.yourNameLabel,
@@ -573,6 +618,8 @@ class _SupportFormCard extends StatelessWidget {
   final ValueChanged<String> onMessageChanged;
   final bool canSend;
   final bool isSubmitting;
+  final _ContactSupportSubmissionStatus? submissionStatus;
+  final String? submissionMessage;
   final String sendLabel;
   final String copyLabel;
   final String yourNameLabel;
@@ -612,6 +659,15 @@ class _SupportFormCard extends StatelessWidget {
               color: colorScheme.descriptionColor,
             ),
           ),
+          if (submissionStatus != null &&
+              submissionMessage != null &&
+              submissionMessage!.trim().isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _SubmissionFeedbackBanner(
+              status: submissionStatus!,
+              message: submissionMessage!,
+            ),
+          ],
           const SizedBox(height: 18),
           TextFormField(
             controller: nameController,
@@ -701,6 +757,61 @@ class _SupportFormCard extends StatelessWidget {
                 label: Text(copyLabel),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubmissionFeedbackBanner extends StatelessWidget {
+  const _SubmissionFeedbackBanner({
+    required this.status,
+    required this.message,
+  });
+
+  final _ContactSupportSubmissionStatus status;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bool isSuccess = status == _ContactSupportSubmissionStatus.success;
+    final backgroundColor = isSuccess
+        ? const Color(0xFFE7F7EF)
+        : const Color(0xFFFFF4DB);
+    final borderColor = isSuccess
+        ? const Color(0xFF9AD9B2)
+        : const Color(0xFFF1C972);
+    final foregroundColor = isSuccess
+        ? const Color(0xFF146C43)
+        : const Color(0xFF8A5A00);
+    final icon = isSuccess
+        ? Icons.check_circle_rounded
+        : Icons.error_outline_rounded;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: foregroundColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: foregroundColor,
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
+            ),
           ),
         ],
       ),

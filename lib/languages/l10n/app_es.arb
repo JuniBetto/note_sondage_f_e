@@ -44,7 +44,7 @@
     "tutorialSkip": "Saltar",
     "webMobileAppOnlyTitle": "Descarga la app móvil",
     "webMobileAppOnlyMessage": "Esta experiencia web solo está disponible en pantallas grandes. En teléfonos con un ancho inferior a 576px, continúa desde la app móvil.",
-    "webMobileAppOnlyHint": "Abre Note Sondage en una tablet o en escritorio, o instala la app desde tu tienda.",
+    "webMobileAppOnlyHint": "Abre TeamManagement en una tablet o en escritorio, o instala la app desde tu tienda.",
     "downloadOnAppStore": "Descargar en App Store",
     "getItOnGooglePlay": "Disponible en Google Play",
     "mobileStoreLinksUnavailable": "Los enlaces de las tiendas aún no están configurados. Contacta con soporte o abre la app en una pantalla más grande.",
@@ -189,7 +189,7 @@
     "copyEmail": "Copiar correo",
     "emailCopied": "El correo de soporte se ha copiado al portapapeles.",
     "couldNotOpenEmailApp": "No hemos podido abrir tu aplicación de correo. Copia la dirección y envía el mensaje manualmente.",
-    "contactUsEmailSubject": "Solicitud de soporte Note Sondage",
+    "contactUsEmailSubject": "Solicitud de soporte TeamManagement",
     "contactUsTopicsTitle": "Errores, comentarios, ideas de producto",
     "contactUsTopicsBody": "Usa este espacio para informar problemas, pedir ayuda o compartir mejoras que te gustaría ver en la aplicación.",
     "contactUsFormHint": "El mensaje incluirá tus datos para que soporte pueda responder más rápido.",
@@ -338,5 +338,141 @@
     "deleteShiftProfileConfirm": "¿Estás seguro de que quieres eliminar este perfil?",
     "customProfile": "Perfiles personalizados",
     "noShiftsThisMonth": "Sin turnos este mes",
-    "systemProfile": "Perfiles del sistema"
+    "systemProfile": "Perfiles del sistema",
+    "clockingDateLabel": "Fecha de fichaje",
+    "calendarWeek": "Semana",
+    "calendarMonth": "Mes",
+    "today": "Hoy",
+    "clockingOverviewTitle": "Resumen de fichaje",
+    "clockingOverviewDescription": "Este encabezado presenta el área de fichaje y su propósito principal.",
+    "clockingCurrentStatusTitle": "Estado actual",
+    "clockingCurrentStatusDescription": "Esta sección te muestra al instante el estado de tu fichaje y la información principal del día.",
+    "personal": "Personal",
+    "markVacation": "Marcar vacaciones",
+    "markPermission": "Marcar permiso",
+    "requestClocking": "Solicitar fichaje",
+    "requestVacation": "Solicitar vacaciones",
+    "requestPermission": "Solicitar permiso",
+    "vacationStatus": "Vacaciones",
+    "clockingOpenRecordAnotherDay": "Tienes un fichaje abierto en otro día. Selecciónalo para continuar.",
+    "dayAlreadyHasClocking": "Ya existe un fichaje para {date}.",
+    "@dayAlreadyHasClocking": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "manualClockingUseInlineForPastDays": "Para días distintos de hoy, usa la sección de entrada manual de abajo.",
+    "manualClockingRequiresApproval": "Para esta fecha debes pedir la aprobación de un manager o usar un equipo que gestionas.",
+    "selectedDayMarkedAsVacation": "El día seleccionado está marcado como vacaciones.",
+    "clockingCurrentTimeOverlapsExistingRecord": "La hora actual cae dentro de un fichaje o permiso ya registrado hoy.",
+    "createClockingForDate": "Crear un fichaje para {date}",
+    "@createClockingForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "breakOnlyCurrentDay": "Las pausas solo están disponibles para el día actual.",
+    "manualClockingTitle": "Añadir fichaje",
+    "manualClockingDescription": "Completa el fichaje para {date} o añade más días pasados.",
+    "@manualClockingDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "manualClockingResolveOpenRecord": "Tienes un fichaje abierto en otro día. Ciérralo o selecciona ese día antes de guardar un fichaje manual.",
+    "selectedDays": "Días seleccionados",
+    "addDay": "Añadir día",
+    "clockInLabel": "Entrada",
+    "clockOutLabel": "Salida",
+    "optionalNoteHint": "Nota opcional",
+    "saving": "Guardando...",
+    "saveClocking": "Guardar fichaje",
+    "manualClockingTodayLiveOnly": "Para hoy, usa las acciones en vivo de entrada, pausa y salida.",
+    "invalidBreakMinutes": "El tiempo de pausa debe ser un número válido.",
+    "clockOutMustBeAfterClockIn": "La hora de salida debe ser posterior a la de entrada.",
+    "breakMustBeShorterThanShift": "La pausa debe ser más corta que la duración del turno.",
+    "manualClockingSavedSingle": "Fichaje guardado con éxito.",
+    "manualClockingSavedMultiple": "{count} fichajes guardados con éxito.",
+    "@manualClockingSavedMultiple": {
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "manualClockingSaveError": "No hemos podido guardar el fichaje manual.",
+    "noTeamSelected": "Ningún equipo seleccionado",
+    "changeOrSearchTeam": "Abre para cambiar de equipo o buscar uno",
+    "teamAvailableForClocking": "Equipo disponible para el fichaje",
+    "searchTeam": "Buscar equipo...",
+    "noTeamFound": "No se encontró ningún equipo",
+    "selectTeamFirst": "Selecciona primero un equipo.",
+    "selectTeamBeforeVacation": "Selecciona un equipo antes de marcar vacaciones.",
+    "markSelectedDateAsVacation": "Marcar {date} como vacaciones",
+    "@markSelectedDateAsVacation": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "markSelectedDayAsVacationDescription": "Esta acción marcará el día seleccionado como vacaciones.",
+    "markPermissionForDate": "Marcar permiso para {date}",
+    "@markPermissionForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "start": "Inicio",
+    "end": "Fin",
+    "permissionInvalidRange": "La hora de fin debe ser posterior a la hora de inicio del permiso.",
+    "noAssignableMembersForTeam": "No se encontraron miembros asignables para este equipo.",
+    "assignVacationToMember": "Marcar vacaciones para un miembro",
+    "userLabel": "Usuario",
+    "optionalNoteFor": "Nota opcional para {name}",
+    "@optionalNoteFor": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "optionalRequestNoteHint": "Nota opcional para la solicitud",
+    "clockingApprovalRequestHint": "Puedes solicitar fichaje, vacaciones o permiso para el equipo y la fecha seleccionados.",
+    "requestClockingForSelectedDate": "Solicitar fichaje para {date}",
+    "@requestClockingForSelectedDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "noMembersAvailableForClockingRequest": "No hay miembros disponibles para la solicitud de fichaje.",
+    "sendRequest": "Enviar solicitud",
+    "clockingRequestSentSuccess": "Solicitud de fichaje enviada con éxito.",
+    "clockingRequestSentError": "No hemos podido enviar la solicitud de fichaje al miembro del equipo.",
+    "vacationRequestSentSuccess": "Solicitud de vacaciones enviada con éxito.",
+    "vacationRequestSentError": "No hemos podido enviar la solicitud de vacaciones.",
+    "permissionRequestSentSuccess": "Solicitud de permiso enviada con éxito.",
+    "permissionRequestSentError": "No hemos podido enviar la solicitud de permiso.",
+    "approveRequest": "Aprobar",
+    "rejectRequest": "Rechazar",
+    "clockInDateTimeLabel": "Entrada (AAAA-MM-DD HH:MM)",
+    "clockOutDateTimeLabel": "Salida (AAAA-MM-DD HH:MM)"
 }

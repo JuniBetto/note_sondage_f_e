@@ -46,21 +46,23 @@ class LoadClockingByTeamIdEvent extends ClockingEvent {
 class ClockInEvent extends ClockingEvent {
   final String? teamId;
   final String? note;
+  final DateTime? clockInAt;
 
-  const ClockInEvent({this.teamId, this.note});
+  const ClockInEvent({this.teamId, this.note, this.clockInAt});
 
   @override
-  List<Object?> get props => [teamId, note];
+  List<Object?> get props => [teamId, note, clockInAt];
 }
 
 class ClockOutEvent extends ClockingEvent {
   final String? teamId;
   final String? note;
+  final DateTime? clockOutAt;
 
-  const ClockOutEvent({this.teamId, this.note});
+  const ClockOutEvent({this.teamId, this.note, this.clockOutAt});
 
   @override
-  List<Object?> get props => [teamId, note];
+  List<Object?> get props => [teamId, note, clockOutAt];
 }
 
 class StartBreakEvent extends ClockingEvent {
@@ -83,6 +85,51 @@ class StopBreakEvent extends ClockingEvent {
   List<Object?> get props => [teamId, note];
 }
 
+class MarkVacationEvent extends ClockingEvent {
+  final String? teamId;
+  final DateTime date;
+  final String? targetUserId;
+  final String? note;
+
+  const MarkVacationEvent({
+    required this.teamId,
+    required this.date,
+    this.targetUserId,
+    this.note,
+  });
+
+  @override
+  List<Object?> get props => [teamId, date, targetUserId, note];
+}
+
+class MarkPermissionEvent extends ClockingEvent {
+  final String? teamId;
+  final DateTime date;
+  final String startTime;
+  final String endTime;
+  final String? targetUserId;
+  final String? note;
+
+  const MarkPermissionEvent({
+    required this.teamId,
+    required this.date,
+    required this.startTime,
+    required this.endTime,
+    this.targetUserId,
+    this.note,
+  });
+
+  @override
+  List<Object?> get props => [
+    teamId,
+    date,
+    startTime,
+    endTime,
+    targetUserId,
+    note,
+  ];
+}
+
 class UpdateClockingRecordEvent extends ClockingEvent {
   final String id;
   final DateTime? clockInAt;
@@ -99,7 +146,13 @@ class UpdateClockingRecordEvent extends ClockingEvent {
   });
 
   @override
-  List<Object?> get props => [id, clockInAt, clockOutAt, totalBreakMinutes, note];
+  List<Object?> get props => [
+    id,
+    clockInAt,
+    clockOutAt,
+    totalBreakMinutes,
+    note,
+  ];
 }
 
 class DecommitClockingRecordEvent extends ClockingEvent {

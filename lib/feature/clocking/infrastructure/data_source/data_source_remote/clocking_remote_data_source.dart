@@ -16,7 +16,9 @@ class ClockingRemoteDataSource {
       final response = await _dio.get('/api/aggregate/clocking/my-records');
       final data = response.data as List<dynamic>? ?? const [];
       final records = data
-          .map((item) => ClockingMapper.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) => ClockingMapper.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList();
       await localDataSource.saveAll(records);
       return records;
@@ -35,7 +37,9 @@ class ClockingRemoteDataSource {
       );
       final data = response.data as List<dynamic>? ?? const [];
       return data
-          .map((item) => ClockingMapper.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) => ClockingMapper.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList();
     } catch (e) {
       throw Exception('Failed to fetch clocking records by date: $e');
@@ -55,7 +59,9 @@ class ClockingRemoteDataSource {
       );
       final data = response.data as List<dynamic>? ?? const [];
       return data
-          .map((item) => ClockingMapper.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) => ClockingMapper.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList();
     } catch (e) {
       throw Exception('Failed to fetch clocking records by team: $e');
@@ -74,15 +80,16 @@ class ClockingRemoteDataSource {
   Future<ClockingRecordEntity> clockIn({
     String? teamId,
     String? note,
+    DateTime? clockInAt,
   }) async {
     try {
-      final clockInAt = DateTime.now();
+      final effectiveClockInAt = clockInAt ?? DateTime.now();
       final response = await _dio.post(
         '/api/aggregate/clocking/clock-in',
         data: {
           if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
           if (note != null && note.isNotEmpty) 'note': note,
-          'clockInAt': clockInAt.toIso8601String(),
+          'clockInAt': effectiveClockInAt.toIso8601String(),
         },
       );
       final record = ClockingMapper.fromJson(
@@ -94,15 +101,19 @@ class ClockingRemoteDataSource {
     }
   }
 
-  Future<ClockingRecordEntity> clockOut({String? teamId, String? note}) async {
+  Future<ClockingRecordEntity> clockOut({
+    String? teamId,
+    String? note,
+    DateTime? clockOutAt,
+  }) async {
     try {
-      final clockOutAt = DateTime.now();
+      final effectiveClockOutAt = clockOutAt ?? DateTime.now();
       final response = await _dio.post(
         '/api/aggregate/clocking/clock-out',
         data: {
           if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
           if (note != null && note.isNotEmpty) 'note': note,
-          'clockOutAt': clockOutAt.toIso8601String(),
+          'clockOutAt': effectiveClockOutAt.toIso8601String(),
         },
       );
       final record = ClockingMapper.fromJson(
@@ -114,15 +125,19 @@ class ClockingRemoteDataSource {
     }
   }
 
-  Future<ClockingRecordEntity> startBreak({String? teamId, String? note}) async {
+  Future<ClockingRecordEntity> startBreak({
+    String? teamId,
+    String? note,
+    DateTime? actionAt,
+  }) async {
     try {
-      final actionAt = DateTime.now();
+      final effectiveActionAt = actionAt ?? DateTime.now();
       final response = await _dio.post(
         '/api/aggregate/clocking/start-break',
         data: {
           if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
           if (note != null && note.isNotEmpty) 'note': note,
-          'actionAt': actionAt.toIso8601String(),
+          'actionAt': effectiveActionAt.toIso8601String(),
         },
       );
       return ClockingMapper.fromJson(
@@ -133,15 +148,19 @@ class ClockingRemoteDataSource {
     }
   }
 
-  Future<ClockingRecordEntity> stopBreak({String? teamId, String? note}) async {
+  Future<ClockingRecordEntity> stopBreak({
+    String? teamId,
+    String? note,
+    DateTime? actionAt,
+  }) async {
     try {
-      final actionAt = DateTime.now();
+      final effectiveActionAt = actionAt ?? DateTime.now();
       final response = await _dio.post(
         '/api/aggregate/clocking/stop-break',
         data: {
           if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
           if (note != null && note.isNotEmpty) 'note': note,
-          'actionAt': actionAt.toIso8601String(),
+          'actionAt': effectiveActionAt.toIso8601String(),
         },
       );
       return ClockingMapper.fromJson(
@@ -149,6 +168,185 @@ class ClockingRemoteDataSource {
       );
     } catch (e) {
       throw Exception('Failed to stop break: $e');
+    }
+  }
+
+  Future<ClockingRecordEntity> markVacation({
+    String? teamId,
+    required DateTime date,
+    String? targetUserId,
+    String? note,
+  }) async {
+    try {
+      final formattedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).toIso8601String().split('T').first;
+      final response = await _dio.post(
+        '/api/aggregate/clocking/vacation',
+        data: {
+          if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
+          'date': formattedDate,
+          if (targetUserId != null && targetUserId.isNotEmpty)
+            'targetUserId': targetUserId,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return ClockingMapper.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } catch (e) {
+      throw Exception('Failed to mark vacation: $e');
+    }
+  }
+
+  Future<ClockingRecordEntity> markPermission({
+    String? teamId,
+    required DateTime date,
+    required String startTime,
+    required String endTime,
+    String? targetUserId,
+    String? note,
+  }) async {
+    try {
+      final formattedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).toIso8601String().split('T').first;
+      final response = await _dio.post(
+        '/api/aggregate/clocking/permission',
+        data: {
+          if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
+          'date': formattedDate,
+          'startTime': startTime,
+          'endTime': endTime,
+          if (targetUserId != null && targetUserId.isNotEmpty)
+            'targetUserId': targetUserId,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return ClockingMapper.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } catch (e) {
+      throw Exception('Failed to mark permission: $e');
+    }
+  }
+
+  Future<int> createManualClockingEntries({
+    String? teamId,
+    required List<DateTime> dates,
+    required int clockInMinutes,
+    required int clockOutMinutes,
+    required int breakMinutes,
+    String? note,
+  }) async {
+    final normalizedDates =
+        dates
+            .map((date) => DateTime(date.year, date.month, date.day))
+            .toSet()
+            .toList()
+          ..sort();
+
+    var createdCount = 0;
+    for (final date in normalizedDates) {
+      final clockInAt = date.add(Duration(minutes: clockInMinutes));
+      final clockOutAt = date.add(Duration(minutes: clockOutMinutes));
+
+      await clockIn(teamId: teamId, clockInAt: clockInAt);
+
+      if (breakMinutes > 0) {
+        final breakStartAt = clockOutAt.subtract(
+          Duration(minutes: breakMinutes),
+        );
+        await startBreak(teamId: teamId, actionAt: breakStartAt);
+        await stopBreak(teamId: teamId, actionAt: clockOutAt);
+      }
+
+      await clockOut(teamId: teamId, note: note, clockOutAt: clockOutAt);
+      createdCount += 1;
+    }
+
+    return createdCount;
+  }
+
+  Future<void> requestTeamMemberClocking({
+    required String teamId,
+    required String targetUserId,
+    required DateTime date,
+    String? note,
+  }) async {
+    try {
+      final formattedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).toIso8601String().split('T').first;
+      await _dio.post(
+        '/api/aggregate/clocking/request-member-clocking',
+        data: {
+          'teamId': teamId,
+          'targetUserId': targetUserId,
+          'date': formattedDate,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to request team member clocking: $e');
+    }
+  }
+
+  Future<void> requestVacation({
+    required String teamId,
+    required DateTime date,
+    String? note,
+  }) async {
+    try {
+      final formattedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).toIso8601String().split('T').first;
+      await _dio.post(
+        '/api/aggregate/clocking/request-vacation',
+        data: {
+          'teamId': teamId,
+          'date': formattedDate,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to request vacation: $e');
+    }
+  }
+
+  Future<void> requestPermission({
+    required String teamId,
+    required DateTime date,
+    required String startTime,
+    required String endTime,
+    String? note,
+  }) async {
+    try {
+      final formattedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).toIso8601String().split('T').first;
+      await _dio.post(
+        '/api/aggregate/clocking/request-permission',
+        data: {
+          'teamId': teamId,
+          'date': formattedDate,
+          'startTime': startTime,
+          'endTime': endTime,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to request permission: $e');
     }
   }
 
@@ -183,7 +381,9 @@ class ClockingRemoteDataSource {
 
   Future<ClockingRecordEntity> decommitTeamRecord(String id) async {
     try {
-      final response = await _dio.post('/api/aggregate/clocking/records/$id/decommit');
+      final response = await _dio.post(
+        '/api/aggregate/clocking/records/$id/decommit',
+      );
       return ClockingMapper.fromJson(
         Map<String, dynamic>.from(response.data as Map<String, dynamic>),
       );
@@ -194,7 +394,9 @@ class ClockingRemoteDataSource {
 
   Future<ClockingRecordEntity> commitTeamRecord(String id) async {
     try {
-      final response = await _dio.post('/api/aggregate/clocking/records/$id/commit');
+      final response = await _dio.post(
+        '/api/aggregate/clocking/records/$id/commit',
+      );
       return ClockingMapper.fromJson(
         Map<String, dynamic>.from(response.data as Map<String, dynamic>),
       );

@@ -10,9 +10,11 @@ class StatusClocking extends StatelessWidget {
     super.key,
     this.isCompact = false,
     this.selectedTeamId,
+    this.selectedDate,
   });
   final bool isCompact;
   final String? selectedTeamId;
+  final DateTime? selectedDate;
 
   @override
   Widget build(BuildContext context) {
@@ -29,21 +31,35 @@ class StatusClocking extends StatelessWidget {
           ClockingActionSuccess(:final myRecords) => myRecords,
           _ => const <ClockingRecordEntity>[],
         };
+        final effectiveSelectedDate = _normalizeDate(
+          selectedDate ?? DateTime.now(),
+        );
+        final recordsForSelectedDate =
+            records
+                .where(
+                  (record) => _isSameDay(record.date, effectiveSelectedDate),
+                )
+                .toList()
+              ..sort((a, b) => _sortDate(b).compareTo(_sortDate(a)));
+
         ClockingRecordEntity? activeRecord;
-        for (final record in records) {
+        for (final record in recordsForSelectedDate) {
           if (record.isActive) {
             activeRecord = record;
             break;
           }
         }
         final latestRecord =
-            activeRecord ?? (records.isNotEmpty ? records.first : null);
+            activeRecord ??
+            (recordsForSelectedDate.isNotEmpty
+                ? recordsForSelectedDate.first
+                : null);
 
         final items = [
           _StatusItem(
             icon: Icons.login_rounded,
             label: localization.clockedInAt,
-            time: activeRecord != null
+            time: latestRecord != null
                 ? latestRecord?.clockInFormatted ?? '--:--'
                 : '--:--',
             color: Colors.green,
@@ -51,45 +67,67 @@ class StatusClocking extends StatelessWidget {
           _StatusItem(
             icon: Icons.coffee_rounded,
             label: localization.startBreakAt,
-            time: activeRecord != null
+            time: latestRecord != null
                 ? _formatTime(
-              activeRecord?.currentBreakStartedAt ??
-                  latestRecord?.lastBreakStartedAt,
-            ): '--:--',
+                    activeRecord?.currentBreakStartedAt ??
+                        latestRecord?.lastBreakStartedAt,
+                  )
+                : '--:--',
             color: Colors.orange,
           ),
           _StatusItem(
             icon: Icons.play_circle_outline,
             label: localization.endBreakAt,
-            time:  activeRecord != null
-                ? _formatTime(latestRecord?.lastBreakEndedAt): '--:--',
+            time: latestRecord != null
+                ? _formatTime(latestRecord?.lastBreakEndedAt)
+                : '--:--',
             color: Colors.blue,
           ),
           _StatusItem(
             icon: Icons.logout_rounded,
             label: localization.clockedOutAt,
-            time: activeRecord != null
-                ?
-                 (latestRecord?.clockOutFormatted ?? '--:--'):'--:--',
+            time: latestRecord != null
+                ? (latestRecord?.clockOutFormatted ?? '--:--')
+                : '--:--',
             color: Colors.red,
           ),
         ];
 
         if (isCompact) {
+          final rows = <Widget>[];
+          for (var i = 0; i < items.length; i += 2) {
+            final left = items[i];
+            final right = i + 1 < items.length ? items[i + 1] : null;
+            rows.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _StatusTile(
+                        item: left,
+                        colorScheme: colorScheme,
+                        textTheme: textTheme,
+                      ),
+                    ),
+                    if (right != null) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _StatusTile(
+                          item: right,
+                          colorScheme: colorScheme,
+                          textTheme: textTheme,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }
           return Column(
             mainAxisSize: MainAxisSize.min,
-            children: items
-                .map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: _StatusTile(
-                      item: item,
-                      colorScheme: colorScheme,
-                      textTheme: textTheme,
-                    ),
-                  ),
-                )
-                .toList(),
+            children: rows,
           );
         }
 
@@ -115,6 +153,23 @@ class StatusClocking extends StatelessWidget {
     final h = value.hour.toString().padLeft(2, '0');
     final m = value.minute.toString().padLeft(2, '0');
     return '$h:$m';
+  }
+
+  DateTime _sortDate(ClockingRecordEntity record) {
+    return record.clockOutTime ??
+        record.currentBreakStartedAt ??
+        record.clockInTime ??
+        record.date;
+  }
+
+  DateTime _normalizeDate(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  bool _isSameDay(DateTime left, DateTime right) {
+    return left.year == right.year &&
+        left.month == right.month &&
+        left.day == right.day;
   }
 }
 

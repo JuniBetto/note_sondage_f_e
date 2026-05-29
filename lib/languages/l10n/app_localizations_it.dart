@@ -163,7 +163,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get webMobileAppOnlyHint =>
-      'Apri Note Sondage da tablet o desktop, oppure installa l\'app dal tuo store.';
+      'Apri TeamManagement da tablet o desktop, oppure installa l\'app dal tuo store.';
 
   @override
   String get downloadOnAppStore => 'Scarica su App Store';
@@ -636,7 +636,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non siamo riusciti ad aprire la tua app email. Copia l\'indirizzo e invia il messaggio manualmente.';
 
   @override
-  String get contactUsEmailSubject => 'Richiesta supporto Note Sondage';
+  String get contactUsEmailSubject => 'Richiesta supporto TeamManagement';
 
   @override
   String get contactUsTopicsTitle => 'Bug, feedback, idee prodotto';
@@ -1050,4 +1050,262 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get systemProfile => 'Profili di sistema';
+
+  @override
+  String get clockingDateLabel => 'Data timbratura';
+
+  @override
+  String get calendarWeek => 'Settimana';
+
+  @override
+  String get calendarMonth => 'Mese';
+
+  @override
+  String get today => 'Oggi';
+
+  @override
+  String get clockingOverviewTitle => 'Panoramica timbratura';
+
+  @override
+  String get clockingOverviewDescription =>
+      'Questa intestazione riassume l\'area di timbratura e il suo scopo principale.';
+
+  @override
+  String get clockingCurrentStatusTitle => 'Stato attuale';
+
+  @override
+  String get clockingCurrentStatusDescription =>
+      'Questa sezione ti mostra subito lo stato della tua timbratura e le informazioni principali della giornata.';
+
+  @override
+  String get personal => 'Personale';
+
+  @override
+  String get markVacation => 'Segna ferie';
+
+  @override
+  String get markPermission => 'Segna permesso';
+
+  @override
+  String get requestClocking => 'Richiedi timbratura';
+
+  @override
+  String get requestVacation => 'Richiedi ferie';
+
+  @override
+  String get requestPermission => 'Richiedi permesso';
+
+  @override
+  String get vacationStatus => 'Ferie';
+
+  @override
+  String get clockingOpenRecordAnotherDay =>
+      'Hai una timbratura aperta in un altro giorno. Selezionalo per continuare.';
+
+  @override
+  String dayAlreadyHasClocking(String date) {
+    return 'Esiste gia una timbratura per $date.';
+  }
+
+  @override
+  String get manualClockingUseInlineForPastDays =>
+      'Per i giorni diversi da oggi usa la sezione di inserimento manuale qui sotto.';
+
+  @override
+  String get manualClockingRequiresApproval =>
+      'Per questa data devi chiedere l\'approvazione di un manager oppure usare un team che gestisci.';
+
+  @override
+  String get selectedDayMarkedAsVacation =>
+      'Il giorno selezionato e segnato come ferie.';
+
+  @override
+  String get clockingCurrentTimeOverlapsExistingRecord =>
+      'L\'orario attuale ricade gia dentro una timbratura o un permesso registrato oggi.';
+
+  @override
+  String createClockingForDate(String date) {
+    return 'Crea una timbratura per $date';
+  }
+
+  @override
+  String get breakOnlyCurrentDay =>
+      'Le pause sono disponibili solo per il giorno corrente.';
+
+  @override
+  String get manualClockingTitle => 'Inserisci timbratura';
+
+  @override
+  String manualClockingDescription(String date) {
+    return 'Compila la timbratura per $date o aggiungi altri giorni passati.';
+  }
+
+  @override
+  String get manualClockingResolveOpenRecord =>
+      'Hai una timbratura aperta in un altro giorno. Chiudila o seleziona quel giorno prima di salvare una timbratura manuale.';
+
+  @override
+  String get selectedDays => 'Giorni selezionati';
+
+  @override
+  String get addDay => 'Aggiungi giorno';
+
+  @override
+  String get clockInLabel => 'Clock-in';
+
+  @override
+  String get clockOutLabel => 'Clock-out';
+
+  @override
+  String get optionalNoteHint => 'Nota opzionale';
+
+  @override
+  String get saving => 'Salvataggio...';
+
+  @override
+  String get saveClocking => 'Salva timbratura';
+
+  @override
+  String get manualClockingTodayLiveOnly =>
+      'Per oggi usa le azioni live di clock-in, pause e clock-out.';
+
+  @override
+  String get invalidBreakMinutes =>
+      'Il tempo di pausa deve essere un numero valido.';
+
+  @override
+  String get clockOutMustBeAfterClockIn =>
+      'L\'orario di clock-out deve essere successivo al clock-in.';
+
+  @override
+  String get breakMustBeShorterThanShift =>
+      'La pausa deve essere piu corta della durata del turno.';
+
+  @override
+  String get manualClockingSavedSingle => 'Timbratura salvata con successo.';
+
+  @override
+  String manualClockingSavedMultiple(int count) {
+    return '$count timbrature salvate con successo.';
+  }
+
+  @override
+  String get manualClockingSaveError =>
+      'Non siamo riusciti a salvare la timbratura manuale.';
+
+  @override
+  String get noTeamSelected => 'Nessun team selezionato';
+
+  @override
+  String get changeOrSearchTeam => 'Apri per cambiare team o cercarne uno';
+
+  @override
+  String get teamAvailableForClocking => 'Team disponibile per la timbratura';
+
+  @override
+  String get searchTeam => 'Cerca team...';
+
+  @override
+  String get noTeamFound => 'Nessun team trovato';
+
+  @override
+  String get selectTeamFirst => 'Seleziona prima un team.';
+
+  @override
+  String get selectTeamBeforeVacation =>
+      'Seleziona un team prima di segnare le ferie.';
+
+  @override
+  String markSelectedDateAsVacation(String date) {
+    return 'Segna $date come ferie';
+  }
+
+  @override
+  String get markSelectedDayAsVacationDescription =>
+      'Questa azione segnera il giorno selezionato come ferie.';
+
+  @override
+  String markPermissionForDate(String date) {
+    return 'Segna permesso per $date';
+  }
+
+  @override
+  String get start => 'Inizio';
+
+  @override
+  String get end => 'Fine';
+
+  @override
+  String get permissionInvalidRange =>
+      'L\'orario di fine deve essere successivo all\'orario di inizio del permesso.';
+
+  @override
+  String get noAssignableMembersForTeam =>
+      'Nessun membro assegnabile trovato per questo team.';
+
+  @override
+  String get assignVacationToMember => 'Segna ferie per un membro';
+
+  @override
+  String get userLabel => 'Utente';
+
+  @override
+  String optionalNoteFor(String name) {
+    return 'Nota opzionale per $name';
+  }
+
+  @override
+  String get optionalRequestNoteHint => 'Nota opzionale per la richiesta';
+
+  @override
+  String get clockingApprovalRequestHint =>
+      'Puoi richiedere timbratura, ferie o permesso per il team e la data selezionati.';
+
+  @override
+  String requestClockingForSelectedDate(String date) {
+    return 'Richiedi timbratura per $date';
+  }
+
+  @override
+  String get noMembersAvailableForClockingRequest =>
+      'Nessun membro disponibile per la richiesta di timbratura.';
+
+  @override
+  String get sendRequest => 'Invia richiesta';
+
+  @override
+  String get clockingRequestSentSuccess =>
+      'Richiesta di timbratura inviata con successo.';
+
+  @override
+  String get clockingRequestSentError =>
+      'Non siamo riusciti a inviare la richiesta di timbratura al membro del team.';
+
+  @override
+  String get vacationRequestSentSuccess =>
+      'Richiesta ferie inviata con successo.';
+
+  @override
+  String get vacationRequestSentError =>
+      'Non siamo riusciti a inviare la richiesta ferie.';
+
+  @override
+  String get permissionRequestSentSuccess =>
+      'Richiesta permesso inviata con successo.';
+
+  @override
+  String get permissionRequestSentError =>
+      'Non siamo riusciti a inviare la richiesta permesso.';
+
+  @override
+  String get approveRequest => 'Approva';
+
+  @override
+  String get rejectRequest => 'Rifiuta';
+
+  @override
+  String get clockInDateTimeLabel => 'Clock-in (AAAA-MM-GG HH:MM)';
+
+  @override
+  String get clockOutDateTimeLabel => 'Clock-out (AAAA-MM-GG HH:MM)';
 }

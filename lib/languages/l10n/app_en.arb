@@ -44,7 +44,7 @@
     "tutorialSkip": "Skip",
     "webMobileAppOnlyTitle": "Get the mobile app",
     "webMobileAppOnlyMessage": "This web experience is available only on larger screens. On phones smaller than 576px, please continue with the mobile app.",
-    "webMobileAppOnlyHint": "Open Note Sondage on tablet or desktop, or install the app from your store.",
+    "webMobileAppOnlyHint": "Open TeamManagement on tablet or desktop, or install the app from your store.",
     "downloadOnAppStore": "Download on the App Store",
     "getItOnGooglePlay": "Get it on Google Play",
     "mobileStoreLinksUnavailable": "Store links are not configured yet. Please contact support or open the app on a larger screen.",
@@ -189,7 +189,7 @@
     "copyEmail": "Copy email",
     "emailCopied": "Support email copied to clipboard.",
     "couldNotOpenEmailApp": "We could not open your email app. Copy the address and send the message manually.",
-    "contactUsEmailSubject": "Note Sondage support request",
+    "contactUsEmailSubject": "TeamManagement support request",
     "contactUsTopicsTitle": "Bugs, feedback, product ideas",
     "contactUsTopicsBody": "Use this space to report issues, ask for help, or share improvements you would love to see.",
     "contactUsFormHint": "The message will include your details so support can reply faster.",
@@ -339,5 +339,141 @@
     "deleteShiftProfileConfirm": "Are you sure you want to delete this profile?",
     "customProfile": "Custom Profiles",
     "noShiftsThisMonth": "No shifts this month",
-    "systemProfile": "System Profiles"
+    "systemProfile": "System Profiles",
+    "clockingDateLabel": "Clocking date",
+    "calendarWeek": "Week",
+    "calendarMonth": "Month",
+    "today": "Today",
+    "clockingOverviewTitle": "Clocking overview",
+    "clockingOverviewDescription": "This header introduces the clocking area and its main purpose.",
+    "clockingCurrentStatusTitle": "Current status",
+    "clockingCurrentStatusDescription": "This section gives you an instant view of your clocking status and the main information for the current day.",
+    "personal": "Personal",
+    "markVacation": "Mark vacation",
+    "markPermission": "Mark permission",
+    "requestClocking": "Request clocking",
+    "requestVacation": "Request vacation",
+    "requestPermission": "Request permission",
+    "vacationStatus": "Vacation",
+    "clockingOpenRecordAnotherDay": "You have an open clocking on another day. Select it to continue.",
+    "dayAlreadyHasClocking": "A clocking already exists for {date}.",
+    "@dayAlreadyHasClocking": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "manualClockingUseInlineForPastDays": "For days other than today, use the manual entry section below.",
+    "manualClockingRequiresApproval": "For this date, ask a manager for clocking approval or use a team you manage.",
+    "selectedDayMarkedAsVacation": "The selected day is marked as vacation.",
+    "clockingCurrentTimeOverlapsExistingRecord": "The current time falls inside a clocking or permission already recorded today.",
+    "createClockingForDate": "Create a clocking for {date}",
+    "@createClockingForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "breakOnlyCurrentDay": "Breaks are available only for the current day.",
+    "manualClockingTitle": "Add clocking",
+    "manualClockingDescription": "Fill in the clocking for {date} or add more past days.",
+    "@manualClockingDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "manualClockingResolveOpenRecord": "You have an open clocking on another day. Close it or select that day before saving a manual clocking.",
+    "selectedDays": "Selected days",
+    "addDay": "Add day",
+    "clockInLabel": "Clock-in",
+    "clockOutLabel": "Clock-out",
+    "optionalNoteHint": "Optional note",
+    "saving": "Saving...",
+    "saveClocking": "Save clocking",
+    "manualClockingTodayLiveOnly": "For today, use the live clock-in, break, and clock-out actions.",
+    "invalidBreakMinutes": "Break time must be a valid number.",
+    "clockOutMustBeAfterClockIn": "Clock-out time must be after clock-in.",
+    "breakMustBeShorterThanShift": "Break must be shorter than shift duration.",
+    "manualClockingSavedSingle": "Clocking saved successfully.",
+    "manualClockingSavedMultiple": "{count} clockings saved successfully.",
+    "@manualClockingSavedMultiple": {
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "manualClockingSaveError": "We couldn't save the manual clocking.",
+    "noTeamSelected": "No team selected",
+    "changeOrSearchTeam": "Open to change team or search for one",
+    "teamAvailableForClocking": "Team available for clocking",
+    "searchTeam": "Search team...",
+    "noTeamFound": "No team found",
+    "selectTeamFirst": "Select a team first.",
+    "selectTeamBeforeVacation": "Select a team before marking vacation.",
+    "markSelectedDateAsVacation": "Mark {date} as vacation",
+    "@markSelectedDateAsVacation": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "markSelectedDayAsVacationDescription": "This action will mark the selected day as vacation.",
+    "markPermissionForDate": "Mark permission for {date}",
+    "@markPermissionForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "start": "Start",
+    "end": "End",
+    "permissionInvalidRange": "End time must be after start time for permission.",
+    "noAssignableMembersForTeam": "No assignable members found for this team.",
+    "assignVacationToMember": "Mark vacation for a member",
+    "userLabel": "User",
+    "optionalNoteFor": "Optional note for {name}",
+    "@optionalNoteFor": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "optionalRequestNoteHint": "Optional note for the request",
+    "clockingApprovalRequestHint": "You can request clocking, vacation, or permission for the selected team and date.",
+    "requestClockingForSelectedDate": "Request clocking for {date}",
+    "@requestClockingForSelectedDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "noMembersAvailableForClockingRequest": "No members available for the clocking request.",
+    "sendRequest": "Send request",
+    "clockingRequestSentSuccess": "Clocking request sent successfully.",
+    "clockingRequestSentError": "We couldn't send the clocking request to the team member.",
+    "vacationRequestSentSuccess": "Vacation request sent successfully.",
+    "vacationRequestSentError": "We couldn't send the vacation request.",
+    "permissionRequestSentSuccess": "Permission request sent successfully.",
+    "permissionRequestSentError": "We couldn't send the permission request.",
+    "approveRequest": "Approve",
+    "rejectRequest": "Reject",
+    "clockInDateTimeLabel": "Clock-in (YYYY-MM-DD HH:MM)",
+    "clockOutDateTimeLabel": "Clock-out (YYYY-MM-DD HH:MM)"
 }

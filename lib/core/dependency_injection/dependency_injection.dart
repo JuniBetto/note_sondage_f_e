@@ -1,5 +1,6 @@
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
+import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_local_data_source.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remote_data_source.dart';
 import 'package:note_sondage/feature/shift/infrastructure/repositories/shift_repository_impl.dart';
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
@@ -128,6 +129,9 @@ void _registerDataSources() {
   getIt.registerLazySingleton<ClockingLocalDataSource>(
     () => ClockingLocalDataSource(),
   );
+  getIt.registerLazySingleton<ShiftLocalDataSource>(
+    () => ShiftLocalDataSource(),
+  );
 
   // Realtime notifications
   getIt.registerLazySingleton<RealtimeNotificationService>(
@@ -225,7 +229,6 @@ void _registerRepositories() {
   getIt.registerLazySingleton<DashboardRepository>(
     () => DashboardRepositoryImpl(
       teamRemote: getIt<TeamRemoteDataSource>(),
-      teamMemberRemote: getIt<TeamMemberRemoteDataSource>(),
       sondageRemote: getIt<SondageRemoteDataSource>(),
       clockingRemote: getIt<ClockingRemoteDataSource>(),
       shiftRemote: getIt<ShiftRemoteDataSource>(),
@@ -316,7 +319,10 @@ void _registerBlocs() {
 
   // Clocking - Singleton per condividere lo stato tra widget
   getIt.registerLazySingleton<ClockingBloc>(
-    () => ClockingBloc(clockingUseCase: getIt<ClockingUseCase>()),
+    () => ClockingBloc(
+      clockingUseCase: getIt<ClockingUseCase>(),
+      clockingLocalDataSource: getIt<ClockingLocalDataSource>(),
+    ),
   );
 
   // Dashboard - Singleton per condividere lo stato tra widget
@@ -370,11 +376,14 @@ void _registerShift() {
     () => ShiftRemoteDataSource(),
   );
   getIt.registerLazySingleton<ShiftRepository>(
-    () => ShiftRepositoryImpl(getIt<ShiftRemoteDataSource>()),
+    () => ShiftRepositoryImpl(
+      getIt<ShiftLocalDataSource>(),
+      getIt<ShiftRemoteDataSource>(),
+    ),
   );
   // ShiftBloc come LazySingleton per poter essere osservato da ShiftAlarmScheduler
   getIt.registerLazySingleton<ShiftBloc>(
-    () => ShiftBloc(getIt<ShiftRepository>()),
+    () => ShiftBloc(getIt<ShiftRepository>(), getIt<ShiftLocalDataSource>()),
   );
   getIt.registerLazySingleton<ShiftAlarmScheduler>(
     () => ShiftAlarmScheduler(

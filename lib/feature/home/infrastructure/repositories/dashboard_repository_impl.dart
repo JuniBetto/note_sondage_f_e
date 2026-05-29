@@ -7,73 +7,38 @@ import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remo
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/infrastructure/data_source/data_source_remote/sondage_remote_data_source.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
-import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_member_remote_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_remote_data_source.dart';
 
 class DashboardRepositoryImpl implements DashboardRepository {
   DashboardRepositoryImpl({
     required TeamRemoteDataSource teamRemote,
-    required TeamMemberRemoteDataSource teamMemberRemote,
     required SondageRemoteDataSource sondageRemote,
     required ClockingRemoteDataSource clockingRemote,
     required ShiftRemoteDataSource shiftRemote,
   }) : _teamRemote = teamRemote,
-       _teamMemberRemote = teamMemberRemote,
        _sondageRemote = sondageRemote,
        _clockingRemote = clockingRemote,
        _shiftRemote = shiftRemote;
 
   final TeamRemoteDataSource _teamRemote;
-  final TeamMemberRemoteDataSource _teamMemberRemote;
   final SondageRemoteDataSource _sondageRemote;
   final ClockingRemoteDataSource _clockingRemote;
   final ShiftRemoteDataSource _shiftRemote;
+  _DashboardSnapshot? _lastSnapshot;
+  DateTime? _lastSnapshotAt;
+  Future<_DashboardSnapshot>? _snapshotFuture;
 
   @override
   Future<DashboardStats> getStats() async {
-    final now = DateTime.now();
-    final results = await Future.wait([
-      _teamRemote
-          .getAll()
-          .then<List<TeamEntity>>((v) => v)
-          .catchError((_) => <TeamEntity>[]),
-      _sondageRemote
-          .getAll()
-          .then<List<SondageEntity>>((v) => v)
-          .catchError((_) => <SondageEntity>[]),
-      _clockingRemote
-          .getByDate(now)
-          .then<List<ClockingRecordEntity>>((v) => v)
-          .catchError((_) => <ClockingRecordEntity>[]),
-      _shiftRemote
-          .getAssignments(
-            from: DateTime(now.year, now.month, now.day),
-            to: DateTime(now.year, now.month, now.day, 23, 59, 59),
-          )
-          .then<List<ShiftAssignmentEntity>>((v) => v)
-          .catchError((_) => <ShiftAssignmentEntity>[]),
-    ]);
-
-    final teams = results[0] as List<TeamEntity>;
-    final sondages = results[1] as List<SondageEntity>;
-    final todayClocking = results[2] as List<ClockingRecordEntity>;
-    final todayShifts = results[3] as List<ShiftAssignmentEntity>;
-
-    // Conta i membri di tutti i team in parallelo
-    int totalMembers = 0;
-    if (teams.isNotEmpty) {
-      final memberCounts = await Future.wait(
-        teams.map(
-          (t) => (t.id == null)
-              ? Future<int>.value(0)
-              : _teamMemberRemote
-                    .getAllByTeamId(t.id!)
-                    .then((m) => m.length)
-                    .catchError((_) => 0),
-        ),
-      );
-      totalMembers = memberCounts.fold(0, (sum, c) => sum + c);
-    }
+    final snapshot = await _getSnapshot();
+    final teams = snapshot.teams;
+    final sondages = snapshot.sondages;
+    final todayClocking = snapshot.todayClocking;
+    final todayShifts = snapshot.todayShifts;
+    final totalMembers = teams.fold<int>(
+      0,
+      (sum, team) => sum + team.memberCount,
+    );
 
     final activeSurveys = sondages
         .where((s) => s.status == SondageStatus.active)
@@ -91,26 +56,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
   @override
   Future<List<RecentActivity>> getRecentActivities() async {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    final results = await Future.wait([
-      _teamRemote.getAll().catchError((_) => <TeamEntity>[]),
-      _clockingRemote
-          .getByDate(now)
-          .catchError((_) => <ClockingRecordEntity>[]),
-      _shiftRemote
-          .getAssignments(
-            from: today,
-            to: DateTime(today.year, today.month, today.day, 23, 59, 59),
-          )
-          .catchError((_) => <ShiftAssignmentEntity>[]),
-      _sondageRemote.getAll().catchError((_) => <SondageEntity>[]),
-    ]);
-
-    final teams = results[0] as List<TeamEntity>;
-    final clockings = results[1] as List<ClockingRecordEntity>;
-    final shifts = results[2] as List<ShiftAssignmentEntity>;
-    final sondages = results[3] as List<SondageEntity>;
+    final snapshot = await _getSnapshot();
+    final teams = snapshot.teams;
+    final clockings = snapshot.todayClocking;
+    final shifts = snapshot.todayShifts;
+    final sondages = snapshot.sondages;
 
     final activities = <RecentActivity>[];
 
@@ -196,4 +146,65 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   String _padTime(int v) => v.toString().padLeft(2, '0');
+
+  Future<_DashboardSnapshot> _getSnapshot() {
+    final now = DateTime.now();
+    if (_lastSnapshot != null &&
+        _lastSnapshotAt != null &&
+        now.difference(_lastSnapshotAt!) < const Duration(seconds: 20)) {
+      return Future<_DashboardSnapshot>.value(_lastSnapshot!);
+    }
+    if (_snapshotFuture != null) {
+      return _snapshotFuture!;
+    }
+    _snapshotFuture = _loadSnapshot()
+        .then((snapshot) {
+          _lastSnapshot = snapshot;
+          _lastSnapshotAt = DateTime.now();
+          return snapshot;
+        })
+        .whenComplete(() {
+          _snapshotFuture = null;
+        });
+    return _snapshotFuture!;
+  }
+
+  Future<_DashboardSnapshot> _loadSnapshot() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final results = await Future.wait([
+      _teamRemote.getAll().catchError((_) => <TeamEntity>[]),
+      _sondageRemote.getAll().catchError((_) => <SondageEntity>[]),
+      _clockingRemote
+          .getByDate(now)
+          .catchError((_) => <ClockingRecordEntity>[]),
+      _shiftRemote
+          .getAssignments(
+            from: today,
+            to: DateTime(today.year, today.month, today.day, 23, 59, 59),
+          )
+          .catchError((_) => <ShiftAssignmentEntity>[]),
+    ]);
+
+    return _DashboardSnapshot(
+      teams: results[0] as List<TeamEntity>,
+      sondages: results[1] as List<SondageEntity>,
+      todayClocking: results[2] as List<ClockingRecordEntity>,
+      todayShifts: results[3] as List<ShiftAssignmentEntity>,
+    );
+  }
+}
+
+class _DashboardSnapshot {
+  const _DashboardSnapshot({
+    required this.teams,
+    required this.sondages,
+    required this.todayClocking,
+    required this.todayShifts,
+  });
+
+  final List<TeamEntity> teams;
+  final List<SondageEntity> sondages;
+  final List<ClockingRecordEntity> todayClocking;
+  final List<ShiftAssignmentEntity> todayShifts;
 }

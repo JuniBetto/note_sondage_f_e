@@ -87,7 +87,13 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     super.initState();
     _loadProfiles();
     _loadAssignments();
-    _teamBloc.add(LoadTeamsEvent());
+    final teamState = _teamBloc.state;
+    if (teamState is TeamsLoaded) {
+      _teams = teamState.teams;
+      _ensureTeamAccessContextLoaded(teamState.teams);
+    } else if (teamState is! TeamLoading) {
+      _teamBloc.add(LoadTeamsEvent());
+    }
     unawaited(_loadArchivedAssignments());
     _realtimeSubscription = GetIt.instance<RealtimeNotificationService>().stream
         .listen(_handleRealtimeNotification);
@@ -115,6 +121,41 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     context.read<ShiftBloc>().add(
       LoadShiftAssignmentsEvent(from: first, to: last),
     );
+  }
+
+  void _upsertAssignment(ShiftAssignmentEntity assignment) {
+    final next = <ShiftAssignmentEntity>[
+      ..._assignments.where((item) => item.id != assignment.id),
+      assignment,
+    ]..sort((a, b) => a.shiftDate.compareTo(b.shiftDate));
+    setState(() => _assignments = next);
+  }
+
+  void _removeAssignment(String assignmentId) {
+    setState(() {
+      _assignments = _assignments
+          .where((assignment) => assignment.id != assignmentId)
+          .toList();
+      _archivedAssignmentIds = _archivedAssignmentIds
+          .where((id) => id != assignmentId)
+          .toSet();
+    });
+  }
+
+  void _upsertProfile(ShiftProfileEntity profile) {
+    final next = <ShiftProfileEntity>[
+      ..._profiles.where((item) => item.id != profile.id),
+      profile,
+    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    setState(() => _profiles = next);
+  }
+
+  void _removeProfile(String profileId) {
+    setState(() {
+      _profiles = _profiles
+          .where((profile) => profile.id != profileId)
+          .toList();
+    });
   }
 
   Future<void> _loadArchivedAssignments() async {
@@ -558,20 +599,38 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
             if (state is ShiftProfilesLoaded) {
               setState(() => _profiles = state.profiles);
             }
+            if (state is ShiftProfileCreated) {
+              _upsertProfile(state.profile);
+            }
+            if (state is ShiftProfileUpdated) {
+              _upsertProfile(state.profile);
+            }
+            if (state is ShiftProfileDeleted) {
+              _removeProfile(state.profileId);
+            }
             if (state is ShiftAssignmentsLoaded) {
               setState(() => _assignments = state.assignments);
               // Open the specific shift if we arrived here via a notification tap
               _tryConsumeShiftOpenIntent(context);
             }
-            if (state is ShiftAssigned ||
-                state is ShiftAssignmentUpdated ||
-                state is ShiftAssignmentDeleted) {
-              _loadAssignments();
+            if (state is ShiftAssigned) {
+              if (state.assignment.isPublic &&
+                  state.assignment.teamShiftGroupId != null) {
+                _loadAssignments();
+              } else {
+                _upsertAssignment(state.assignment);
+              }
             }
-            if (state is ShiftProfileCreated ||
-                state is ShiftProfileUpdated ||
-                state is ShiftProfileDeleted) {
-              _loadProfiles();
+            if (state is ShiftAssignmentUpdated) {
+              if (state.assignment.isPublic &&
+                  state.assignment.teamShiftGroupId != null) {
+                _loadAssignments();
+              } else {
+                _upsertAssignment(state.assignment);
+              }
+            }
+            if (state is ShiftAssignmentDeleted) {
+              _removeAssignment(state.assignmentId);
             }
             if (state is ShiftError) {
               AppSnackBar.showError(context, state.message);

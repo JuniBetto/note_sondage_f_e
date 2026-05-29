@@ -5,18 +5,17 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class PendingNotificationsCard extends StatefulWidget {
-  const PendingNotificationsCard({
-    super.key,
-    this.maxItems = 4,
-  });
+  const PendingNotificationsCard({super.key, this.maxItems = 4});
 
   final int maxItems;
 
   @override
-  State<PendingNotificationsCard> createState() => _PendingNotificationsCardState();
+  State<PendingNotificationsCard> createState() =>
+      _PendingNotificationsCardState();
 }
 
 class _PendingNotificationsCardState extends State<PendingNotificationsCard> {
@@ -237,7 +236,8 @@ class _PendingNotificationTile extends StatelessWidget {
     );
     final state = context.watch<NotificationCenterCubit>().state;
     final canRespond =
-        item.supportsInviteDecisionFor(currentUserId) &&
+        (item.supportsInviteDecisionFor(currentUserId) ||
+            item.supportsClockingDecision()) &&
         !state.completedActionNotificationIds.contains(item.notificationId);
     final isProcessing = state.processingNotificationIds.contains(
       item.notificationId,
@@ -248,6 +248,7 @@ class _PendingNotificationTile extends StatelessWidget {
     final roleCode = item.roleCode;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final localization = AppLocalizations.of(context)!;
 
     return Material(
       color: Colors.transparent,
@@ -372,25 +373,33 @@ class _PendingNotificationTile extends StatelessWidget {
                     OutlinedButton(
                       onPressed: isProcessing
                           ? null
-                          : () => context
-                                .read<NotificationCenterCubit>()
-                                .rejectInvitation(item),
-                      child: const Text('Rifiuta'),
+                          : () => item.supportsClockingDecision()
+                                ? context
+                                      .read<NotificationCenterCubit>()
+                                      .rejectClockingDecision(item)
+                                : context
+                                      .read<NotificationCenterCubit>()
+                                      .rejectInvitation(item),
+                      child: Text(localization.rejectRequest),
                     ),
                     const SizedBox(width: 10),
                     FilledButton(
                       onPressed: isProcessing
                           ? null
-                          : () => context
-                                .read<NotificationCenterCubit>()
-                                .acceptInvitation(item),
+                          : () => item.supportsClockingDecision()
+                                ? context
+                                      .read<NotificationCenterCubit>()
+                                      .approveClockingDecision(item)
+                                : context
+                                      .read<NotificationCenterCubit>()
+                                      .acceptInvitation(item),
                       child: isProcessing
                           ? const SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Accetta'),
+                          : Text(localization.approveRequest),
                     ),
                   ],
                 ),
@@ -425,7 +434,8 @@ class _PendingNotificationTile extends StatelessWidget {
     if (item.eventType.contains('CLOCK')) {
       return Icons.timer_outlined;
     }
-    if (item.eventType.contains('SURVEY') || item.eventType.contains('SONDAGE')) {
+    if (item.eventType.contains('SURVEY') ||
+        item.eventType.contains('SONDAGE')) {
       return Icons.checklist_rtl_outlined;
     }
     return Icons.notifications_none_rounded;
@@ -463,10 +473,7 @@ class _PendingNotificationTile extends StatelessWidget {
 }
 
 class _DetailChip extends StatelessWidget {
-  const _DetailChip({
-    required this.label,
-    required this.color,
-  });
+  const _DetailChip({required this.label, required this.color});
 
   final String label;
   final Color color;

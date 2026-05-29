@@ -163,7 +163,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get webMobileAppOnlyHint =>
-      'Abre Note Sondage en una tablet o en escritorio, o instala la app desde tu tienda.';
+      'Abre TeamManagement en una tablet o en escritorio, o instala la app desde tu tienda.';
 
   @override
   String get downloadOnAppStore => 'Descargar en App Store';
@@ -638,7 +638,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hemos podido abrir tu aplicación de correo. Copia la dirección y envía el mensaje manualmente.';
 
   @override
-  String get contactUsEmailSubject => 'Solicitud de soporte Note Sondage';
+  String get contactUsEmailSubject => 'Solicitud de soporte TeamManagement';
 
   @override
   String get contactUsTopicsTitle => 'Errores, comentarios, ideas de producto';
@@ -1053,4 +1053,262 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get systemProfile => 'Perfiles del sistema';
+
+  @override
+  String get clockingDateLabel => 'Fecha de fichaje';
+
+  @override
+  String get calendarWeek => 'Semana';
+
+  @override
+  String get calendarMonth => 'Mes';
+
+  @override
+  String get today => 'Hoy';
+
+  @override
+  String get clockingOverviewTitle => 'Resumen de fichaje';
+
+  @override
+  String get clockingOverviewDescription =>
+      'Este encabezado presenta el área de fichaje y su propósito principal.';
+
+  @override
+  String get clockingCurrentStatusTitle => 'Estado actual';
+
+  @override
+  String get clockingCurrentStatusDescription =>
+      'Esta sección te muestra al instante el estado de tu fichaje y la información principal del día.';
+
+  @override
+  String get personal => 'Personal';
+
+  @override
+  String get markVacation => 'Marcar vacaciones';
+
+  @override
+  String get markPermission => 'Marcar permiso';
+
+  @override
+  String get requestClocking => 'Solicitar fichaje';
+
+  @override
+  String get requestVacation => 'Solicitar vacaciones';
+
+  @override
+  String get requestPermission => 'Solicitar permiso';
+
+  @override
+  String get vacationStatus => 'Vacaciones';
+
+  @override
+  String get clockingOpenRecordAnotherDay =>
+      'Tienes un fichaje abierto en otro día. Selecciónalo para continuar.';
+
+  @override
+  String dayAlreadyHasClocking(String date) {
+    return 'Ya existe un fichaje para $date.';
+  }
+
+  @override
+  String get manualClockingUseInlineForPastDays =>
+      'Para días distintos de hoy, usa la sección de entrada manual de abajo.';
+
+  @override
+  String get manualClockingRequiresApproval =>
+      'Para esta fecha debes pedir la aprobación de un manager o usar un equipo que gestionas.';
+
+  @override
+  String get selectedDayMarkedAsVacation =>
+      'El día seleccionado está marcado como vacaciones.';
+
+  @override
+  String get clockingCurrentTimeOverlapsExistingRecord =>
+      'La hora actual cae dentro de un fichaje o permiso ya registrado hoy.';
+
+  @override
+  String createClockingForDate(String date) {
+    return 'Crear un fichaje para $date';
+  }
+
+  @override
+  String get breakOnlyCurrentDay =>
+      'Las pausas solo están disponibles para el día actual.';
+
+  @override
+  String get manualClockingTitle => 'Añadir fichaje';
+
+  @override
+  String manualClockingDescription(String date) {
+    return 'Completa el fichaje para $date o añade más días pasados.';
+  }
+
+  @override
+  String get manualClockingResolveOpenRecord =>
+      'Tienes un fichaje abierto en otro día. Ciérralo o selecciona ese día antes de guardar un fichaje manual.';
+
+  @override
+  String get selectedDays => 'Días seleccionados';
+
+  @override
+  String get addDay => 'Añadir día';
+
+  @override
+  String get clockInLabel => 'Entrada';
+
+  @override
+  String get clockOutLabel => 'Salida';
+
+  @override
+  String get optionalNoteHint => 'Nota opcional';
+
+  @override
+  String get saving => 'Guardando...';
+
+  @override
+  String get saveClocking => 'Guardar fichaje';
+
+  @override
+  String get manualClockingTodayLiveOnly =>
+      'Para hoy, usa las acciones en vivo de entrada, pausa y salida.';
+
+  @override
+  String get invalidBreakMinutes =>
+      'El tiempo de pausa debe ser un número válido.';
+
+  @override
+  String get clockOutMustBeAfterClockIn =>
+      'La hora de salida debe ser posterior a la de entrada.';
+
+  @override
+  String get breakMustBeShorterThanShift =>
+      'La pausa debe ser más corta que la duración del turno.';
+
+  @override
+  String get manualClockingSavedSingle => 'Fichaje guardado con éxito.';
+
+  @override
+  String manualClockingSavedMultiple(int count) {
+    return '$count fichajes guardados con éxito.';
+  }
+
+  @override
+  String get manualClockingSaveError =>
+      'No hemos podido guardar el fichaje manual.';
+
+  @override
+  String get noTeamSelected => 'Ningún equipo seleccionado';
+
+  @override
+  String get changeOrSearchTeam => 'Abre para cambiar de equipo o buscar uno';
+
+  @override
+  String get teamAvailableForClocking => 'Equipo disponible para el fichaje';
+
+  @override
+  String get searchTeam => 'Buscar equipo...';
+
+  @override
+  String get noTeamFound => 'No se encontró ningún equipo';
+
+  @override
+  String get selectTeamFirst => 'Selecciona primero un equipo.';
+
+  @override
+  String get selectTeamBeforeVacation =>
+      'Selecciona un equipo antes de marcar vacaciones.';
+
+  @override
+  String markSelectedDateAsVacation(String date) {
+    return 'Marcar $date como vacaciones';
+  }
+
+  @override
+  String get markSelectedDayAsVacationDescription =>
+      'Esta acción marcará el día seleccionado como vacaciones.';
+
+  @override
+  String markPermissionForDate(String date) {
+    return 'Marcar permiso para $date';
+  }
+
+  @override
+  String get start => 'Inicio';
+
+  @override
+  String get end => 'Fin';
+
+  @override
+  String get permissionInvalidRange =>
+      'La hora de fin debe ser posterior a la hora de inicio del permiso.';
+
+  @override
+  String get noAssignableMembersForTeam =>
+      'No se encontraron miembros asignables para este equipo.';
+
+  @override
+  String get assignVacationToMember => 'Marcar vacaciones para un miembro';
+
+  @override
+  String get userLabel => 'Usuario';
+
+  @override
+  String optionalNoteFor(String name) {
+    return 'Nota opcional para $name';
+  }
+
+  @override
+  String get optionalRequestNoteHint => 'Nota opcional para la solicitud';
+
+  @override
+  String get clockingApprovalRequestHint =>
+      'Puedes solicitar fichaje, vacaciones o permiso para el equipo y la fecha seleccionados.';
+
+  @override
+  String requestClockingForSelectedDate(String date) {
+    return 'Solicitar fichaje para $date';
+  }
+
+  @override
+  String get noMembersAvailableForClockingRequest =>
+      'No hay miembros disponibles para la solicitud de fichaje.';
+
+  @override
+  String get sendRequest => 'Enviar solicitud';
+
+  @override
+  String get clockingRequestSentSuccess =>
+      'Solicitud de fichaje enviada con éxito.';
+
+  @override
+  String get clockingRequestSentError =>
+      'No hemos podido enviar la solicitud de fichaje al miembro del equipo.';
+
+  @override
+  String get vacationRequestSentSuccess =>
+      'Solicitud de vacaciones enviada con éxito.';
+
+  @override
+  String get vacationRequestSentError =>
+      'No hemos podido enviar la solicitud de vacaciones.';
+
+  @override
+  String get permissionRequestSentSuccess =>
+      'Solicitud de permiso enviada con éxito.';
+
+  @override
+  String get permissionRequestSentError =>
+      'No hemos podido enviar la solicitud de permiso.';
+
+  @override
+  String get approveRequest => 'Aprobar';
+
+  @override
+  String get rejectRequest => 'Rechazar';
+
+  @override
+  String get clockInDateTimeLabel => 'Entrada (AAAA-MM-DD HH:MM)';
+
+  @override
+  String get clockOutDateTimeLabel => 'Salida (AAAA-MM-DD HH:MM)';
 }

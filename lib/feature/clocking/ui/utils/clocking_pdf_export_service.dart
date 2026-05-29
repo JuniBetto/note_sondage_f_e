@@ -169,6 +169,10 @@ class ClockingPdfExportService {
         return 'Absent';
       case ClockingStatus.late:
         return 'Late';
+      case ClockingStatus.vacation:
+        return 'Vacation';
+      case ClockingStatus.permission:
+        return 'Permission';
     }
   }
 

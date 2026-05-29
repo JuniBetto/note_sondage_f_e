@@ -164,22 +164,21 @@ class _TeamsWebState extends State<TeamsWeb> {
                       ? 'Qui trovi tutte le squadre disponibili. Un click su una card apre il dettaglio della squadra selezionata.'
                       : 'This area contains all available teams. Click any card to open the selected team detail page.',
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8.0,
-                      vertical: 8.0,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
                     child: SizedBox(
                       width: double.infinity,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Colors.transparent,
+                          color: colorScheme.borderColor,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: colorScheme.bgNavbarSurface!,
+                              color:
+                                  (colorScheme.bgNavbarSurface ?? Colors.black)
+                                      .withValues(alpha: 0.2),
                               blurRadius: 8,
                               spreadRadius: 2,
-                              offset: Offset(0, 2),
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),

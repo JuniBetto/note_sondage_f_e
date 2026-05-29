@@ -1,14 +1,48 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
+import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_local_data_source.dart';
+import '../../domain/entities/shift_assignment_entity.dart';
+import '../../domain/entities/shift_profile_entity.dart';
 import 'shift_event.dart';
 
 export 'shift_event.dart';
 
 class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
   final ShiftRepository _repository;
+  final ShiftLocalDataSource _localDataSource;
+  List<ShiftProfileEntity> _cachedProfiles = <ShiftProfileEntity>[];
+  List<ShiftAssignmentEntity> _cachedAssignments = <ShiftAssignmentEntity>[];
+  bool _profilesRefreshInFlight = false;
+  String? _assignmentsRefreshKey;
 
-  ShiftBloc(this._repository) : super(ShiftInitial()) {
+  void _upsertProfileCache(ShiftProfileEntity profile) {
+    _cachedProfiles = [
+      ..._cachedProfiles.where((item) => item.id != profile.id),
+      profile,
+    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
+  void _removeProfileCache(String profileId) {
+    _cachedProfiles = _cachedProfiles
+        .where((profile) => profile.id != profileId)
+        .toList();
+  }
+
+  void _upsertAssignmentCache(ShiftAssignmentEntity assignment) {
+    _cachedAssignments = [
+      ..._cachedAssignments.where((item) => item.id != assignment.id),
+      assignment,
+    ]..sort((a, b) => a.shiftDate.compareTo(b.shiftDate));
+  }
+
+  void _removeAssignmentCache(String assignmentId) {
+    _cachedAssignments = _cachedAssignments
+        .where((assignment) => assignment.id != assignmentId)
+        .toList();
+  }
+
+  ShiftBloc(this._repository, this._localDataSource) : super(ShiftInitial()) {
     on<LoadShiftProfilesEvent>(_onLoadProfiles);
     on<CreateShiftProfileEvent>(_onCreateProfile);
     on<UpdateShiftProfileEvent>(_onUpdateProfile);
@@ -23,9 +57,24 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     LoadShiftProfilesEvent event,
     Emitter<ShiftState> emit,
   ) async {
-    emit(ShiftLoading());
+    if (_cachedProfiles.isNotEmpty) {
+      emit(ShiftProfilesLoaded(_cachedProfiles));
+    } else {
+      final local = await _localDataSource.getProfiles();
+      if (local.isNotEmpty) {
+        _cachedProfiles = local;
+        emit(ShiftProfilesLoaded(local));
+      } else {
+        emit(ShiftLoading());
+      }
+    }
+    if (_profilesRefreshInFlight) {
+      return;
+    }
+    _profilesRefreshInFlight = true;
     try {
       final profiles = await _repository.getProfiles();
+      _cachedProfiles = profiles;
       emit(ShiftProfilesLoaded(profiles));
     } catch (e) {
       emit(
@@ -36,6 +85,11 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
           ),
         ),
       );
+      if (_cachedProfiles.isNotEmpty) {
+        emit(ShiftProfilesLoaded(_cachedProfiles));
+      }
+    } finally {
+      _profilesRefreshInFlight = false;
     }
   }
 
@@ -54,6 +108,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         color: event.color,
         isPublic: event.isPublic,
       );
+      _upsertProfileCache(profile);
       emit(ShiftProfileCreated(profile));
     } catch (e) {
       emit(
@@ -83,6 +138,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         color: event.color,
         isPublic: event.isPublic,
       );
+      _upsertProfileCache(profile);
       emit(ShiftProfileUpdated(profile));
     } catch (e) {
       emit(
@@ -102,7 +158,8 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
   ) async {
     try {
       await _repository.deleteProfile(event.profileId);
-      emit(ShiftProfileDeleted());
+      _removeProfileCache(event.profileId);
+      emit(ShiftProfileDeleted(event.profileId));
     } catch (e) {
       emit(
         ShiftError(
@@ -119,12 +176,32 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     LoadShiftAssignmentsEvent event,
     Emitter<ShiftState> emit,
   ) async {
-    emit(ShiftLoading());
+    final requestKey =
+        '${event.from.year}-${event.from.month}-${event.from.day}:${event.to.year}-${event.to.month}-${event.to.day}';
+    if (_cachedAssignments.isNotEmpty) {
+      emit(ShiftAssignmentsLoaded(_cachedAssignments));
+    } else {
+      final local = await _localDataSource.getAssignments(
+        from: event.from,
+        to: event.to,
+      );
+      if (local.isNotEmpty) {
+        _cachedAssignments = local;
+        emit(ShiftAssignmentsLoaded(local));
+      } else {
+        emit(ShiftLoading());
+      }
+    }
+    if (_assignmentsRefreshKey == requestKey) {
+      return;
+    }
+    _assignmentsRefreshKey = requestKey;
     try {
       final assignments = await _repository.getAssignments(
         from: event.from,
         to: event.to,
       );
+      _cachedAssignments = assignments;
       emit(ShiftAssignmentsLoaded(assignments));
     } catch (e) {
       emit(
@@ -135,6 +212,13 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
           ),
         ),
       );
+      if (_cachedAssignments.isNotEmpty) {
+        emit(ShiftAssignmentsLoaded(_cachedAssignments));
+      }
+    } finally {
+      if (_assignmentsRefreshKey == requestKey) {
+        _assignmentsRefreshKey = null;
+      }
     }
   }
 
@@ -156,6 +240,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         teamShiftGroupId: event.teamShiftGroupId,
         targetUserId: event.targetUserId,
       );
+      _upsertAssignmentCache(assignment);
       emit(ShiftAssigned(assignment));
     } catch (e) {
       emit(
@@ -187,6 +272,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         teamShiftGroupId: event.teamShiftGroupId,
         targetUserId: event.targetUserId,
       );
+      _upsertAssignmentCache(assignment);
       emit(ShiftAssignmentUpdated(assignment));
     } catch (e) {
       emit(
@@ -206,7 +292,8 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
   ) async {
     try {
       await _repository.deleteAssignment(event.assignmentId);
-      emit(ShiftAssignmentDeleted());
+      _removeAssignmentCache(event.assignmentId);
+      emit(ShiftAssignmentDeleted(event.assignmentId));
     } catch (e) {
       emit(
         ShiftError(

@@ -33,65 +33,78 @@ class _SelectTeamPageState extends State<SelectTeamPage> {
       ),
       backgroundColor: colorScheme.bgColor,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  VisualType(
-                    isActive1: isGridView == 1,
-                    isActive2: isGridView == 2,
-                    color: colorScheme.cursorColor,
-                    iconData1: Icons.window_sharp,
-                    iconData2: Icons.list,
-                    onTap1: () {
-                      setState(() {
-                        isGridView = 1;
-                      });
-                    },
-                    onTap2: () {
-                      setState(() {
-                        isGridView = 2;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              Expanded(
-                child: SizedBox(
-                  width: double.infinity,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colorScheme.borderColor,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.bgNavbarSurface!.withValues(
-                            alpha: 0.2,
-                          ),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                          offset: Offset(0, 2),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isShortHeight = constraints.maxHeight < 560;
+            final pagePadding = EdgeInsets.symmetric(
+              horizontal: isShortHeight ? 12 : 16,
+              vertical: isShortHeight ? 10 : 16,
+            );
+            final sectionSpacing = isShortHeight ? 8.0 : 16.0;
+            final toggleIconSize = isShortHeight ? 22.0 : 28.0;
+
+            return Padding(
+              padding: pagePadding,
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: VisualType(
+                          size: toggleIconSize,
+                          isActive1: isGridView == 1,
+                          isActive2: isGridView == 2,
+                          color: colorScheme.cursorColor,
+                          iconData1: Icons.window_sharp,
+                          iconData2: Icons.list,
+                          onTap1: () {
+                            setState(() {
+                              isGridView = 1;
+                            });
+                          },
+                          onTap2: () {
+                            setState(() {
+                              isGridView = 2;
+                            });
+                          },
                         ),
-                      ],
-                    ),
-                    child: ResponsiveGridTeams(
-                      items: teams,
-                      isRow: isGridView == 1,
-                      isSelectionMode: true,
-                      onTeamSelected: (selectedTeam) {
-                        // Torna indietro con il team selezionato
-                        Navigator.pop(context, selectedTeam);
-                      },
-                    ),
+                      ),
+                      SizedBox(height: sectionSpacing),
+                      SizedBox(
+                        width: double.infinity,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: colorScheme.borderColor,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.bgNavbarSurface!.withValues(
+                                  alpha: 0.2,
+                                ),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ResponsiveGridTeams(
+                            items: teams,
+                            isRow: isGridView == 1,
+                            isSelectionMode: true,
+                            onTeamSelected: (selectedTeam) {
+                              Navigator.pop(context, selectedTeam);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

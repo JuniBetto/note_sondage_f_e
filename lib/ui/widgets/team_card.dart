@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/ui/widgets/avatar_app.dart';
 
 class TeamCard extends StatelessWidget {
   const TeamCard(
@@ -37,16 +38,31 @@ Widget iconTest(IconData iconData, String label) {
 
 Widget listTeamMembers(List<Map<String, dynamic>> members) {
   return Column(
-    children: members
-        .map(
-          (member) => Row(
-            children: [
-              CircleAvatar(backgroundImage: NetworkImage(member['avatarUrl']!)),
-              SizedBox(width: 8),
-              Text(member['name']!),
-            ],
+    children: members.map((member) {
+      final name = (member['name'] ?? '') as String;
+      final imageUrl = (member['imageUrl'] ?? member['avatarUrl'])?.toString();
+      final initials = name.isNotEmpty
+          ? name
+                .split(' ')
+                .where((part) => part.isNotEmpty)
+                .map((part) => part[0].toUpperCase())
+                .take(2)
+                .join()
+          : '?';
+
+      return Row(
+        children: [
+          AvatarApp(
+            imageUrl: imageUrl,
+            initials: initials,
+            size: 40,
+            backgroundColor: Colors.grey,
+            textColor: Colors.white,
           ),
-        )
-        .toList(),
+          SizedBox(width: 8),
+          Text(name),
+        ],
+      );
+    }).toList(),
   );
 }

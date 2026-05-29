@@ -139,6 +139,12 @@ class _TabBarPillItem extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(30),
         onTap: onTap,
+        splashFactory: NoSplash.splashFactory,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        focusColor: Colors.transparent,
+        overlayColor: WidgetStateProperty.all<Color>(Colors.transparent),
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 120),
           opacity: isSelected ? 1 : 0.92,

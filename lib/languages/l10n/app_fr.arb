@@ -44,7 +44,7 @@
     "tutorialSkip": "Passer",
     "webMobileAppOnlyTitle": "Téléchargez l'application mobile",
     "webMobileAppOnlyMessage": "Cette expérience web est disponible uniquement sur les grands écrans. Sur les téléphones de moins de 576px, utilisez l'application mobile.",
-    "webMobileAppOnlyHint": "Ouvrez Note Sondage sur tablette ou ordinateur, ou installez l'application depuis votre store.",
+    "webMobileAppOnlyHint": "Ouvrez TeamManagement sur tablette ou ordinateur, ou installez l'application depuis votre store.",
     "downloadOnAppStore": "Télécharger sur l'App Store",
     "getItOnGooglePlay": "Disponible sur Google Play",
     "mobileStoreLinksUnavailable": "Les liens vers les stores ne sont pas encore configurés. Contactez le support ou ouvrez l'application sur un écran plus grand.",
@@ -189,7 +189,7 @@
     "copyEmail": "Copier l'e-mail",
     "emailCopied": "L'e-mail de support a été copié dans le presse-papiers.",
     "couldNotOpenEmailApp": "Nous n'avons pas pu ouvrir votre application e-mail. Copiez l'adresse et envoyez le message manuellement.",
-    "contactUsEmailSubject": "Demande de support Note Sondage",
+    "contactUsEmailSubject": "Demande de support TeamManagement",
     "contactUsTopicsTitle": "Bugs, retours, idées produit",
     "contactUsTopicsBody": "Utilisez cet espace pour signaler des problèmes, demander de l'aide ou partager les améliorations que vous aimeriez voir.",
     "contactUsFormHint": "Le message inclura vos informations afin que le support puisse répondre plus rapidement.",
@@ -338,5 +338,141 @@
     "deleteShiftProfileConfirm": "Voulez-vous vraiment supprimer ce profil ?",
     "customProfile": "Profils personnalisés",
     "noShiftsThisMonth": "Aucun quart ce mois-ci",
-    "systemProfile": "Profils système"
+    "systemProfile": "Profils système",
+    "clockingDateLabel": "Date de pointage",
+    "calendarWeek": "Semaine",
+    "calendarMonth": "Mois",
+    "today": "Aujourd'hui",
+    "clockingOverviewTitle": "Vue d'ensemble du pointage",
+    "clockingOverviewDescription": "Cet en-tête présente la zone de pointage et son objectif principal.",
+    "clockingCurrentStatusTitle": "Statut actuel",
+    "clockingCurrentStatusDescription": "Cette section vous montre immédiatement l'état de votre pointage et les informations principales de la journée.",
+    "personal": "Personnel",
+    "markVacation": "Marquer des congés",
+    "markPermission": "Marquer une permission",
+    "requestClocking": "Demander un pointage",
+    "requestVacation": "Demander des congés",
+    "requestPermission": "Demander une permission",
+    "vacationStatus": "Congés",
+    "clockingOpenRecordAnotherDay": "Vous avez un pointage ouvert sur un autre jour. Sélectionnez-le pour continuer.",
+    "dayAlreadyHasClocking": "Un pointage existe déjà pour {date}.",
+    "@dayAlreadyHasClocking": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "manualClockingUseInlineForPastDays": "Pour les jours différents d'aujourd'hui, utilisez la section de saisie manuelle ci-dessous.",
+    "manualClockingRequiresApproval": "Pour cette date, demandez l'approbation d'un manager ou utilisez une équipe que vous gérez.",
+    "selectedDayMarkedAsVacation": "Le jour sélectionné est marqué comme congé.",
+    "clockingCurrentTimeOverlapsExistingRecord": "L'heure actuelle tombe dans un pointage ou une permission deja enregistres aujourd'hui.",
+    "createClockingForDate": "Créer un pointage pour {date}",
+    "@createClockingForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "breakOnlyCurrentDay": "Les pauses sont disponibles uniquement pour le jour en cours.",
+    "manualClockingTitle": "Ajouter un pointage",
+    "manualClockingDescription": "Complétez le pointage pour {date} ou ajoutez d'autres jours passés.",
+    "@manualClockingDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "manualClockingResolveOpenRecord": "Vous avez un pointage ouvert sur un autre jour. Fermez-le ou sélectionnez ce jour avant d'enregistrer un pointage manuel.",
+    "selectedDays": "Jours sélectionnés",
+    "addDay": "Ajouter un jour",
+    "clockInLabel": "Pointage d'entrée",
+    "clockOutLabel": "Pointage de sortie",
+    "optionalNoteHint": "Note facultative",
+    "saving": "Enregistrement...",
+    "saveClocking": "Enregistrer le pointage",
+    "manualClockingTodayLiveOnly": "Pour aujourd'hui, utilisez les actions en direct de pointage d'entrée, pause et pointage de sortie.",
+    "invalidBreakMinutes": "La durée de pause doit être un nombre valide.",
+    "clockOutMustBeAfterClockIn": "L'heure de sortie doit être postérieure à l'heure d'entrée.",
+    "breakMustBeShorterThanShift": "La pause doit être plus courte que la durée du service.",
+    "manualClockingSavedSingle": "Pointage enregistré avec succès.",
+    "manualClockingSavedMultiple": "{count} pointages enregistrés avec succès.",
+    "@manualClockingSavedMultiple": {
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "manualClockingSaveError": "Nous n'avons pas pu enregistrer le pointage manuel.",
+    "noTeamSelected": "Aucune équipe sélectionnée",
+    "changeOrSearchTeam": "Ouvrez pour changer d'équipe ou en rechercher une",
+    "teamAvailableForClocking": "Équipe disponible pour le pointage",
+    "searchTeam": "Rechercher une équipe...",
+    "noTeamFound": "Aucune équipe trouvée",
+    "selectTeamFirst": "Sélectionnez d'abord une équipe.",
+    "selectTeamBeforeVacation": "Sélectionnez une équipe avant de marquer des congés.",
+    "markSelectedDateAsVacation": "Marquer {date} comme congé",
+    "@markSelectedDateAsVacation": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "markSelectedDayAsVacationDescription": "Cette action marquera le jour sélectionné comme congé.",
+    "markPermissionForDate": "Marquer une permission pour {date}",
+    "@markPermissionForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "start": "Début",
+    "end": "Fin",
+    "permissionInvalidRange": "L'heure de fin doit être postérieure à l'heure de début de la permission.",
+    "noAssignableMembersForTeam": "Aucun membre assignable trouvé pour cette équipe.",
+    "assignVacationToMember": "Marquer des congés pour un membre",
+    "userLabel": "Utilisateur",
+    "optionalNoteFor": "Note facultative pour {name}",
+    "@optionalNoteFor": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "optionalRequestNoteHint": "Note facultative pour la demande",
+    "clockingApprovalRequestHint": "Vous pouvez demander un pointage, des congés ou une permission pour l'équipe et la date sélectionnées.",
+    "requestClockingForSelectedDate": "Demander un pointage pour {date}",
+    "@requestClockingForSelectedDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "noMembersAvailableForClockingRequest": "Aucun membre disponible pour la demande de pointage.",
+    "sendRequest": "Envoyer la demande",
+    "clockingRequestSentSuccess": "Demande de pointage envoyée avec succès.",
+    "clockingRequestSentError": "Nous n'avons pas pu envoyer la demande de pointage au membre de l'équipe.",
+    "vacationRequestSentSuccess": "Demande de congé envoyée avec succès.",
+    "vacationRequestSentError": "Nous n'avons pas pu envoyer la demande de congé.",
+    "permissionRequestSentSuccess": "Demande de permission envoyée avec succès.",
+    "permissionRequestSentError": "Nous n'avons pas pu envoyer la demande de permission.",
+    "approveRequest": "Approuver",
+    "rejectRequest": "Refuser",
+    "clockInDateTimeLabel": "Pointage d'entrée (AAAA-MM-JJ HH:MM)",
+    "clockOutDateTimeLabel": "Pointage de sortie (AAAA-MM-JJ HH:MM)"
 }

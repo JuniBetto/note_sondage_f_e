@@ -378,4 +378,136 @@ class BackendAuthDataSource {
       );
     }
   }
+
+  Future<void> approveClockingRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    String? note,
+  }) async {
+    await _postClockingDecision(
+      '/api/aggregate/clocking/approve-clocking-request',
+      {
+        'teamId': teamId,
+        'targetUserId': requesterUserId,
+        'date': requestedDate,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+      'approve clocking request',
+    );
+  }
+
+  Future<void> rejectClockingRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    String? note,
+  }) async {
+    await _postClockingDecision(
+      '/api/aggregate/clocking/reject-clocking-request',
+      {
+        'teamId': teamId,
+        'targetUserId': requesterUserId,
+        'date': requestedDate,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+      'reject clocking request',
+    );
+  }
+
+  Future<void> approveVacationRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    String? note,
+  }) async {
+    await _postClockingDecision(
+      '/api/aggregate/clocking/approve-vacation-request',
+      {
+        'teamId': teamId,
+        'targetUserId': requesterUserId,
+        'date': requestedDate,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+      'approve vacation request',
+    );
+  }
+
+  Future<void> rejectVacationRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    String? note,
+  }) async {
+    await _postClockingDecision(
+      '/api/aggregate/clocking/reject-vacation-request',
+      {
+        'teamId': teamId,
+        'targetUserId': requesterUserId,
+        'date': requestedDate,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+      'reject vacation request',
+    );
+  }
+
+  Future<void> approvePermissionRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    required String startTime,
+    required String endTime,
+    String? note,
+  }) async {
+    await _postClockingDecision(
+      '/api/aggregate/clocking/approve-permission-request',
+      {
+        'teamId': teamId,
+        'targetUserId': requesterUserId,
+        'date': requestedDate,
+        'startTime': startTime,
+        'endTime': endTime,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+      'approve permission request',
+    );
+  }
+
+  Future<void> rejectPermissionRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    required String startTime,
+    required String endTime,
+    String? note,
+  }) async {
+    await _postClockingDecision(
+      '/api/aggregate/clocking/reject-permission-request',
+      {
+        'teamId': teamId,
+        'targetUserId': requesterUserId,
+        'date': requestedDate,
+        'startTime': startTime,
+        'endTime': endTime,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+      'reject permission request',
+    );
+  }
+
+  Future<void> _postClockingDecision(
+    String path,
+    Map<String, dynamic> data,
+    String actionLabel,
+  ) async {
+    try {
+      await _authenticatedDio.post(path, data: data);
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] $actionLabel failed: ${e.message}');
+      throw Exception(
+        'Failed to $actionLabel: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
 }

@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_entity.dart';
 import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
+import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_local/clocking_local_data_source.dart';
 
 part 'clocking_event.dart';
 part 'clocking_state.dart';
@@ -16,7 +17,10 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
 
   String? get selectedTeamId => _selectedTeamId;
 
-  ClockingBloc({required this.clockingUseCase}) : super(ClockingInitial()) {
+  ClockingBloc({
+    required this.clockingUseCase,
+    required ClockingLocalDataSource clockingLocalDataSource,
+  }) : super(ClockingInitial()) {
     on<LoadClockingRecordsEvent>(_onLoadRecords);
     on<LoadClockingByDateEvent>(_onLoadByDate);
     on<LoadClockingByUserIdEvent>(_onLoadByUserId);
@@ -25,6 +29,8 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     on<ClockOutEvent>(_onClockOut);
     on<StartBreakEvent>(_onStartBreak);
     on<StopBreakEvent>(_onStopBreak);
+    on<MarkVacationEvent>(_onMarkVacation);
+    on<MarkPermissionEvent>(_onMarkPermission);
     on<UpdateClockingRecordEvent>(_onUpdateRecord);
     on<DecommitClockingRecordEvent>(_onDecommitRecord);
     on<CommitClockingRecordEvent>(_onCommitRecord);
@@ -155,6 +161,38 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     );
   }
 
+  Future<void> _onMarkVacation(
+    MarkVacationEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    await _performAction(
+      emit,
+      () => clockingUseCase.markVacation(
+        teamId: event.teamId,
+        date: event.date,
+        targetUserId: event.targetUserId,
+        note: event.note,
+      ),
+    );
+  }
+
+  Future<void> _onMarkPermission(
+    MarkPermissionEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    await _performAction(
+      emit,
+      () => clockingUseCase.markPermission(
+        teamId: event.teamId,
+        date: event.date,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        targetUserId: event.targetUserId,
+        note: event.note,
+      ),
+    );
+  }
+
   Future<void> _onStopBreak(
     StopBreakEvent event,
     Emitter<ClockingState> emit,
@@ -233,7 +271,25 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     try {
       emit(_inProgressState());
       final record = await action();
-      await _reloadDashboard();
+
+      // ── Optimistic update ──────────────────────────────────────────────
+      // Immediately reflect the new/updated record in the cache so the UI
+      // feels instant. We replace an existing record with the same id, or
+      // prepend it if it is brand-new.
+      final myIdx = _cachedMyRecords.indexWhere((r) => r.id == record.id);
+      if (myIdx >= 0) {
+        _cachedMyRecords = List<ClockingRecordEntity>.from(_cachedMyRecords)
+          ..[myIdx] = record;
+      } else {
+        _cachedMyRecords = [record, ..._cachedMyRecords];
+      }
+      final teamIdx = _cachedTeamRecords.indexWhere((r) => r.id == record.id);
+      if (teamIdx >= 0) {
+        _cachedTeamRecords = List<ClockingRecordEntity>.from(_cachedTeamRecords)
+          ..[teamIdx] = record;
+      }
+      // ──────────────────────────────────────────────────────────────────
+
       emit(
         ClockingActionSuccess(
           record: record,
@@ -242,6 +298,11 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
           selectedTeamId: _selectedTeamId,
         ),
       );
+
+      // Background reload to get the authoritative server state.
+      try {
+        await _reloadDashboard();
+      } catch (_) {}
       emit(_loadedState());
     } catch (e) {
       emit(

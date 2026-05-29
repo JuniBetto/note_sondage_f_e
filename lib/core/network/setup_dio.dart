@@ -69,19 +69,29 @@ class DioClient {
     return '$_scheme://$_host:8080';
   }
 
-  /// MinIO API port for direct access (only used if bucket is public)
-  static String get _minioBaseUrl => 'http://$_host:9002/bucket1';
+  static bool usesAuthenticatedImageProxy(String url) {
+    if (url.isEmpty) return false;
+    return !(url.startsWith('http://') || url.startsWith('https://'));
+  }
 
-  /// Resolves an image URL from the server (e.g. MinIO) so it works
-  /// on every platform.
+  static Future<Map<String, String>?> resolveImageHeaders(String url) async {
+    if (!usesAuthenticatedImageProxy(url)) {
+      return null;
+    }
+
+    final token = await TokenService().getToken();
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+
+    return {'Authorization': 'Bearer $token'};
+  }
+
+  /// Resolves a server-side image path to a URL that works across platforms.
   ///
-  /// Since MinIO requires authentication (access_key / secret_key),
-  /// images are served through the backend API as a proxy.
-  ///
-  /// The imageUrl from the backend is a relative path like:
-  ///   "team_member/{member_id}/{filename}.jpg"
-  ///
-  /// We build: http://{host}:8001/team-members/{member_id}/profile-image
+  /// Relative paths like `user/{uid}/{file}.jpg` or
+  /// `team_member/{id}/{file}.jpg` are private MinIO objects and must be
+  /// fetched through the authenticated backend gateway.
   static String resolveImageUrl(String url) {
     if (url.isEmpty) return url;
 
@@ -92,19 +102,9 @@ class DioClient {
           .replaceAll('127.0.0.1', _resolvedHostForAbsoluteUrls);
     }
 
-    // Relative path from MinIO: "team_member/{member_id}/{filename}"
-    // Route through backend API proxy
     final path = url.startsWith('/') ? url.substring(1) : url;
-    final parts = path.split('/');
-
-    // Expected format: team_member/{member_id}/{filename}
-    if (parts.length >= 2) {
-      final memberId = parts[1]; // second segment is the member_id
-      return '$baseUrl/team-members/$memberId/profile-image';
-    }
-
-    // Fallback: try direct MinIO URL
-    return '$_minioBaseUrl/$path';
+    final encodedPath = Uri.encodeQueryComponent(path);
+    return '$baseUrl/api/storage/file?path=$encodedPath';
   }
 
   DioClient._(this.dio) {

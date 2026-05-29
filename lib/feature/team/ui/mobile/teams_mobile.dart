@@ -4,6 +4,7 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/team_display.dart';
+import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
@@ -59,6 +60,9 @@ class _TeamsMobileState extends State<TeamsMobile>
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
+    final theme = context.theme;
+    final texttheme= theme.textTheme;
+    final colorScheme= theme.colorScheme;
 
     AppTutorialController.registerReplayAction(
       tutorialId: 'mobile-main-1',

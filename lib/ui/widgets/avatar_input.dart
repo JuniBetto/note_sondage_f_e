@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class AvatarInput extends StatefulWidget {
@@ -249,28 +250,60 @@ class _AvatarInputState extends State<AvatarInput> {
       );
     }
 
-    if (widget.initialImageUrl != null && widget.initialImageUrl!.isNotEmpty) {
-      return ClipOval(
-        child: Image.network(
-          widget.initialImageUrl!,
-          width: widget.size,
-          height: widget.size,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                    : null,
+    final initialImageUrl = widget.initialImageUrl?.trim();
+    if (initialImageUrl != null && initialImageUrl.isNotEmpty) {
+      final resolvedUrl = DioClient.resolveImageUrl(initialImageUrl);
+      final requiresAuth = DioClient.usesAuthenticatedImageProxy(
+        initialImageUrl,
+      );
+
+      return FutureBuilder<Map<String, String>?>(
+        future: requiresAuth
+            ? DioClient.resolveImageHeaders(initialImageUrl)
+            : Future.value(null),
+        builder: (context, snapshot) {
+          if (requiresAuth &&
+              snapshot.connectionState != ConnectionState.done) {
+            return Container(
+              width: widget.size,
+              height: widget.size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.shade200,
               ),
+              child: const Center(child: CircularProgressIndicator()),
             );
-          },
-          errorBuilder: (context, error, stackTrace) {
+          }
+
+          if (requiresAuth &&
+              (snapshot.data == null || snapshot.data!.isEmpty)) {
             return _buildPlaceholder();
-          },
-        ),
+          }
+
+          return ClipOval(
+            child: Image.network(
+              resolvedUrl,
+              width: widget.size,
+              height: widget.size,
+              fit: BoxFit.cover,
+              headers: snapshot.data,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return _buildPlaceholder();
+              },
+            ),
+          );
+        },
       );
     }
 

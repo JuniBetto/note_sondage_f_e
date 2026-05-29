@@ -21,6 +21,9 @@ class TeamComponentCard extends StatefulWidget {
     this.onArchiveTap,
     this.isOwner = false,
     this.isArchived = false,
+    this.currentUserId,
+    this.currentUserEmail,
+    this.currentUserPhotoUrl,
   });
   final Color colorTeam;
   final String teamName;
@@ -34,6 +37,9 @@ class TeamComponentCard extends StatefulWidget {
   final VoidCallback? onArchiveTap;
   final bool isOwner;
   final bool isArchived;
+  final String? currentUserId;
+  final String? currentUserEmail;
+  final String? currentUserPhotoUrl;
 
   @override
   State<TeamComponentCard> createState() => _TeamComponentCardState();
@@ -248,6 +254,10 @@ class _TeamComponentCardState extends State<TeamComponentCard> {
                                       context,
                                       widget.members ?? [],
                                       memberCount: widget.memberCount,
+                                      currentUserId: widget.currentUserId,
+                                      currentUserEmail: widget.currentUserEmail,
+                                      currentUserPhotoUrl:
+                                          widget.currentUserPhotoUrl,
                                     ),
                                   ],
                                 ),
@@ -277,12 +287,47 @@ class _TeamComponentCardState extends State<TeamComponentCard> {
   }
 }
 
-Widget buildTeamItem(List<Map<String, dynamic>> membersAvatar) {
+Widget buildTeamItem(
+  List<Map<String, dynamic>> membersAvatar, {
+  int? memberCount,
+  String? currentUserId,
+  String? currentUserEmail,
+  String? currentUserPhotoUrl,
+}) {
   final visibleMembers = membersAvatar.take(2).toList();
+  if (visibleMembers.isEmpty && (memberCount ?? 0) > 0) {
+    final placeholders = (memberCount! >= 2 ? 2 : 1);
+    return Row(
+      spacing: 2,
+      children: List.generate(
+        placeholders,
+        (index) => AvatarApp(
+          initials: '?',
+          size: 24,
+          backgroundColor: Colors.grey.shade400,
+          textColor: Colors.white,
+        ),
+      ),
+    );
+  }
   return Row(
     spacing: 2,
     children: visibleMembers.map((member) {
       final name = (member['name'] ?? '') as String;
+      final memberUserId = member['userId']?.toString().trim();
+      final memberEmail = member['email']?.toString().trim().toLowerCase();
+      final normalizedCurrentEmail = currentUserEmail?.trim().toLowerCase();
+      final fallbackImageUrl =
+          currentUserPhotoUrl != null &&
+              currentUserPhotoUrl.isNotEmpty &&
+              ((currentUserId != null &&
+                      currentUserId.isNotEmpty &&
+                      memberUserId == currentUserId) ||
+                  (normalizedCurrentEmail != null &&
+                      normalizedCurrentEmail.isNotEmpty &&
+                      memberEmail == normalizedCurrentEmail))
+          ? currentUserPhotoUrl
+          : null;
       final initials = name.isNotEmpty
           ? name
                 .split(' ')
@@ -292,7 +337,7 @@ Widget buildTeamItem(List<Map<String, dynamic>> membersAvatar) {
                 .join()
           : '?';
       return AvatarApp(
-        imageUrl: member['imageUrl'],
+        imageUrl: (member['imageUrl'] ?? fallbackImageUrl)?.toString(),
         initials: initials,
         size: 24,
         backgroundColor: member['color'] ?? Colors.grey,
@@ -307,6 +352,9 @@ Widget buildRowTeamItem(
   BuildContext context,
   List<Map<String, dynamic>> members, {
   int? memberCount,
+  String? currentUserId,
+  String? currentUserEmail,
+  String? currentUserPhotoUrl,
 }) {
   final theme = Theme.of(context);
   final textTheme = theme.textTheme;
@@ -319,7 +367,13 @@ Widget buildRowTeamItem(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       spacing: 4,
       children: [
-        buildTeamItem(members),
+        buildTeamItem(
+          members,
+          memberCount: memberCount,
+          currentUserId: currentUserId,
+          currentUserEmail: currentUserEmail,
+          currentUserPhotoUrl: currentUserPhotoUrl,
+        ),
 
         GestureDetector(
           onTap: () {

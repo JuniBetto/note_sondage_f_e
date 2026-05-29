@@ -51,18 +51,31 @@ class ClockingRepositoryImpl implements ClockingRepository {
   Future<ClockingRecordEntity> clockIn({
     String? teamId,
     String? note,
+    DateTime? clockInAt,
   }) async {
     try {
-      return await _remote.clockIn(teamId: teamId, note: note);
+      return await _remote.clockIn(
+        teamId: teamId,
+        note: note,
+        clockInAt: clockInAt,
+      );
     } catch (e) {
       throw Exception('Failed to clock in: $e');
     }
   }
 
   @override
-  Future<ClockingRecordEntity> clockOut({String? teamId, String? note}) async {
+  Future<ClockingRecordEntity> clockOut({
+    String? teamId,
+    String? note,
+    DateTime? clockOutAt,
+  }) async {
     try {
-      return await _remote.clockOut(teamId: teamId, note: note);
+      return await _remote.clockOut(
+        teamId: teamId,
+        note: note,
+        clockOutAt: clockOutAt,
+      );
     } catch (e) {
       throw Exception('Failed to clock out: $e');
     }
@@ -88,20 +101,154 @@ class ClockingRepositoryImpl implements ClockingRepository {
   }
 
   @override
-  Future<ClockingRecordEntity> startBreak({String? teamId, String? note}) async {
+  Future<ClockingRecordEntity> startBreak({
+    String? teamId,
+    String? note,
+    DateTime? actionAt,
+  }) async {
     try {
-      return await _remote.startBreak(teamId: teamId, note: note);
+      return await _remote.startBreak(
+        teamId: teamId,
+        note: note,
+        actionAt: actionAt,
+      );
     } catch (e) {
       throw Exception('Failed to start break: $e');
     }
   }
 
   @override
-  Future<ClockingRecordEntity> stopBreak({String? teamId, String? note}) async {
+  Future<ClockingRecordEntity> stopBreak({
+    String? teamId,
+    String? note,
+    DateTime? actionAt,
+  }) async {
     try {
-      return await _remote.stopBreak(teamId: teamId, note: note);
+      return await _remote.stopBreak(
+        teamId: teamId,
+        note: note,
+        actionAt: actionAt,
+      );
     } catch (e) {
       throw Exception('Failed to stop break: $e');
+    }
+  }
+
+  @override
+  Future<ClockingRecordEntity> markVacation({
+    String? teamId,
+    required DateTime date,
+    String? targetUserId,
+    String? note,
+  }) async {
+    try {
+      return await _remote.markVacation(
+        teamId: teamId,
+        date: date,
+        targetUserId: targetUserId,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to mark vacation: $e');
+    }
+  }
+
+  @override
+  Future<ClockingRecordEntity> markPermission({
+    String? teamId,
+    required DateTime date,
+    required String startTime,
+    required String endTime,
+    String? targetUserId,
+    String? note,
+  }) async {
+    try {
+      return await _remote.markPermission(
+        teamId: teamId,
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
+        targetUserId: targetUserId,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to mark permission: $e');
+    }
+  }
+
+  @override
+  Future<int> createManualClockingEntries({
+    String? teamId,
+    required List<DateTime> dates,
+    required int clockInMinutes,
+    required int clockOutMinutes,
+    required int breakMinutes,
+    String? note,
+  }) async {
+    try {
+      return await _remote.createManualClockingEntries(
+        teamId: teamId,
+        dates: dates,
+        clockInMinutes: clockInMinutes,
+        clockOutMinutes: clockOutMinutes,
+        breakMinutes: breakMinutes,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to create manual clocking entries: $e');
+    }
+  }
+
+  @override
+  Future<void> requestTeamMemberClocking({
+    required String teamId,
+    required String targetUserId,
+    required DateTime date,
+    String? note,
+  }) async {
+    try {
+      await _remote.requestTeamMemberClocking(
+        teamId: teamId,
+        targetUserId: targetUserId,
+        date: date,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to request team member clocking: $e');
+    }
+  }
+
+  @override
+  Future<void> requestVacation({
+    required String teamId,
+    required DateTime date,
+    String? note,
+  }) async {
+    try {
+      await _remote.requestVacation(teamId: teamId, date: date, note: note);
+    } catch (e) {
+      throw Exception('Failed to request vacation: $e');
+    }
+  }
+
+  @override
+  Future<void> requestPermission({
+    required String teamId,
+    required DateTime date,
+    required String startTime,
+    required String endTime,
+    String? note,
+  }) async {
+    try {
+      await _remote.requestPermission(
+        teamId: teamId,
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to request permission: $e');
     }
   }
 

@@ -207,7 +207,13 @@ class ShiftProfileUpdated extends ShiftState {
   List<Object?> get props => [profile];
 }
 
-class ShiftProfileDeleted extends ShiftState {}
+class ShiftProfileDeleted extends ShiftState {
+  final String profileId;
+  ShiftProfileDeleted(this.profileId);
+
+  @override
+  List<Object?> get props => [profileId];
+}
 
 class ShiftAssignmentsLoaded extends ShiftState {
   final List<ShiftAssignmentEntity> assignments;
@@ -233,7 +239,13 @@ class ShiftAssignmentUpdated extends ShiftState {
   List<Object?> get props => [assignment];
 }
 
-class ShiftAssignmentDeleted extends ShiftState {}
+class ShiftAssignmentDeleted extends ShiftState {
+  final String assignmentId;
+  ShiftAssignmentDeleted(this.assignmentId);
+
+  @override
+  List<Object?> get props => [assignmentId];
+}
 
 class ShiftError extends ShiftState {
   final String message;

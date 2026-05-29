@@ -49,7 +49,9 @@ class ClockingMapper {
 
     final statusValue =
         json['status']?.toString() ??
-        (clockOutTime == null && clockInTime != null ? 'clockedIn' : 'clockedOut');
+        (clockOutTime == null && clockInTime != null
+            ? 'clockedIn'
+            : 'clockedOut');
 
     return ClockingRecordEntity(
       id: json['id']?.toString() ?? '',
@@ -94,7 +96,8 @@ class ClockingMapper {
       if (entity.totalBreakMinutes != null)
         'totalBreakMinutes': entity.totalBreakMinutes,
       if (entity.currentBreakStartedAt != null)
-        'currentBreakStartedAt': entity.currentBreakStartedAt!.toIso8601String(),
+        'currentBreakStartedAt': entity.currentBreakStartedAt!
+            .toIso8601String(),
       if (entity.lastBreakStartedAt != null)
         'lastBreakStartedAt': entity.lastBreakStartedAt!.toIso8601String(),
       if (entity.lastBreakEndedAt != null)

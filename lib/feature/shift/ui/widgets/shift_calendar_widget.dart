@@ -30,6 +30,21 @@ class ShiftCalendarWidget extends StatelessWidget {
   final void Function(DateTime date, List<ShiftAssignmentEntity> assignments)
   onDayTap;
 
+  static const List<String> _months = [
+    'Gennaio',
+    'Febbraio',
+    'Marzo',
+    'Aprile',
+    'Maggio',
+    'Giugno',
+    'Luglio',
+    'Agosto',
+    'Settembre',
+    'Ottobre',
+    'Novembre',
+    'Dicembre',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -67,12 +82,37 @@ class ShiftCalendarWidget extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: Text(
-                  _monthLabel(context, focusedMonth),
-                  textAlign: TextAlign.center,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _HeaderPickerButton(
+                      label: _monthName(focusedMonth),
+                      onTap: () async {
+                        final selectedMonth = await _pickMonth(context);
+                        if (selectedMonth == null) {
+                          return;
+                        }
+                        onMonthChanged(
+                          DateTime(focusedMonth.year, selectedMonth, 1),
+                        );
+                      },
+                    ),
+                    _HeaderPickerButton(
+                      label: '${focusedMonth.year}',
+                      onTap: () async {
+                        final selectedYear = await _pickYear(context);
+                        if (selectedYear == null) {
+                          return;
+                        }
+                        onMonthChanged(
+                          DateTime(selectedYear, focusedMonth.month, 1),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
               IconButton(
@@ -147,22 +187,8 @@ class ShiftCalendarWidget extends StatelessWidget {
         date.day == now.day;
   }
 
-  String _monthLabel(BuildContext context, DateTime date) {
-    const months = [
-      'Gennaio',
-      'Febbraio',
-      'Marzo',
-      'Aprile',
-      'Maggio',
-      'Giugno',
-      'Luglio',
-      'Agosto',
-      'Settembre',
-      'Ottobre',
-      'Novembre',
-      'Dicembre',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
+  String _monthName(DateTime date) {
+    return _months[date.month - 1];
   }
 
   List<String> _weekdayLabels(BuildContext context) => [
@@ -174,9 +200,113 @@ class ShiftCalendarWidget extends StatelessWidget {
     'Sab',
     'Dom',
   ];
+
+  Future<int?> _pickMonth(BuildContext context) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Seleziona mese'),
+          content: SizedBox(
+            width: 360,
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: List.generate(_months.length, (index) {
+                final month = index + 1;
+                final isSelected = month == focusedMonth.month;
+                return ChoiceChip(
+                  label: Text(_months[index]),
+                  selected: isSelected,
+                  onSelected: (_) => Navigator.of(dialogContext).pop(month),
+                  selectedColor: (colorScheme.selectItem ?? colorScheme.primary)
+                      .withValues(alpha: 0.14),
+                  side: BorderSide(
+                    color: isSelected
+                        ? (colorScheme.selectItem ?? colorScheme.primary)
+                        : colorScheme.outlineVariant,
+                  ),
+                  labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: colorScheme.onSurface,
+                  ),
+                );
+              }),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<int?> _pickYear(BuildContext context) async {
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Seleziona anno'),
+          content: SizedBox(
+            width: 320,
+            height: 320,
+            child: YearPicker(
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+              selectedDate: focusedMonth,
+              currentDate: DateTime.now(),
+              onChanged: (selectedDate) {
+                Navigator.of(dialogContext).pop(selectedDate.year);
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+class _HeaderPickerButton extends StatelessWidget {
+  const _HeaderPickerButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final accent = colorScheme.selectItem ?? colorScheme.primary;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: accent.withValues(alpha: 0.16)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: accent),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _DayCell extends StatelessWidget {
   const _DayCell({

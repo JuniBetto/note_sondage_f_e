@@ -14,6 +14,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
 
   /// Cache dei sondaggi caricati per evitare flickering
   List<SondageEntity> _cachedSondages = [];
+  String? _refreshKey;
 
   SondageBloc({
     required this.sondageUseCase,
@@ -35,11 +36,22 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     LoadSondagesEvent event,
     Emitter<SondageState> emit,
   ) async {
+    const requestKey = 'all';
     if (_cachedSondages.isNotEmpty) {
       emit(SondagesLoaded(_cachedSondages));
     } else {
-      emit(SondageLoading());
+      final local = await sondageLocalDataSource.getAll();
+      if (local.isNotEmpty) {
+        _cachedSondages = local;
+        emit(SondagesLoaded(local));
+      } else {
+        emit(SondageLoading());
+      }
     }
+    if (_refreshKey == requestKey) {
+      return;
+    }
+    _refreshKey = requestKey;
     try {
       final sondages = await sondageUseCase.getAllSondages();
       _cachedSondages = sondages;
@@ -56,6 +68,10 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       if (_cachedSondages.isNotEmpty) {
         emit(SondagesLoaded(_cachedSondages));
       }
+    } finally {
+      if (_refreshKey == requestKey) {
+        _refreshKey = null;
+      }
     }
   }
 
@@ -63,11 +79,22 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     LoadSondagesByUserIdEvent event,
     Emitter<SondageState> emit,
   ) async {
+    final requestKey = 'user:${event.userId}';
     if (_cachedSondages.isNotEmpty) {
       emit(SondagesLoaded(_cachedSondages));
     } else {
-      emit(SondageLoading());
+      final local = await sondageLocalDataSource.getAll();
+      if (local.isNotEmpty) {
+        _cachedSondages = local;
+        emit(SondagesLoaded(local));
+      } else {
+        emit(SondageLoading());
+      }
     }
+    if (_refreshKey == requestKey) {
+      return;
+    }
+    _refreshKey = requestKey;
     try {
       final sondages = await sondageUseCase.getAllSondagesByUserId(
         event.userId,
@@ -85,6 +112,10 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       );
       if (_cachedSondages.isNotEmpty) {
         emit(SondagesLoaded(_cachedSondages));
+      }
+    } finally {
+      if (_refreshKey == requestKey) {
+        _refreshKey = null;
       }
     }
   }
@@ -120,6 +151,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     try {
       final sondage = await sondageUseCase.createSondage(event.sondage);
       _cachedSondages = [..._cachedSondages, sondage];
+      await _persistCache();
       emit(SondageCreated(sondage));
       // SondagesLoaded viene emesso con un piccolo delay
       // per non interrompere l'animazione tab nel listener
@@ -150,6 +182,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       _cachedSondages = _cachedSondages.map((s) {
         return s.id == sondage.id ? sondage : s;
       }).toList();
+      await _persistCache();
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
       emit(
@@ -174,6 +207,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       await sondageUseCase.deleteSondage(event.id);
       emit(SondageDeleted());
       _cachedSondages = _cachedSondages.where((s) => s.id != event.id).toList();
+      await _persistCache();
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
       emit(
@@ -197,6 +231,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     try {
       final sondage = await sondageUseCase.publishSondage(event.id);
       _upsertCache(sondage);
+      await _persistCache();
       emit(SondageActionSuccess(sondage));
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
@@ -219,6 +254,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     try {
       final sondage = await sondageUseCase.closeSondage(event.id);
       _upsertCache(sondage);
+      await _persistCache();
       emit(SondageActionSuccess(sondage));
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
@@ -244,6 +280,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
         event.optionId,
       );
       _upsertCache(sondage);
+      await _persistCache();
       emit(SondageActionSuccess(sondage));
       emit(SondagesLoaded(_cachedSondages));
     } catch (e) {
@@ -269,6 +306,10 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     }
     _cachedSondages = List<SondageEntity>.from(_cachedSondages)
       ..[existingIndex] = sondage;
+  }
+
+  Future<void> _persistCache() async {
+    await sondageLocalDataSource.saveAll(_cachedSondages);
   }
 
   Future<void> _onResetCache(

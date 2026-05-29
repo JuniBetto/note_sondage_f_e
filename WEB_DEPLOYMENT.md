@@ -20,6 +20,15 @@ Before going live, also verify:
 - the public web domain is added to Firebase / Google authorized domains
 - the client id in [web/index.html](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/web/index.html) is the one you want to keep for production web sign-in
 
+Current public production values:
+
+- web app:
+  - `https://teammanagement.it`
+- API:
+  - `https://api.teammanagement.it`
+- email confirmation:
+  - `https://teammanagement.it/confirm-registration`
+
 ## Start a mode
 
 1. Copy the example env:
@@ -119,6 +128,24 @@ For rootless Podman:
 - router mapping:
   - WAN `80` -> LAN `<server-ip>:8080`
   - WAN `443` -> LAN `<server-ip>:8443`
+
+## Current recommended public deployment
+
+For the Contabo-style public setup, prefer the root runbook and shared edge stack instead of managing the frontend in isolation:
+
+- root script:
+  - `bash scripts/deploy/up-public.sh`
+- runbook:
+  - [CONTABO_VPS_DEPLOYMENT.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/CONTABO_VPS_DEPLOYMENT.md)
+
+This keeps:
+
+- frontend public domain
+- API public domain
+- edge TLS
+- backend routing
+
+aligned in one place.
 
 ## First public HTTPS certificate
 

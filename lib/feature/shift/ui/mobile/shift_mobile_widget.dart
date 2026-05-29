@@ -15,6 +15,7 @@ import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments_list.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_profile_manager.dart';
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_entries_sheet.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
@@ -82,7 +83,13 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     super.initState();
     _loadProfiles();
     _loadAssignments();
-    _teamBloc.add(LoadTeamsEvent());
+    final teamState = _teamBloc.state;
+    if (teamState is TeamsLoaded) {
+      _teams = teamState.teams;
+      _ensureTeamAccessContextLoaded(teamState.teams);
+    } else if (teamState is! TeamLoading) {
+      _teamBloc.add(LoadTeamsEvent());
+    }
     unawaited(_loadArchivedAssignments());
     _realtimeSubscription = GetIt.instance<RealtimeNotificationService>().stream
         .listen(_handleRealtimeNotification);
@@ -114,6 +121,41 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     context.read<ShiftBloc>().add(
       LoadShiftAssignmentsEvent(from: first, to: last),
     );
+  }
+
+  void _upsertAssignment(ShiftAssignmentEntity assignment) {
+    final next = <ShiftAssignmentEntity>[
+      ..._assignments.where((item) => item.id != assignment.id),
+      assignment,
+    ]..sort((a, b) => a.shiftDate.compareTo(b.shiftDate));
+    setState(() => _assignments = next);
+  }
+
+  void _removeAssignment(String assignmentId) {
+    setState(() {
+      _assignments = _assignments
+          .where((assignment) => assignment.id != assignmentId)
+          .toList();
+      _archivedAssignmentIds = _archivedAssignmentIds
+          .where((id) => id != assignmentId)
+          .toSet();
+    });
+  }
+
+  void _upsertProfile(ShiftProfileEntity profile) {
+    final next = <ShiftProfileEntity>[
+      ..._profiles.where((item) => item.id != profile.id),
+      profile,
+    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    setState(() => _profiles = next);
+  }
+
+  void _removeProfile(String profileId) {
+    setState(() {
+      _profiles = _profiles
+          .where((profile) => profile.id != profileId)
+          .toList();
+    });
   }
 
   Future<void> _loadArchivedAssignments() async {
@@ -518,6 +560,65 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     }
   }
 
+  Future<void> _openProfilesSheet(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: colorScheme.bgNavbarSurface,
+      builder: (context) => SafeArea(
+        top: false,
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.74,
+          minChildSize: 0.52,
+          maxChildSize: 0.94,
+          builder: (context, _) => Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        loc.shiftProfile,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Card(
+                    margin: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: ShiftProfileManager(
+                        profiles: _profiles,
+                        isOwner: _canManageAnyTeam,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -549,15 +650,38 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
             if (state is ShiftProfilesLoaded) {
               setState(() => _profiles = state.profiles);
             }
+            if (state is ShiftProfileCreated) {
+              _upsertProfile(state.profile);
+            }
+            if (state is ShiftProfileUpdated) {
+              _upsertProfile(state.profile);
+            }
+            if (state is ShiftProfileDeleted) {
+              _removeProfile(state.profileId);
+            }
             if (state is ShiftAssignmentsLoaded) {
               setState(() => _assignments = state.assignments);
               // Open the specific shift if we arrived here via a notification tap
               _tryConsumeShiftOpenIntent(context);
             }
-            if (state is ShiftAssigned ||
-                state is ShiftAssignmentUpdated ||
-                state is ShiftAssignmentDeleted) {
-              _loadAssignments();
+            if (state is ShiftAssigned) {
+              if (state.assignment.isPublic &&
+                  state.assignment.teamShiftGroupId != null) {
+                _loadAssignments();
+              } else {
+                _upsertAssignment(state.assignment);
+              }
+            }
+            if (state is ShiftAssignmentUpdated) {
+              if (state.assignment.isPublic &&
+                  state.assignment.teamShiftGroupId != null) {
+                _loadAssignments();
+              } else {
+                _upsertAssignment(state.assignment);
+              }
+            }
+            if (state is ShiftAssignmentDeleted) {
+              _removeAssignment(state.assignmentId);
             }
             if (state is ShiftError) {
               AppSnackBar.showError(context, state.message);
@@ -610,8 +734,16 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                     context,
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
+                const Spacer(),
+                IconButton.outlined(
+                  tooltip: _isItalian(context)
+                      ? 'Profili turno'
+                      : 'Shift profiles',
+                  onPressed: () => _openProfilesSheet(context),
+                  icon: const Icon(Icons.palette_outlined, size: 18),
+                ),
                 if (_canManageAnyTeam) ...[
-                  const Spacer(),
+                  const SizedBox(width: 6),
                   Icon(
                     Icons.admin_panel_settings_outlined,
                     size: 16,

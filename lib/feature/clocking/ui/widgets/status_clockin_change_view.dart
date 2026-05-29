@@ -5,14 +5,21 @@ import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_entity.dart';
+import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
+import 'package:note_sondage/feature/clocking/ui/utils/clocking_access_resolver.dart';
 import 'package:note_sondage/feature/clocking/ui/utils/clocking_pdf_export_service.dart';
+import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
+import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class StatusClockInChangeView extends StatefulWidget {
@@ -20,10 +27,12 @@ class StatusClockInChangeView extends StatefulWidget {
     super.key,
     this.isMobile = false,
     this.selectedTeamId,
+    this.selectedDate,
   });
 
   final bool isMobile;
   final String? selectedTeamId;
+  final DateTime? selectedDate;
 
   @override
   State<StatusClockInChangeView> createState() =>
@@ -32,20 +41,34 @@ class StatusClockInChangeView extends StatefulWidget {
 
 class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   final UserArchiveService _archiveService = getIt<UserArchiveService>();
+  final TeamMemberUseCase _teamMemberUseCase = getIt<TeamMemberUseCase>();
+  final RoleUseCase _roleUseCase = getIt<RoleUseCase>();
+  final ClockingUseCase _clockingUseCase = getIt<ClockingUseCase>();
   late final TextEditingController _searchController;
   DateTime? _selectedDateFilter;
+  String? _selectedUserIdFilter;
   final Set<ClockingStatus> _selectedStatusFilters = <ClockingStatus>{};
   Set<String> _archivedRecordIds = <String>{};
   bool _showArchivedOnly = false;
+  bool _canManageClocking = false;
+  String? _resolvedTeamId;
 
   @override
   void initState() {
     super.initState();
+    _selectedDateFilter = widget.selectedDate == null
+        ? null
+        : DateTime(
+            widget.selectedDate!.year,
+            widget.selectedDate!.month,
+            widget.selectedDate!.day,
+          );
     _searchController = TextEditingController();
     _searchController.addListener(() {
       if (mounted) setState(() {});
     });
     _loadArchivedRecords();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncClockingAccess());
   }
 
   @override
@@ -55,6 +78,28 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   }
 
   String get _currentUserId => context.read<AuthBloc>().state.user.uid;
+  String get _currentUserEmail => context.read<AuthBloc>().state.user.email;
+
+  @override
+  void didUpdateWidget(covariant StatusClockInChangeView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedTeamId != widget.selectedTeamId) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _syncClockingAccess(),
+      );
+    }
+    if (!_isSameDayOrNull(oldWidget.selectedDate, widget.selectedDate)) {
+      setState(() {
+        _selectedDateFilter = widget.selectedDate == null
+            ? null
+            : DateTime(
+                widget.selectedDate!.year,
+                widget.selectedDate!.month,
+                widget.selectedDate!.day,
+              );
+      });
+    }
+  }
 
   Future<void> _loadArchivedRecords() async {
     final archived = await _archiveService.loadArchivedIds(
@@ -76,6 +121,50 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       itemId: recordId,
     );
     await _loadArchivedRecords();
+  }
+
+  Future<void> _syncClockingAccess() async {
+    final teamId = widget.selectedTeamId;
+    if (!mounted) {
+      return;
+    }
+    if (teamId == null || teamId.isEmpty) {
+      if (_canManageClocking || _resolvedTeamId != null) {
+        setState(() {
+          _canManageClocking = false;
+          _resolvedTeamId = null;
+        });
+      }
+      return;
+    }
+
+    final teamState = context.read<TeamBloc>().state;
+    TeamEntity? team;
+    if (teamState is TeamsLoaded) {
+      team = teamState.teams.cast<TeamEntity?>().firstWhere(
+        (item) => item?.id == teamId,
+        orElse: () => null,
+      );
+    }
+
+    bool nextCanManage = false;
+    try {
+      nextCanManage = await ClockingAccessResolver.canManageClocking(
+        team: team,
+        currentUserId: _currentUserId,
+        currentUserEmail: _currentUserEmail,
+        teamMemberUseCase: _teamMemberUseCase,
+        roleUseCase: _roleUseCase,
+      );
+    } catch (_) {}
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _canManageClocking = nextCanManage;
+      _resolvedTeamId = teamId;
+    });
   }
 
   @override
@@ -108,6 +197,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
             clockingState,
             showingPersonalHistory: showingPersonalHistory,
           );
+          final availableUsers = _availableUsers(records);
           final filteredRecords = _filterRecords(records);
           final foregroundRecords = filteredRecords
               .where((record) => !_archivedRecordIds.contains(record.id))
@@ -124,41 +214,143 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           final isOwner =
               authState.user.isNotEmpty &&
               selectedTeam?.createdByUserId == authState.user.uid;
+          final canManageClocking =
+              !showingPersonalHistory && _canManageClocking;
 
           final col = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Text(
+                showingPersonalHistory
+                    ? localization.clockingInOut
+                    : localization.teamClockings,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.iconLabel,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
                 children: [
-                  Expanded(
-                    child: Text(
-                      showingPersonalHistory
-                          ? localization.clockingInOut
-                          : localization.teamClockings,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.iconLabel,
+                  SizedBox(
+                    width: widget.isMobile
+                        ? double.infinity
+                        : null,
+                    child: IntrinsicWidth(
+                      child: CustomAppButton(
+                        onPressed: displayedRecords.isNotEmpty
+                            ? () => _exportPdf(displayedRecords, selectedTeam)
+                            : null,
+                        type: ButtonType.outlined,
+                        isActive: true,
+                        fullWidth: widget.isMobile,
+                        leadingIcon: const Icon(Icons.download_rounded),
+                        child: Text(
+                          localization.downloadPdf,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  OutlinedButton.icon(
-                    onPressed: displayedRecords.isNotEmpty
-                        ? () => _exportPdf(displayedRecords, selectedTeam)
-                        : null,
-                    icon: const Icon(Icons.download_rounded),
-                    label: Text(localization.downloadPdf),
-                  ),
+                  if (!showingPersonalHistory) ...[
+                    IntrinsicWidth(
+                      child: CustomAppButton(
+                        onPressed:
+                            widget.selectedTeamId == null ||
+                                !canManageClocking
+                            ? null
+                            : _assignVacationToTeamMember,
+                        type: ButtonType.outlined,
+                        isActive: true,
+                        fullWidth: false,
+                        leadingIcon: const Icon(Icons.beach_access_rounded),
+                        child: Text(
+                          localization.markVacation,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                    IntrinsicWidth(
+                      child: CustomAppButton(
+                        onPressed:
+                            widget.selectedTeamId == null ||
+                                canManageClocking
+                            ? null
+                            : _requestClockingForTeamMember,
+                        type: ButtonType.outlined,
+                        isActive: true,
+                        fullWidth: false,
+                        leadingIcon: const Icon(Icons.notification_add_rounded),
+                        child: Text(
+                          localization.requestClocking,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                    IntrinsicWidth(
+                      child: CustomAppButton(
+                        onPressed:
+                            widget.selectedTeamId == null
+                            ? null
+                            : canManageClocking
+                            ? _assignPermissionToTeamMember
+                            : _requestPermissionForSelf,
+                        type: ButtonType.outlined,
+                        isActive: true,
+                        fullWidth: false,
+                        leadingIcon: const Icon(Icons.schedule_rounded),
+                        child: Text(
+                          canManageClocking
+                              ? localization.permission
+                              : localization.requestPermission,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (!canManageClocking)
+                      IntrinsicWidth(
+                        child: CustomAppButton(
+                          onPressed:
+                              widget.selectedTeamId == null
+                              ? null
+                              : _requestVacationForSelf,
+                          type: ButtonType.outlined,
+                          isActive: true,
+                          fullWidth: false,
+                          leadingIcon: const Icon(Icons.beach_access_rounded),
+                          child: Text(
+                            localization.requestVacation,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
               ),
               const SizedBox(height: 6),
               if (!showingPersonalHistory)
                 Text(
-                  localization.clockingOwnerHint,
+                  canManageClocking
+                      ? localization.clockingOwnerHint
+                      : localization.clockingApprovalRequestHint,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
                   ),
                 ),
+              if (!showingPersonalHistory && widget.isMobile) ...[],
               const SizedBox(height: 16),
               ArchiveViewToggle(
                 showArchivedOnly: _showArchivedOnly,
@@ -182,14 +374,22 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                         _buildDateFilterButton(theme, dateFilterLabel),
                         const SizedBox(height: 12),
                         _buildStatusFilters(theme),
+                        if (!showingPersonalHistory) ...[
+                          const SizedBox(height: 12),
+                          _buildUserFilterButton(theme, availableUsers),
+                        ],
                         if (_hasActiveFilters) ...[
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerRight,
-                            child: TextButton.icon(
+                            child: CustomAppButton(
                               onPressed: _clearFilters,
-                              icon: const Icon(Icons.restart_alt_rounded),
-                              label: Text(localization.resetFilters),
+                              type: ButtonType.text,
+                              isActive: false,
+                              leadingIcon: const Icon(
+                                Icons.restart_alt_rounded,
+                              ),
+                              child: Text(localization.resetFilters),
                             ),
                           ),
                         ],
@@ -214,12 +414,24 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                         ),
                         const SizedBox(width: 16),
                         Expanded(flex: 3, child: _buildStatusFilters(theme)),
+                        if (!showingPersonalHistory) ...[
+                          const SizedBox(width: 16),
+                          Expanded(
+                            flex: 3,
+                            child: _buildUserFilterButton(
+                              theme,
+                              availableUsers,
+                            ),
+                          ),
+                        ],
                         if (_hasActiveFilters) ...[
                           const SizedBox(width: 16),
-                          TextButton.icon(
+                          CustomAppButton(
                             onPressed: _clearFilters,
-                            icon: const Icon(Icons.restart_alt_rounded),
-                            label: Text(localization.reset),
+                            type: ButtonType.text,
+                            isActive: false,
+                            leadingIcon: const Icon(Icons.restart_alt_rounded),
+                            child: Text(localization.reset),
                           ),
                         ],
                       ],
@@ -273,15 +485,12 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                 ),
             ],
           );
-          return widget.isMobile ? col : SingleChildScrollView(child: col);
+          return col;
         },
       ),
     );
 
-    if (widget.isMobile) {
-      return content;
-    }
-    return Expanded(child: content);
+    return content;
   }
 
   List<ClockingRecordEntity> _extractVisibleRecords(
@@ -325,6 +534,12 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           .toList();
     }
 
+    if (_selectedUserIdFilter != null && _selectedUserIdFilter!.isNotEmpty) {
+      filtered = filtered
+          .where((record) => record.userId == _selectedUserIdFilter)
+          .toList();
+    }
+
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return filtered;
 
@@ -336,22 +551,45 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     }).toList();
   }
 
+  List<_ClockingUserFilterOption> _availableUsers(
+    List<ClockingRecordEntity> records,
+  ) {
+    final mapped = <String, _ClockingUserFilterOption>{};
+    for (final record in records) {
+      final userId = record.userId.trim();
+      if (userId.isEmpty) continue;
+      mapped[userId] = _ClockingUserFilterOption(
+        userId: userId,
+        label: record.userName.trim().isNotEmpty ? record.userName : userId,
+      );
+    }
+    final values = mapped.values.toList()
+      ..sort(
+        (left, right) =>
+            left.label.toLowerCase().compareTo(right.label.toLowerCase()),
+      );
+    return values;
+  }
+
   Widget _buildDateFilterButton(ThemeData theme, String label) {
-    return OutlinedButton.icon(
+    return CustomAppButton(
       onPressed: _selectDateFilter,
-      icon: const Icon(Icons.calendar_month_rounded),
-      label: Text(
-        label,
-        overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w600,
+      type: ButtonType.outlined,
+      isActive: true,
+      fullWidth: true,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      leadingIcon: const Icon(Icons.calendar_month_rounded),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          label,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-        alignment: Alignment.centerLeft,
-        minimumSize: const Size.fromHeight(54),
-      ),
+      minHeight: 54,
     );
   }
 
@@ -371,7 +609,54 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           ClockingStatus.decommitted,
           localization.decommitted,
         ),
+        _statusFilterChip(
+          theme,
+          ClockingStatus.vacation,
+          localization.vacationStatus,
+        ),
+        _statusFilterChip(
+          theme,
+          ClockingStatus.permission,
+          localization.permission,
+        ),
       ],
+    );
+  }
+
+  Widget _buildUserFilterButton(
+    ThemeData theme,
+    List<_ClockingUserFilterOption> availableUsers,
+  ) {
+    final localization = AppLocalizations.of(context)!;
+    String selectedLabel = localization.allUsers;
+    if (_selectedUserIdFilter != null) {
+      for (final option in availableUsers) {
+        if (option.userId == _selectedUserIdFilter) {
+          selectedLabel = option.label;
+          break;
+        }
+      }
+    }
+    return CustomAppButton(
+      onPressed: availableUsers.isEmpty
+          ? null
+          : () => _selectUserFilter(availableUsers),
+      type: ButtonType.outlined,
+      isActive: true,
+      fullWidth: true,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      leadingIcon: const Icon(Icons.person_search_rounded),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          selectedLabel,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      minHeight: 54,
     );
   }
 
@@ -400,7 +685,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   }
 
   bool get _hasActiveFilters =>
-      _selectedDateFilter != null || _selectedStatusFilters.isNotEmpty;
+      _selectedDateFilter != null ||
+      _selectedUserIdFilter != null ||
+      _selectedStatusFilters.isNotEmpty;
 
   Future<void> _selectDateFilter() async {
     final picked = await showDatePicker(
@@ -413,9 +700,88 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     setState(() => _selectedDateFilter = picked);
   }
 
+  Future<void> _selectUserFilter(
+    List<_ClockingUserFilterOption> availableUsers,
+  ) async {
+    final selectedUserId = await showModalBottomSheet<String?>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: () => Navigator.of(sheetContext).pop(''),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.group_rounded, size: 20),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          AppLocalizations.of(sheetContext)!.allUsers,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              SizedBox(
+                height: 320,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: availableUsers
+                      .map(
+                        (option) => InkWell(
+                          onTap: () =>
+                              Navigator.of(sheetContext).pop(option.userId),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    option.label,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted || selectedUserId == null) return;
+    setState(() {
+      _selectedUserIdFilter = selectedUserId.isEmpty ? null : selectedUserId;
+    });
+  }
+
   void _clearFilters() {
     setState(() {
       _selectedDateFilter = null;
+      _selectedUserIdFilter = null;
       _selectedStatusFilters.clear();
     });
   }
@@ -424,6 +790,16 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     return left.year == right.year &&
         left.month == right.month &&
         left.day == right.day;
+  }
+
+  bool _isSameDayOrNull(DateTime? left, DateTime? right) {
+    if (left == null && right == null) {
+      return true;
+    }
+    if (left == null || right == null) {
+      return false;
+    }
+    return _isSameDay(left, right);
   }
 
   void _decommitRecord(ClockingRecordEntity record) {
@@ -458,15 +834,15 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
               children: [
                 TextField(
                   controller: clockInController,
-                  decoration: const InputDecoration(
-                    labelText: 'Clock-in (YYYY-MM-DD HH:MM)',
+                  decoration: InputDecoration(
+                    labelText: loc.clockInDateTimeLabel,
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: clockOutController,
-                  decoration: const InputDecoration(
-                    labelText: 'Clock-out (YYYY-MM-DD HH:MM)',
+                  decoration: InputDecoration(
+                    labelText: loc.clockOutDateTimeLabel,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -485,12 +861,16 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
             ),
           ),
           actions: [
-            TextButton(
+            CustomAppButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
+              type: ButtonType.text,
+              isActive: false,
               child: Text(loc.cancel),
             ),
-            FilledButton(
+            CustomAppButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
+              type: ButtonType.filled,
+              isActive: true,
               child: Text(loc.save),
             ),
           ],
@@ -545,6 +925,554 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       return;
     }
     AppSnackBar.showWarning(context, message);
+  }
+
+  Future<void> _assignVacationToTeamMember() async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      _showSnackBar(localization.selectTeamFirst, Colors.orange);
+      return;
+    }
+
+    List<TeamMemberEntity> members;
+    try {
+      members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(e.toString(), Colors.red);
+      return;
+    }
+
+    final assignableMembers =
+        members
+            .where(
+              (member) =>
+                  member.userId != null && member.userId!.trim().isNotEmpty,
+            )
+            .map(
+              (member) => _ClockingAssignableMember(
+                userId: member.userId!.trim(),
+                label: member.initialName?.trim().isNotEmpty == true
+                    ? member.initialName!.trim()
+                    : member.userEmail,
+                email: member.userEmail,
+              ),
+            )
+            .toList()
+          ..sort(
+            (left, right) =>
+                left.label.toLowerCase().compareTo(right.label.toLowerCase()),
+          );
+
+    if (assignableMembers.isEmpty) {
+      _showSnackBar(localization.noAssignableMembersForTeam, Colors.orange);
+      return;
+    }
+
+    final selectedUser = ValueNotifier<String>(assignableMembers.first.userId);
+    final selectedDate = ValueNotifier<DateTime>(
+      DateTime(
+        (widget.selectedDate ?? DateTime.now()).year,
+        (widget.selectedDate ?? DateTime.now()).month,
+        (widget.selectedDate ?? DateTime.now()).day,
+      ),
+    );
+    final noteController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(localization.assignVacationToMember),
+          content: StatefulBuilder(
+            builder: (dialogContext, setDialogState) {
+              final activeMember = assignableMembers.firstWhere(
+                (member) => member.userId == selectedUser.value,
+                orElse: () => assignableMembers.first,
+              );
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedUser.value,
+                      decoration: InputDecoration(
+                        labelText: localization.userLabel,
+                      ),
+                      items: assignableMembers
+                          .map(
+                            (member) => DropdownMenuItem<String>(
+                              value: member.userId,
+                              child: Text('${member.label} (${member.email})'),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setDialogState(() => selectedUser.value = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    CustomAppButton(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: dialogContext,
+                          initialDate: selectedDate.value,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked == null) return;
+                        setDialogState(() => selectedDate.value = picked);
+                      },
+                      type: ButtonType.outlined,
+                      isActive: true,
+                      fullWidth: true,
+                      leadingIcon: const Icon(Icons.calendar_month_rounded),
+                      child: Text(
+                        DateFormat('dd/MM/yyyy').format(selectedDate.value),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: noteController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        labelText: localization.note,
+                        hintText: localization.optionalNoteFor(
+                          activeMember.label,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          actions: [
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              type: ButtonType.text,
+              isActive: false,
+              child: Text(localization.cancel),
+            ),
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              type: ButtonType.filled,
+              isActive: true,
+              child: Text(localization.confirm),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+    context.read<ClockingBloc>().add(
+      MarkVacationEvent(
+        teamId: teamId,
+        targetUserId: selectedUser.value,
+        date: selectedDate.value,
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> _requestClockingForTeamMember() async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      _showSnackBar(localization.selectTeamFirst, Colors.orange);
+      return;
+    }
+    final noteController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(localization.requestClocking),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localization.requestClockingForSelectedDate(
+                    DateFormat(
+                      'dd/MM/yyyy',
+                    ).format(widget.selectedDate ?? DateTime.now()),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: localization.note,
+                    hintText: localization.optionalRequestNoteHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              type: ButtonType.text,
+              isActive: false,
+              child: Text(localization.cancel),
+            ),
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              type: ButtonType.filled,
+              isActive: true,
+              child: Text(localization.sendRequest),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _clockingUseCase.requestTeamMemberClocking(
+        teamId: teamId,
+        targetUserId: _currentUserId,
+        date: widget.selectedDate ?? DateTime.now(),
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
+      );
+      if (!mounted) return;
+      AppSnackBar.showSuccess(context, localization.clockingRequestSentSuccess);
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: localization.clockingRequestSentError,
+      );
+    }
+  }
+
+  Future<void> _requestVacationForSelf() async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      _showSnackBar(localization.selectTeamFirst, Colors.orange);
+      return;
+    }
+
+    final noteController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(localization.requestVacation),
+        content: TextField(
+          controller: noteController,
+          maxLines: 4,
+          decoration: InputDecoration(
+            labelText: localization.note,
+            hintText: localization.optionalRequestNoteHint,
+          ),
+        ),
+        actions: [
+          CustomAppButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            type: ButtonType.text,
+            isActive: false,
+            child: Text(localization.cancel),
+          ),
+          CustomAppButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            type: ButtonType.filled,
+            isActive: true,
+            child: Text(localization.sendRequest),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    try {
+      await _clockingUseCase.requestVacation(
+        teamId: teamId,
+        date: widget.selectedDate ?? DateTime.now(),
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
+      );
+      if (!mounted) return;
+      AppSnackBar.showSuccess(context, localization.vacationRequestSentSuccess);
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: localization.vacationRequestSentError,
+      );
+    }
+  }
+
+  Future<void> _requestPermissionForSelf() async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      _showSnackBar(localization.selectTeamFirst, Colors.orange);
+      return;
+    }
+
+    final window = await _showPermissionDialog(
+      title: localization.requestPermission,
+    );
+    if (window == null || !mounted) return;
+
+    try {
+      await _clockingUseCase.requestPermission(
+        teamId: teamId,
+        date: widget.selectedDate ?? DateTime.now(),
+        startTime: window.startTime,
+        endTime: window.endTime,
+        note: window.note,
+      );
+      if (!mounted) return;
+      AppSnackBar.showSuccess(
+        context,
+        localization.permissionRequestSentSuccess,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: localization.permissionRequestSentError,
+      );
+    }
+  }
+
+  Future<void> _assignPermissionToTeamMember() async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      _showSnackBar(localization.selectTeamFirst, Colors.orange);
+      return;
+    }
+
+    List<TeamMemberEntity> members;
+    try {
+      members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(e.toString(), Colors.red);
+      return;
+    }
+
+    final assignableMembers =
+        members
+            .where(
+              (member) =>
+                  member.userId != null && member.userId!.trim().isNotEmpty,
+            )
+            .map(
+              (member) => _ClockingAssignableMember(
+                userId: member.userId!.trim(),
+                label: member.initialName?.trim().isNotEmpty == true
+                    ? member.initialName!.trim()
+                    : member.userEmail,
+                email: member.userEmail,
+              ),
+            )
+            .toList()
+          ..sort(
+            (left, right) =>
+                left.label.toLowerCase().compareTo(right.label.toLowerCase()),
+          );
+    if (assignableMembers.isEmpty) {
+      _showSnackBar(localization.noAssignableMembersForTeam, Colors.orange);
+      return;
+    }
+
+    final selectedUser = ValueNotifier<String>(assignableMembers.first.userId);
+    final selectedDate = ValueNotifier<DateTime>(
+      DateTime(
+        (widget.selectedDate ?? DateTime.now()).year,
+        (widget.selectedDate ?? DateTime.now()).month,
+        (widget.selectedDate ?? DateTime.now()).day,
+      ),
+    );
+    final window = await _showPermissionDialog(
+      title: localization.permission,
+      builderPrefix: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedUser.value,
+                decoration: InputDecoration(labelText: localization.userLabel),
+                items: assignableMembers
+                    .map(
+                      (member) => DropdownMenuItem<String>(
+                        value: member.userId,
+                        child: Text('${member.label} (${member.email})'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => selectedUser.value = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              CustomAppButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: dialogContext,
+                    initialDate: selectedDate.value,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked == null) return;
+                  setDialogState(() => selectedDate.value = picked);
+                },
+                type: ButtonType.outlined,
+                isActive: true,
+                fullWidth: true,
+                leadingIcon: const Icon(Icons.calendar_month_rounded),
+                child: Text(
+                  DateFormat('dd/MM/yyyy').format(selectedDate.value),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          );
+        },
+      ),
+    );
+    if (window == null || !mounted) return;
+
+    context.read<ClockingBloc>().add(
+      MarkPermissionEvent(
+        teamId: teamId,
+        targetUserId: selectedUser.value,
+        date: selectedDate.value,
+        startTime: window.startTime,
+        endTime: window.endTime,
+        note: window.note,
+      ),
+    );
+  }
+
+  Future<_PermissionDialogResult?> _showPermissionDialog({
+    required String title,
+    Widget Function(BuildContext dialogContext)? builderPrefix,
+  }) async {
+    final localization = AppLocalizations.of(context)!;
+    TimeOfDay start = const TimeOfDay(hour: 12, minute: 0);
+    TimeOfDay end = const TimeOfDay(hour: 14, minute: 0);
+    final noteController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (builderPrefix != null) builderPrefix(dialogContext),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomAppButton(
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: dialogContext,
+                            initialTime: start,
+                          );
+                          if (picked == null) return;
+                          setDialogState(() => start = picked);
+                        },
+                        type: ButtonType.outlined,
+                        isActive: true,
+                        fullWidth: true,
+                        child: Text(
+                          '${localization.start}: ${start.format(dialogContext)}',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomAppButton(
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: dialogContext,
+                            initialTime: end,
+                          );
+                          if (picked == null) return;
+                          setDialogState(() => end = picked);
+                        },
+                        type: ButtonType.outlined,
+                        isActive: true,
+                        fullWidth: true,
+                        child: Text(
+                          '${localization.end}: ${end.format(dialogContext)}',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: localization.note,
+                    hintText: localization.optionalRequestNoteHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              type: ButtonType.text,
+              isActive: false,
+              child: Text(localization.cancel),
+            ),
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              type: ButtonType.filled,
+              isActive: true,
+              child: Text(localization.save),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true) {
+      return null;
+    }
+
+    final startMinutes = (start.hour * 60) + start.minute;
+    final endMinutes = (end.hour * 60) + end.minute;
+    if (endMinutes <= startMinutes) {
+      AppSnackBar.showWarning(context, localization.permissionInvalidRange);
+      return null;
+    }
+
+    return _PermissionDialogResult(
+      startTime:
+          '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}:00',
+      endTime:
+          '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}:00',
+      note: noteController.text.trim().isEmpty
+          ? null
+          : noteController.text.trim(),
+    );
   }
 
   Future<void> _exportPdf(
@@ -625,68 +1553,96 @@ class _WebRecordRow extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(flex: 2, child: _RecordSummary(record: record)),
-          Expanded(
-            child: _RecordTimeColumn(
-              label: 'Date',
-              value: DateFormat('dd/MM/yyyy').format(record.date),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useStackedLayout =
+            !constraints.hasBoundedWidth || constraints.maxWidth < 1180;
+
+        if (useStackedLayout) {
+          return _MobileRecordCard(
+            record: record,
+            isOwner: isOwner,
+            isArchived: isArchived,
+            onDecommit: onDecommit,
+            onCommit: onCommit,
+            onEdit: onEdit,
+            onArchive: onArchive,
+          );
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
           ),
-          Expanded(
-            child: _RecordTimeColumn(
-              label: 'Clock-in',
-              value: record.clockInFormatted,
-            ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 2, child: _RecordSummary(record: record)),
+              Expanded(
+                child: _RecordTimeColumn(
+                  label: 'Date',
+                  value: DateFormat('dd/MM/yyyy').format(record.date),
+                ),
+              ),
+              Expanded(
+                child: _RecordTimeColumn(
+                  label: 'Clock-in',
+                  value: record.clockInFormatted,
+                ),
+              ),
+              Expanded(
+                child: _RecordTimeColumn(
+                  label: 'Clock-out',
+                  value: record.clockOutFormatted,
+                ),
+              ),
+              Expanded(
+                child: _RecordTimeColumn(
+                  label: 'Worked',
+                  value: record.timeWorkedFormatted,
+                ),
+              ),
+              if (record.note != null && record.note!.trim().isNotEmpty)
+                Expanded(
+                  child: _RecordTimeColumn(
+                    label: AppLocalizations.of(context)!.note,
+                    value: record.note!.trim(),
+                  ),
+                ),
+              Expanded(
+                child: _RecordTimeColumn(
+                  label: 'Break',
+                  value: record.breakWorkedFormatted,
+                ),
+              ),
+              SizedBox(
+                width: 210,
+                child: _OwnerActions(
+                  record: record,
+                  isOwner: isOwner,
+                  onDecommit: onDecommit,
+                  onCommit: onCommit,
+                  onEdit: onEdit,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
+                onPressed: onArchive,
+                icon: Icon(
+                  isArchived
+                      ? Icons.unarchive_outlined
+                      : Icons.archive_outlined,
+                  color: Colors.blueGrey,
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            child: _RecordTimeColumn(
-              label: 'Clock-out',
-              value: record.clockOutFormatted,
-            ),
-          ),
-          Expanded(
-            child: _RecordTimeColumn(
-              label: 'Worked',
-              value: record.timeWorkedFormatted,
-            ),
-          ),
-          Expanded(
-            child: _RecordTimeColumn(
-              label: 'Break',
-              value: record.breakWorkedFormatted,
-            ),
-          ),
-          SizedBox(
-            width: 210,
-            child: _OwnerActions(
-              record: record,
-              isOwner: isOwner,
-              onDecommit: onDecommit,
-              onCommit: onCommit,
-              onEdit: onEdit,
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
-            onPressed: onArchive,
-            icon: Icon(
-              isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
-              color: Colors.blueGrey,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -752,6 +1708,11 @@ class _MobileRecordCard extends StatelessWidget {
               _MiniInfo(label: 'Clock-in', value: record.clockInFormatted),
               _MiniInfo(label: 'Clock-out', value: record.clockOutFormatted),
               _MiniInfo(label: 'Worked', value: record.timeWorkedFormatted),
+              if (record.note != null && record.note!.trim().isNotEmpty)
+                _MiniInfo(
+                  label: AppLocalizations.of(context)!.note,
+                  value: record.note!.trim(),
+                ),
               _MiniInfo(label: 'Break', value: record.breakWorkedFormatted),
             ],
           ),
@@ -875,11 +1836,26 @@ class _OwnerActions extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final buttons = <Widget>[
       if (record.canDecommit)
-        OutlinedButton(onPressed: onDecommit, child: Text(loc.decommit)),
+        CustomAppButton(
+          onPressed: onDecommit,
+          type: ButtonType.outlined,
+          isActive: true,
+          child: Text(loc.decommit),
+        ),
       if (record.canCommit)
-        FilledButton.tonal(onPressed: onCommit, child: Text(loc.commit)),
+        CustomAppButton(
+          onPressed: onCommit,
+          type: ButtonType.filledTonal,
+          isActive: true,
+          child: Text(loc.commit),
+        ),
       if (record.ownerEditable)
-        FilledButton(onPressed: onEdit, child: Text(loc.editAction)),
+        CustomAppButton(
+          onPressed: onEdit,
+          type: ButtonType.filled,
+          isActive: true,
+          child: Text(loc.editAction),
+        ),
     ];
 
     if (buttons.isEmpty) {
@@ -1003,11 +1979,46 @@ Color _statusColor(ClockingStatus status) {
       return Colors.blue;
     case ClockingStatus.decommitted:
       return Colors.deepPurple;
+    case ClockingStatus.vacation:
+      return Colors.teal;
+    case ClockingStatus.permission:
+      return Colors.indigo;
     case ClockingStatus.absent:
       return Colors.grey;
     case ClockingStatus.late:
       return Colors.red;
   }
+}
+
+class _ClockingUserFilterOption {
+  const _ClockingUserFilterOption({required this.userId, required this.label});
+
+  final String userId;
+  final String label;
+}
+
+class _ClockingAssignableMember {
+  const _ClockingAssignableMember({
+    required this.userId,
+    required this.label,
+    required this.email,
+  });
+
+  final String userId;
+  final String label;
+  final String email;
+}
+
+class _PermissionDialogResult {
+  const _PermissionDialogResult({
+    required this.startTime,
+    required this.endTime,
+    this.note,
+  });
+
+  final String startTime;
+  final String endTime;
+  final String? note;
 }
 
 String _initials(String name) {

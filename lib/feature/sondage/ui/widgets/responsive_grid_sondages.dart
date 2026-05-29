@@ -16,12 +16,14 @@ class ResponsiveGridSondages extends StatefulWidget {
     required this.isRow,
     required this.onDeleteTap,
     required this.onEditTap,
+    this.shrinkWrapLayout = false,
   });
 
   final List<SondageEntity> items;
   final bool isRow;
   final ValueChanged<String> onDeleteTap;
   final ValueChanged<SondageEntity> onEditTap;
+  final bool shrinkWrapLayout;
 
   @override
   State<ResponsiveGridSondages> createState() => _ResponsiveGridSondagesState();
@@ -79,6 +81,42 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
         .toList();
     final displayedItems = _showArchivedOnly ? archivedItems : foregroundItems;
 
+    final content = displayedItems.isEmpty
+        ? Center(
+            child: Text(
+              _showArchivedOnly
+                  ? 'Nessun sondaggio archiviato.'
+                  : 'Nessun sondaggio in primo piano.',
+            ),
+          )
+        : (widget.isRow
+              ? _buildGridView(displayedItems)
+              : _buildListView(displayedItems));
+
+    if (widget.shrinkWrapLayout) {
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ArchiveViewToggle(
+                showArchivedOnly: _showArchivedOnly,
+                primaryCount: foregroundItems.length,
+                archivedCount: archivedItems.length,
+                onChanged: (value) {
+                  setState(() => _showArchivedOnly = value);
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            content,
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
@@ -95,19 +133,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
             ),
           ),
           const SizedBox(height: 12),
-          Expanded(
-            child: displayedItems.isEmpty
-                ? Center(
-                    child: Text(
-                      _showArchivedOnly
-                          ? 'Nessun sondaggio archiviato.'
-                          : 'Nessun sondaggio in primo piano.',
-                    ),
-                  )
-                : (widget.isRow
-                      ? _buildGridView(displayedItems)
-                      : _buildListView(displayedItems)),
-          ),
+          Expanded(child: content),
         ],
       ),
     );
@@ -115,6 +141,10 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
 
   Widget _buildGridView(List<SondageEntity> items) {
     return GridView.builder(
+      shrinkWrap: widget.shrinkWrapLayout,
+      physics: widget.shrinkWrapLayout
+          ? const NeverScrollableScrollPhysics()
+          : null,
       padding: EdgeInsets.zero,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 340,
@@ -160,6 +190,10 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
 
   Widget _buildListView(List<SondageEntity> items) {
     return ListView.separated(
+      shrinkWrap: widget.shrinkWrapLayout,
+      physics: widget.shrinkWrapLayout
+          ? const NeverScrollableScrollPhysics()
+          : null,
       padding: EdgeInsets.zero,
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),

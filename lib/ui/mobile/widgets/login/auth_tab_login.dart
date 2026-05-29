@@ -19,6 +19,7 @@ import 'package:note_sondage/ui/widgets/auth/request_account_reactivation_dialog
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
+import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 import 'package:note_sondage/ui/widgets/sso_login.dart';
 
 class AuthTabLogin extends StatefulWidget {
@@ -104,6 +105,41 @@ class _AuthTabLoginState extends State<AuthTabLogin>
     _registerPasswordController.dispose();
     _registerConfirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _submitLogin() {
+    if (_loginFormKey.currentState?.validate() ?? false) {
+      context.read<AuthBloc>().add(
+        AuthLoginRequested(
+          email: _loginEmailController.text.trim(),
+          password: _loginPasswordController.text,
+        ),
+      );
+    }
+  }
+
+  void _submitRegister() {
+    if (_enableMfaOnRegistration &&
+        _registrationMfaMethod == MfaFactorType.sms &&
+        _registerMfaPhoneController.text.trim().isEmpty) {
+      AppSnackBar.showWarning(
+        context,
+        'Enter a phone number to enable two-factor authentication.',
+        title: 'Phone number required',
+      );
+      return;
+    }
+    if (_registerFormKey.currentState?.validate() ?? false) {
+      context.read<AuthBloc>().add(
+        AuthRegisterRequested(
+          email: _registerEmailController.text.trim(),
+          password: _registerPasswordController.text,
+          displayName: _registerNameController.text.trim(),
+          profileImageBytes: _registerAvatarBytes,
+          profileImageFileName: _registerAvatarFileName,
+        ),
+      );
+    }
   }
 
   Future<void> _pickRegisterAvatar() async {
@@ -294,127 +330,123 @@ class _AuthTabLoginState extends State<AuthTabLogin>
     final colorScheme = Theme.of(context).colorScheme;
 
     final localization = AppLocalizations.of(context)!;
-    return Form(
-      key: _loginFormKey,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(localization.login.toUpperCase()),
-            const SizedBox(height: 10),
-            Text(localization.gladYouAreBack),
-            const SizedBox(height: 24),
-            CustomInputField(
-              key: ValueKey("login_email_field"),
-              hintText: localization.email,
-              controller: _loginEmailController,
-              prefixIcon: Icons.email_outlined,
-              validator: emailValidator,
-            ),
-
-            const SizedBox(height: 24),
-            CustomInputField(
-              key: ValueKey("login_Password_field"),
-              hintText: localization.password,
-              controller: _loginPasswordController,
-              prefixIcon: Icons.lock_outline,
-              isPassword: true,
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: CustomAppButton(
-                type: ButtonType.text,
-                onPressed: () {
-                  if (_loginFormKey.currentState?.validate() ?? false) {
-                    context.read<AuthBloc>().add(
-                      AuthLoginRequested(
-                        email: _loginEmailController.text.trim(),
-                        password: _loginPasswordController.text,
-                      ),
-                    );
-                  }
-                },
-                isActive: true,
-                child: Text(localization.login),
+    return SubmitOnEnterScope(
+      onSubmit: _submitLogin,
+      child: Form(
+        key: _loginFormKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(localization.login.toUpperCase()),
+              const SizedBox(height: 10),
+              Text(localization.gladYouAreBack),
+              const SizedBox(height: 24),
+              CustomInputField(
+                key: ValueKey("login_email_field"),
+                hintText: localization.email,
+                controller: _loginEmailController,
+                prefixIcon: Icons.email_outlined,
+                validator: emailValidator,
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      CustomAppButton(
-                        type: ButtonType.elevated,
-                        backgroundColor: Colors.transparent,
-                        onPressed: () {
-                          context.pushNamed(RouterPaths.forgotPassword);
-                        },
-                        isActive: true,
-                        child: Text(localization.forgotPassword),
-                      ),
-                      CustomAppButton(
-                        type: ButtonType.elevated,
-                        backgroundColor: Colors.transparent,
-                        onPressed: _openAccountDeletionDialog,
-                        isActive: true,
-                        child: Text(localization.deleteAccount),
-                      ),
-                      CustomAppButton(
-                        type: ButtonType.elevated,
-                        backgroundColor: Colors.transparent,
-                        onPressed: _openAccountReactivationDialog,
-                        isActive: true,
-                        child: Text(localization.reactivateAccount),
-                      ),
-                    ],
-                  ),
+
+              const SizedBox(height: 24),
+              CustomInputField(
+                key: ValueKey("login_Password_field"),
+                hintText: localization.password,
+                controller: _loginPasswordController,
+                prefixIcon: Icons.lock_outline,
+                isPassword: true,
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: CustomAppButton(
+                  type: ButtonType.text,
+                  onPressed: _submitLogin,
+                  isActive: true,
+                  child: Text(localization.login),
                 ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Divider(
-                    color: colorScheme.bgborderLogin!,
-                    thickness: 2,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        CustomAppButton(
+                          type: ButtonType.elevated,
+                          backgroundColor: Colors.transparent,
+                          onPressed: () {
+                            context.pushNamed(RouterPaths.forgotPassword);
+                          },
+                          isActive: true,
+                          child: Text(localization.forgotPassword),
+                        ),
+                        CustomAppButton(
+                          type: ButtonType.elevated,
+                          backgroundColor: Colors.transparent,
+                          onPressed: _openAccountDeletionDialog,
+                          isActive: true,
+                          child: Text(localization.deleteAccount),
+                        ),
+                        CustomAppButton(
+                          type: ButtonType.elevated,
+                          backgroundColor: Colors.transparent,
+                          onPressed: _openAccountReactivationDialog,
+                          isActive: true,
+                          child: Text(localization.reactivateAccount),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Text(' Or '),
-                Expanded(
-                  child: Divider(
-                    color: colorScheme.bgborderLogin!,
-                    thickness: 2,
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: colorScheme.bgborderLogin!,
+                      thickness: 2,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SsoLogin(
-              key: ValueKey("google_sso_login_button"),
-              onPressed: () {
-                context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
-              },
-              buttonText: 'Continue with Google',
-            ),
-            const SizedBox(height: 12),
-            SsoLogin(
-              key: const ValueKey("phone_sso_login_button"),
-              onPressed: _startPhoneSignIn,
-              assetPath: null,
-              iconData: Icons.phone_iphone_rounded,
-              buttonText: 'Continue with Phone',
-            ),
-          ],
+                  Text(' Or '),
+                  Expanded(
+                    child: Divider(
+                      color: colorScheme.bgborderLogin!,
+                      thickness: 2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SsoLogin(
+                key: ValueKey("google_sso_login_button"),
+                onPressed: () {
+                  context.read<AuthBloc>().add(
+                    const AuthGoogleSignInRequested(),
+                  );
+                },
+                buttonText: 'Continue with Google',
+              ),
+              const SizedBox(height: 12),
+              SsoLogin(
+                key: const ValueKey("phone_sso_login_button"),
+                onPressed: _startPhoneSignIn,
+                assetPath: null,
+                iconData: Icons.phone_iphone_rounded,
+                buttonText: 'Continue with Phone',
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -423,157 +455,140 @@ class _AuthTabLoginState extends State<AuthTabLogin>
   Widget buildRegisterForm(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final localization = AppLocalizations.of(context)!;
-    return Form(
-      key: _registerFormKey,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(localization.register.toUpperCase()),
-            const SizedBox(height: 10),
-            Text(localization.justSomeInfoToGetStarted),
-            const SizedBox(height: 24),
-            _RegisterAvatarPicker(
-              imageBytes: _registerAvatarBytes,
-              onPickImage: _pickRegisterAvatar,
-              onRemoveImage: _clearRegisterAvatar,
-            ),
-            const SizedBox(height: 16),
-            CustomInputField(
-              key: ValueKey("register_full_name_field"),
-              hintText: localization.fullName,
-              controller: _registerNameController,
-              prefixIcon: Icons.person_outline,
-            ),
-            const SizedBox(height: 16),
-            CustomInputField(
-              key: ValueKey("register_email_field"),
-              hintText: localization.email,
-              controller: _registerEmailController,
-              prefixIcon: Icons.email_outlined,
-              validator: emailValidator,
-            ),
-
-            const SizedBox(height: 16),
-            SwitchListTile.adaptive(
-              value: _enableMfaOnRegistration,
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Enable two-factor authentication'),
-              subtitle: const Text(
-                'Use an authenticator app to protect this account after your first verified sign-in.',
+    return SubmitOnEnterScope(
+      onSubmit: _submitRegister,
+      child: Form(
+        key: _registerFormKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(localization.register.toUpperCase()),
+              const SizedBox(height: 10),
+              Text(localization.justSomeInfoToGetStarted),
+              const SizedBox(height: 24),
+              _RegisterAvatarPicker(
+                imageBytes: _registerAvatarBytes,
+                onPickImage: _pickRegisterAvatar,
+                onRemoveImage: _clearRegisterAvatar,
               ),
-              onChanged: (value) {
-                setState(() {
-                  _enableMfaOnRegistration = value;
-                  if (value) {
-                    _registrationMfaMethod = MfaFactorType.totp;
-                  }
-                  if (!value) {
-                    _registerMfaPhoneController.clear();
-                    _registrationMfaMethod = MfaFactorType.sms;
-                  }
-                });
-              },
-            ),
-            if (_enableMfaOnRegistration) ...[
-              const SizedBox(height: 8),
-              Text(
-                'You will finish setup with Google Authenticator, Authy or another app from your profile after the first verified sign-in.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.descriptionColor,
+              const SizedBox(height: 16),
+              CustomInputField(
+                key: ValueKey("register_full_name_field"),
+                hintText: localization.fullName,
+                controller: _registerNameController,
+                prefixIcon: Icons.person_outline,
+              ),
+              const SizedBox(height: 16),
+              CustomInputField(
+                key: ValueKey("register_email_field"),
+                hintText: localization.email,
+                controller: _registerEmailController,
+                prefixIcon: Icons.email_outlined,
+                validator: emailValidator,
+              ),
+
+              const SizedBox(height: 16),
+              SwitchListTile.adaptive(
+                value: _enableMfaOnRegistration,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Enable two-factor authentication'),
+                subtitle: const Text(
+                  'Use an authenticator app to protect this account after your first verified sign-in.',
                 ),
-              ),
-            ],
-
-            const SizedBox(height: 16),
-            CustomInputField(
-              key: ValueKey("register_password_field"),
-              hintText: localization.password,
-              controller: _registerPasswordController,
-              prefixIcon: Icons.lock_outline,
-              isPassword: true,
-            ),
-
-            const SizedBox(height: 16),
-            CustomInputField(
-              key: ValueKey("register_confirm_password_field"),
-              hintText: localization.confirmPassword,
-              controller: _registerConfirmPasswordController,
-              prefixIcon: Icons.lock_outline,
-              isPassword: true,
-            ),
-
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: CustomAppButton(
-                type: ButtonType.text,
-                key: ValueKey("register_button"),
-                onPressed: () {
-                  if (_enableMfaOnRegistration &&
-                      _registrationMfaMethod == MfaFactorType.sms &&
-                      _registerMfaPhoneController.text.trim().isEmpty) {
-                    AppSnackBar.showWarning(
-                      context,
-                      'Enter a phone number to enable two-factor authentication.',
-                      title: 'Phone number required',
-                    );
-                    return;
-                  }
-                  if (_registerFormKey.currentState?.validate() ?? false) {
-                    context.read<AuthBloc>().add(
-                      AuthRegisterRequested(
-                        email: _registerEmailController.text.trim(),
-                        password: _registerPasswordController.text,
-                        displayName: _registerNameController.text.trim(),
-                        profileImageBytes: _registerAvatarBytes,
-                        profileImageFileName: _registerAvatarFileName,
-                      ),
-                    );
-                  }
+                onChanged: (value) {
+                  setState(() {
+                    _enableMfaOnRegistration = value;
+                    if (value) {
+                      _registrationMfaMethod = MfaFactorType.totp;
+                    }
+                    if (!value) {
+                      _registerMfaPhoneController.clear();
+                      _registrationMfaMethod = MfaFactorType.sms;
+                    }
+                  });
                 },
-                isActive: true,
-                child: Text(localization.register),
               ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Divider(
-                    color: colorScheme.bgborderLogin!,
-                    thickness: 2,
-                  ),
-                ),
-                Text(' Or '),
-                Expanded(
-                  child: Divider(
-                    color: colorScheme.bgborderLogin!,
-                    thickness: 2,
+              if (_enableMfaOnRegistration) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'You will finish setup with Google Authenticator, Authy or another app from your profile after the first verified sign-in.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.descriptionColor,
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            SsoLogin(
-              key: ValueKey("google_sso_register_button"),
-              onPressed: () {
-                context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
-              },
-              buttonText: 'Continue with Google',
-            ),
-            const SizedBox(height: 12),
-            SsoLogin(
-              key: const ValueKey("phone_sso_register_button"),
-              onPressed: _startPhoneSignIn,
-              assetPath: null,
-              iconData: Icons.phone_iphone_rounded,
-              buttonText: 'Continue with Phone',
-            ),
-          ],
+
+              const SizedBox(height: 16),
+              CustomInputField(
+                key: ValueKey("register_password_field"),
+                hintText: localization.password,
+                controller: _registerPasswordController,
+                prefixIcon: Icons.lock_outline,
+                isPassword: true,
+              ),
+
+              const SizedBox(height: 16),
+              CustomInputField(
+                key: ValueKey("register_confirm_password_field"),
+                hintText: localization.confirmPassword,
+                controller: _registerConfirmPasswordController,
+                prefixIcon: Icons.lock_outline,
+                isPassword: true,
+              ),
+
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: CustomAppButton(
+                  type: ButtonType.text,
+                  key: ValueKey("register_button"),
+                  onPressed: _submitRegister,
+                  isActive: true,
+                  child: Text(localization.register),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: colorScheme.bgborderLogin!,
+                      thickness: 2,
+                    ),
+                  ),
+                  Text(' Or '),
+                  Expanded(
+                    child: Divider(
+                      color: colorScheme.bgborderLogin!,
+                      thickness: 2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SsoLogin(
+                key: ValueKey("google_sso_register_button"),
+                onPressed: () {
+                  context.read<AuthBloc>().add(
+                    const AuthGoogleSignInRequested(),
+                  );
+                },
+                buttonText: 'Continue with Google',
+              ),
+              const SizedBox(height: 12),
+              SsoLogin(
+                key: const ValueKey("phone_sso_register_button"),
+                onPressed: _startPhoneSignIn,
+                assetPath: null,
+                iconData: Icons.phone_iphone_rounded,
+                buttonText: 'Continue with Phone',
+              ),
+            ],
+          ),
         ),
       ),
     );

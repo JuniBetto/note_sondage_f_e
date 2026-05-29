@@ -11,6 +11,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
+import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 
 class AddUserWeb extends StatefulWidget {
   const AddUserWeb({super.key, this.teamId, required this.listInviteFormData});
@@ -79,45 +80,48 @@ class _AddUserWebState extends State<AddUserWeb> {
         }
       },
       builder: (context, roleState) {
-        return Form(
-          key: _userFormKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (widget.listInviteFormData.length > 1) ...[
-                Text(localization.userList, style: textTheme.labelMedium),
+        return SubmitOnEnterScope(
+          onSubmit: _addEmptyInvite,
+          child: Form(
+            key: _userFormKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.listInviteFormData.length > 1) ...[
+                  Text(localization.userList, style: textTheme.labelMedium),
+                  const SizedBox(height: 8),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.bgNavbarSurface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: buildInviteList(context, widget.listInviteFormData),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Text('  Add New Member', style: textTheme.labelMedium),
                 const SizedBox(height: 8),
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: colorScheme.bgNavbarSurface,
+                    color: colorScheme.bgDialogSecondary,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: buildInviteList(context, widget.listInviteFormData),
+                  child: Builder(
+                    builder: (context) {
+                      final currentIndex = widget.listInviteFormData.length - 1;
+                      final current = widget.listInviteFormData[currentIndex];
+                      return _buildNewInviteFormWeb(
+                        context,
+                        current,
+                        selectedRoles,
+                        _addEmptyInvite,
+                      );
+                    },
+                  ),
                 ),
-                const SizedBox(height: 16),
               ],
-              Text('  Add New Member', style: textTheme.labelMedium),
-              const SizedBox(height: 8),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.bgDialogSecondary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Builder(
-                  builder: (context) {
-                    final currentIndex = widget.listInviteFormData.length - 1;
-                    final current = widget.listInviteFormData[currentIndex];
-                    return _buildNewInviteFormWeb(
-                      context,
-                      current,
-                      selectedRoles,
-                      _addEmptyInvite,
-                    );
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },

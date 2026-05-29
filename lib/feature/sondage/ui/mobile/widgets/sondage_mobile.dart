@@ -38,7 +38,10 @@ class _SondageMobileState extends State<SondageMobile>
       if (!mounted) {
         return;
       }
-      context.read<SondageBloc>().add(LoadSondagesEvent());
+      final blocState = context.read<SondageBloc>().state;
+      if (blocState is! SondagesLoaded && blocState is! SondageLoading) {
+        context.read<SondageBloc>().add(LoadSondagesEvent());
+      }
     });
   }
 
@@ -140,6 +143,7 @@ class _SondageMobileState extends State<SondageMobile>
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
+    final orientation = MediaQuery.orientationOf(context);
 
     AppTutorialController.registerReplayAction(
       tutorialId: 'mobile-main-4',
@@ -173,77 +177,87 @@ class _SondageMobileState extends State<SondageMobile>
             AppSnackBar.showError(context, state.message);
           }
         },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              TabBarComponent(
-                childTab1: BlocBuilder<SondageBloc, SondageState>(
-                  buildWhen: (_, current) =>
-                      current is SondagesLoaded || current is SondageLoading,
-                  builder: (context, _) => Text(
-                    'Lista ${localization.sondage}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                childTab2: Text(
-                  'Create ${localization.sondage}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                tabController: tabController,
-                setToUpdate: setState,
-              ),
-              const SizedBox(height: 8),
-              Divider(height: 2, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              Expanded(
-                child: TabBarView(
-                  controller: tabController,
-                  children: [
-                    // Tab 0 — lista sondaggi
-                    BlocBuilder<SondageBloc, SondageState>(
-                      buildWhen: (_, current) =>
-                          current is SondageLoading ||
-                          current is SondagesLoaded ||
-                          current is SondageError,
-                      builder: (context, state) {
-                        if ((state is SondageLoading ||
-                                state is SondageInitial) &&
-                            _lastSondages.isEmpty) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (state is SondagesLoaded) {
-                          _lastSondages = state.sondages;
-                        }
-                        final sondages = state is SondagesLoaded
-                            ? state.sondages
-                            : _lastSondages;
-                        final isRefreshing =
-                            state is SondageLoading && sondages.isNotEmpty;
-                        final draftCount = _countByStatus(
-                          sondages,
-                          SondageStatus.draft,
-                        );
-                        final activeCount = _countByStatus(
-                          sondages,
-                          SondageStatus.active,
-                        );
-                        final completedCount = _countByStatus(
-                          sondages,
-                          SondageStatus.completed,
-                        );
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final useLandscapeCompactLayout =
+                orientation == Orientation.landscape &&
+                constraints.maxHeight < 560;
+            final pagePadding = EdgeInsets.symmetric(
+              horizontal: useLandscapeCompactLayout ? 12 : 16,
+              vertical: useLandscapeCompactLayout ? 10 : 16,
+            );
+            final sectionSpacing = useLandscapeCompactLayout ? 8.0 : 16.0;
 
-                        return Column(
-                          children: [
-                            Showcase(
+            return Padding(
+              padding: pagePadding,
+              child: Column(
+                children: [
+                  TabBarComponent(
+                    childTab1: BlocBuilder<SondageBloc, SondageState>(
+                      buildWhen: (_, current) =>
+                          current is SondagesLoaded ||
+                          current is SondageLoading,
+                      builder: (context, _) => Text(
+                        'Lista ${localization.sondage}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    childTab2: Text(
+                      'Create ${localization.sondage}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    tabController: tabController,
+                    setToUpdate: setState,
+                  ),
+                  SizedBox(height: useLandscapeCompactLayout ? 6 : 8),
+                  Divider(height: 2, color: Colors.grey[400]),
+                  SizedBox(height: sectionSpacing),
+                  Expanded(
+                    child: TabBarView(
+                      controller: tabController,
+                      children: [
+                        // Tab 0 — lista sondaggi
+                        BlocBuilder<SondageBloc, SondageState>(
+                          buildWhen: (_, current) =>
+                              current is SondageLoading ||
+                              current is SondagesLoaded ||
+                              current is SondageError,
+                          builder: (context, state) {
+                            if ((state is SondageLoading ||
+                                    state is SondageInitial) &&
+                                _lastSondages.isEmpty) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                            if (state is SondagesLoaded) {
+                              _lastSondages = state.sondages;
+                            }
+                            final sondages = state is SondagesLoaded
+                                ? state.sondages
+                                : _lastSondages;
+                            final isRefreshing =
+                                state is SondageLoading && sondages.isNotEmpty;
+                            final draftCount = _countByStatus(
+                              sondages,
+                              SondageStatus.draft,
+                            );
+                            final activeCount = _countByStatus(
+                              sondages,
+                              SondageStatus.active,
+                            );
+                            final completedCount = _countByStatus(
+                              sondages,
+                              SondageStatus.completed,
+                            );
+
+                            final summaryHeader = Showcase(
                               key: _summaryKey,
                               title: _isItalian(context)
                                   ? 'Panoramica sondaggi'
@@ -272,13 +286,8 @@ class _SondageMobileState extends State<SondageMobile>
                                   ),
                                 ],
                               ),
-                            ),
-                            if (isRefreshing)
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: 12),
-                                child: LinearProgressIndicator(minHeight: 2),
-                              ),
-                            Showcase(
+                            );
+                            final statsSection = Showcase(
                               key: _statsKey,
                               title: _isItalian(context)
                                   ? 'Statistiche rapide'
@@ -310,38 +319,78 @@ class _SondageMobileState extends State<SondageMobile>
                                   ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            Expanded(
-                              child: Showcase(
-                                key: _listKey,
-                                title: _isItalian(context)
-                                    ? 'Lista dei sondaggi'
-                                    : 'Survey list',
-                                description: _isItalian(context)
-                                    ? 'Da questa lista puoi aprire, modificare o eliminare i sondaggi che ti competono.'
-                                    : 'Use this list to open, edit, or delete the surveys that belong to you or your teams.',
-                                child: SondageDisplay(
-                                  sondages: sondages,
-                                  onViewChanged: _handleViewTypeChanged,
-                                  initialViewType: currentViewType,
-                                  onDeleteTap: _confirmDelete,
-                                  onEditTap: _openEditSheet,
+                            );
+                            final listSection = Showcase(
+                              key: _listKey,
+                              title: _isItalian(context)
+                                  ? 'Lista dei sondaggi'
+                                  : 'Survey list',
+                              description: _isItalian(context)
+                                  ? 'Da questa lista puoi aprire, modificare o eliminare i sondaggi che ti competono.'
+                                  : 'Use this list to open, edit, or delete the surveys that belong to you or your teams.',
+                              child: SondageDisplay(
+                                sondages: sondages,
+                                onViewChanged: _handleViewTypeChanged,
+                                initialViewType: currentViewType,
+                                onDeleteTap: _confirmDelete,
+                                onEditTap: _openEditSheet,
+                              ),
+                            );
+
+                            if (!useLandscapeCompactLayout) {
+                              return Column(
+                                children: [
+                                  summaryHeader,
+                                  if (isRefreshing)
+                                    const Padding(
+                                      padding: EdgeInsets.only(bottom: 12),
+                                      child: LinearProgressIndicator(
+                                        minHeight: 2,
+                                      ),
+                                    ),
+                                  statsSection,
+                                  const SizedBox(height: 12),
+                                  Expanded(child: listSection),
+                                ],
+                              );
+                            }
+
+                            return SingleChildScrollView(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    summaryHeader,
+                                    if (isRefreshing)
+                                      const Padding(
+                                        padding: EdgeInsets.only(bottom: 12),
+                                        child: LinearProgressIndicator(
+                                          minHeight: 2,
+                                        ),
+                                      ),
+                                    statsSection,
+                                    const SizedBox(height: 12),
+                                    listSection,
+                                  ],
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      },
+                            );
+                          },
+                        ),
+                        CreateSondageMobile(
+                          onsondageCreated: _handleSondageCreated,
+                        ),
+                      ],
                     ),
-                    CreateSondageMobile(
-                      onsondageCreated: _handleSondageCreated,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

@@ -36,6 +36,7 @@ import 'package:note_sondage/ui/app_keys.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
 import 'package:note_sondage/ui/web/widgets/web_mobile_download_gate.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_state.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
@@ -397,7 +398,7 @@ class _MainAppState extends State<MainApp> {
                   _syncServicesForAuthState(state, resetCaches: true);
                 },
                 child: MaterialApp.router(
-                  title: 'Flutter Demo',
+                  title: 'TeamManagement',
                   debugShowCheckedModeBanner: false,
                   routerConfig: _router,
                   scaffoldMessengerKey: scaffoldMessengerKey,
@@ -425,10 +426,23 @@ class _MainAppState extends State<MainApp> {
                       blurValue: 1,
                       builder: (showcaseContext) {
                         final content = child ?? const SizedBox.shrink();
+                        final appContent = !kIsWeb
+                            ? content
+                            : WebMobileDownloadGate(child: content);
                         if (!kIsWeb) {
-                          return content;
+                          return Stack(
+                            children: [
+                              Positioned.fill(child: appContent),
+                              const _AppSnackBarOverlayHost(),
+                            ],
+                          );
                         }
-                        return WebMobileDownloadGate(child: content);
+                        return Stack(
+                          children: [
+                            Positioned.fill(child: appContent),
+                            const _AppSnackBarOverlayHost(),
+                          ],
+                        );
                       },
                     );
                   },
@@ -448,6 +462,131 @@ class _MainAppState extends State<MainApp> {
           );
         },
       ),
+    );
+  }
+}
+
+class _AppSnackBarOverlayHost extends StatelessWidget {
+  const _AppSnackBarOverlayHost();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Object?>(
+      valueListenable: AppSnackBar.overlayListenable,
+      builder: (context, data, _) {
+        final overlayData = data as dynamic;
+        if (overlayData == null) {
+          return const SizedBox.shrink();
+        }
+
+        return SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Material(
+                color: Colors.transparent,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Dismissible(
+                    key: ValueKey<String>(overlayData.key as String),
+                    direction: DismissDirection.up,
+                    onDismissed: (_) => AppSnackBar.dismissOverlay(),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: overlayData.style.backgroundColor as Color,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: overlayData.style.borderColor as Color,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x33000000),
+                            blurRadius: 16,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        child: _AppSnackBarContentHost(
+                          title: overlayData.title as String,
+                          message: overlayData.message as String,
+                          icon: overlayData.style.icon as IconData,
+                          iconBackgroundColor:
+                              overlayData.style.iconBackgroundColor as Color,
+                          iconColor: overlayData.style.iconColor as Color,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AppSnackBarContentHost extends StatelessWidget {
+  const _AppSnackBarContentHost({
+    required this.title,
+    required this.message,
+    required this.icon,
+    required this.iconBackgroundColor,
+    required this.iconColor,
+  });
+
+  final String title;
+  final String message;
+  final IconData icon;
+  final Color iconBackgroundColor;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: iconBackgroundColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                message,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF4B5563),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -53,71 +53,99 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
     );
     _scheduleTutorial();
 
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Showcase(
-              key: _viewToggleKey,
-              title: _isItalian(context) ? 'Vista team' : 'Team layout',
-              description: _isItalian(context)
-                  ? 'Qui scegli se vedere i team in griglia o in lista, così puoi leggere più velocemente o avere una panoramica più visuale.'
-                  : 'Switch between grid and list layouts here depending on whether you want a quick visual overview or a denser list.',
-              child: VisualType(
-                isActive1: isGridView == 1,
-                isActive2: isGridView == 2,
-                color: colorScheme.cursorColor,
-                iconData1: Icons.window_sharp,
-                iconData2: Icons.list,
-                onTap1: () {
-                  setState(() {
-                    isGridView = 1;
-                  });
-                  widget.onViewChanged(1);
-                },
-                onTap2: () {
-                  setState(() {
-                    isGridView = 2;
-                  });
-                  widget.onViewChanged(2);
-                },
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final orientation = MediaQuery.orientationOf(context);
+        final useLandscapeCompactLayout =
+            orientation == Orientation.landscape && constraints.maxHeight < 560;
+        final sectionSpacing = useLandscapeCompactLayout ? 8.0 : 16.0;
+        final toggleIconSize = useLandscapeCompactLayout ? 22.0 : 28.0;
+        final teamList = Showcase(
+          key: _teamListKey,
+          title: _isItalian(context) ? 'Elenco squadre' : 'Team list',
+          description: _isItalian(context)
+              ? 'Questa sezione raccoglie tutte le tue squadre. Tocca una squadra per aprirne i dettagli o gestirla più da vicino.'
+              : 'This section contains all of your teams. Tap any team to open its details and manage it more closely.',
+          child: SizedBox(
+            width: double.infinity,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: colorScheme.borderColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.homeSecondary!.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-        SizedBox(height: 16),
-        Expanded(
-          child: Showcase(
-            key: _teamListKey,
-            title: _isItalian(context) ? 'Elenco squadre' : 'Team list',
-            description: _isItalian(context)
-                ? 'Questa sezione raccoglie tutte le tue squadre. Tocca una squadra per aprirne i dettagli o gestirla più da vicino.'
-                : 'This section contains all of your teams. Tap any team to open its details and manage it more closely.',
-            child: SizedBox(
-              width: double.infinity,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.borderColor,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.homeSecondary!.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ResponsiveGridTeams(
-                  items: widget.teams,
-                  isRow: isGridView == 1,
-                ),
+              child: ResponsiveGridTeams(
+                items: widget.teams,
+                isRow: isGridView == 1,
+                shrinkWrapLayout: useLandscapeCompactLayout,
               ),
             ),
           ),
-        ),
-      ],
+        );
+
+        final header = Align(
+          alignment: Alignment.centerRight,
+          child: Showcase(
+            key: _viewToggleKey,
+            title: _isItalian(context) ? 'Vista team' : 'Team layout',
+            description: _isItalian(context)
+                ? 'Qui scegli se vedere i team in griglia o in lista, così puoi leggere più velocemente o avere una panoramica più visuale.'
+                : 'Switch between grid and list layouts here depending on whether you want a quick visual overview or a denser list.',
+            child: VisualType(
+              size: toggleIconSize,
+              isActive1: isGridView == 1,
+              isActive2: isGridView == 2,
+              color: colorScheme.cursorColor,
+              iconData1: Icons.window_sharp,
+              iconData2: Icons.list,
+              onTap1: () {
+                setState(() {
+                  isGridView = 1;
+                });
+                widget.onViewChanged(1);
+              },
+              onTap2: () {
+                setState(() {
+                  isGridView = 2;
+                });
+                widget.onViewChanged(2);
+              },
+            ),
+          ),
+        );
+
+        if (!useLandscapeCompactLayout) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              header,
+              SizedBox(height: sectionSpacing),
+              Expanded(child: teamList),
+            ],
+          );
+        }
+
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                header,
+                SizedBox(height: sectionSpacing),
+                teamList,
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

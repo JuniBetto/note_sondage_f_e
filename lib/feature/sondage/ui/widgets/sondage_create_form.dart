@@ -9,10 +9,15 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/team_mapper.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/anchored_dropdown_overlay.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
+import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 import 'package:note_sondage/ui/widgets/time_range_picker.dart';
 import 'package:showcaseview/showcaseview.dart';
+
+const double _kSondageTeamDropdownMaxHeight = 360;
 
 class SondageCreateForm extends StatefulWidget {
   const SondageCreateForm({
@@ -43,6 +48,8 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   final GlobalKey _submitSectionKey = GlobalKey();
   final TextEditingController _questionController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _teamSearchController = TextEditingController();
+  final ScrollController _teamScrollController = ScrollController();
   late final List<TextEditingController> _optionControllers;
 
   bool _isSyncingOptions = false;
@@ -63,6 +70,8 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     return initial.canEdit && initial.status == SondageStatus.draft;
   }
 
+  _SondageCreateStrings get _strings => _SondageCreateStrings.of(context);
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +84,8 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   void dispose() {
     _questionController.dispose();
     _descriptionController.dispose();
+    _teamSearchController.dispose();
+    _teamScrollController.dispose();
     for (final controller in _optionControllers) {
       controller.dispose();
     }
@@ -238,8 +249,23 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   void _reloadTeams() {
     setState(() {
       _selectedTeamId = null;
+      _teamSearchController.clear();
       _teamsFuture = _loadCreatableTeams();
     });
+  }
+
+  List<TeamEntity> _filterTeams(List<TeamEntity> teams) {
+    final query = _teamSearchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return teams;
+    }
+    return teams
+        .where((team) {
+          final name = team.name.toLowerCase();
+          final description = team.description.toLowerCase();
+          return name.contains(query) || description.contains(query);
+        })
+        .toList(growable: false);
   }
 
   void _submit() {
@@ -247,7 +273,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       return;
     }
     if (_isEditing && !_canEditCurrentSondage) {
-      _showSnackBar('Solo i sondaggi in bozza possono essere modificati.');
+      _showSnackBar(_strings.onlyDraftSurveysCanBeEdited);
       return;
     }
 
@@ -260,15 +286,15 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       return;
     }
     if (question.isEmpty) {
-      _showSnackBar('Inserisci la domanda del sondaggio.');
+      _showSnackBar(_strings.enterSurveyQuestion);
       return;
     }
     if (teamId.isEmpty) {
-      _showSnackBar('Seleziona un team prima di creare il sondaggio.');
+      _showSnackBar(_strings.selectTeamBeforeCreatingSurvey);
       return;
     }
     if (options.length < 2) {
-      _showSnackBar('Aggiungi almeno 2 opzioni.');
+      _showSnackBar(_strings.addAtLeastTwoOptions);
       return;
     }
 
@@ -383,10 +409,13 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         if (snapshot.hasError) {
           return Row(
             children: [
-              const Expanded(
-                child: Text('Impossibile caricare i team disponibili.'),
+              Expanded(child: Text(_strings.unableToLoadAvailableTeams)),
+              CustomAppButton(
+                onPressed: _reloadTeams,
+                type: ButtonType.text,
+                isActive: false,
+                child: Text(_strings.retry),
               ),
-              TextButton(onPressed: _reloadTeams, child: const Text('Riprova')),
             ],
           );
         }
@@ -394,43 +423,149 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         if (teams.isEmpty) {
           return Row(
             children: [
-              const Expanded(
-                child: Text(
-                  'Non hai ancora un team in cui puoi creare un sondaggio.',
-                ),
-              ),
-              TextButton(
+              Expanded(child: Text(_strings.noCreatableTeamYet)),
+              CustomAppButton(
                 onPressed: _reloadTeams,
-                child: const Text('Ricarica'),
+                type: ButtonType.text,
+                isActive: false,
+                child: Text(_strings.reload),
               ),
             ],
           );
         }
 
-        return DropdownButtonFormField<String>(
-          value: dropdownValue,
-          decoration: InputDecoration(
-            labelText: localization.selectTeam,
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
+        final validTeams = teams
+            .where((team) => (team.id ?? '').isNotEmpty)
+            .toList(growable: false);
+        final filteredTeams = _filterTeams(validTeams);
+        final selectedTeam = validTeams.where(
+          (team) => team.id == dropdownValue,
+        );
+        final selected = selectedTeam.isEmpty ? null : selectedTeam.first;
+
+        return AnchoredDropdownOverlay(
+          triggerBuilder: (context, isOpen, toggle) =>
+              _SondageTeamDropdownTrigger(
+                label: '',
+                title: selected?.name ?? localization.selectTeam,
+                subtitle: selected == null
+                    ? _strings.chooseTeamToReceiveSurvey
+                    : (selected.description.trim().isNotEmpty
+                          ? selected.description
+                          : _strings.selectedSurveyTeam),
+                isOpen: isOpen,
+                onTap: toggle,
+              ),
+          overlayBuilder: (context, width, maxHeight, close) => ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: Container(
+              width: width,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colorScheme.outlineVariant),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 14,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _teamSearchController,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      hintText: _strings.searchTeams,
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxHeight: _kSondageTeamDropdownMaxHeight,
+                      ),
+                      child: Scrollbar(
+                        controller: _teamScrollController,
+                        thumbVisibility: filteredTeams.length > 4,
+                        child: ListView.separated(
+                          controller: _teamScrollController,
+                          shrinkWrap: true,
+                          itemCount: filteredTeams.isEmpty
+                              ? 1
+                              : filteredTeams.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 6),
+                          itemBuilder: (context, index) {
+                            if (filteredTeams.isEmpty) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: colorScheme.outlineVariant,
+                                  ),
+                                  color: colorScheme.surface,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.search_off_rounded,
+                                      size: 18,
+                                      color: colorScheme.descriptionColor,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        _strings.noTeamFound,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.descriptionColor,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                            final team = filteredTeams[index];
+                            return _SondageTeamOptionTile(
+                              label: team.name,
+                              subtitle: team.description.trim().isNotEmpty
+                                  ? team.description
+                                  : _strings.teamAvailableForSurvey,
+                              isSelected: dropdownValue == team.id,
+                              onTap: () {
+                                setState(() {
+                                  _selectedTeamId = team.id;
+                                  _teamSearchController.clear();
+                                });
+                                close();
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          items: teams
-              .where((team) => (team.id ?? '').isNotEmpty)
-              .map(
-                (team) => DropdownMenuItem<String>(
-                  value: team.id,
-                  child: Text(team.name),
-                ),
-              )
-              .toList(),
-          dropdownColor: colorScheme.dialogBackgroundColor,
-          onChanged: (value) {
-            setState(() => _selectedTeamId = value);
-          },
         );
       },
     );
@@ -442,6 +577,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final strings = _strings;
 
     if (widget.tutorialId != null && !_isEditing) {
       final tutorialKeys = <GlobalKey>[
@@ -474,13 +610,16 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         }
         setState(() => _isSubmitting = false);
         if (state is SondageCreated) {
-          widget.onCreated?.call();
-          if (!mounted) {
-            return;
-          }
           if (widget.onCloseRequested != null) {
             widget.onCloseRequested!.call();
+            final onCreated = widget.onCreated;
+            if (onCreated != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                onCreated();
+              });
+            }
           } else {
+            widget.onCreated?.call();
             _resetForm();
             _showSnackBar(
               localization.surveyCreatedSuccessfully,
@@ -491,11 +630,17 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         }
 
         if (state is SondageUpdated) {
-          widget.onCreated?.call();
-          if (!mounted) {
-            return;
+          if (widget.onCloseRequested != null) {
+            widget.onCloseRequested!.call();
+            final onCreated = widget.onCreated;
+            if (onCreated != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                onCreated();
+              });
+            }
+          } else {
+            widget.onCreated?.call();
           }
-          widget.onCloseRequested?.call();
           return;
         }
 
@@ -503,318 +648,300 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
           _showSnackBar(state.message, backgroundColor: Colors.red);
         }
       },
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (widget.showHeader) ...[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.bgNavbarSurface,
-                  borderRadius: BorderRadius.circular(20),
+      child: SubmitOnEnterScope(
+        onSubmit: _isSubmitting || (_isEditing && !_canEditCurrentSondage)
+            ? null
+            : _submit,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (widget.showHeader) ...[
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.bgNavbarSurface,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: colorScheme.secondary.withValues(
+                              alpha: 0.14,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            Icons.poll_rounded,
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _isEditing
+                                    ? strings.editSurveyHeader(
+                                        localization.sondage,
+                                      )
+                                    : localization.sondage,
+                                style: textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: colorScheme.iconLabel,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _isEditing
+                                    ? strings.editSurveyIntro
+                                    : strings.createSurveyIntro,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.descriptionColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (widget.tutorialId != null && !_isEditing)
+                          IconButton(
+                            tooltip: localization.reviewTutorial,
+                            onPressed: () =>
+                                AppTutorialController.replayRegistered(
+                                  context: context,
+                                  tutorialId: widget.tutorialId!,
+                                ),
+                            icon: const Icon(Icons.help_outline_rounded),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 20),
+              ],
+              Showcase(
+                key: _questionSectionKey,
+                title: strings.surveyQuestionTitle,
+                description: strings.surveyQuestionDescription,
+                child: _buildSection(
+                  context: context,
+                  title: localization.askQuestion,
+                  icon: Icons.edit_outlined,
+                  child: Column(
                     children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: colorScheme.secondary.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Icon(
-                          Icons.poll_rounded,
-                          color: colorScheme.secondary,
-                        ),
+                      CustomTextFieldImmersive(
+                        hintText: localization.askQuestion,
+                        maxLines: 3,
+                        controller: _questionController,
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _isEditing
-                                  ? 'Modifica ${localization.sondage}'
-                                  : localization.sondage,
-                              style: textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.iconLabel,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _isEditing
-                                  ? 'Aggiorna domanda, descrizione, opzioni e team del sondaggio.'
-                                  : 'Crea una bozza con domanda, descrizione, opzioni e team di destinazione.',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.descriptionColor,
-                              ),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 12),
+                      CustomTextFieldImmersive(
+                        hintText: strings.optionalDescription,
+                        maxLines: 4,
+                        controller: _descriptionController,
                       ),
-                      if (widget.tutorialId != null && !_isEditing)
-                        IconButton(
-                          tooltip: localization.reviewTutorial,
-                          onPressed: () =>
-                              AppTutorialController.replayRegistered(
-                                context: context,
-                                tutorialId: widget.tutorialId!,
-                              ),
-                          icon: const Icon(Icons.help_outline_rounded),
-                        ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-            ],
-            Showcase(
-              key: _questionSectionKey,
-              title: _isItalian(context)
-                  ? 'Domanda del sondaggio'
-                  : 'Survey question',
-              description: _isItalian(context)
-                  ? 'Qui scrivi la domanda principale e, se serve, una breve descrizione per dare contesto.'
-                  : 'Write the main question here and add a short description when you want to give more context.',
-              child: _buildSection(
-                context: context,
-                title: localization.askQuestion,
-                icon: Icons.edit_outlined,
-                child: Column(
-                  children: [
-                    CustomTextFieldImmersive(
-                      hintText: localization.askQuestion,
-                      maxLines: 3,
-                      controller: _questionController,
-                    ),
-                    const SizedBox(height: 12),
-                    CustomTextFieldImmersive(
-                      hintText: 'Descrizione (opzionale)',
-                      maxLines: 4,
-                      controller: _descriptionController,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Showcase(
-              key: _optionsSectionKey,
-              title: _isItalian(context)
-                  ? 'Opzioni di risposta'
-                  : 'Answer options',
-              description: _isItalian(context)
-                  ? 'Aggiungi qui le possibili risposte del sondaggio. Puoi riordinarle e tenerne almeno due.'
-                  : 'Add the survey answer choices here. You can reorder them and you should keep at least two.',
-              child: _buildSection(
-                context: context,
-                title: localization.options,
-                icon: Icons.format_list_bulleted_rounded,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Aggiungi da 2 a 10 opzioni. Puoi riordinarle trascinando.',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.descriptionColor,
+              const SizedBox(height: 16),
+              Showcase(
+                key: _optionsSectionKey,
+                title: strings.answerOptionsTitle,
+                description: strings.answerOptionsDescription,
+                child: _buildSection(
+                  context: context,
+                  title: localization.options,
+                  icon: Icons.format_list_bulleted_rounded,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        strings.optionsHelper,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.descriptionColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    ReorderableListView.builder(
-                      itemCount: _optionControllers.length,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      buildDefaultDragHandles: false,
-                      onReorder: (oldIndex, newIndex) {
-                        setState(() {
-                          if (newIndex > oldIndex) {
-                            newIndex--;
-                          }
-                          final item = _optionControllers.removeAt(oldIndex);
-                          _optionControllers.insert(newIndex, item);
-                        });
-                      },
-                      itemBuilder: (context, index) {
-                        final isTrailingEmpty =
-                            index == _optionControllers.length - 1 &&
-                            _optionControllers[index].text.trim().isEmpty;
-                        return Padding(
-                          key: ValueKey(_optionControllers[index]),
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: CustomTextFieldImmersive(
-                                  controller: _optionControllers[index],
-                                  hintText:
-                                      '${localization.option} ${index + 1}',
+                      const SizedBox(height: 12),
+                      ReorderableListView.builder(
+                        itemCount: _optionControllers.length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        buildDefaultDragHandles: false,
+                        onReorder: (oldIndex, newIndex) {
+                          setState(() {
+                            if (newIndex > oldIndex) {
+                              newIndex--;
+                            }
+                            final item = _optionControllers.removeAt(oldIndex);
+                            _optionControllers.insert(newIndex, item);
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          final isTrailingEmpty =
+                              index == _optionControllers.length - 1 &&
+                              _optionControllers[index].text.trim().isEmpty;
+                          return Padding(
+                            key: ValueKey(_optionControllers[index]),
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: CustomTextFieldImmersive(
+                                    controller: _optionControllers[index],
+                                    hintText:
+                                        '${localization.option} ${index + 1}',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              ReorderableDragStartListener(
-                                index: index,
-                                child: Icon(
-                                  Icons.drag_handle_rounded,
-                                  color: colorScheme.selectionColor,
-                                ),
-                              ),
-                              if (_optionControllers.length > 2 &&
-                                  !isTrailingEmpty)
-                                IconButton(
-                                  onPressed: () => _removeOption(index),
-                                  icon: Icon(
-                                    Icons.close_rounded,
+                                const SizedBox(width: 8),
+                                ReorderableDragStartListener(
+                                  index: index,
+                                  child: Icon(
+                                    Icons.drag_handle_rounded,
                                     color: colorScheme.selectionColor,
                                   ),
                                 ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Showcase(
-              key: _settingsSectionKey,
-              title: _isItalian(context)
-                  ? 'Impostazioni del sondaggio'
-                  : 'Survey settings',
-              description: _isItalian(context)
-                  ? 'Qui decidi se permettere risposte multiple e se il sondaggio deve scadere a un orario preciso.'
-                  : 'Choose here whether multiple answers are allowed and whether the survey should expire at a specific time.',
-              child: _buildSection(
-                context: context,
-                title: 'Impostazioni',
-                icon: Icons.tune_rounded,
-                child: Column(
-                  children: [
-                    SwitchListTile.adaptive(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(localization.allowMultipleResponses),
-                      value: _allowMultipleResponses,
-                      activeColor: colorScheme.selectionColor,
-                      onChanged: (value) {
-                        setState(() => _allowMultipleResponses = value);
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    CheckboxListTile(
-                      value: _hasExpiry,
-                      onChanged: (value) {
-                        setState(() => _hasExpiry = value ?? false);
-                      },
-                      activeColor: colorScheme.selectionColor,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(localization.setExpiry),
-                    ),
-                    IgnorePointer(
-                      ignoring: !_hasExpiry,
-                      child: Opacity(
-                        opacity: _hasExpiry ? 1 : 0.4,
-                        child: TimeRangePicker(
-                          start: _start,
-                          end: _end,
-                          onStartChanged: (value) {
-                            setState(() => _start = value);
-                          },
-                          onEndChanged: (value) {
-                            setState(() => _end = value);
-                          },
-                        ),
+                                if (_optionControllers.length > 2 &&
+                                    !isTrailingEmpty)
+                                  IconButton(
+                                    onPressed: () => _removeOption(index),
+                                    icon: Icon(
+                                      Icons.close_rounded,
+                                      color: colorScheme.selectionColor,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Showcase(
-              key: _teamSectionKey,
-              title: _isItalian(context) ? 'Team destinatario' : 'Target team',
-              description: _isItalian(context)
-                  ? 'Seleziona qui la squadra che riceverà il sondaggio.'
-                  : 'Select here which team should receive this survey.',
-              child: _buildSection(
-                context: context,
-                title: localization.selectTeam,
-                icon: Icons.groups_rounded,
-                child: _buildTeamsSelector(context, localization, colorScheme),
-              ),
-            ),
-            if (_isEditing && !_canEditCurrentSondage) ...[
-              const SizedBox(height: 16),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.orange.withValues(alpha: 0.25),
+                    ],
                   ),
                 ),
-                child: const Padding(
-                  padding: EdgeInsets.all(14),
-                  child: Row(
+              ),
+              const SizedBox(height: 16),
+              Showcase(
+                key: _settingsSectionKey,
+                title: strings.surveySettingsTitle,
+                description: strings.surveySettingsDescription,
+                child: _buildSection(
+                  context: context,
+                  title: strings.settingsSectionTitle,
+                  icon: Icons.tune_rounded,
+                  child: Column(
                     children: [
-                      Icon(Icons.lock_outline, color: Colors.orange),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Questo sondaggio non e\' piu modificabile. Solo i draft possono essere aggiornati.',
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(localization.allowMultipleResponses),
+                        value: _allowMultipleResponses,
+                        activeColor: colorScheme.selectionColor,
+                        onChanged: (value) {
+                          setState(() => _allowMultipleResponses = value);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      CheckboxListTile(
+                        value: _hasExpiry,
+                        onChanged: (value) {
+                          setState(() => _hasExpiry = value ?? false);
+                        },
+                        activeColor: colorScheme.selectionColor,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(localization.setExpiry),
+                      ),
+                      IgnorePointer(
+                        ignoring: !_hasExpiry,
+                        child: Opacity(
+                          opacity: _hasExpiry ? 1 : 0.4,
+                          child: TimeRangePicker(
+                            start: _start,
+                            end: _end,
+                            onStartChanged: (value) {
+                              setState(() => _start = value);
+                            },
+                            onEndChanged: (value) {
+                              setState(() => _end = value);
+                            },
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ],
-            const SizedBox(height: 24),
-            Showcase(
-              key: _submitSectionKey,
-              title: _isItalian(context)
-                  ? 'Crea il sondaggio'
-                  : 'Create survey',
-              description: _isItalian(context)
-                  ? 'Quando domanda, opzioni e team sono pronti, usa questo pulsante per creare la bozza del sondaggio.'
-                  : 'Once the question, options, and team are ready, use this button to create the survey draft.',
-              child: FilledButton(
-                style: FilledButton.styleFrom(
+              const SizedBox(height: 16),
+              Showcase(
+                key: _teamSectionKey,
+                title: strings.targetTeamTitle,
+                description: strings.targetTeamDescription,
+                child: _buildSection(
+                  context: context,
+                  title: localization.selectTeam,
+                  icon: Icons.groups_rounded,
+                  child: _buildTeamsSelector(
+                    context,
+                    localization,
+                    colorScheme,
+                  ),
+                ),
+              ),
+              if (_isEditing && !_canEditCurrentSondage) ...[
+                const SizedBox(height: 16),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lock_outline, color: Colors.orange),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(strings.surveyNoLongerEditable)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              Showcase(
+                key: _submitSectionKey,
+                title: strings.createSurveyTitle,
+                description: strings.createSurveyDescription,
+                child: CustomAppButton(
+                  onPressed:
+                      _isSubmitting || (_isEditing && !_canEditCurrentSondage)
+                      ? null
+                      : _submit,
+                  type: ButtonType.filled,
                   backgroundColor: colorScheme.secondary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                  borderRadius: 16,
+                  isActive: true,
+                  fullWidth: true,
+                  isLoading: _isSubmitting,
+                  child: Text(
+                    _isEditing
+                        ? strings.updateSurveyAction(localization.sondage)
+                        : '${localization.create} ${localization.sondage}',
                   ),
                 ),
-                onPressed:
-                    _isSubmitting || (_isEditing && !_canEditCurrentSondage)
-                    ? null
-                    : _submit,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        _isEditing
-                            ? 'Aggiorna ${localization.sondage}'
-                            : '${localization.create} ${localization.sondage}',
-                      ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -837,8 +964,461 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       );
     });
   }
+}
 
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
+class _SondageCreateStrings {
+  const _SondageCreateStrings._({
+    required this.onlyDraftSurveysCanBeEdited,
+    required this.enterSurveyQuestion,
+    required this.selectTeamBeforeCreatingSurvey,
+    required this.addAtLeastTwoOptions,
+    required this.unableToLoadAvailableTeams,
+    required this.retry,
+    required this.noCreatableTeamYet,
+    required this.reload,
+    required this.chooseTeamToReceiveSurvey,
+    required this.selectedSurveyTeam,
+    required this.searchTeams,
+    required this.noTeamFound,
+    required this.teamAvailableForSurvey,
+    required this.editSurveyIntro,
+    required this.createSurveyIntro,
+    required this.surveyQuestionTitle,
+    required this.surveyQuestionDescription,
+    required this.optionalDescription,
+    required this.answerOptionsTitle,
+    required this.answerOptionsDescription,
+    required this.optionsHelper,
+    required this.surveySettingsTitle,
+    required this.surveySettingsDescription,
+    required this.settingsSectionTitle,
+    required this.targetTeamTitle,
+    required this.targetTeamDescription,
+    required this.surveyNoLongerEditable,
+    required this.createSurveyTitle,
+    required this.createSurveyDescription,
+    required this.editSurveyHeaderBuilder,
+    required this.updateSurveyActionBuilder,
+  });
+
+  final String onlyDraftSurveysCanBeEdited;
+  final String enterSurveyQuestion;
+  final String selectTeamBeforeCreatingSurvey;
+  final String addAtLeastTwoOptions;
+  final String unableToLoadAvailableTeams;
+  final String retry;
+  final String noCreatableTeamYet;
+  final String reload;
+  final String chooseTeamToReceiveSurvey;
+  final String selectedSurveyTeam;
+  final String searchTeams;
+  final String noTeamFound;
+  final String teamAvailableForSurvey;
+  final String editSurveyIntro;
+  final String createSurveyIntro;
+  final String surveyQuestionTitle;
+  final String surveyQuestionDescription;
+  final String optionalDescription;
+  final String answerOptionsTitle;
+  final String answerOptionsDescription;
+  final String optionsHelper;
+  final String surveySettingsTitle;
+  final String surveySettingsDescription;
+  final String settingsSectionTitle;
+  final String targetTeamTitle;
+  final String targetTeamDescription;
+  final String surveyNoLongerEditable;
+  final String createSurveyTitle;
+  final String createSurveyDescription;
+  final String Function(String surveyLabel) editSurveyHeaderBuilder;
+  final String Function(String surveyLabel) updateSurveyActionBuilder;
+
+  String editSurveyHeader(String surveyLabel) =>
+      editSurveyHeaderBuilder(surveyLabel);
+  String updateSurveyAction(String surveyLabel) =>
+      updateSurveyActionBuilder(surveyLabel);
+
+  static _SondageCreateStrings of(BuildContext context) {
+    switch (Localizations.localeOf(context).languageCode) {
+      case 'it':
+        return _it;
+      case 'fr':
+        return _fr;
+      case 'es':
+        return _es;
+      default:
+        return _en;
+    }
+  }
+
+  static const _SondageCreateStrings _en = _SondageCreateStrings._(
+    onlyDraftSurveysCanBeEdited: 'Only draft surveys can be edited.',
+    enterSurveyQuestion: 'Enter the survey question.',
+    selectTeamBeforeCreatingSurvey: 'Select a team before creating the survey.',
+    addAtLeastTwoOptions: 'Add at least 2 options.',
+    unableToLoadAvailableTeams: 'Unable to load the available teams.',
+    retry: 'Retry',
+    noCreatableTeamYet:
+        'You do not have a team yet where you can create a survey.',
+    reload: 'Reload',
+    chooseTeamToReceiveSurvey: 'Choose the team that will receive the survey',
+    selectedSurveyTeam: 'Selected survey team',
+    searchTeams: 'Search team...',
+    noTeamFound: 'No team found',
+    teamAvailableForSurvey: 'Team available for this survey',
+    editSurveyIntro:
+        'Update the question, description, options, and target team for this survey.',
+    createSurveyIntro:
+        'Create a draft with the question, description, options, and target team.',
+    surveyQuestionTitle: 'Survey question',
+    surveyQuestionDescription:
+        'Write the main question here and add a short description when you want to give more context.',
+    optionalDescription: 'Description (optional)',
+    answerOptionsTitle: 'Answer options',
+    answerOptionsDescription:
+        'Add the survey answer choices here. You can reorder them and you should keep at least two.',
+    optionsHelper:
+        'Add from 2 to 10 options. You can reorder them by dragging.',
+    surveySettingsTitle: 'Survey settings',
+    surveySettingsDescription:
+        'Choose here whether multiple answers are allowed and whether the survey should expire at a specific time.',
+    settingsSectionTitle: 'Settings',
+    targetTeamTitle: 'Target team',
+    targetTeamDescription: 'Select here which team should receive this survey.',
+    surveyNoLongerEditable:
+        'This survey can no longer be edited. Only drafts can be updated.',
+    createSurveyTitle: 'Create survey',
+    createSurveyDescription:
+        'Once the question, options, and team are ready, use this button to create the survey draft.',
+    editSurveyHeaderBuilder: _editHeaderEn,
+    updateSurveyActionBuilder: _updateActionEn,
+  );
+
+  static const _SondageCreateStrings _it = _SondageCreateStrings._(
+    onlyDraftSurveysCanBeEdited:
+        'Solo i sondaggi in bozza possono essere modificati.',
+    enterSurveyQuestion: 'Inserisci la domanda del sondaggio.',
+    selectTeamBeforeCreatingSurvey:
+        'Seleziona un team prima di creare il sondaggio.',
+    addAtLeastTwoOptions: 'Aggiungi almeno 2 opzioni.',
+    unableToLoadAvailableTeams: 'Impossibile caricare i team disponibili.',
+    retry: 'Riprova',
+    noCreatableTeamYet:
+        'Non hai ancora un team in cui puoi creare un sondaggio.',
+    reload: 'Ricarica',
+    chooseTeamToReceiveSurvey: 'Scegli il team che riceverà il sondaggio',
+    selectedSurveyTeam: 'Team selezionato per il sondaggio',
+    searchTeams: 'Cerca team...',
+    noTeamFound: 'Nessun team trovato',
+    teamAvailableForSurvey: 'Team disponibile per ricevere il sondaggio',
+    editSurveyIntro:
+        'Aggiorna domanda, descrizione, opzioni e team del sondaggio.',
+    createSurveyIntro:
+        'Crea una bozza con domanda, descrizione, opzioni e team di destinazione.',
+    surveyQuestionTitle: 'Domanda del sondaggio',
+    surveyQuestionDescription:
+        'Qui scrivi la domanda principale e, se serve, una breve descrizione per dare contesto.',
+    optionalDescription: 'Descrizione (opzionale)',
+    answerOptionsTitle: 'Opzioni di risposta',
+    answerOptionsDescription:
+        'Aggiungi qui le possibili risposte del sondaggio. Puoi riordinarle e tenerne almeno due.',
+    optionsHelper: 'Aggiungi da 2 a 10 opzioni. Puoi riordinarle trascinando.',
+    surveySettingsTitle: 'Impostazioni del sondaggio',
+    surveySettingsDescription:
+        'Qui decidi se permettere risposte multiple e se il sondaggio deve scadere a un orario preciso.',
+    settingsSectionTitle: 'Impostazioni',
+    targetTeamTitle: 'Team destinatario',
+    targetTeamDescription:
+        'Seleziona qui la squadra che riceverà il sondaggio.',
+    surveyNoLongerEditable:
+        'Questo sondaggio non è più modificabile. Solo i draft possono essere aggiornati.',
+    createSurveyTitle: 'Crea il sondaggio',
+    createSurveyDescription:
+        'Quando domanda, opzioni e team sono pronti, usa questo pulsante per creare la bozza del sondaggio.',
+    editSurveyHeaderBuilder: _editHeaderIt,
+    updateSurveyActionBuilder: _updateActionIt,
+  );
+
+  static const _SondageCreateStrings _fr = _SondageCreateStrings._(
+    onlyDraftSurveysCanBeEdited:
+        'Seuls les sondages en brouillon peuvent être modifiés.',
+    enterSurveyQuestion: 'Saisissez la question du sondage.',
+    selectTeamBeforeCreatingSurvey:
+        'Sélectionnez une équipe avant de créer le sondage.',
+    addAtLeastTwoOptions: 'Ajoutez au moins 2 options.',
+    unableToLoadAvailableTeams:
+        'Impossible de charger les équipes disponibles.',
+    retry: 'Réessayer',
+    noCreatableTeamYet:
+        'Vous n’avez pas encore d’équipe dans laquelle créer un sondage.',
+    reload: 'Recharger',
+    chooseTeamToReceiveSurvey: 'Choisissez l’équipe qui recevra le sondage',
+    selectedSurveyTeam: 'Équipe sélectionnée pour le sondage',
+    searchTeams: 'Rechercher une équipe...',
+    noTeamFound: 'Aucune équipe trouvée',
+    teamAvailableForSurvey: 'Équipe disponible pour ce sondage',
+    editSurveyIntro:
+        'Mettez à jour la question, la description, les options et l’équipe cible du sondage.',
+    createSurveyIntro:
+        'Créez un brouillon avec la question, la description, les options et l’équipe cible.',
+    surveyQuestionTitle: 'Question du sondage',
+    surveyQuestionDescription:
+        'Saisissez ici la question principale et ajoutez une courte description si vous souhaitez donner plus de contexte.',
+    optionalDescription: 'Description (facultative)',
+    answerOptionsTitle: 'Options de réponse',
+    answerOptionsDescription:
+        'Ajoutez ici les réponses possibles du sondage. Vous pouvez les réorganiser et en conserver au moins deux.',
+    optionsHelper:
+        'Ajoutez de 2 à 10 options. Vous pouvez les réorganiser par glisser-déposer.',
+    surveySettingsTitle: 'Paramètres du sondage',
+    surveySettingsDescription:
+        'Choisissez ici si plusieurs réponses sont autorisées et si le sondage doit expirer à une heure précise.',
+    settingsSectionTitle: 'Paramètres',
+    targetTeamTitle: 'Équipe cible',
+    targetTeamDescription: 'Sélectionnez ici l’équipe qui recevra ce sondage.',
+    surveyNoLongerEditable:
+        'Ce sondage ne peut plus être modifié. Seuls les brouillons peuvent être mis à jour.',
+    createSurveyTitle: 'Créer le sondage',
+    createSurveyDescription:
+        'Quand la question, les options et l’équipe sont prêtes, utilisez ce bouton pour créer le brouillon du sondage.',
+    editSurveyHeaderBuilder: _editHeaderFr,
+    updateSurveyActionBuilder: _updateActionFr,
+  );
+
+  static const _SondageCreateStrings _es = _SondageCreateStrings._(
+    onlyDraftSurveysCanBeEdited:
+        'Solo se pueden editar las encuestas en borrador.',
+    enterSurveyQuestion: 'Introduce la pregunta de la encuesta.',
+    selectTeamBeforeCreatingSurvey:
+        'Selecciona un equipo antes de crear la encuesta.',
+    addAtLeastTwoOptions: 'Añade al menos 2 opciones.',
+    unableToLoadAvailableTeams:
+        'No se pudieron cargar los equipos disponibles.',
+    retry: 'Reintentar',
+    noCreatableTeamYet:
+        'Todavía no tienes un equipo donde puedas crear una encuesta.',
+    reload: 'Recargar',
+    chooseTeamToReceiveSurvey: 'Elige el equipo que recibirá la encuesta',
+    selectedSurveyTeam: 'Equipo seleccionado para la encuesta',
+    searchTeams: 'Buscar equipo...',
+    noTeamFound: 'No se encontró ningún equipo',
+    teamAvailableForSurvey: 'Equipo disponible para esta encuesta',
+    editSurveyIntro:
+        'Actualiza la pregunta, la descripción, las opciones y el equipo de destino de la encuesta.',
+    createSurveyIntro:
+        'Crea un borrador con la pregunta, la descripción, las opciones y el equipo de destino.',
+    surveyQuestionTitle: 'Pregunta de la encuesta',
+    surveyQuestionDescription:
+        'Escribe aquí la pregunta principal y añade una breve descripción si quieres dar más contexto.',
+    optionalDescription: 'Descripción (opcional)',
+    answerOptionsTitle: 'Opciones de respuesta',
+    answerOptionsDescription:
+        'Añade aquí las posibles respuestas de la encuesta. Puedes reordenarlas y deberías mantener al menos dos.',
+    optionsHelper:
+        'Añade de 2 a 10 opciones. Puedes reordenarlas arrastrándolas.',
+    surveySettingsTitle: 'Configuración de la encuesta',
+    surveySettingsDescription:
+        'Elige aquí si se permiten respuestas múltiples y si la encuesta debe caducar a una hora específica.',
+    settingsSectionTitle: 'Configuración',
+    targetTeamTitle: 'Equipo de destino',
+    targetTeamDescription:
+        'Selecciona aquí el equipo que recibirá esta encuesta.',
+    surveyNoLongerEditable:
+        'Esta encuesta ya no se puede editar. Solo se pueden actualizar los borradores.',
+    createSurveyTitle: 'Crear encuesta',
+    createSurveyDescription:
+        'Cuando la pregunta, las opciones y el equipo estén listos, usa este botón para crear el borrador de la encuesta.',
+    editSurveyHeaderBuilder: _editHeaderEs,
+    updateSurveyActionBuilder: _updateActionEs,
+  );
+
+  static String _editHeaderEn(String surveyLabel) => 'Edit $surveyLabel';
+  static String _editHeaderIt(String surveyLabel) => 'Modifica $surveyLabel';
+  static String _editHeaderFr(String surveyLabel) => 'Modifier $surveyLabel';
+  static String _editHeaderEs(String surveyLabel) => 'Editar $surveyLabel';
+
+  static String _updateActionEn(String surveyLabel) => 'Update $surveyLabel';
+  static String _updateActionIt(String surveyLabel) => 'Aggiorna $surveyLabel';
+  static String _updateActionFr(String surveyLabel) =>
+      'Mettre à jour $surveyLabel';
+  static String _updateActionEs(String surveyLabel) =>
+      'Actualizar $surveyLabel';
+}
+
+class _SondageTeamDropdownTrigger extends StatelessWidget {
+  const _SondageTeamDropdownTrigger({
+    required this.label,
+    required this.title,
+    required this.subtitle,
+    required this.isOpen,
+    required this.onTap,
+  });
+
+  final String label;
+  final String title;
+  final String subtitle;
+  final bool isOpen;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          suffixIcon: Icon(
+            isOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: colorScheme.selectionColor!.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.groups_rounded,
+                size: 18,
+                color: colorScheme.selectionColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.descriptionColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SondageTeamOptionTile extends StatelessWidget {
+  const _SondageTeamOptionTile({
+    required this.label,
+    required this.subtitle,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.outlineVariant,
+          ),
+          color: isSelected
+              ? colorScheme.primary.withValues(alpha: 0.08)
+              : colorScheme.surface,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: colorScheme.selectionColor!.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                Icons.groups_rounded,
+                size: 16,
+                color: colorScheme.selectionColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.descriptionColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              Icon(
+                Icons.check_circle_rounded,
+                size: 18,
+                color: colorScheme.primary,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

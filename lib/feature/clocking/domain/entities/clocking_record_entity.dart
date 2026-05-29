@@ -4,6 +4,8 @@ enum ClockingStatus {
   onBreak,
   committed,
   decommitted,
+  vacation,
+  permission,
   absent,
   late;
 
@@ -23,6 +25,12 @@ enum ClockingStatus {
       case 'DECOMMITTED':
       case 'decommitted':
         return ClockingStatus.decommitted;
+      case 'VACATION':
+      case 'vacation':
+        return ClockingStatus.vacation;
+      case 'PERMISSION':
+      case 'permission':
+        return ClockingStatus.permission;
     }
 
     return ClockingStatus.values.firstWhere(
@@ -113,7 +121,8 @@ class ClockingRecordEntity {
       date: date ?? this.date,
       note: note ?? this.note,
       totalBreakMinutes: totalBreakMinutes ?? this.totalBreakMinutes,
-      currentBreakStartedAt: currentBreakStartedAt ?? this.currentBreakStartedAt,
+      currentBreakStartedAt:
+          currentBreakStartedAt ?? this.currentBreakStartedAt,
       lastBreakStartedAt: lastBreakStartedAt ?? this.lastBreakStartedAt,
       lastBreakEndedAt: lastBreakEndedAt ?? this.lastBreakEndedAt,
       committedAt: committedAt ?? this.committedAt,
@@ -134,7 +143,12 @@ class ClockingRecordEntity {
 
   bool get isDecommitted => status == ClockingStatus.decommitted;
 
+  bool get isVacation => status == ClockingStatus.vacation;
+
+  bool get isPermission => status == ClockingStatus.permission;
+
   String get clockInFormatted {
+    if (isVacation) return '--:--';
     if (clockInTime == null) return '--:--';
     final h = clockInTime!.hour.toString().padLeft(2, '0');
     final m = clockInTime!.minute.toString().padLeft(2, '0');
@@ -142,6 +156,7 @@ class ClockingRecordEntity {
   }
 
   String get clockOutFormatted {
+    if (isVacation) return '--:--';
     if (clockOutTime == null) return '--:--';
     final h = clockOutTime!.hour.toString().padLeft(2, '0');
     final m = clockOutTime!.minute.toString().padLeft(2, '0');
@@ -172,6 +187,10 @@ class ClockingRecordEntity {
         return 'Committed';
       case ClockingStatus.decommitted:
         return 'Decommitted';
+      case ClockingStatus.vacation:
+        return 'Vacation';
+      case ClockingStatus.permission:
+        return 'Permission';
       case ClockingStatus.absent:
         return 'Absent';
       case ClockingStatus.late:

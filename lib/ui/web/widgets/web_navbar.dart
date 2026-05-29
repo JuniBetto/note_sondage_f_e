@@ -9,6 +9,8 @@ import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_event.dart
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 import 'package:note_sondage/ui/widgets/theme_config/custom_toggle_switch.dart';
 
+import '../../widgets/aspect_ratio.dart' as adaptive;
+
 class WebNavbar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? toggleIcon;
   final bool? isVisible;
@@ -52,7 +54,15 @@ class WebNavbar extends StatelessWidget implements PreferredSizeWidget {
     // 2. Restituiamo la AppBar
     return AppBar(
       key: const ValueKey("web_navbar"),
-      leading: Text(localization.webNavbar),
+      leading: adaptive.AspectRatio(
+        aspectRatio: 1,
+        borderRadius: BorderRadius.circular( 24),
+        child: Image.asset(
+          'assets/images/logo.png',
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        ),
+      ),
       actions: [
         Visibility(
           visible: isVisible!,

@@ -11,6 +11,11 @@ Important:
 - `127.0.0.1` on a phone points to the phone itself
 - Android emulator must use `10.0.2.2`
 
+Current public production targets:
+
+- `API_BASE_URL=https://api.teammanagement.it`
+- `EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration`
+
 ## 1. Local debug on Android emulator
 
 Use this when:
@@ -98,7 +103,8 @@ Example APK:
 ```bash
 cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
 flutter build apk --release \
-  --dart-define=API_BASE_URL=https://api.example.com
+  --dart-define=API_BASE_URL=https://api.teammanagement.it \
+  --dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration
 ```
 
 Example App Bundle:
@@ -108,7 +114,8 @@ cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
 flutter build appbundle --release \
   --obfuscate \
   --split-debug-info=build/symbols/android \
-  --dart-define=API_BASE_URL=https://api.example.com
+  --dart-define=API_BASE_URL=https://api.teammanagement.it \
+  --dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration
 ```
 
 ## 6. iOS IPA for public HTTPS
@@ -122,7 +129,8 @@ cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
 flutter build ipa --release \
   --obfuscate \
   --split-debug-info=build/symbols/ios \
-  --dart-define=API_BASE_URL=https://api.example.com
+  --dart-define=API_BASE_URL=https://api.teammanagement.it \
+  --dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration
 ```
 
 ## 7. Optional define file
@@ -173,6 +181,13 @@ flutter build ipa --release \
   --dart-define=SENTRY_DSN=https://your-dsn@o0.ingest.sentry.io/0 \
   --dart-define=APP_ENV=Test
 ```
+```bash
+flutter build ipa --release \
+--dart-define=API_BASE_URL=https://api.teammanagement.it \
+--dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration \
+--dart-define=SENTRY_DSN=IL_TUO_DSN_REALE \
+--dart-define=APP_ENV=Test
+```
 
 ```bash
 flutter build appbundle --release \
@@ -180,6 +195,15 @@ flutter build appbundle --release \
   --dart-define=SENTRY_DSN=https://your-dsn@o0.ingest.sentry.io/0 \
   --dart-define=APP_ENV=Prod
 ```
+```bash
+flutter build ipa --release \
+--dart-define=API_BASE_URL=https://api.teammanagement.it \
+--dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration \
+--dart-define=SENTRY_DSN=IL_TUO_DSN_REALE \
+--dart-define=APP_ENV=Prod
+```
+
+
 
 Without a real `SENTRY_DSN`, Sentry stays disabled even if the environment is
 resolved to `Dev`, `Test`, or `Prod`.
@@ -190,3 +214,4 @@ resolved to `Dev`, `Test`, or `Prod`.
 - iOS simulator / desktop -> `http://127.0.0.1:8080`
 - real device on LAN -> `http://<server-ip>:8080`
 - production release -> `https://api.example.com`
+- current public production -> `https://api.teammanagement.it`

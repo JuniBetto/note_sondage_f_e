@@ -36,7 +36,10 @@ class _SondageWebState extends State<SondageWeb> {
       if (!mounted) {
         return;
       }
-      context.read<SondageBloc>().add(LoadSondagesEvent());
+      final blocState = context.read<SondageBloc>().state;
+      if (blocState is! SondagesLoaded && blocState is! SondageLoading) {
+        context.read<SondageBloc>().add(LoadSondagesEvent());
+      }
     });
   }
 

@@ -191,6 +191,92 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     );
   }
 
+  Future<void> approveClockingDecision(NotificationCenterItem item) async {
+    final teamId = item.metadata['teamId']?.trim();
+    final requesterUserId = item.requesterUserId;
+    final requestedDate = item.requestedDate;
+    if (teamId == null ||
+        teamId.isEmpty ||
+        requesterUserId == null ||
+        requestedDate == null) {
+      return;
+    }
+
+    await _performAction(item.notificationId, () async {
+      switch (item.requestType) {
+        case 'clocking':
+          await _backendAuth.approveClockingRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'vacation':
+          await _backendAuth.approveVacationRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'permission':
+          await _backendAuth.approvePermissionRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            startTime: item.permissionStartTime ?? '',
+            endTime: item.permissionEndTime ?? '',
+            note: item.metadata['note']?.trim(),
+          );
+          break;
+      }
+    });
+  }
+
+  Future<void> rejectClockingDecision(NotificationCenterItem item) async {
+    final teamId = item.metadata['teamId']?.trim();
+    final requesterUserId = item.requesterUserId;
+    final requestedDate = item.requestedDate;
+    if (teamId == null ||
+        teamId.isEmpty ||
+        requesterUserId == null ||
+        requestedDate == null) {
+      return;
+    }
+
+    await _performAction(item.notificationId, () async {
+      switch (item.requestType) {
+        case 'clocking':
+          await _backendAuth.rejectClockingRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'vacation':
+          await _backendAuth.rejectVacationRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'permission':
+          await _backendAuth.rejectPermissionRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            startTime: item.permissionStartTime ?? '',
+            endTime: item.permissionEndTime ?? '',
+            note: item.metadata['note']?.trim(),
+          );
+          break;
+      }
+    });
+  }
+
   Future<void> handleActionIntent({
     required String notificationId,
     required String actionId,
@@ -222,6 +308,14 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     }
     if (actionId == 'reject_team_invite') {
       await rejectInvitation(item);
+      return;
+    }
+    if (actionId == 'approve_clocking_request') {
+      await approveClockingDecision(item);
+      return;
+    }
+    if (actionId == 'reject_clocking_request') {
+      await rejectClockingDecision(item);
     }
   }
 

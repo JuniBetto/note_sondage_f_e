@@ -375,7 +375,7 @@ abstract class AppLocalizations {
   /// No description provided for @webMobileAppOnlyHint.
   ///
   /// In en, this message translates to:
-  /// **'Open Note Sondage on tablet or desktop, or install the app from your store.'**
+  /// **'Open TeamManagement on tablet or desktop, or install the app from your store.'**
   String get webMobileAppOnlyHint;
 
   /// No description provided for @downloadOnAppStore.
@@ -1245,7 +1245,7 @@ abstract class AppLocalizations {
   /// No description provided for @contactUsEmailSubject.
   ///
   /// In en, this message translates to:
-  /// **'Note Sondage support request'**
+  /// **'TeamManagement support request'**
   String get contactUsEmailSubject;
 
   /// No description provided for @contactUsTopicsTitle.
@@ -2039,6 +2039,438 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System Profiles'**
   String get systemProfile;
+
+  /// No description provided for @clockingDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocking date'**
+  String get clockingDateLabel;
+
+  /// No description provided for @calendarWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get calendarWeek;
+
+  /// No description provided for @calendarMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get calendarMonth;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @clockingOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocking overview'**
+  String get clockingOverviewTitle;
+
+  /// No description provided for @clockingOverviewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This header introduces the clocking area and its main purpose.'**
+  String get clockingOverviewDescription;
+
+  /// No description provided for @clockingCurrentStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current status'**
+  String get clockingCurrentStatusTitle;
+
+  /// No description provided for @clockingCurrentStatusDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This section gives you an instant view of your clocking status and the main information for the current day.'**
+  String get clockingCurrentStatusDescription;
+
+  /// No description provided for @personal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get personal;
+
+  /// No description provided for @markVacation.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark vacation'**
+  String get markVacation;
+
+  /// No description provided for @markPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark permission'**
+  String get markPermission;
+
+  /// No description provided for @requestClocking.
+  ///
+  /// In en, this message translates to:
+  /// **'Request clocking'**
+  String get requestClocking;
+
+  /// No description provided for @requestVacation.
+  ///
+  /// In en, this message translates to:
+  /// **'Request vacation'**
+  String get requestVacation;
+
+  /// No description provided for @requestPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Request permission'**
+  String get requestPermission;
+
+  /// No description provided for @vacationStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Vacation'**
+  String get vacationStatus;
+
+  /// No description provided for @clockingOpenRecordAnotherDay.
+  ///
+  /// In en, this message translates to:
+  /// **'You have an open clocking on another day. Select it to continue.'**
+  String get clockingOpenRecordAnotherDay;
+
+  /// No description provided for @dayAlreadyHasClocking.
+  ///
+  /// In en, this message translates to:
+  /// **'A clocking already exists for {date}.'**
+  String dayAlreadyHasClocking(String date);
+
+  /// No description provided for @manualClockingUseInlineForPastDays.
+  ///
+  /// In en, this message translates to:
+  /// **'For days other than today, use the manual entry section below.'**
+  String get manualClockingUseInlineForPastDays;
+
+  /// No description provided for @manualClockingRequiresApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'For this date, ask a manager for clocking approval or use a team you manage.'**
+  String get manualClockingRequiresApproval;
+
+  /// No description provided for @selectedDayMarkedAsVacation.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected day is marked as vacation.'**
+  String get selectedDayMarkedAsVacation;
+
+  /// No description provided for @clockingCurrentTimeOverlapsExistingRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'The current time falls inside a clocking or permission already recorded today.'**
+  String get clockingCurrentTimeOverlapsExistingRecord;
+
+  /// No description provided for @createClockingForDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a clocking for {date}'**
+  String createClockingForDate(String date);
+
+  /// No description provided for @breakOnlyCurrentDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Breaks are available only for the current day.'**
+  String get breakOnlyCurrentDay;
+
+  /// No description provided for @manualClockingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add clocking'**
+  String get manualClockingTitle;
+
+  /// No description provided for @manualClockingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the clocking for {date} or add more past days.'**
+  String manualClockingDescription(String date);
+
+  /// No description provided for @manualClockingResolveOpenRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'You have an open clocking on another day. Close it or select that day before saving a manual clocking.'**
+  String get manualClockingResolveOpenRecord;
+
+  /// No description provided for @selectedDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected days'**
+  String get selectedDays;
+
+  /// No description provided for @addDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Add day'**
+  String get addDay;
+
+  /// No description provided for @clockInLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock-in'**
+  String get clockInLabel;
+
+  /// No description provided for @clockOutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock-out'**
+  String get clockOutLabel;
+
+  /// No description provided for @optionalNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional note'**
+  String get optionalNoteHint;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get saving;
+
+  /// No description provided for @saveClocking.
+  ///
+  /// In en, this message translates to:
+  /// **'Save clocking'**
+  String get saveClocking;
+
+  /// No description provided for @manualClockingTodayLiveOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'For today, use the live clock-in, break, and clock-out actions.'**
+  String get manualClockingTodayLiveOnly;
+
+  /// No description provided for @invalidBreakMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Break time must be a valid number.'**
+  String get invalidBreakMinutes;
+
+  /// No description provided for @clockOutMustBeAfterClockIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock-out time must be after clock-in.'**
+  String get clockOutMustBeAfterClockIn;
+
+  /// No description provided for @breakMustBeShorterThanShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Break must be shorter than shift duration.'**
+  String get breakMustBeShorterThanShift;
+
+  /// No description provided for @manualClockingSavedSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocking saved successfully.'**
+  String get manualClockingSavedSingle;
+
+  /// No description provided for @manualClockingSavedMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} clockings saved successfully.'**
+  String manualClockingSavedMultiple(int count);
+
+  /// No description provided for @manualClockingSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t save the manual clocking.'**
+  String get manualClockingSaveError;
+
+  /// No description provided for @noTeamSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No team selected'**
+  String get noTeamSelected;
+
+  /// No description provided for @changeOrSearchTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Open to change team or search for one'**
+  String get changeOrSearchTeam;
+
+  /// No description provided for @teamAvailableForClocking.
+  ///
+  /// In en, this message translates to:
+  /// **'Team available for clocking'**
+  String get teamAvailableForClocking;
+
+  /// No description provided for @searchTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Search team...'**
+  String get searchTeam;
+
+  /// No description provided for @noTeamFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No team found'**
+  String get noTeamFound;
+
+  /// No description provided for @selectTeamFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a team first.'**
+  String get selectTeamFirst;
+
+  /// No description provided for @selectTeamBeforeVacation.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a team before marking vacation.'**
+  String get selectTeamBeforeVacation;
+
+  /// No description provided for @markSelectedDateAsVacation.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark {date} as vacation'**
+  String markSelectedDateAsVacation(String date);
+
+  /// No description provided for @markSelectedDayAsVacationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This action will mark the selected day as vacation.'**
+  String get markSelectedDayAsVacationDescription;
+
+  /// No description provided for @markPermissionForDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark permission for {date}'**
+  String markPermissionForDate(String date);
+
+  /// No description provided for @start.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get start;
+
+  /// No description provided for @end.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get end;
+
+  /// No description provided for @permissionInvalidRange.
+  ///
+  /// In en, this message translates to:
+  /// **'End time must be after start time for permission.'**
+  String get permissionInvalidRange;
+
+  /// No description provided for @noAssignableMembersForTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignable members found for this team.'**
+  String get noAssignableMembersForTeam;
+
+  /// No description provided for @assignVacationToMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark vacation for a member'**
+  String get assignVacationToMember;
+
+  /// No description provided for @userLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get userLabel;
+
+  /// No description provided for @optionalNoteFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional note for {name}'**
+  String optionalNoteFor(String name);
+
+  /// No description provided for @optionalRequestNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional note for the request'**
+  String get optionalRequestNoteHint;
+
+  /// No description provided for @clockingApprovalRequestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can request clocking, vacation, or permission for the selected team and date.'**
+  String get clockingApprovalRequestHint;
+
+  /// No description provided for @requestClockingForSelectedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Request clocking for {date}'**
+  String requestClockingForSelectedDate(String date);
+
+  /// No description provided for @noMembersAvailableForClockingRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'No members available for the clocking request.'**
+  String get noMembersAvailableForClockingRequest;
+
+  /// No description provided for @sendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Send request'**
+  String get sendRequest;
+
+  /// No description provided for @clockingRequestSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocking request sent successfully.'**
+  String get clockingRequestSentSuccess;
+
+  /// No description provided for @clockingRequestSentError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the clocking request to the team member.'**
+  String get clockingRequestSentError;
+
+  /// No description provided for @vacationRequestSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Vacation request sent successfully.'**
+  String get vacationRequestSentSuccess;
+
+  /// No description provided for @vacationRequestSentError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the vacation request.'**
+  String get vacationRequestSentError;
+
+  /// No description provided for @permissionRequestSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission request sent successfully.'**
+  String get permissionRequestSentSuccess;
+
+  /// No description provided for @permissionRequestSentError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the permission request.'**
+  String get permissionRequestSentError;
+
+  /// No description provided for @approveRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get approveRequest;
+
+  /// No description provided for @rejectRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get rejectRequest;
+
+  /// No description provided for @clockInDateTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock-in (YYYY-MM-DD HH:MM)'**
+  String get clockInDateTimeLabel;
+
+  /// No description provided for @clockOutDateTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock-out (YYYY-MM-DD HH:MM)'**
+  String get clockOutDateTimeLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -10,8 +10,12 @@ class SondageRemoteDataSource {
   SondageRemoteDataSource(this.localDataSource);
 
   Future<List<SondageEntity>> getAll() async {
-    final myResponse = await DioClient().dio.get('$_endpoint/my');
-    final activeResponse = await DioClient().dio.get('$_endpoint/active');
+    final responses = await Future.wait<dynamic>([
+      DioClient().dio.get('$_endpoint/my'),
+      DioClient().dio.get('$_endpoint/active'),
+    ]);
+    final myResponse = responses[0];
+    final activeResponse = responses[1];
 
     final merged = <String, SondageEntity>{};
     for (final raw in _extractList(myResponse.data)) {
@@ -31,9 +35,9 @@ class SondageRemoteDataSource {
 
   Future<List<SondageEntity>> getAllByUserId(String userId) async {
     final response = await DioClient().dio.get('$_endpoint/my');
-    final sondages = _extractList(response.data)
-        .map(SondageMapper.fromJson)
-        .toList();
+    final sondages = _extractList(
+      response.data,
+    ).map(SondageMapper.fromJson).toList();
     await localDataSource.saveAll(sondages);
     return sondages;
   }
@@ -85,9 +89,9 @@ class SondageRemoteDataSource {
     if (data is! List) return const [];
     return data
         .whereType<Map>()
-        .map((item) => item.map(
-              (key, value) => MapEntry(key.toString(), value),
-            ))
+        .map(
+          (item) => item.map((key, value) => MapEntry(key.toString(), value)),
+        )
         .toList();
   }
 }

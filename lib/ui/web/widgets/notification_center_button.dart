@@ -4,6 +4,7 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 const int _maxWebNotificationCenterItems = 10;
@@ -160,18 +161,27 @@ class _NotificationCenterDialog extends StatelessWidget {
                               .contains(item.notificationId);
                           final canRespond =
                               !isCompleted &&
-                              item.supportsInviteDecisionFor(currentUserId);
+                              (item.supportsInviteDecisionFor(currentUserId) ||
+                                  item.supportsClockingDecision());
 
                           return _NotificationCard(
                             item: item,
                             isProcessing: isProcessing,
                             canRespond: canRespond,
-                            onAccept: () => context
-                                .read<NotificationCenterCubit>()
-                                .acceptInvitation(item),
-                            onReject: () => context
-                                .read<NotificationCenterCubit>()
-                                .rejectInvitation(item),
+                            onAccept: () => item.supportsClockingDecision()
+                                ? context
+                                      .read<NotificationCenterCubit>()
+                                      .approveClockingDecision(item)
+                                : context
+                                      .read<NotificationCenterCubit>()
+                                      .acceptInvitation(item),
+                            onReject: () => item.supportsClockingDecision()
+                                ? context
+                                      .read<NotificationCenterCubit>()
+                                      .rejectClockingDecision(item)
+                                : context
+                                      .read<NotificationCenterCubit>()
+                                      .rejectInvitation(item),
                           );
                         },
                       ),
@@ -242,6 +252,7 @@ class _NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final localization = AppLocalizations.of(context)!;
     final navigationLabel = canRespond
         ? null
         : NotificationNavigation.labelFor(item);
@@ -297,7 +308,7 @@ class _NotificationCard extends StatelessWidget {
                   children: [
                     OutlinedButton(
                       onPressed: isProcessing ? null : onReject,
-                      child: const Text('Rifiuta'),
+                      child: Text(localization.rejectRequest),
                     ),
                     const SizedBox(width: 10),
                     FilledButton(
@@ -308,7 +319,7 @@ class _NotificationCard extends StatelessWidget {
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Accetta'),
+                          : Text(localization.approveRequest),
                     ),
                   ],
                 ),

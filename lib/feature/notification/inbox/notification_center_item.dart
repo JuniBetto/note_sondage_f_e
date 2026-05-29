@@ -92,6 +92,46 @@ class NotificationCenterItem extends Equatable {
     return value;
   }
 
+  String? get requestType {
+    final value = metadata['requestType']?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  String? get requesterUserId {
+    final value = metadata['requesterUserId']?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  String? get requestedDate {
+    final value = metadata['requestedDate']?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  String? get permissionStartTime {
+    final value = metadata['permissionStartTime']?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  String? get permissionEndTime {
+    final value = metadata['permissionEndTime']?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
   bool get isPendingTeamInvitation => eventType == 'TEAM_MEMBER_INVITED';
 
   bool get isTerminalTeamInvitationEvent =>
@@ -114,6 +154,46 @@ class NotificationCenterItem extends Equatable {
     return eventType == 'TEAM_MEMBER_INVITED' &&
         invitationId != null &&
         (metadata['invitedUserId']?.trim() ?? '') == currentUserId;
+  }
+
+  bool get isPendingClockingManagerDecision =>
+      eventType == 'CLOCKING_CLOCKING_REQUESTED' ||
+      eventType == 'CLOCKING_VACATION_REQUESTED' ||
+      eventType == 'CLOCKING_PERMISSION_REQUESTED';
+
+  bool supportsClockingDecision() {
+    return isPendingClockingManagerDecision &&
+        teamName != null &&
+        requesterUserId != null &&
+        requestedDate != null &&
+        requestType != null;
+  }
+
+  bool supportsApprovedManualClockingFor({
+    required String currentUserId,
+    required String teamId,
+    required DateTime date,
+  }) {
+    if (eventType != 'CLOCKING_CLOCKING_REQUEST_APPROVED') {
+      return false;
+    }
+    if ((requesterUserId ?? '') != currentUserId) {
+      return false;
+    }
+    if ((metadata['teamId']?.trim() ?? '') != teamId) {
+      return false;
+    }
+    final requested = requestedDate;
+    if (requested == null) {
+      return false;
+    }
+    final parsed = DateTime.tryParse(requested);
+    if (parsed == null) {
+      return false;
+    }
+    return parsed.year == date.year &&
+        parsed.month == date.month &&
+        parsed.day == date.day;
   }
 
   @override

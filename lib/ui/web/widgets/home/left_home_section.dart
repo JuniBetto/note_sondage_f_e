@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/aspect_ratio.dart' as adaptive;
 import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
 
 class LeftHomeSection extends StatefulWidget {
@@ -42,6 +42,26 @@ class _LeftHomeSectionState extends State<LeftHomeSection> {
     );
   }
 
+  Widget _buildAdaptiveLogo(BuildContext context) {
+    final maxWidth = widget.isSmallScreen ? 112.0 : 208.0;
+
+    return Align(
+      alignment: widget.isSmallScreen ? Alignment.center : Alignment.center,
+      child: SizedBox(
+        width: maxWidth,
+        child: adaptive.AspectRatio(
+          aspectRatio: 1,
+          borderRadius: BorderRadius.circular(widget.isSmallScreen ? 20 : 24),
+          child: Image.asset(
+            'assets/images/logo.png',
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -66,7 +86,7 @@ class _LeftHomeSectionState extends State<LeftHomeSection> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    padding: const EdgeInsets.only(top: 4.0,bottom: 0.0, ),
                     child: IconButton(
                       onPressed: widget.onPressedResizeSidebar,
                       icon: Icon(
@@ -81,33 +101,23 @@ class _LeftHomeSectionState extends State<LeftHomeSection> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24.0),
+                padding: const EdgeInsets.only(top: 4.0,bottom: 4.0),
                 child:
                     widget.title ??
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: SvgPicture.asset(
-                            'assets/images/logo3.svg',
-                            width: 80,
-                            height: 80,
-                            color: colorScheme.selectItem,
-                            colorFilter: ColorFilter.mode(
-                              colorScheme.selectItem!,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                        ),
-                        if (widget.isSmallScreen)
+                        Expanded(child: _buildAdaptiveLogo(context)),
+                        /* if (widget.isSmallScreen)
                           Expanded(
                             child: Text(
-                              "Manage",
+                              'TeamManagement',
                               style: textTheme.headlineLarge!.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: colorScheme.selectItem,
                               ),
                             ),
-                          ),
+                          ),*/
                       ],
                     ),
               ),

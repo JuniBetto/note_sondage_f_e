@@ -15,6 +15,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
 
   /// In-memory cache to avoid flickering on CRUD operations
   List<TeamEntity> _cachedTeams = [];
+  String? _teamsRefreshKey;
 
   TeamBloc({required this.teamUseCase, required this.teamLocalDataSource})
     : super(TeamInitial()) {
@@ -33,6 +34,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     LoadTeamsEvent event,
     Emitter<TeamState> emit,
   ) async {
+    const requestKey = 'all';
     // Phase 1: emit in-memory cache or Hive immediately (synchronous feel)
     var hadLocalData = false;
     if (_cachedTeams.isNotEmpty) {
@@ -49,6 +51,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       }
     }
     // Phase 2: fire-and-forget — never blocks the event queue
+    if (_teamsRefreshKey == requestKey) {
+      return;
+    }
+    _teamsRefreshKey = requestKey;
     teamUseCase
         .getAllTeams()
         .then((remote) {
@@ -68,6 +74,11 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
               ),
             );
           }
+        })
+        .whenComplete(() {
+          if (_teamsRefreshKey == requestKey) {
+            _teamsRefreshKey = null;
+          }
         });
   }
 
@@ -75,6 +86,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     LoadTeamsByUserIdEvent event,
     Emitter<TeamState> emit,
   ) async {
+    final requestKey = 'user:${event.userId}';
     // Phase 1: emit in-memory cache or Hive immediately (synchronous feel)
     var hadLocalData = false;
     if (_cachedTeams.isNotEmpty) {
@@ -91,6 +103,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       }
     }
     // Phase 2: fire-and-forget — never blocks the event queue
+    if (_teamsRefreshKey == requestKey) {
+      return;
+    }
+    _teamsRefreshKey = requestKey;
     teamUseCase
         .getAllTeamsByUserId(event.userId)
         .then((remote) {
@@ -109,6 +125,11 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
                 hadLocalData: hadLocalData,
               ),
             );
+          }
+        })
+        .whenComplete(() {
+          if (_teamsRefreshKey == requestKey) {
+            _teamsRefreshKey = null;
           }
         });
   }

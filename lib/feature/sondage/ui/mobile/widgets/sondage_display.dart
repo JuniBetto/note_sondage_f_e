@@ -45,60 +45,82 @@ class _TeamsDisplaySectionState extends State<SondageDisplay> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final orientation = MediaQuery.orientationOf(context);
 
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            VisualType(
-              isActive1: isGridView == 1,
-              isActive2: isGridView == 2,
-              color: colorScheme.cursorColor,
-              iconData1: Icons.window_sharp,
-              iconData2: Icons.list,
-              onTap1: () {
-                setState(() {
-                  isGridView = 1;
-                });
-                widget.onViewChanged(1);
-              },
-              onTap2: () {
-                setState(() {
-                  isGridView = 2;
-                });
-                widget.onViewChanged(2);
-              },
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useLandscapeCompactLayout =
+            orientation == Orientation.landscape && constraints.maxHeight < 560;
+        final sectionSpacing = useLandscapeCompactLayout ? 8.0 : 16.0;
+        final toggleIconSize = useLandscapeCompactLayout ? 22.0 : 28.0;
+        final sondageList = SizedBox(
+          width: double.infinity,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.borderColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.bgNavbarSurface!.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: SizedBox(
-            width: double.infinity,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: colorScheme.borderColor,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.bgNavbarSurface!.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ResponsiveGridSondages(
-                items: widget.sondages,
-                isRow: isGridView == 1,
-                onDeleteTap: widget.onDeleteTap,
-                onEditTap: widget.onEditTap,
-              ),
+            child: ResponsiveGridSondages(
+              items: widget.sondages,
+              isRow: isGridView == 1,
+              onDeleteTap: widget.onDeleteTap,
+              onEditTap: widget.onEditTap,
+              shrinkWrapLayout: useLandscapeCompactLayout,
             ),
           ),
-        ),
-      ],
+        );
+
+        final header = Align(
+          alignment: Alignment.centerRight,
+          child: VisualType(
+            size: toggleIconSize,
+            isActive1: isGridView == 1,
+            isActive2: isGridView == 2,
+            color: colorScheme.cursorColor,
+            iconData1: Icons.window_sharp,
+            iconData2: Icons.list,
+            onTap1: () {
+              setState(() {
+                isGridView = 1;
+              });
+              widget.onViewChanged(1);
+            },
+            onTap2: () {
+              setState(() {
+                isGridView = 2;
+              });
+              widget.onViewChanged(2);
+            },
+          ),
+        );
+
+        if (!useLandscapeCompactLayout) {
+          return Column(
+            children: [
+              header,
+              SizedBox(height: sectionSpacing),
+              Expanded(child: sondageList),
+            ],
+          );
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            header,
+            SizedBox(height: sectionSpacing),
+            sondageList,
+          ],
+        );
+      },
     );
   }
 }

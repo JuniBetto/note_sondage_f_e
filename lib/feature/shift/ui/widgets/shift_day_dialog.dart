@@ -10,19 +10,406 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/anchored_dropdown_overlay.dart';
+import 'package:note_sondage/ui/widgets/custom_app_button.dart';
+import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
+
+String _localizedShiftDayText(
+  BuildContext context, {
+  required String it,
+  required String en,
+  String? fr,
+  String? es,
+}) {
+  switch (Localizations.localeOf(context).languageCode) {
+    case 'it':
+      return it;
+    case 'fr':
+      return fr ?? en;
+    case 'es':
+      return es ?? en;
+    default:
+      return en;
+  }
+}
+
+String _defaultTeamMemberLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Membro del team',
+  en: 'Team member',
+  fr: 'Membre de l\'equipe',
+  es: 'Miembro del equipo',
+);
+
+String _undefinedRoleLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Ruolo non definito',
+  en: 'Undefined role',
+  fr: 'Role non defini',
+  es: 'Rol no definido',
+);
+
+String _localizedRoleLabel(BuildContext context, String rawRole) {
+  final normalized = rawRole.trim();
+  if (normalized.isEmpty) {
+    return _undefinedRoleLabel(context);
+  }
+  switch (normalized.toLowerCase()) {
+    case 'owner':
+      return _localizedShiftDayText(
+        context,
+        it: 'Owner',
+        en: 'Owner',
+        fr: 'Proprietaire',
+        es: 'Propietario',
+      );
+    case 'admin':
+      return _localizedShiftDayText(
+        context,
+        it: 'Admin',
+        en: 'Admin',
+        fr: 'Admin',
+        es: 'Admin',
+      );
+    case 'manager':
+      return _localizedShiftDayText(
+        context,
+        it: 'Manager',
+        en: 'Manager',
+        fr: 'Manager',
+        es: 'Manager',
+      );
+    case 'member':
+      return _localizedShiftDayText(
+        context,
+        it: 'Membro',
+        en: 'Member',
+        fr: 'Membre',
+        es: 'Miembro',
+      );
+    default:
+      return normalized
+          .split(RegExp(r'[_\s-]+'))
+          .where((part) => part.isNotEmpty)
+          .map(
+            (part) =>
+                '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+          )
+          .join(' ');
+  }
+}
+
+String _privateShiftLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Privato (solo tu)',
+  en: 'Private (only you)',
+  fr: 'Prive (seulement vous)',
+  es: 'Privado (solo tu)',
+);
+
+String _privateShiftDescription(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Turno visibile solo a te',
+  en: 'Shift visible only to you',
+  fr: 'Quart visible uniquement pour vous',
+  es: 'Turno visible solo para ti',
+);
+
+String _openChangeOrSearchTeamText(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Apri per cambiare team o cercarne uno',
+      en: 'Open to change team or search for one',
+      fr: 'Ouvrez pour changer d\'equipe ou en rechercher une',
+      es: 'Abre para cambiar de equipo o buscar uno',
+    );
+
+String _assignToTeamLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Assegna al team',
+  en: 'Assign to team',
+  fr: 'Assigner a l\'equipe',
+  es: 'Asignar al equipo',
+);
+
+String _doNotAssignTeamText(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Non assegnare il turno a un team',
+  en: 'Do not assign this shift to a team',
+  fr: 'Ne pas assigner ce quart a une equipe',
+  es: 'No asignar este turno a un equipo',
+);
+
+String _teamAvailableForPublicAssignmentText(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Team disponibile per assegnazione pubblica',
+      en: 'Team available for public assignment',
+      fr: 'Equipe disponible pour une attribution publique',
+      es: 'Equipo disponible para asignacion publica',
+    );
+
+String _assignToLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Assegna a',
+  en: 'Assign to',
+  fr: 'Assigner a',
+  es: 'Asignar a',
+);
+
+String _assignToDescription(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Puoi selezionare uno o piu membri specifici del team selezionato oppure assegnare il turno a tutti.',
+  en: 'You can select one or more specific members of the selected team or assign the shift to everyone.',
+  fr: 'Vous pouvez selectionner un ou plusieurs membres specifiques de l\'equipe selectionnee ou attribuer le quart a tout le monde.',
+  es: 'Puedes seleccionar uno o mas miembros especificos del equipo seleccionado o asignar el turno a todos.',
+);
+
+String _assignToAllMembersLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Tutti i membri del team',
+  en: 'All team members',
+  fr: 'Tous les membres de l\'equipe',
+  es: 'Todos los miembros del equipo',
+);
+
+String _assignToAllMembersSubtitle(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Assegna lo stesso turno a tutti',
+      en: 'Assign the same shift to everyone',
+      fr: 'Attribuer le meme quart a tout le monde',
+      es: 'Asigna el mismo turno a todos',
+    );
+
+String _loadingTeamMembersText(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Caricamento membri del team...',
+  en: 'Loading team members...',
+  fr: 'Chargement des membres de l\'equipe...',
+  es: 'Cargando miembros del equipo...',
+);
+
+String _noMembersForTeamText(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Nessun membro disponibile per questo team.',
+  en: 'No members available for this team.',
+  fr: 'Aucun membre disponible pour cette equipe.',
+  es: 'No hay miembros disponibles para este equipo.',
+);
+
+String _notAssignableUntilActiveText(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Non assegnabile finche l\'utente non e attivo',
+      en: 'Not assignable until the user becomes active',
+      fr: 'Non assignable tant que l\'utilisateur n\'est pas actif',
+      es: 'No asignable hasta que el usuario este activo',
+    );
+
+String _commonShiftLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Turno comune',
+  en: 'Common shift',
+  fr: 'Quart commun',
+  es: 'Turno comun',
+);
+
+String _commonShiftSubtitle(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Usa il turno impostato sopra',
+  en: 'Use the shift selected above',
+  fr: 'Utiliser le quart defini ci-dessus',
+  es: 'Usa el turno configurado arriba',
+);
+
+String _useDifferentProfilesLabel(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Usa profili diversi per i membri selezionati',
+      en: 'Use different profiles for selected members',
+      fr: 'Utiliser des profils differents pour les membres selectionnes',
+      es: 'Usa perfiles diferentes para los miembros seleccionados',
+    );
+
+String _useDifferentProfilesSubtitle(
+  BuildContext context,
+) => _localizedShiftDayText(
+  context,
+  it: 'Perfetto per assegnare mattina, pomeriggio e sera a persone diverse nello stesso team.',
+  en: 'Perfect for assigning morning, afternoon and evening shifts to different people in the same team.',
+  fr: 'Ideal pour attribuer matin, apres-midi et soir a des personnes differentes dans la meme equipe.',
+  es: 'Perfecto para asignar manana, tarde y noche a personas diferentes dentro del mismo equipo.',
+);
+
+String _commonShiftMemberHint(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Se lasci "Turno comune", quel membro usera il turno impostato sopra.',
+  en: 'If you keep "Common shift", that member will use the shift selected above.',
+  fr: 'Si vous laissez "Quart commun", ce membre utilisera le quart defini ci-dessus.',
+  es: 'Si dejas "Turno comun", ese miembro usara el turno configurado arriba.',
+);
+
+String _publicShiftReadOnlyBanner(
+  BuildContext context,
+) => _localizedShiftDayText(
+  context,
+  it: 'Turno pubblico - solo owner, admin o ruoli con permessi Admin/Manage possono modificarlo',
+  en: 'Public shift - only owners, admins or roles with Admin/Manage permissions can edit it',
+  fr: 'Quart public - seuls les proprietaires, admins ou roles avec permissions Admin/Manage peuvent le modifier',
+  es: 'Turno publico: solo owners, admins o roles con permisos Admin/Manage pueden editarlo',
+);
+
+String _publicVisibleToTeamTitle(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Pubblico - visibile al team',
+      en: 'Public - visible to the team',
+      fr: 'Public - visible par l\'equipe',
+      es: 'Publico: visible para el equipo',
+    );
+
+String _privateVisibleOnlyToYouTitle(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Privato - solo tu',
+      en: 'Private - only you',
+      fr: 'Prive - seulement vous',
+      es: 'Privado: solo tu',
+    );
+
+String _teamSelectedCreatesPublicShiftText(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Con un team selezionato il turno viene creato come pubblico',
+      en: 'With a selected team, the shift is created as public',
+      fr: 'Avec une equipe selectionnee, le quart est cree comme public',
+      es: 'Con un equipo seleccionado, el turno se crea como publico',
+    );
+
+String _allTeamMembersSeeShiftText(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Tutti i membri del team vedono questo turno',
+      en: 'All team members can see this shift',
+      fr: 'Tous les membres de l\'equipe voient ce quart',
+      es: 'Todos los miembros del equipo ven este turno',
+    );
+
+String _onlyYouCanSeeShiftText(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Solo tu puoi vedere questo turno',
+  en: 'Only you can see this shift',
+  fr: 'Seulement vous pouvez voir ce quart',
+  es: 'Solo tu puedes ver este turno',
+);
+
+String _archiveTooltipText(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Archivia',
+  en: 'Archive',
+  fr: 'Archiver',
+  es: 'Archivar',
+);
+
+String _notificationModeLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Notifica',
+  en: 'Notification',
+  fr: 'Notification',
+  es: 'Notificacion',
+);
+
+String _alarmModeLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Sveglia',
+  en: 'Alarm',
+  fr: 'Alarme',
+  es: 'Alarma',
+);
+
+String _alarmPermissionTitle(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Permesso sveglia',
+  en: 'Alarm permission',
+  fr: 'Autorisation alarme',
+  es: 'Permiso de alarma',
+);
+
+String _alarmPermissionMessage(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Per far aprire lo schermo durante la sveglia del turno, abilita "Mostra sopra altre app" (o "Intent a schermo intero") nelle impostazioni dell\'app.',
+  en: 'To wake the screen for a shift alarm, enable "Display over other apps" (or "Full screen intent") in the app settings.',
+  fr: 'Pour reveiller l\'ecran pendant l\'alarme du quart, activez "Afficher par-dessus les autres applications" (ou "Intent plein ecran") dans les parametres de l\'application.',
+  es: 'Para encender la pantalla durante la alarma del turno, activa "Mostrar sobre otras apps" (o "Intent de pantalla completa") en los ajustes de la app.',
+);
+
+String _searchShiftHintText(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Cerca turno...',
+  en: 'Search shift...',
+  fr: 'Rechercher un quart...',
+  es: 'Buscar turno...',
+);
+
+String _addAlarmTitle(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Aggiungi sveglia',
+  en: 'Add alarm',
+  fr: 'Ajouter une alarme',
+  es: 'Agregar alarma',
+);
+
+String _alarmMinutesLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Minuti (negativi = prima)',
+  en: 'Minutes (negative = before)',
+  fr: 'Minutes (negatif = avant)',
+  es: 'Minutos (negativo = antes)',
+);
+
+String _addLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Aggiungi',
+  en: 'Add',
+  fr: 'Ajouter',
+  es: 'Agregar',
+);
 
 /// A simplified view of a team member used inside the shift dialog.
 class ShiftTeamMember {
   final String? userId; // Firebase UID when assignable
-  final String displayName;
-  final String? subtitle;
+  final String email;
+  final String roleLabel;
+  final String? fullName;
   final bool isAssignable;
   const ShiftTeamMember({
     required this.userId,
-    required this.displayName,
-    this.subtitle,
+    required this.email,
+    required this.roleLabel,
+    this.fullName,
     this.isAssignable = true,
   });
+
+  String get primaryLabel => email.isNotEmpty
+      ? email
+      : fullName?.trim().isNotEmpty == true
+      ? fullName!.trim()
+      : 'Team member';
+
+  String? get secondaryLabel => roleLabel.trim().isNotEmpty ? roleLabel : null;
+
+  String displayLabel(BuildContext context) {
+    if (email.isNotEmpty) return email;
+    if (fullName?.trim().isNotEmpty == true) return fullName!.trim();
+    return _defaultTeamMemberLabel(context);
+  }
+
+  String get searchLabel => [
+    primaryLabel,
+    secondaryLabel ?? '',
+    fullName ?? '',
+  ].join(' ').toLowerCase();
 }
 
 class ShiftMemberAssignmentPlan {
@@ -174,6 +561,10 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     return teamId != null && _loadingTeamIds.contains(teamId);
   }
 
+  String _formatRoleLabel(String rawRole) {
+    return _localizedRoleLabel(context, rawRole);
+  }
+
   List<ShiftTeamMember> get _teamMembers {
     if (_selectedTeam == null) return [];
     final members = _selectedTeam?.team.id != null
@@ -182,24 +573,13 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     return members.map((m) {
       final email = m.teamMember.userEmail.trim();
       final fullName = m.user?.fullName.trim() ?? '';
-      final initialName = m.teamMember.initialName?.trim() ?? '';
-      final displayName = fullName.isNotEmpty
-          ? fullName
-          : email.isNotEmpty
-          ? email
-          : initialName.isNotEmpty
-          ? initialName
-          : 'Membro del team';
-      final subtitle = fullName.isNotEmpty && email.isNotEmpty
-          ? email
-          : m.teamMember.roleId.trim().isNotEmpty
-          ? m.teamMember.roleId
-          : null;
+      final roleLabel = _formatRoleLabel(m.teamMember.roleId);
       final normalizedUserId = m.teamMember.userId?.trim();
       return ShiftTeamMember(
         userId: normalizedUserId?.isNotEmpty == true ? normalizedUserId : null,
-        displayName: displayName,
-        subtitle: subtitle,
+        email: email,
+        roleLabel: roleLabel,
+        fullName: fullName.isNotEmpty ? fullName : m.teamMember.initialName,
         isAssignable: normalizedUserId?.isNotEmpty == true,
       );
     }).toList();
@@ -383,16 +763,14 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Permesso sveglia'),
-          content: const Text(
-            'Per far aprire lo schermo durante la sveglia del turno, '
-            'abilita "Mostra sopra altre app" (o "Intent a schermo intero") '
-            'nelle impostazioni dell\'app.',
-          ),
+          title: Text(_alarmPermissionTitle(context)),
+          content: Text(_alarmPermissionMessage(context)),
           actions: [
-            TextButton(
+            CustomAppButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
+              type: ButtonType.text,
+              isActive: false,
+              child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
             ),
           ],
         ),
@@ -438,6 +816,34 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     });
   }
 
+  Future<void> _submitShiftDay() async {
+    if (_readOnly || !_hasValidTeamSelection || !_hasValidTimeRange) {
+      return;
+    }
+    if (_alarmOffsets.isNotEmpty && _alarmType == ShiftAlarmType.alarm) {
+      await _requestAlarmPermissionsIfNeeded();
+      if (!mounted) {
+        return;
+      }
+    }
+
+    Navigator.of(context).pop(
+      ShiftDayDialogResult(
+        profileId: _selectedProfile?.id,
+        startTime: _startTime,
+        endTime: _endTime,
+        overnight: _overnight,
+        alarmOffsets: _alarmOffsets,
+        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+        isPublic: _effectiveIsPublic,
+        teamId: _selectedTeam?.team.id ?? widget.existing?.teamId,
+        targetUserIds: _resolvedTargetUserIds,
+        memberAssignmentPlans: _memberAssignmentPlans,
+        scheduledDates: _scheduledDates,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -467,540 +873,519 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
-        child: Container(
-          decoration: BoxDecoration(
-            color: dialogBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor.withValues(alpha: 0.7)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!widget.useDialogLayout) ...[
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: borderColor.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                ],
-                // ── Title bar ─────────────────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.existing != null
-                            ? '${loc.editAction} – $dateLabel'
-                            : '${loc.addShift} – $dateLabel',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    if (widget.existing != null && !_readOnly)
-                      IconButton(
-                        icon: Icon(
-                          Icons.archive_outlined,
-                          color: colorScheme.descriptionColor,
-                        ),
-                        tooltip: 'Archivia',
-                        onPressed: () => Navigator.of(context).pop(
-                          ShiftDayDialogResult(
-                            startTime: _startTime,
-                            endTime: _endTime,
-                            overnight: _overnight,
-                            alarmOffsets: _alarmOffsets,
-                            archived: true,
-                          ),
-                        ),
-                      ),
-                    if (widget.existing != null && !_readOnly)
-                      IconButton(
-                        icon: Icon(Icons.delete_outline, color: appError),
-                        tooltip: loc.removeAction,
-                        onPressed: () => Navigator.of(context).pop(
-                          ShiftDayDialogResult(
-                            startTime: _startTime,
-                            endTime: _endTime,
-                            overnight: _overnight,
-                            alarmOffsets: _alarmOffsets,
-                            deleted: true,
-                          ),
-                        ),
-                      ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        color: colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                      tooltip: loc.close,
-                      onPressed: () => Navigator.of(context).pop(null),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // ── Read-only banner (public shift, non-owner) ────────────────
-                if (_readOnly)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: appPrimary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: appPrimary.withValues(alpha: 0.28),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.public, size: 16, color: appPrimary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Turno pubblico – solo owner, admin o ruoli con permessi Admin/Manage possono modificarlo',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: appPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // ── Profile selector ──────────────────────────────────────────
-                Text(
-                  loc.shiftProfile,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.descriptionColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.profiles.map((p) {
-                    final selected = _selectedProfile?.id == p.id;
-                    return GestureDetector(
-                      onTap: _readOnly ? null : () => _applyProfile(p),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? p.displayColor.withValues(alpha: 0.2)
-                              : mutedSurface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: selected ? p.displayColor : borderColor,
-                            width: selected ? 2 : 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: p.displayColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              p.name,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: selected
-                                    ? FontWeight.w700
-                                    : FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Time pickers ──────────────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TimePicker(
-                        label: loc.shiftStart,
-                        value: _startTime,
-                        readOnly: _readOnly,
-                        onChanged: (t) => setState(() => _startTime = t),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _TimePicker(
-                        label: loc.shiftEnd,
-                        value: _endTime,
-                        readOnly: _readOnly,
-                        onChanged: (t) => setState(() => _endTime = t),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (!widget.useDialogLayout && widget.existing == null)
-                  const SizedBox(height: 12),
-                if (widget.existing == null)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: _readOnly ? null : () => _pickRangeEndDate(loc),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: loc.shiftRepeatUntil,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        isDense: true,
-                        suffixIcon: const Icon(Icons.calendar_today_outlined),
-                        helperText: loc.shiftRepeatUntilHelp,
-                      ),
-                      child: Text(_formatDateLabel(_rangeEndDate)),
-                    ),
-                  ),
-                const SizedBox(height: 8),
-
-                // ── Overnight toggle ──────────────────────────────────────────
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    loc.overnightShift,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  value: _overnight,
-                  onChanged: _readOnly
-                      ? null
-                      : (v) => setState(() => _overnight = v),
-                ),
-                if (!_hasValidTimeRange)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      loc.shiftEndMustBeAfterStart,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: appError,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-
-                // ── Alarm offsets ─────────────────────────────────────────────
-                Text(
-                  loc.alarms,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.descriptionColor,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                _AlarmOffsetEditor(
-                  offsets: _alarmOffsets,
-                  readOnly: _readOnly,
-                  onChanged: (offsets) =>
-                      setState(() => _alarmOffsets = offsets),
-                ),
-                const SizedBox(height: 8),
-
-                // ── Alarm type toggle ─────────────────────────────────────────
-                if (!_readOnly)
-                  SegmentedButton<ShiftAlarmType>(
-                    style: SegmentedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      textStyle: theme.textTheme.labelSmall,
-                    ),
-                    segments: const [
-                      ButtonSegment(
-                        value: ShiftAlarmType.notification,
-                        label: Text('Notifica'),
-                        icon: Icon(Icons.notifications_outlined, size: 16),
-                      ),
-                      ButtonSegment(
-                        value: ShiftAlarmType.alarm,
-                        label: Text('Sveglia'),
-                        icon: Icon(Icons.alarm, size: 16),
-                      ),
-                    ],
-                    selected: {_alarmType},
-                    onSelectionChanged: (newSet) {
-                      final selected = newSet.first;
-                      setState(() => _alarmType = selected);
-                      unawaited(
-                        _localNotifications.setShiftAlarmType(selected),
-                      );
-                      if (selected == ShiftAlarmType.alarm) {
-                        unawaited(_requestAlarmPermissionsIfNeeded());
-                      }
-                    },
-                  ),
-                const SizedBox(height: 12),
-
-                // ── Note ──────────────────────────────────────────────────────
-                TextField(
-                  controller: _noteCtrl,
-                  readOnly: _readOnly,
-                  decoration: InputDecoration(
-                    labelText: loc.note,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    isDense: true,
-                  ),
-                  maxLines: 2,
-                ),
-                // ── Team assignment (managers: create + edit of public shifts) ──
-                if (_hasOwnerTeams &&
-                    (widget.existing == null ||
-                        (widget.canManagePublicShifts &&
-                            widget.existing!.isPublic))) ...[
-                  const SizedBox(height: 12),
-                  _TeamAssignmentSection(
-                    ownerTeams: widget.ownerTeams,
-                    selectedTeam: _selectedTeam,
-                    selectedMemberIds: _selectedMemberIds,
-                    assignToAllMembers: _assignToAllMembers,
-                    teamMembers: _teamMembers,
-                    isLoadingMembers: _isSelectedTeamLoading,
-                    onTeamChanged: (team) {
-                      setState(() {
-                        _selectedTeam = team;
-                        _assignToAllMembers = true;
-                        _useMemberSpecificProfiles = false;
-                        _selectedMemberIds.clear();
-                        if (team == null && widget.existing == null) {
-                          _isPublic = false;
-                        }
-                      });
-                      unawaited(_ensureTeamMembersLoaded(team));
-                    },
-                    onAssignToAllChanged: (value) => setState(() {
-                      _assignToAllMembers = value;
-                      if (value) {
-                        _useMemberSpecificProfiles = false;
-                      }
-                      if (value) {
-                        _selectedMemberIds.clear();
-                      }
-                    }),
-                    onMemberToggled: (uid, selected) => setState(() {
-                      _assignToAllMembers = false;
-                      if (selected) {
-                        _selectedMemberIds.add(uid);
-                      } else {
-                        _selectedMemberIds.remove(uid);
-                        _memberProfileIds.remove(uid);
-                      }
-                      if (_selectedMemberIds.length < 2) {
-                        _useMemberSpecificProfiles = false;
-                      }
-                    }),
-                  ),
-                ],
-                if (!_readOnly &&
-                    widget.existing == null &&
-                    _selectedTeam != null &&
-                    !_assignToAllMembers &&
-                    _selectedMemberIds.length > 1) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: mutedSurface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SwitchListTile.adaptive(
-                          contentPadding: EdgeInsets.zero,
-                          value: _useMemberSpecificProfiles,
-                          onChanged: (value) => setState(() {
-                            _useMemberSpecificProfiles = value;
-                          }),
-                          title: const Text(
-                            'Usa profili diversi per i membri selezionati',
-                          ),
-                          subtitle: Text(
-                            'Perfetto per assegnare mattina, pomeriggio e sera a persone diverse nello stesso team.',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.descriptionColor,
-                            ),
-                          ),
-                        ),
-                        if (_useMemberSpecificProfiles) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Se lasci "Turno comune", quel membro usera il turno impostato sopra.',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.descriptionColor,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          ..._selectedSpecificMembers.map((member) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _MemberSpecificProfileTile(
-                                label: member.displayName,
-                                subtitle: member.subtitle,
-                                profiles: widget.profiles,
-                                selectedProfileId:
-                                    _memberProfileIds[member.userId!],
-                                onProfileChanged: (profileId) => setState(() {
-                                  _memberProfileIds[member.userId!] = profileId;
-                                }),
-                              ),
-                            );
-                          }),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-
-                // ── Visibility toggle (owners only) ───────────────────────────
-                if (widget.canManagePublicShifts || _effectiveIsPublic)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: _effectiveIsPublic
-                          ? appPrimary.withValues(alpha: 0.08)
-                          : mutedSurface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: _effectiveIsPublic
-                            ? appPrimary.withValues(alpha: 0.35)
-                            : borderColor,
-                      ),
-                    ),
-                    child: SwitchListTile.adaptive(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 0,
-                      ),
-                      value: _effectiveIsPublic,
-                      onChanged:
-                          widget.canManagePublicShifts &&
-                              !_isTeamScopedSelection
-                          ? (v) => setState(() => _isPublic = v)
-                          : null,
-                      secondary: Icon(
-                        _effectiveIsPublic ? Icons.public : Icons.lock_outline,
-                        size: 18,
-                        color: _effectiveIsPublic
-                            ? appPrimary
-                            : colorScheme.outline,
-                      ),
-                      title: Text(
-                        _effectiveIsPublic
-                            ? 'Pubblico – visibile al team'
-                            : 'Privato – solo tu',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: _effectiveIsPublic ? appPrimary : null,
-                        ),
-                      ),
-                      subtitle: Text(
-                        _isTeamScopedSelection
-                            ? 'Con un team selezionato il turno viene creato come pubblico'
-                            : _effectiveIsPublic
-                            ? 'Tutti i membri del team vedono questo turno'
-                            : 'Solo tu puoi vedere questo turno',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.descriptionColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 20),
-
-                // ── Confirm / Close button ────────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  child: _readOnly
-                      ? OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: Text(loc.close),
-                        )
-                      : FilledButton(
-                          onPressed:
-                              !_hasValidTeamSelection || !_hasValidTimeRange
-                              ? null
-                              : () async {
-                                  if (_alarmOffsets.isNotEmpty &&
-                                      _alarmType == ShiftAlarmType.alarm) {
-                                    await _requestAlarmPermissionsIfNeeded();
-                                    if (!mounted) {
-                                      return;
-                                    }
-                                  }
-
-                                  Navigator.of(context).pop(
-                                    ShiftDayDialogResult(
-                                      profileId: _selectedProfile?.id,
-                                      startTime: _startTime,
-                                      endTime: _endTime,
-                                      overnight: _overnight,
-                                      alarmOffsets: _alarmOffsets,
-                                      note: _noteCtrl.text.trim().isEmpty
-                                          ? null
-                                          : _noteCtrl.text.trim(),
-                                      isPublic: _effectiveIsPublic,
-                                      teamId:
-                                          _selectedTeam?.team.id ??
-                                          widget.existing?.teamId,
-                                      targetUserIds: _resolvedTargetUserIds,
-                                      memberAssignmentPlans:
-                                          _memberAssignmentPlans,
-                                      scheduledDates: _scheduledDates,
-                                    ),
-                                  );
-                                },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: appPrimary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: Text(loc.save),
-                        ),
+        child: SubmitOnEnterScope(
+          onSubmit: _readOnly || !_hasValidTeamSelection || !_hasValidTimeRange
+              ? null
+              : _submitShiftDay,
+          child: Container(
+            decoration: BoxDecoration(
+              color: dialogBackground,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderColor.withValues(alpha: 0.7)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
                 ),
               ],
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!widget.useDialogLayout) ...[
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: borderColor.withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ],
+                  // ── Title bar ─────────────────────────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.existing != null
+                              ? '${loc.editAction} – $dateLabel'
+                              : '${loc.addShift} – $dateLabel',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (widget.existing != null && !_readOnly)
+                        IconButton(
+                          icon: Icon(
+                            Icons.archive_outlined,
+                            color: colorScheme.descriptionColor,
+                          ),
+                          tooltip: _archiveTooltipText(context),
+                          onPressed: () => Navigator.of(context).pop(
+                            ShiftDayDialogResult(
+                              startTime: _startTime,
+                              endTime: _endTime,
+                              overnight: _overnight,
+                              alarmOffsets: _alarmOffsets,
+                              archived: true,
+                            ),
+                          ),
+                        ),
+                      if (widget.existing != null && !_readOnly)
+                        IconButton(
+                          icon: Icon(Icons.delete_outline, color: appError),
+                          tooltip: loc.removeAction,
+                          onPressed: () => Navigator.of(context).pop(
+                            ShiftDayDialogResult(
+                              startTime: _startTime,
+                              endTime: _endTime,
+                              overnight: _overnight,
+                              alarmOffsets: _alarmOffsets,
+                              deleted: true,
+                            ),
+                          ),
+                        ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close,
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        tooltip: loc.close,
+                        onPressed: () => Navigator.of(context).pop(null),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Read-only banner (public shift, non-owner) ────────────────
+                  if (_readOnly)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: appPrimary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: appPrimary.withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.public, size: 16, color: appPrimary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _publicShiftReadOnlyBanner(context),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: appPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // ── Profile selector ──────────────────────────────────────────
+                  Text(
+                    loc.shiftProfile,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.descriptionColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: widget.profiles.map((p) {
+                      final selected = _selectedProfile?.id == p.id;
+                      return GestureDetector(
+                        onTap: _readOnly ? null : () => _applyProfile(p),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? p.displayColor.withValues(alpha: 0.2)
+                                : mutedSurface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: selected ? p.displayColor : borderColor,
+                              width: selected ? 2 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: p.displayColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                p.name,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Time pickers ──────────────────────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _TimePicker(
+                          label: loc.shiftStart,
+                          value: _startTime,
+                          readOnly: _readOnly,
+                          onChanged: (t) => setState(() => _startTime = t),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _TimePicker(
+                          label: loc.shiftEnd,
+                          value: _endTime,
+                          readOnly: _readOnly,
+                          onChanged: (t) => setState(() => _endTime = t),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (!widget.useDialogLayout && widget.existing == null)
+                    const SizedBox(height: 12),
+                  if (widget.existing == null)
+                    InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: _readOnly ? null : () => _pickRangeEndDate(loc),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: loc.shiftRepeatUntil,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          isDense: true,
+                          suffixIcon: const Icon(Icons.calendar_today_outlined),
+                          helperText: loc.shiftRepeatUntilHelp,
+                        ),
+                        child: Text(_formatDateLabel(_rangeEndDate)),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+
+                  // ── Overnight toggle ──────────────────────────────────────────
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      loc.overnightShift,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    value: _overnight,
+                    onChanged: _readOnly
+                        ? null
+                        : (v) => setState(() => _overnight = v),
+                  ),
+                  if (!_hasValidTimeRange)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        loc.shiftEndMustBeAfterStart,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: appError,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+
+                  // ── Alarm offsets ─────────────────────────────────────────────
+                  Text(
+                    loc.alarms,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.descriptionColor,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  _AlarmOffsetEditor(
+                    offsets: _alarmOffsets,
+                    readOnly: _readOnly,
+                    onChanged: (offsets) =>
+                        setState(() => _alarmOffsets = offsets),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // ── Alarm type toggle ─────────────────────────────────────────
+                  if (!_readOnly)
+                    SegmentedButton<ShiftAlarmType>(
+                      style: SegmentedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        textStyle: theme.textTheme.labelSmall,
+                      ),
+                      selected: {_alarmType},
+                      onSelectionChanged: (newSet) {
+                        final selected = newSet.first;
+                        setState(() => _alarmType = selected);
+                        unawaited(
+                          _localNotifications.setShiftAlarmType(selected),
+                        );
+                        if (selected == ShiftAlarmType.alarm) {
+                          unawaited(_requestAlarmPermissionsIfNeeded());
+                        }
+                      },
+                      segments: [
+                        ButtonSegment(
+                          value: ShiftAlarmType.notification,
+                          label: Text(_notificationModeLabel(context)),
+                          icon: const Icon(
+                            Icons.notifications_outlined,
+                            size: 16,
+                          ),
+                        ),
+                        ButtonSegment(
+                          value: ShiftAlarmType.alarm,
+                          label: Text(_alarmModeLabel(context)),
+                          icon: const Icon(Icons.alarm, size: 16),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 12),
+
+                  // ── Note ──────────────────────────────────────────────────────
+                  TextField(
+                    controller: _noteCtrl,
+                    readOnly: _readOnly,
+                    decoration: InputDecoration(
+                      labelText: loc.note,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      isDense: true,
+                    ),
+                    maxLines: 2,
+                  ),
+                  // ── Team assignment (managers: create + edit of public shifts) ──
+                  if (_hasOwnerTeams &&
+                      (widget.existing == null ||
+                          (widget.canManagePublicShifts &&
+                              widget.existing!.isPublic))) ...[
+                    const SizedBox(height: 12),
+                    _TeamAssignmentSection(
+                      ownerTeams: widget.ownerTeams,
+                      selectedTeam: _selectedTeam,
+                      selectedMemberIds: _selectedMemberIds,
+                      assignToAllMembers: _assignToAllMembers,
+                      teamMembers: _teamMembers,
+                      isLoadingMembers: _isSelectedTeamLoading,
+                      onTeamChanged: (team) {
+                        setState(() {
+                          _selectedTeam = team;
+                          _assignToAllMembers = true;
+                          _useMemberSpecificProfiles = false;
+                          _selectedMemberIds.clear();
+                          if (team == null && widget.existing == null) {
+                            _isPublic = false;
+                          }
+                        });
+                        unawaited(_ensureTeamMembersLoaded(team));
+                      },
+                      onAssignToAllChanged: (value) => setState(() {
+                        _assignToAllMembers = value;
+                        if (value) {
+                          _useMemberSpecificProfiles = false;
+                        }
+                        if (value) {
+                          _selectedMemberIds.clear();
+                        }
+                      }),
+                      onMemberToggled: (uid, selected) => setState(() {
+                        _assignToAllMembers = false;
+                        if (selected) {
+                          _selectedMemberIds.add(uid);
+                        } else {
+                          _selectedMemberIds.remove(uid);
+                          _memberProfileIds.remove(uid);
+                        }
+                        if (_selectedMemberIds.length < 2) {
+                          _useMemberSpecificProfiles = false;
+                        }
+                      }),
+                    ),
+                  ],
+                  if (!_readOnly &&
+                      widget.existing == null &&
+                      _selectedTeam != null &&
+                      !_assignToAllMembers &&
+                      _selectedMemberIds.length > 1) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: mutedSurface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: borderColor),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            value: _useMemberSpecificProfiles,
+                            onChanged: (value) => setState(() {
+                              _useMemberSpecificProfiles = value;
+                            }),
+                           //title: const Text(''),
+                            title: Text(_useDifferentProfilesLabel(context)),
+                            subtitle: Text(
+                              _useDifferentProfilesSubtitle(context),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.descriptionColor,
+                              ),
+                            ),
+                          ),
+                          if (_useMemberSpecificProfiles) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              _commonShiftMemberHint(context),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.descriptionColor,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ..._selectedSpecificMembers.map((member) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _MemberSpecificProfileTile(
+                                  label: member.displayLabel(context),
+                                  subtitle: member.secondaryLabel,
+                                  profiles: widget.profiles,
+                                  selectedProfileId:
+                                      _memberProfileIds[member.userId!],
+                                  onProfileChanged: (profileId) => setState(() {
+                                    _memberProfileIds[member.userId!] =
+                                        profileId;
+                                  }),
+                                ),
+                              );
+                            }),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+
+                  // ── Visibility toggle (owners only) ───────────────────────────
+                  if (widget.canManagePublicShifts || _effectiveIsPublic)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _effectiveIsPublic
+                            ? appPrimary.withValues(alpha: 0.08)
+                            : mutedSurface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _effectiveIsPublic
+                              ? appPrimary.withValues(alpha: 0.35)
+                              : borderColor,
+                        ),
+                      ),
+                      child: SwitchListTile.adaptive(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 0,
+                        ),
+                        value: _effectiveIsPublic,
+                        onChanged:
+                            widget.canManagePublicShifts &&
+                                !_isTeamScopedSelection
+                            ? (v) => setState(() => _isPublic = v)
+                            : null,
+                        secondary: Icon(
+                          _effectiveIsPublic
+                              ? Icons.public
+                              : Icons.lock_outline,
+                          size: 18,
+                          color: _effectiveIsPublic
+                              ? appPrimary
+                              : colorScheme.outline,
+                        ),
+                        title: Text(
+                          _effectiveIsPublic
+                              ? _publicVisibleToTeamTitle(context)
+                              : _privateVisibleOnlyToYouTitle(context),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: _effectiveIsPublic ? appPrimary : null,
+                          ),
+                        ),
+                        subtitle: Text(
+                          _isTeamScopedSelection
+                              ? _teamSelectedCreatesPublicShiftText(context)
+                              : _effectiveIsPublic
+                              ? _allTeamMembersSeeShiftText(context)
+                              : _onlyYouCanSeeShiftText(context),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.descriptionColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+
+                  // ── Confirm / Close button ────────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    child: _readOnly
+                        ? CustomAppButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            type: ButtonType.outlined,
+                            borderRadius: 10,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            isActive: true,
+                            fullWidth: true,
+                            child: Text(loc.close),
+                          )
+                        : CustomAppButton(
+                            onPressed:
+                                !_hasValidTeamSelection || !_hasValidTimeRange
+                                ? null
+                                : _submitShiftDay,
+                            type: ButtonType.filled,
+                            backgroundColor: appPrimary,
+                            borderRadius: 10,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            isActive: true,
+                            fullWidth: true,
+                            child: Text(loc.save),
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1013,7 +1398,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
 
 /// Section inside the shift dialog that lets an owner choose which team
 /// (and which members) should receive the shift.
-class _TeamAssignmentSection extends StatelessWidget {
+class _TeamAssignmentSection extends StatefulWidget {
   const _TeamAssignmentSection({
     required this.ownerTeams,
     required this.selectedTeam,
@@ -1037,6 +1422,64 @@ class _TeamAssignmentSection extends StatelessWidget {
   final void Function(String uid, bool selected) onMemberToggled;
 
   @override
+  State<_TeamAssignmentSection> createState() => _TeamAssignmentSectionState();
+}
+
+class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
+  static const double _kDropdownListMaxHeight = 248;
+  final TextEditingController _teamSearchController = TextEditingController();
+  final ScrollController _teamScrollController = ScrollController();
+
+  List<TeamEntityForView> get _filteredTeams {
+    final query = _teamSearchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return widget.ownerTeams;
+    }
+    return widget.ownerTeams.where((team) {
+      final name = team.team.name.toLowerCase();
+      final description = team.team.description.toLowerCase();
+      return name.contains(query) || description.contains(query);
+    }).toList();
+  }
+
+  bool get _showPrivateOptionInSearch {
+    final query = _teamSearchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return true;
+    }
+    return _privateShiftLabel(context).toLowerCase().contains(query);
+  }
+
+  String get _teamSelectionTitle =>
+      widget.selectedTeam?.team.name ?? _privateShiftLabel(context);
+
+  String get _teamSelectionSubtitle => widget.selectedTeam == null
+      ? _privateShiftDescription(context)
+      : _openChangeOrSearchTeamText(context);
+
+  @override
+  void dispose() {
+    _teamSearchController.dispose();
+    _teamScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TeamAssignmentSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldSelectedId = oldWidget.selectedTeam?.team.id;
+    final newSelectedId = widget.selectedTeam?.team.id;
+    if (oldSelectedId != newSelectedId) {
+      _teamSearchController.clear();
+    }
+  }
+
+  void _selectTeam(TeamEntityForView? team, VoidCallback close) {
+    widget.onTeamChanged(team);
+    setState(() => _teamSearchController.clear());
+    close();
+  }
+
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -1045,53 +1488,109 @@ class _TeamAssignmentSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Assegna al team',
+          _assignToTeamLabel(context),
           style: theme.textTheme.labelSmall?.copyWith(
             fontWeight: FontWeight.w700,
             color: colorScheme.descriptionColor,
           ),
         ),
         const SizedBox(height: 6),
-        // ── Team dropdown ───────────────────────────────────────────────
-        DropdownButtonFormField<TeamEntityForView?>(
-          value: selectedTeam,
-          isExpanded: true,
-          decoration: InputDecoration(
-            hintText: 'Privato (solo tu)',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
+        AnchoredDropdownOverlay(
+          triggerBuilder: (context, isOpen, toggle) => _DropdownTriggerCard(
+            title: _teamSelectionTitle,
+            subtitle: _teamSelectionSubtitle,
+            isOpen: isOpen,
+            onTap: toggle,
           ),
-          items: [
-            const DropdownMenuItem<TeamEntityForView?>(
-              value: null,
-              child: Text('Privato (solo tu)'),
-            ),
-            ...ownerTeams.map(
-              (t) => DropdownMenuItem<TeamEntityForView?>(
-                value: t,
-                child: Row(
-                  children: [
-                    const Icon(Icons.group, size: 16),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(t.team.name, overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
+          overlayBuilder: (context, width, maxHeight, close) => ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: _InlineDropdownPanel(
+              width: width,
+              searchController: _teamSearchController,
+              searchHintText: AppLocalizations.of(context)!.searchTeam,
+              onSearchChanged: (_) => setState(() {}),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: _kDropdownListMaxHeight,
+                ),
+                child: Scrollbar(
+                  controller: _teamScrollController,
+                  thumbVisibility: _filteredTeams.length > 4,
+                  child: ListView.separated(
+                    controller: _teamScrollController,
+                    shrinkWrap: true,
+                    itemCount:
+                        _filteredTeams.length +
+                        (_showPrivateOptionInSearch ? 1 : 0) +
+                        (_filteredTeams.isEmpty ? 1 : 0),
+                    separatorBuilder: (_, _) => const SizedBox(height: 6),
+                    itemBuilder: (context, index) {
+                      if (_showPrivateOptionInSearch && index == 0) {
+                        return _ProfileOptionTile(
+                          label: _privateShiftLabel(context),
+                          subtitle: _doNotAssignTeamText(context),
+                          isSelected: widget.selectedTeam == null,
+                          onTap: () => _selectTeam(null, close),
+                        );
+                      }
+                      final teamIndex =
+                          index - (_showPrivateOptionInSearch ? 1 : 0);
+                      if (_filteredTeams.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: colorScheme.outlineVariant,
+                            ),
+                            color: colorScheme.surface,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.search_off_rounded,
+                                size: 18,
+                                color: colorScheme.descriptionColor,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  AppLocalizations.of(context)!.noTeamFound,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.descriptionColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      final team = _filteredTeams[teamIndex];
+                      final isSelected =
+                          widget.selectedTeam?.team.id == team.team.id;
+                      return _ProfileOptionTile(
+                        label: team.team.name,
+                        subtitle: team.team.description.trim().isNotEmpty
+                            ? team.team.description
+                            : _teamAvailableForPublicAssignmentText(context),
+                        isSelected: isSelected,
+                        onTap: () => _selectTeam(team, close),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
-          ],
-          onChanged: onTeamChanged,
+          ),
         ),
         // ── Member selector (visible only when a team is selected) ──────
-        if (selectedTeam != null) ...[
+        if (widget.selectedTeam != null) ...[
           const SizedBox(height: 8),
           Text(
-            'Assegna a',
+            _assignToLabel(context),
             style: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w700,
               color: colorScheme.descriptionColor,
@@ -1099,25 +1598,25 @@ class _TeamAssignmentSection extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Puoi selezionare uno o piu membri specifici del team selezionato oppure assegnare il turno a tutti.',
+            _assignToDescription(context),
             style: theme.textTheme.labelSmall?.copyWith(
               color: colorScheme.descriptionColor,
             ),
           ),
           const SizedBox(height: 8),
-          // "All members" option
           _MemberRadioTile(
             uid: null,
-            label: 'Tutti i membri del team',
+            label: _assignToAllMembersLabel(context),
+            subtitle: _assignToAllMembersSubtitle(context),
             icon: Icons.groups_rounded,
-            isSelected: assignToAllMembers,
-            enabled: teamMembers.isNotEmpty,
-            onTap: teamMembers.isEmpty
+            isSelected: widget.assignToAllMembers,
+            enabled: widget.teamMembers.isNotEmpty,
+            onTap: widget.teamMembers.isEmpty
                 ? null
-                : () => onAssignToAllChanged(true),
+                : () => widget.onAssignToAllChanged(true),
           ),
           const SizedBox(height: 4),
-          if (teamMembers.isEmpty)
+          if (widget.teamMembers.isEmpty)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -1134,7 +1633,7 @@ class _TeamAssignmentSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  if (isLoadingMembers)
+                  if (widget.isLoadingMembers)
                     SizedBox(
                       width: 14,
                       height: 14,
@@ -1152,36 +1651,37 @@ class _TeamAssignmentSection extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      isLoadingMembers
-                          ? 'Caricamento membri del team...'
-                          : 'Nessun membro disponibile per questo team.',
+                      widget.isLoadingMembers
+                          ? _loadingTeamMembersText(context)
+                          : _noMembersForTeamText(context),
                       style: theme.textTheme.bodySmall,
                     ),
                   ),
                 ],
               ),
-            ),
-          // Individual members
-          ...teamMembers.map(
-            (m) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: _MemberRadioTile(
-                uid: m.userId,
-                label: m.displayName,
-                subtitle: m.subtitle,
-                icon: Icons.person_outline_rounded,
-                enabled: m.isAssignable,
-                isSelected:
-                    m.userId != null && selectedMemberIds.contains(m.userId),
-                onTap: m.userId == null
-                    ? null
-                    : () => onMemberToggled(
-                        m.userId!,
-                        !selectedMemberIds.contains(m.userId),
-                      ),
+            )
+          else
+            ...widget.teamMembers.map(
+              (member) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: _MemberRadioTile(
+                  uid: member.userId,
+                  label: member.displayLabel(context),
+                  subtitle: member.secondaryLabel,
+                  icon: Icons.person_outline_rounded,
+                  enabled: member.isAssignable,
+                  isSelected:
+                      member.userId != null &&
+                      widget.selectedMemberIds.contains(member.userId),
+                  onTap: member.userId == null
+                      ? null
+                      : () => widget.onMemberToggled(
+                          member.userId!,
+                          !widget.selectedMemberIds.contains(member.userId),
+                        ),
+                ),
               ),
             ),
-          ),
         ],
       ],
     );
@@ -1281,7 +1781,7 @@ class _MemberRadioTile extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
-                        'Non assegnabile finché l’utente non è attivo',
+                        _notAssignableUntilActiveText(context),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: colorScheme.descriptionColor,
                         ),
@@ -1314,58 +1814,490 @@ class _MemberSpecificProfileTile extends StatelessWidget {
   final String? selectedProfileId;
   final ValueChanged<String?> onProfileChanged;
 
+  String _profileSummary(BuildContext context) {
+    if (selectedProfileId == null) {
+      return _commonShiftLabel(context);
+    }
+    final profile = profiles
+        .where((item) => item.id == selectedProfileId)
+        .firstOrNull;
+    if (profile == null) {
+      return _commonShiftLabel(context);
+    }
+    return profile.name;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final borderColor = colorScheme.borderColor ?? colorScheme.outlineVariant;
+    final profile = profiles
+        .where((item) => item.id == selectedProfileId)
+        .firstOrNull;
 
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: borderColor),
+      ),
+      child: _MemberProfileDropdownContent(
+        label: label,
+        subtitle: subtitle,
+        profiles: profiles,
+        selectedProfileId: selectedProfileId,
+        profileSummary: _profileSummary(context),
+        profileDetails: profile == null
+            ? null
+            : _formatShiftProfileSchedule(profile),
+        profileAccentColor: profile?.displayColor,
+        onProfileChanged: onProfileChanged,
+      ),
+    );
+  }
+}
+
+class _MemberProfileDropdownContent extends StatefulWidget {
+  const _MemberProfileDropdownContent({
+    required this.label,
+    this.subtitle,
+    required this.profiles,
+    required this.selectedProfileId,
+    required this.profileSummary,
+    this.profileDetails,
+    this.profileAccentColor,
+    required this.onProfileChanged,
+  });
+
+  final String label;
+  final String? subtitle;
+  final List<ShiftProfileEntity> profiles;
+  final String? selectedProfileId;
+  final String profileSummary;
+  final String? profileDetails;
+  final Color? profileAccentColor;
+  final ValueChanged<String?> onProfileChanged;
+
+  @override
+  State<_MemberProfileDropdownContent> createState() =>
+      _MemberProfileDropdownContentState();
+}
+
+class _MemberProfileDropdownContentState
+    extends State<_MemberProfileDropdownContent> {
+  static const double _kDropdownListMaxHeight = 248;
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _profileScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _profileScrollController.dispose();
+    super.dispose();
+  }
+
+  List<ShiftProfileEntity> get _filteredProfiles {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return widget.profiles;
+    }
+    return widget.profiles.where((profile) {
+      final haystack = '${profile.name} ${_formatShiftProfileSchedule(profile)}'
+          .toLowerCase();
+      return haystack.contains(query);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final profileAccentColor = widget.profileAccentColor;
+    final triggerTitleColor = profileAccentColor ?? colorScheme.onSurface;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (widget.subtitle != null &&
+                      widget.subtitle!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.subtitle!,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.descriptionColor,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: AnchoredDropdownOverlay(
+                triggerBuilder: (context, isOpen, toggle) {
+                  final accent =
+                      colorScheme.primaryColor ?? colorScheme.primary;
+                  final triggerBackground = profileAccentColor != null
+                      ? profileAccentColor.withValues(alpha: 0.14)
+                      : (isOpen
+                            ? accent.withValues(alpha: 0.05)
+                            : colorScheme.surface);
+                  final triggerBorder = profileAccentColor != null
+                      ? profileAccentColor.withValues(alpha: 0.45)
+                      : (isOpen
+                            ? accent.withValues(alpha: 0.45)
+                            : colorScheme.outlineVariant);
+                  return InkWell(
+                    onTap: toggle,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: triggerBorder),
+                        color: triggerBackground,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.profileSummary,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: triggerTitleColor,
+                                  ),
+                                ),
+                                if (widget.profileDetails != null) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    widget.profileDetails!,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: profileAccentColor != null
+                                          ? triggerTitleColor.withValues(
+                                              alpha: 0.85,
+                                            )
+                                          : colorScheme.descriptionColor,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            isOpen
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            size: 18,
+                            color: colorScheme.descriptionColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                overlayBuilder: (context, width, maxHeight, close) =>
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: maxHeight),
+                      child: _InlineDropdownPanel(
+                        width: width,
+                        searchController: _searchController,
+                        searchHintText: _searchShiftHintText(context),
+                        onSearchChanged: (_) => setState(() {}),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxHeight: _kDropdownListMaxHeight,
+                          ),
+                          child: Scrollbar(
+                            controller: _profileScrollController,
+                            thumbVisibility: _filteredProfiles.length > 4,
+                            child: ListView.separated(
+                              controller: _profileScrollController,
+                              shrinkWrap: true,
+                              itemCount: _filteredProfiles.length + 1,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 6),
+                              itemBuilder: (context, index) {
+                                if (index == 0) {
+                                  final isSelected =
+                                      widget.selectedProfileId == null;
+                                  return _ProfileOptionTile(
+                                    label: _commonShiftLabel(context),
+                                    subtitle: _commonShiftSubtitle(context),
+                                    isSelected: isSelected,
+                                    onTap: () {
+                                      widget.onProfileChanged(null);
+                                      close();
+                                    },
+                                  );
+                                }
+                                final profile = _filteredProfiles[index - 1];
+                                final isSelected =
+                                    widget.selectedProfileId == profile.id;
+                                return _ProfileOptionTile(
+                                  label: profile.name,
+                                  subtitle: _formatShiftProfileSchedule(
+                                    profile,
+                                  ),
+                                  isSelected: isSelected,
+                                  accentColor: profile.displayColor,
+                                  onTap: () {
+                                    widget.onProfileChanged(profile.id);
+                                    close();
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DropdownTriggerCard extends StatelessWidget {
+  const _DropdownTriggerCard({
+    required this.title,
+    required this.subtitle,
+    required this.isOpen,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool isOpen;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accent = colorScheme.primaryColor ?? colorScheme.primary;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isOpen
+                ? accent.withValues(alpha: 0.45)
+                : colorScheme.outlineVariant,
+          ),
+          color: isOpen ? accent.withValues(alpha: 0.05) : colorScheme.surface,
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.search_rounded, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.descriptionColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(
+              isOpen
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              size: 20,
+              color: colorScheme.descriptionColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineDropdownPanel extends StatelessWidget {
+  const _InlineDropdownPanel({
+    required this.width,
+    required this.searchController,
+    required this.searchHintText,
+    required this.child,
+    this.onSearchChanged,
+  });
+
+  final double width;
+  final TextEditingController searchController;
+  final String searchHintText;
+  final Widget child;
+  final ValueChanged<String>? onSearchChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-            const SizedBox(height: 2),
-            Text(subtitle!, style: theme.textTheme.labelSmall),
-          ],
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String?>(
-            value: selectedProfileId,
-            isExpanded: true,
+          TextField(
+            controller: searchController,
+            onChanged: onSearchChanged,
             decoration: InputDecoration(
-              labelText: 'Profilo turno',
+              hintText: searchHintText,
+              prefixIcon: const Icon(Icons.search_rounded),
+              isDense: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              isDense: true,
             ),
-            items: [
-              const DropdownMenuItem<String?>(
-                value: null,
-                child: Text('Turno comune'),
-              ),
-              ...profiles.map(
-                (profile) => DropdownMenuItem<String?>(
-                  value: profile.id,
-                  child: Text(profile.name, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-            ],
-            onChanged: onProfileChanged,
           ),
+          const SizedBox(height: 10),
+          Flexible(child: child),
         ],
       ),
     );
   }
+}
+
+class _ProfileOptionTile extends StatelessWidget {
+  const _ProfileOptionTile({
+    required this.label,
+    required this.subtitle,
+    required this.isSelected,
+    this.accentColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final String subtitle;
+  final bool isSelected;
+  final Color? accentColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primary =
+        accentColor ?? (colorScheme.primaryColor ?? colorScheme.primary);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? primary.withValues(alpha: 0.45)
+                : colorScheme.outlineVariant,
+          ),
+          color: isSelected
+              ? primary.withValues(alpha: 0.08)
+              : colorScheme.surface,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: primary, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.descriptionColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (isSelected) Icon(Icons.check_circle, color: primary, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _formatShiftProfileSchedule(ShiftProfileEntity profile) {
+  String twoDigits(int value) => value.toString().padLeft(2, '0');
+  final start =
+      '${twoDigits(profile.startTime.hour)}:${twoDigits(profile.startTime.minute)}';
+  final end =
+      '${twoDigits(profile.endTime.hour)}:${twoDigits(profile.endTime.minute)}';
+  return profile.overnight ? '$start - $end (+1)' : '$start - $end';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1450,6 +2382,9 @@ class _AlarmOffsetEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     return Wrap(
       spacing: 8,
       runSpacing: 6,
@@ -1457,8 +2392,24 @@ class _AlarmOffsetEditor extends StatelessWidget {
         ...offsets.map((offset) {
           final label = offset < 0 ? '${offset} min' : '+$offset min';
           return Chip(
-            label: Text(label, style: const TextStyle(fontSize: 11)),
-            deleteIcon: readOnly ? null : const Icon(Icons.close, size: 14),
+            label: Text(
+              label,
+              style: textTheme.bodySmall!.copyWith(
+                color: colorScheme.textColor,
+              ),
+            ),
+            deleteIcon: readOnly
+                ? null
+                : Icon(Icons.close, size: 14, color: colorScheme.textColor),
+            elevation: 4,
+            backgroundColor: colorScheme.bgColorNew,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(color: colorScheme.textColor!),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+            ),
+
+            // Forma a stadio
+            //side: BorderSide.none,
             onDeleted: readOnly
                 ? null
                 : () {
@@ -1469,9 +2420,22 @@ class _AlarmOffsetEditor extends StatelessWidget {
         }),
         if (!readOnly)
           ActionChip(
-            avatar: const Icon(Icons.add, size: 14),
-            label: const Text('Add', style: TextStyle(fontSize: 11)),
+            avatar: Icon(Icons.add, size: 14, color: colorScheme.textColor),
+            label: Text(
+              _addLabel(context),
+              style: textTheme.bodySmall!.copyWith(
+                color: colorScheme.textColor,
+              ),
+            ),
             onPressed: () => _addOffset(context),
+            elevation: 4,
+            backgroundColor: colorScheme.bgColorNew,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(color: colorScheme.textColor!, width: 1),
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+            ),
+            // Forma a stadio
+            //side: BorderSide.none,
           ),
       ],
     );
@@ -1482,26 +2446,30 @@ class _AlarmOffsetEditor extends StatelessWidget {
     final result = await showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Aggiungi sveglia'),
+        title: Text(_addAlarmTitle(context)),
         content: TextField(
           controller: ctrl,
           keyboardType: const TextInputType.numberWithOptions(signed: true),
-          decoration: const InputDecoration(
-            labelText: 'Minuti (negativi = prima)',
+          decoration: InputDecoration(
+            labelText: _alarmMinutesLabel(context),
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
-          TextButton(
+          CustomAppButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Annulla'),
+            type: ButtonType.text,
+            isActive: false,
+            child: Text(AppLocalizations.of(ctx)!.cancel),
           ),
-          FilledButton(
+          CustomAppButton(
             onPressed: () {
               final v = int.tryParse(ctrl.text.trim());
               if (v != null) Navigator.of(ctx).pop(v);
             },
-            child: const Text('Aggiungi'),
+            type: ButtonType.filled,
+            isActive: true,
+            child: Text(_addLabel(context)),
           ),
         ],
       ),

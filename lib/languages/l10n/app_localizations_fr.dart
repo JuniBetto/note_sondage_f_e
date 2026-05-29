@@ -165,7 +165,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get webMobileAppOnlyHint =>
-      'Ouvrez Note Sondage sur tablette ou ordinateur, ou installez l\'application depuis votre store.';
+      'Ouvrez TeamManagement sur tablette ou ordinateur, ou installez l\'application depuis votre store.';
 
   @override
   String get downloadOnAppStore => 'Télécharger sur l\'App Store';
@@ -637,7 +637,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Nous n\'avons pas pu ouvrir votre application e-mail. Copiez l\'adresse et envoyez le message manuellement.';
 
   @override
-  String get contactUsEmailSubject => 'Demande de support Note Sondage';
+  String get contactUsEmailSubject => 'Demande de support TeamManagement';
 
   @override
   String get contactUsTopicsTitle => 'Bugs, retours, idées produit';
@@ -1053,4 +1053,263 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get systemProfile => 'Profils système';
+
+  @override
+  String get clockingDateLabel => 'Date de pointage';
+
+  @override
+  String get calendarWeek => 'Semaine';
+
+  @override
+  String get calendarMonth => 'Mois';
+
+  @override
+  String get today => 'Aujourd\'hui';
+
+  @override
+  String get clockingOverviewTitle => 'Vue d\'ensemble du pointage';
+
+  @override
+  String get clockingOverviewDescription =>
+      'Cet en-tête présente la zone de pointage et son objectif principal.';
+
+  @override
+  String get clockingCurrentStatusTitle => 'Statut actuel';
+
+  @override
+  String get clockingCurrentStatusDescription =>
+      'Cette section vous montre immédiatement l\'état de votre pointage et les informations principales de la journée.';
+
+  @override
+  String get personal => 'Personnel';
+
+  @override
+  String get markVacation => 'Marquer des congés';
+
+  @override
+  String get markPermission => 'Marquer une permission';
+
+  @override
+  String get requestClocking => 'Demander un pointage';
+
+  @override
+  String get requestVacation => 'Demander des congés';
+
+  @override
+  String get requestPermission => 'Demander une permission';
+
+  @override
+  String get vacationStatus => 'Congés';
+
+  @override
+  String get clockingOpenRecordAnotherDay =>
+      'Vous avez un pointage ouvert sur un autre jour. Sélectionnez-le pour continuer.';
+
+  @override
+  String dayAlreadyHasClocking(String date) {
+    return 'Un pointage existe déjà pour $date.';
+  }
+
+  @override
+  String get manualClockingUseInlineForPastDays =>
+      'Pour les jours différents d\'aujourd\'hui, utilisez la section de saisie manuelle ci-dessous.';
+
+  @override
+  String get manualClockingRequiresApproval =>
+      'Pour cette date, demandez l\'approbation d\'un manager ou utilisez une équipe que vous gérez.';
+
+  @override
+  String get selectedDayMarkedAsVacation =>
+      'Le jour sélectionné est marqué comme congé.';
+
+  @override
+  String get clockingCurrentTimeOverlapsExistingRecord =>
+      'L\'heure actuelle tombe dans un pointage ou une permission deja enregistres aujourd\'hui.';
+
+  @override
+  String createClockingForDate(String date) {
+    return 'Créer un pointage pour $date';
+  }
+
+  @override
+  String get breakOnlyCurrentDay =>
+      'Les pauses sont disponibles uniquement pour le jour en cours.';
+
+  @override
+  String get manualClockingTitle => 'Ajouter un pointage';
+
+  @override
+  String manualClockingDescription(String date) {
+    return 'Complétez le pointage pour $date ou ajoutez d\'autres jours passés.';
+  }
+
+  @override
+  String get manualClockingResolveOpenRecord =>
+      'Vous avez un pointage ouvert sur un autre jour. Fermez-le ou sélectionnez ce jour avant d\'enregistrer un pointage manuel.';
+
+  @override
+  String get selectedDays => 'Jours sélectionnés';
+
+  @override
+  String get addDay => 'Ajouter un jour';
+
+  @override
+  String get clockInLabel => 'Pointage d\'entrée';
+
+  @override
+  String get clockOutLabel => 'Pointage de sortie';
+
+  @override
+  String get optionalNoteHint => 'Note facultative';
+
+  @override
+  String get saving => 'Enregistrement...';
+
+  @override
+  String get saveClocking => 'Enregistrer le pointage';
+
+  @override
+  String get manualClockingTodayLiveOnly =>
+      'Pour aujourd\'hui, utilisez les actions en direct de pointage d\'entrée, pause et pointage de sortie.';
+
+  @override
+  String get invalidBreakMinutes =>
+      'La durée de pause doit être un nombre valide.';
+
+  @override
+  String get clockOutMustBeAfterClockIn =>
+      'L\'heure de sortie doit être postérieure à l\'heure d\'entrée.';
+
+  @override
+  String get breakMustBeShorterThanShift =>
+      'La pause doit être plus courte que la durée du service.';
+
+  @override
+  String get manualClockingSavedSingle => 'Pointage enregistré avec succès.';
+
+  @override
+  String manualClockingSavedMultiple(int count) {
+    return '$count pointages enregistrés avec succès.';
+  }
+
+  @override
+  String get manualClockingSaveError =>
+      'Nous n\'avons pas pu enregistrer le pointage manuel.';
+
+  @override
+  String get noTeamSelected => 'Aucune équipe sélectionnée';
+
+  @override
+  String get changeOrSearchTeam =>
+      'Ouvrez pour changer d\'équipe ou en rechercher une';
+
+  @override
+  String get teamAvailableForClocking => 'Équipe disponible pour le pointage';
+
+  @override
+  String get searchTeam => 'Rechercher une équipe...';
+
+  @override
+  String get noTeamFound => 'Aucune équipe trouvée';
+
+  @override
+  String get selectTeamFirst => 'Sélectionnez d\'abord une équipe.';
+
+  @override
+  String get selectTeamBeforeVacation =>
+      'Sélectionnez une équipe avant de marquer des congés.';
+
+  @override
+  String markSelectedDateAsVacation(String date) {
+    return 'Marquer $date comme congé';
+  }
+
+  @override
+  String get markSelectedDayAsVacationDescription =>
+      'Cette action marquera le jour sélectionné comme congé.';
+
+  @override
+  String markPermissionForDate(String date) {
+    return 'Marquer une permission pour $date';
+  }
+
+  @override
+  String get start => 'Début';
+
+  @override
+  String get end => 'Fin';
+
+  @override
+  String get permissionInvalidRange =>
+      'L\'heure de fin doit être postérieure à l\'heure de début de la permission.';
+
+  @override
+  String get noAssignableMembersForTeam =>
+      'Aucun membre assignable trouvé pour cette équipe.';
+
+  @override
+  String get assignVacationToMember => 'Marquer des congés pour un membre';
+
+  @override
+  String get userLabel => 'Utilisateur';
+
+  @override
+  String optionalNoteFor(String name) {
+    return 'Note facultative pour $name';
+  }
+
+  @override
+  String get optionalRequestNoteHint => 'Note facultative pour la demande';
+
+  @override
+  String get clockingApprovalRequestHint =>
+      'Vous pouvez demander un pointage, des congés ou une permission pour l\'équipe et la date sélectionnées.';
+
+  @override
+  String requestClockingForSelectedDate(String date) {
+    return 'Demander un pointage pour $date';
+  }
+
+  @override
+  String get noMembersAvailableForClockingRequest =>
+      'Aucun membre disponible pour la demande de pointage.';
+
+  @override
+  String get sendRequest => 'Envoyer la demande';
+
+  @override
+  String get clockingRequestSentSuccess =>
+      'Demande de pointage envoyée avec succès.';
+
+  @override
+  String get clockingRequestSentError =>
+      'Nous n\'avons pas pu envoyer la demande de pointage au membre de l\'équipe.';
+
+  @override
+  String get vacationRequestSentSuccess =>
+      'Demande de congé envoyée avec succès.';
+
+  @override
+  String get vacationRequestSentError =>
+      'Nous n\'avons pas pu envoyer la demande de congé.';
+
+  @override
+  String get permissionRequestSentSuccess =>
+      'Demande de permission envoyée avec succès.';
+
+  @override
+  String get permissionRequestSentError =>
+      'Nous n\'avons pas pu envoyer la demande de permission.';
+
+  @override
+  String get approveRequest => 'Approuver';
+
+  @override
+  String get rejectRequest => 'Refuser';
+
+  @override
+  String get clockInDateTimeLabel => 'Pointage d\'entrée (AAAA-MM-JJ HH:MM)';
+
+  @override
+  String get clockOutDateTimeLabel => 'Pointage de sortie (AAAA-MM-JJ HH:MM)';
 }

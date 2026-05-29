@@ -12,6 +12,13 @@ When to use:
 - real domain
 - Let's Encrypt
 
+Current public production values:
+
+- web:
+  - `teammanagement.it`
+- API:
+  - `api.teammanagement.it`
+
 ## 1b. DuckDNS HTTPS
 
 Use:

@@ -44,7 +44,7 @@
     "tutorialSkip": "Salta",
     "webMobileAppOnlyTitle": "Scarica l'app mobile",
     "webMobileAppOnlyMessage": "Questa esperienza web è disponibile solo su schermi più grandi. Sui telefoni con larghezza inferiore a 576px, continua dall'app mobile.",
-    "webMobileAppOnlyHint": "Apri Note Sondage da tablet o desktop, oppure installa l'app dal tuo store.",
+    "webMobileAppOnlyHint": "Apri TeamManagement da tablet o desktop, oppure installa l'app dal tuo store.",
     "downloadOnAppStore": "Scarica su App Store",
     "getItOnGooglePlay": "Scarica da Google Play",
     "mobileStoreLinksUnavailable": "I link agli store non sono ancora configurati. Contatta il supporto oppure apri l'app da uno schermo più grande.",
@@ -189,7 +189,7 @@
     "copyEmail": "Copia email",
     "emailCopied": "L'email di supporto è stata copiata negli appunti.",
     "couldNotOpenEmailApp": "Non siamo riusciti ad aprire la tua app email. Copia l'indirizzo e invia il messaggio manualmente.",
-    "contactUsEmailSubject": "Richiesta supporto Note Sondage",
+    "contactUsEmailSubject": "Richiesta supporto TeamManagement",
     "contactUsTopicsTitle": "Bug, feedback, idee prodotto",
     "contactUsTopicsBody": "Usa questo spazio per segnalare problemi, chiedere aiuto o condividere miglioramenti che vorresti vedere nell'app.",
     "contactUsFormHint": "Il messaggio includerà i tuoi dettagli, così il supporto potrà risponderti più velocemente.",
@@ -339,5 +339,141 @@
     "deleteShiftProfileConfirm": "Sei sicuro di voler eliminare questo profilo?",
     "customProfile": "Profili personalizzati",
     "noShiftsThisMonth": "Nessun turno questo mese",
-    "systemProfile": "Profili di sistema"
+    "systemProfile": "Profili di sistema",
+    "clockingDateLabel": "Data timbratura",
+    "calendarWeek": "Settimana",
+    "calendarMonth": "Mese",
+    "today": "Oggi",
+    "clockingOverviewTitle": "Panoramica timbratura",
+    "clockingOverviewDescription": "Questa intestazione riassume l'area di timbratura e il suo scopo principale.",
+    "clockingCurrentStatusTitle": "Stato attuale",
+    "clockingCurrentStatusDescription": "Questa sezione ti mostra subito lo stato della tua timbratura e le informazioni principali della giornata.",
+    "personal": "Personale",
+    "markVacation": "Segna ferie",
+    "markPermission": "Segna permesso",
+    "requestClocking": "Richiedi timbratura",
+    "requestVacation": "Richiedi ferie",
+    "requestPermission": "Richiedi permesso",
+    "vacationStatus": "Ferie",
+    "clockingOpenRecordAnotherDay": "Hai una timbratura aperta in un altro giorno. Selezionalo per continuare.",
+    "dayAlreadyHasClocking": "Esiste gia una timbratura per {date}.",
+    "@dayAlreadyHasClocking": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "manualClockingUseInlineForPastDays": "Per i giorni diversi da oggi usa la sezione di inserimento manuale qui sotto.",
+    "manualClockingRequiresApproval": "Per questa data devi chiedere l'approvazione di un manager oppure usare un team che gestisci.",
+    "selectedDayMarkedAsVacation": "Il giorno selezionato e segnato come ferie.",
+    "clockingCurrentTimeOverlapsExistingRecord": "L'orario attuale ricade gia dentro una timbratura o un permesso registrato oggi.",
+    "createClockingForDate": "Crea una timbratura per {date}",
+    "@createClockingForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "breakOnlyCurrentDay": "Le pause sono disponibili solo per il giorno corrente.",
+    "manualClockingTitle": "Inserisci timbratura",
+    "manualClockingDescription": "Compila la timbratura per {date} o aggiungi altri giorni passati.",
+    "@manualClockingDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "manualClockingResolveOpenRecord": "Hai una timbratura aperta in un altro giorno. Chiudila o seleziona quel giorno prima di salvare una timbratura manuale.",
+    "selectedDays": "Giorni selezionati",
+    "addDay": "Aggiungi giorno",
+    "clockInLabel": "Clock-in",
+    "clockOutLabel": "Clock-out",
+    "optionalNoteHint": "Nota opzionale",
+    "saving": "Salvataggio...",
+    "saveClocking": "Salva timbratura",
+    "manualClockingTodayLiveOnly": "Per oggi usa le azioni live di clock-in, pause e clock-out.",
+    "invalidBreakMinutes": "Il tempo di pausa deve essere un numero valido.",
+    "clockOutMustBeAfterClockIn": "L'orario di clock-out deve essere successivo al clock-in.",
+    "breakMustBeShorterThanShift": "La pausa deve essere piu corta della durata del turno.",
+    "manualClockingSavedSingle": "Timbratura salvata con successo.",
+    "manualClockingSavedMultiple": "{count} timbrature salvate con successo.",
+    "@manualClockingSavedMultiple": {
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "manualClockingSaveError": "Non siamo riusciti a salvare la timbratura manuale.",
+    "noTeamSelected": "Nessun team selezionato",
+    "changeOrSearchTeam": "Apri per cambiare team o cercarne uno",
+    "teamAvailableForClocking": "Team disponibile per la timbratura",
+    "searchTeam": "Cerca team...",
+    "noTeamFound": "Nessun team trovato",
+    "selectTeamFirst": "Seleziona prima un team.",
+    "selectTeamBeforeVacation": "Seleziona un team prima di segnare le ferie.",
+    "markSelectedDateAsVacation": "Segna {date} come ferie",
+    "@markSelectedDateAsVacation": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "markSelectedDayAsVacationDescription": "Questa azione segnera il giorno selezionato come ferie.",
+    "markPermissionForDate": "Segna permesso per {date}",
+    "@markPermissionForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "start": "Inizio",
+    "end": "Fine",
+    "permissionInvalidRange": "L'orario di fine deve essere successivo all'orario di inizio del permesso.",
+    "noAssignableMembersForTeam": "Nessun membro assegnabile trovato per questo team.",
+    "assignVacationToMember": "Segna ferie per un membro",
+    "userLabel": "Utente",
+    "optionalNoteFor": "Nota opzionale per {name}",
+    "@optionalNoteFor": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "optionalRequestNoteHint": "Nota opzionale per la richiesta",
+    "clockingApprovalRequestHint": "Puoi richiedere timbratura, ferie o permesso per il team e la data selezionati.",
+    "requestClockingForSelectedDate": "Richiedi timbratura per {date}",
+    "@requestClockingForSelectedDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "noMembersAvailableForClockingRequest": "Nessun membro disponibile per la richiesta di timbratura.",
+    "sendRequest": "Invia richiesta",
+    "clockingRequestSentSuccess": "Richiesta di timbratura inviata con successo.",
+    "clockingRequestSentError": "Non siamo riusciti a inviare la richiesta di timbratura al membro del team.",
+    "vacationRequestSentSuccess": "Richiesta ferie inviata con successo.",
+    "vacationRequestSentError": "Non siamo riusciti a inviare la richiesta ferie.",
+    "permissionRequestSentSuccess": "Richiesta permesso inviata con successo.",
+    "permissionRequestSentError": "Non siamo riusciti a inviare la richiesta permesso.",
+    "approveRequest": "Approva",
+    "rejectRequest": "Rifiuta",
+    "clockInDateTimeLabel": "Clock-in (AAAA-MM-GG HH:MM)",
+    "clockOutDateTimeLabel": "Clock-out (AAAA-MM-GG HH:MM)"
 }

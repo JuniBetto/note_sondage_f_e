@@ -13,6 +13,9 @@
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		88ADB68976E5BD48E61D2F2D /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4FC666335BD26C0DEBBDE469 /* Pods_RunnerTests.framework */; };
 		90492DFC7534B3B536D4F4CA /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = E8DEDEC654BBE3D5FDABC1F7 /* GoogleService-Info.plist */; };
+		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
+		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
+		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		BF0000000000000000000001 /* shift_alarm_ringtone_1.wav in Resources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000001 /* shift_alarm_ringtone_1.wav */; };
 		BF0000000000000000000002 /* shift_alarm_ringtone_2.wav in Resources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000002 /* shift_alarm_ringtone_2.wav */; };
 		BF0000000000000000000003 /* shift_alarm_ringtone_3.wav in Resources */ = {isa = PBXBuildFile; fileRef = FF0000000000000000000003 /* shift_alarm_ringtone_3.wav */; };
@@ -42,9 +45,6 @@
 		BF000000000000000000001B /* shift_alarm_ringtone_27.wav in Resources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000001B /* shift_alarm_ringtone_27.wav */; };
 		BF000000000000000000001C /* shift_alarm_ringtone_28.wav in Resources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000001C /* shift_alarm_ringtone_28.wav */; };
 		BF000000000000000000001D /* shift_alarm_ringtone_29.wav in Resources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000001D /* shift_alarm_ringtone_29.wav */; };
-		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
-		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
-		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		F7B3B9B691834C61F267E15C /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E401CAE55ED03A7F3C5BDD2D /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
 
@@ -251,7 +251,6 @@
 				D54F38567E58A7878933523B /* Pods-RunnerTests.release.xcconfig */,
 				36D097B64DFF9F92A0266F28 /* Pods-RunnerTests.profile.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -613,11 +612,13 @@
 				DEVELOPMENT_TEAM = HQCYCT77HU;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Team Management app";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.noteSondage;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.teammanagement.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -796,11 +797,13 @@
 				DEVELOPMENT_TEAM = HQCYCT77HU;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Team Management app";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.noteSondage;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.teammanagement.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -820,11 +823,13 @@
 				DEVELOPMENT_TEAM = HQCYCT77HU;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Team Management app";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.noteSondage;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.teammanagement.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
