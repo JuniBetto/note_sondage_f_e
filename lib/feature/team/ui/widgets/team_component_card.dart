@@ -408,21 +408,23 @@ Widget buildRowTeamItem(
   final textTheme = theme.textTheme;
   final colorScheme = theme.colorScheme;
   final localization = AppLocalizations.of(context)!;
+  final totalMembers = memberCount ?? members.length;
   return Padding(
     padding: const EdgeInsets.all(8.0),
     child: Row(
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      spacing: 4,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        buildTeamItem(
-          members,
-          memberCount: memberCount,
-          currentUserId: currentUserId,
-          currentUserEmail: currentUserEmail,
-          currentUserPhotoUrl: currentUserPhotoUrl,
+        Flexible(
+          fit: FlexFit.loose,
+          child: buildTeamItem(
+            members,
+            memberCount: memberCount,
+            currentUserId: currentUserId,
+            currentUserEmail: currentUserEmail,
+            currentUserPhotoUrl: currentUserPhotoUrl,
+          ),
         ),
-
+        const SizedBox(width: 4),
         GestureDetector(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -440,14 +442,14 @@ Widget buildRowTeamItem(
             ),
           ),
         ),
-        SizedBox(
-          width: 30,
+        const SizedBox(width: 4),
+        Tooltip(
+          message: localization.member(totalMembers),
           child: Text(
-            " ${localization.member(memberCount ?? members.length)}",
+            '$totalMembers',
             style: textTheme.labelSmall,
-            overflow: TextOverflow.ellipsis,
             maxLines: 1,
-            softWrap: true,
+            overflow: TextOverflow.fade,
           ),
         ),
       ],
