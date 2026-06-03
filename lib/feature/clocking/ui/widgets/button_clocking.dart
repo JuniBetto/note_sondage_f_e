@@ -1205,6 +1205,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
   Future<void> _saveManualClockingEntries(
     List<ClockingRecordEntity> records,
   ) async {
+    final clockingBloc = context.read<ClockingBloc>();
     final localization = AppLocalizations.of(context)!;
     final selectedDate = _effectiveSelectedDate;
     final today = _normalizeDate(DateTime.now());
@@ -1306,6 +1307,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
         } catch (_) {
           // If updateTeamRecord fails (e.g. personal record), just proceed
         }
+        if (!mounted) return;
       }
     }
     // ─────────────────────────────────────────────────────────────────────
@@ -1322,6 +1324,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
     );
     final optimisticIds = optimisticRecords.map((record) => record.id).toSet();
 
+    if (!mounted) return;
     setState(() {
       _manualActionInProgress = true;
       _pendingManualOptimisticIds
@@ -1329,7 +1332,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
         ..addAll(optimisticIds);
     });
 
-    context.read<ClockingBloc>().add(
+    clockingBloc.add(
       CreateManualClockingEntriesEvent(
         teamId: widget.selectedTeamId,
         dates: List<DateTime>.from(_manualSelectedDates),

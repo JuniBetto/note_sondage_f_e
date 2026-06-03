@@ -1938,6 +1938,150 @@ abstract class AppLocalizations {
   /// **'Your personal and team shift schedule'**
   String get shiftCalendarSubtitle;
 
+  /// No description provided for @shiftTeamReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team shift report'**
+  String get shiftTeamReportTitle;
+
+  /// No description provided for @shiftTeamReportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by period and users, then preview or download the report.'**
+  String get shiftTeamReportSubtitle;
+
+  /// No description provided for @shiftTeamReportTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Team shift report'**
+  String get shiftTeamReportTooltip;
+
+  /// No description provided for @shiftTeamReportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Team report'**
+  String get shiftTeamReportButton;
+
+  /// No description provided for @shiftReportUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No manageable team available for reporting.'**
+  String get shiftReportUnavailable;
+
+  /// No description provided for @shiftReportStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get shiftReportStartDate;
+
+  /// No description provided for @shiftReportEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get shiftReportEndDate;
+
+  /// No description provided for @shiftReportUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Users to include'**
+  String get shiftReportUsers;
+
+  /// No description provided for @shiftReportRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh report'**
+  String get shiftReportRefresh;
+
+  /// No description provided for @shiftReportPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get shiftReportPeriod;
+
+  /// No description provided for @shiftReportShifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Shifts'**
+  String get shiftReportShifts;
+
+  /// No description provided for @shiftReportMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get shiftReportMode;
+
+  /// No description provided for @shiftReportCalendarMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get shiftReportCalendarMode;
+
+  /// No description provided for @shiftReportTableMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Table'**
+  String get shiftReportTableMode;
+
+  /// No description provided for @shiftReportSelectTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a team.'**
+  String get shiftReportSelectTeam;
+
+  /// No description provided for @shiftReportNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts found for the selected filters.'**
+  String get shiftReportNoResults;
+
+  /// No description provided for @shiftReportLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not load the shift report right now.'**
+  String get shiftReportLoadError;
+
+  /// No description provided for @shiftReportGeneratedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated at'**
+  String get shiftReportGeneratedAt;
+
+  /// No description provided for @shiftReportDateColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get shiftReportDateColumn;
+
+  /// No description provided for @shiftReportUserColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get shiftReportUserColumn;
+
+  /// No description provided for @shiftReportProfileColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get shiftReportProfileColumn;
+
+  /// No description provided for @shiftReportTypeColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get shiftReportTypeColumn;
+
+  /// No description provided for @shiftReportDefaultProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get shiftReportDefaultProfile;
+
+  /// No description provided for @shiftReportPrivateType.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get shiftReportPrivateType;
+
   /// No description provided for @addShift.
   ///
   /// In en, this message translates to:

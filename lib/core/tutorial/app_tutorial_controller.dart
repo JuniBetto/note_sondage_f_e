@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class AppTutorialController {
   AppTutorialController._();
@@ -19,6 +19,9 @@ class AppTutorialController {
     required List<GlobalKey> keys,
     String? userId,
   }) async {
+    if (!_tutorialsEnabled) {
+      return;
+    }
     registerTargets(tutorialId: tutorialId, keys: keys);
     final normalizedUserId = _normalizeUserId(userId);
     final sessionKey = '$normalizedUserId::$tutorialId';
@@ -46,7 +49,7 @@ class AppTutorialController {
     _startedThisSession.add(sessionKey);
 
     try {
-      ShowCaseWidget.of(context).startShowCase(attachedKeys);
+      ShowcaseView.get().startShowCase(attachedKeys);
       await prefs.setBool(storageKey, true);
     } catch (error, stack) {
       _startedThisSession.remove(sessionKey);
@@ -72,6 +75,9 @@ class AppTutorialController {
     required BuildContext context,
     required List<GlobalKey> keys,
   }) async {
+    if (!_tutorialsEnabled) {
+      return;
+    }
     if (!context.mounted) {
       return;
     }
@@ -88,7 +94,7 @@ class AppTutorialController {
       }
 
       try {
-        final showcase = ShowCaseWidget.of(context);
+        final showcase = ShowcaseView.get();
         showcase.dismiss();
         showcase.startShowCase(attachedKeys);
       } catch (error, stack) {
@@ -101,6 +107,9 @@ class AppTutorialController {
     required BuildContext context,
     required String tutorialId,
   }) async {
+    if (!_tutorialsEnabled) {
+      return;
+    }
     final replayAction = _registeredReplays[tutorialId];
     if (replayAction != null) {
       await replayAction();
@@ -142,4 +151,6 @@ class AppTutorialController {
   static List<GlobalKey> _attachedKeys(List<GlobalKey> keys) {
     return keys.toSet().toList(growable: false);
   }
+
+  static bool get _tutorialsEnabled => true;
 }

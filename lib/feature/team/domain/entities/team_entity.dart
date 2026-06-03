@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:note_sondage/domain/entities/user_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/invite_team_member_request_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
-import 'package:uuid/uuid.dart';
 
 class TeamEntity {
   final String? id;
@@ -83,9 +81,10 @@ class TeamUpdate extends TeamEntity {
          name: name,
          description: description,
          createdByUserId: createdByUserId ?? '',
-          memberCount: 0,
+         memberCount: 0,
          createdAt: createdAt ?? DateTime.now(),
        );
+  @override
   TeamUpdate copyWith({
     String? id,
     String? name,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 
 enum ButtonType { elevated, filled, filledTonal, text, outlined, card }

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
-import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
@@ -375,6 +374,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
         ],
       ),
     );
+    if (!mounted) return;
     if (confirmed == true) {
       context.read<ShiftBloc>().add(DeleteShiftProfileEvent(profile.id));
     }
@@ -484,8 +484,8 @@ class _ProfileTile extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
 
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
     return Opacity(
       opacity: isSyncing ? 0.78 : 1,
       child: ListTile(
@@ -682,7 +682,6 @@ class _ShiftColorPickerSheet extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
     final isCompact = MediaQuery.sizeOf(context).width < 700;
 
     return SafeArea(

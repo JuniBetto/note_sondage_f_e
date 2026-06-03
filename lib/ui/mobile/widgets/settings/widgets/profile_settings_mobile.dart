@@ -186,14 +186,13 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
         }
       }
 
-      final imageBytes = await _selectedProfileImageFile?.readAsBytes();
+      final selectedProfileImageFile = _selectedProfileImageFile;
+      final imageBytes = await selectedProfileImageFile?.readAsBytes();
 
       await _authUseCase.updateMyProfile(
         displayName: normalizedDisplayName,
         profileImageBytes: imageBytes,
-        profileImageFileName: _selectedProfileImageFile != null
-            ? _selectedProfileImageFile!.path.split('/').last
-            : null,
+        profileImageFileName: selectedProfileImageFile?.path.split('/').last,
       );
 
       if (!mounted) return;

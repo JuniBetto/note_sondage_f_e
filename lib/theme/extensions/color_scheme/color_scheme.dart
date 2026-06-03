@@ -37,8 +37,6 @@ extension AppColorScheme on ColorScheme {
       ? ColorPalette.gray[2]
       : ColorPalette.gray[5];
 
-  /***** */
-
   Color? get bgborderLogin => brightness == Brightness.light
       ? ColorPalette.gray[3]
       : ColorPalette.surface;

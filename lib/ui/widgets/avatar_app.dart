@@ -25,10 +25,14 @@ class AvatarApp extends StatelessWidget {
     final resolvedUrl = originalUrl != null && originalUrl.isNotEmpty
         ? DioClient.resolveImageUrl(originalUrl)
         : null;
+    final authImageUrl = originalUrl;
     final requiresAuth =
         originalUrl != null &&
         originalUrl.isNotEmpty &&
         DioClient.usesAuthenticatedImageProxy(originalUrl);
+    final authHeadersFuture = requiresAuth && authImageUrl != null
+        ? DioClient.resolveImageHeaders(authImageUrl)
+        : Future<Map<String, String>?>.value(null);
 
     return GestureDetector(
       onTap: onTap,
@@ -37,9 +41,7 @@ class AvatarApp extends StatelessWidget {
         height: size,
         child: resolvedUrl != null
             ? FutureBuilder<Map<String, String>?>(
-                future: requiresAuth
-                    ? DioClient.resolveImageHeaders(originalUrl!)
-                    : Future.value(null),
+                future: authHeadersFuture,
                 builder: (context, snapshot) {
                   if (requiresAuth &&
                       snapshot.connectionState != ConnectionState.done) {

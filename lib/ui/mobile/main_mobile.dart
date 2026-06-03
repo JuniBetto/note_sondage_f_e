@@ -12,7 +12,7 @@ import 'package:note_sondage/ui/mobile/widgets/header_page.dart';
 import 'package:note_sondage/ui/mobile/widgets/home/home_dashboard_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/settings_mobile.dart';
 import 'package:note_sondage/ui/widgets/navigation_bar.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class MainMobile extends StatefulWidget {
   const MainMobile({super.key});
@@ -81,19 +81,37 @@ class _MainMobileState extends State<MainMobile> {
               : null,
         ),
         backgroundColor: colorScheme.homePrimary,
-        body: Showcase(
-          key: _bodyKey,
+        body: _buildShowcase(
+          showcaseKey: _bodyKey,
           title: _pageTitle(loc, navBarItem),
           description: _pageDescription(context, navBarItem),
           child: body,
         ),
-        bottomNavigationBar: Showcase(
-          key: _navigationBarKey,
+        bottomNavigationBar: _buildShowcase(
+          showcaseKey: _navigationBarKey,
           title: _navigationTitle(context, loc),
           description: _navigationDescription(context),
           child: const NavigationBarWidget(key: Key('mobile_navigation_bar')),
         ),
       ),
+    );
+  }
+
+  Widget _buildShowcase({
+    required GlobalKey showcaseKey,
+    required String title,
+    required String description,
+    required Widget child,
+  }) {
+    if (_shouldBypassShowcaseInDebug()) {
+      return child;
+    }
+
+    return Showcase(
+      key: showcaseKey,
+      title: title,
+      description: description,
+      child: child,
     );
   }
 
@@ -200,5 +218,9 @@ class _MainMobileState extends State<MainMobile> {
 
   bool _isItalian(BuildContext context) {
     return Localizations.localeOf(context).languageCode == 'it';
+  }
+
+  bool _shouldBypassShowcaseInDebug() {
+    return isInspectorSelectionActive;
   }
 }

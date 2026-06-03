@@ -12,13 +12,13 @@ class SondageDisplay extends StatefulWidget {
   final ValueChanged<SondageEntity> onEditTap;
 
   const SondageDisplay({
-    Key? key,
+    super.key,
     required this.sondages,
     required this.onViewChanged,
     required this.onDeleteTap,
     required this.onEditTap,
     this.initialViewType = 1,
-  }) : super(key: key);
+  });
 
   @override
   State<SondageDisplay> createState() => _TeamsDisplaySectionState();

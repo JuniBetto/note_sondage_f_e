@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/feature/auth/domain/entities/mfa_factor_hint_entity.dart';
 import 'package:note_sondage/feature/auth/infrastructure/local/pending_mfa_setup_store.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -223,7 +224,7 @@ class _AuthTabLoginState extends State<AuthTabLogin>
               builder: (_) => MfaSignInDialog(factors: state.pendingMfaFactors),
             );
             _mfaDialogOpen = false;
-            if (!mounted) return;
+            if (!context.mounted) return;
             if (result != true) {
               context.read<AuthBloc>().add(const AuthMfaChallengeDismissed());
             }
@@ -327,9 +328,11 @@ class _AuthTabLoginState extends State<AuthTabLogin>
   }
 
   Widget buildLoginForm(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme= theme.textTheme;
     final localization = AppLocalizations.of(context)!;
+
     return SubmitOnEnterScope(
       onSubmit: _submitLogin,
       child: Form(
@@ -366,7 +369,8 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                   type: ButtonType.text,
                   onPressed: _submitLogin,
                   isActive: true,
-                  child: Text(localization.login),
+                  child: Text(localization.login,
+                      style: textTheme.bodyLarge!.copyWith(color: colorScheme.textInvertedColor)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -380,27 +384,30 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                       runSpacing: 8,
                       children: [
                         CustomAppButton(
-                          type: ButtonType.elevated,
+                          type: ButtonType.outlined,
                           backgroundColor: Colors.transparent,
                           onPressed: () {
                             context.pushNamed(RouterPaths.forgotPassword);
                           },
                           isActive: true,
-                          child: Text(localization.forgotPassword),
+                          child: Text(localization.forgotPassword,
+                            style: textTheme.bodyLarge,),
                         ),
                         CustomAppButton(
-                          type: ButtonType.elevated,
+                          type: ButtonType.outlined,
                           backgroundColor: Colors.transparent,
                           onPressed: _openAccountDeletionDialog,
                           isActive: true,
-                          child: Text(localization.deleteAccount),
+                          child: Text(localization.deleteAccount,
+                              style: textTheme.bodyLarge),
                         ),
                         CustomAppButton(
-                          type: ButtonType.elevated,
+                          type: ButtonType.outlined,
                           backgroundColor: Colors.transparent,
                           onPressed: _openAccountReactivationDialog,
                           isActive: true,
-                          child: Text(localization.reactivateAccount),
+                          child: Text(localization.reactivateAccount,
+                              style: textTheme.bodyLarge),
                         ),
                       ],
                     ),
@@ -437,14 +444,16 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                 },
                 buttonText: 'Continue with Google',
               ),
-              const SizedBox(height: 12),
-              SsoLogin(
-                key: const ValueKey("phone_sso_login_button"),
-                onPressed: _startPhoneSignIn,
-                assetPath: null,
-                iconData: Icons.phone_iphone_rounded,
-                buttonText: 'Continue with Phone',
-              ),
+              if (RuntimeConfig.enablePhoneSso) ...[
+                const SizedBox(height: 12),
+                SsoLogin(
+                  key: const ValueKey("phone_sso_login_button"),
+                  onPressed: _startPhoneSignIn,
+                  assetPath: null,
+                  iconData: Icons.phone_iphone_rounded,
+                  buttonText: 'Continue with Phone',
+                ),
+              ],
             ],
           ),
         ),
@@ -579,14 +588,16 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                 },
                 buttonText: 'Continue with Google',
               ),
-              const SizedBox(height: 12),
-              SsoLogin(
-                key: const ValueKey("phone_sso_register_button"),
-                onPressed: _startPhoneSignIn,
-                assetPath: null,
-                iconData: Icons.phone_iphone_rounded,
-                buttonText: 'Continue with Phone',
-              ),
+              if (RuntimeConfig.enablePhoneSso) ...[
+                const SizedBox(height: 12),
+                SsoLogin(
+                  key: const ValueKey("phone_sso_register_button"),
+                  onPressed: _startPhoneSignIn,
+                  assetPath: null,
+                  iconData: Icons.phone_iphone_rounded,
+                  buttonText: 'Continue with Phone',
+                ),
+              ],
             ],
           ),
         ),

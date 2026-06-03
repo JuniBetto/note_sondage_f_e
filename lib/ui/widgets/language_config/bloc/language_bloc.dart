@@ -19,7 +19,7 @@ class LanguageBloc extends Bloc<LanguageEvent, LanguageState> {
   ) async {
     try {
       // Recupera la lingua salvata da Hive
-      final savedLanguage = await HiveService.getHive<String>(
+      final savedLanguage = HiveService.getHive<String>(
         languageConfigBox,
         languageKeyBox,
       );
@@ -44,7 +44,7 @@ class LanguageBloc extends Bloc<LanguageEvent, LanguageState> {
     debugPrint("[LanguageBloc] Changing language to: ${event.languageCode}");
 
     // Salva la lingua in Hive
-    await HiveService.putHive<String>(
+    HiveService.putHive<String>(
       event.languageCode,
       languageConfigBox,
       languageKeyBox,

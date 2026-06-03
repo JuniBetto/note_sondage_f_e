@@ -5,7 +5,8 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/team/ui/widgets/responsive_grid_teams.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
+import 'package:note_sondage/ui/widgets/app_search_field.dart';
 
 class TeamsDisplay extends StatefulWidget {
   final List<Map<String, dynamic>> teams;
@@ -13,11 +14,11 @@ class TeamsDisplay extends StatefulWidget {
   final int initialViewType;
 
   const TeamsDisplay({
-    Key? key,
+    super.key,
     required this.teams,
     required this.onViewChanged,
     this.initialViewType = 1,
-  }) : super(key: key);
+  });
 
   @override
   State<TeamsDisplay> createState() => _TeamsDisplaySectionState();
@@ -26,13 +27,21 @@ class TeamsDisplay extends StatefulWidget {
 class _TeamsDisplaySectionState extends State<TeamsDisplay> {
   final GlobalKey _viewToggleKey = GlobalKey();
   final GlobalKey _teamListKey = GlobalKey();
+  final TextEditingController _searchController = TextEditingController();
   late int isGridView;
   bool _tutorialScheduled = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     isGridView = widget.initialViewType;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -84,6 +93,7 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
               child: ResponsiveGridTeams(
                 items: widget.teams,
                 isRow: isGridView == 1,
+                searchQuery: _searchQuery,
                 shrinkWrapLayout: useLandscapeCompactLayout,
               ),
             ),
@@ -127,6 +137,18 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
             children: [
               header,
               SizedBox(height: sectionSpacing),
+              AppSearchField(
+                controller: _searchController,
+                hintText: _isItalian(context)
+                    ? 'Cerca team per nome o descrizione'
+                    : 'Search teams by name or description',
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
+              SizedBox(height: sectionSpacing),
               Expanded(child: teamList),
             ],
           );
@@ -139,6 +161,18 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 header,
+                SizedBox(height: sectionSpacing),
+                AppSearchField(
+                  controller: _searchController,
+                  hintText: _isItalian(context)
+                      ? 'Cerca team per nome o descrizione'
+                      : 'Search teams by name or description',
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
                 SizedBox(height: sectionSpacing),
                 teamList,
               ],

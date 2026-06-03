@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -955,8 +954,9 @@ class LocalNotificationService {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_shiftAlarmTypeKey);
     // Default: alarm (sveglia), non semplice notifica
-    if (raw == ShiftAlarmType.notification.name)
+    if (raw == ShiftAlarmType.notification.name) {
       return ShiftAlarmType.notification;
+    }
     return ShiftAlarmType.alarm;
   }
 

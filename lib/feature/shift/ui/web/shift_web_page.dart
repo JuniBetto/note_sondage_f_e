@@ -18,6 +18,7 @@ import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_entries_sheet.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_profile_manager.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_team_report_dialog.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
@@ -27,7 +28,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:uuid/uuid.dart';
 
 class ShiftWebPage extends StatefulWidget {
@@ -355,6 +356,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     DateTime date, {
     ShiftAssignmentEntity? existing,
   }) async {
+    final shiftBloc = context.read<ShiftBloc>();
     final result = await showShiftDayDialog(
       context: context,
       date: date,
@@ -374,13 +376,11 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
 
     if (result.deleted && existing != null) {
       if (existing.teamShiftGroupId != null && existing.isPublic) {
-        context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(existing.id));
+        shiftBloc.add(DeleteShiftAssignmentEvent(existing.id));
       } else {
         final assignmentsToDelete = _relatedPublicAssignments(existing);
         for (final assignment in assignmentsToDelete) {
-          context.read<ShiftBloc>().add(
-            DeleteShiftAssignmentEvent(assignment.id),
-          );
+          shiftBloc.add(DeleteShiftAssignmentEvent(assignment.id));
         }
       }
       return;
@@ -398,12 +398,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
           existing,
         ).where((assignment) => assignment.id != existing.id);
         for (final a in toDelete) {
-          context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(a.id));
+          shiftBloc.add(DeleteShiftAssignmentEvent(a.id));
         }
       }
 
       // public → public: il backend aggiornerà TUTTE le righe del team in automatico
-      context.read<ShiftBloc>().add(
+      shiftBloc.add(
         UpdateShiftAssignmentEvent(
           assignmentId: existing.id,
           profileId: result.profileId,
@@ -435,7 +435,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     for (final scheduledDate in scheduledDates) {
       if (hasMemberSpecificPlans) {
         for (final plan in result.memberAssignmentPlans) {
-          context.read<ShiftBloc>().add(
+          shiftBloc.add(
             AssignShiftEvent(
               shiftDate: scheduledDate,
               profileId: plan.profileId ?? result.profileId,
@@ -455,7 +455,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       }
       final sharedGroupId = result.isPublic ? uuid.v4() : null;
       for (final targetUserId in targetUserIds) {
-        context.read<ShiftBloc>().add(
+        shiftBloc.add(
           AssignShiftEvent(
             shiftDate: scheduledDate,
             profileId: result.profileId,
@@ -516,6 +516,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     DateTime date,
     List<ShiftAssignmentEntity> assignments,
   ) async {
+    final shiftBloc = context.read<ShiftBloc>();
     final sortedAssignments = [...assignments]
       ..sort((a, b) {
         final byTime = a.startTime.hour * 60 + a.startTime.minute;
@@ -542,9 +543,9 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       date: date,
       assignments: sortedAssignments,
       canCreate: true,
-      syncingAssignmentIds: context.read<ShiftBloc>().syncingAssignmentIds,
+      syncingAssignmentIds: shiftBloc.syncingAssignmentIds,
     );
-    if (!mounted || action == null) return;
+    if (!context.mounted || action == null) return;
 
     switch (action.type) {
       case ShiftDayEntriesActionType.createNew:
@@ -774,6 +775,14 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                           ),
                         ),
                       ),
+                    if (_canManageAnyTeam) ...[
+                      const SizedBox(width: 12),
+                      FilledButton.icon(
+                        onPressed: () => _openTeamReport(context),
+                        icon: const Icon(Icons.assessment_outlined, size: 18),
+                        label: Text(loc.shiftTeamReportButton),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -901,5 +910,9 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
 
   bool _isItalian(BuildContext context) {
     return Localizations.localeOf(context).languageCode == 'it';
+  }
+
+  Future<void> _openTeamReport(BuildContext context) async {
+    await ShiftTeamReportDialog.show(context, teams: _manageableTeams);
   }
 }

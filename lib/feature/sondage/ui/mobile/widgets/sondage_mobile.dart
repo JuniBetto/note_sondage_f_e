@@ -6,11 +6,11 @@ import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_display.dart';
-import 'package:note_sondage/theme/color_palette.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/ui/widgets/app_search_field.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class SondageMobile extends StatefulWidget {
   const SondageMobile({super.key});
@@ -25,9 +25,12 @@ class _SondageMobileState extends State<SondageMobile>
   final GlobalKey _statsKey = GlobalKey();
   final GlobalKey _listKey = GlobalKey();
   late TabController tabController;
+  final TextEditingController _searchController = TextEditingController();
   int currentViewType = 1;
   List<SondageEntity> _lastSondages = const <SondageEntity>[];
   bool _listTutorialScheduled = false;
+  String _searchQuery = '';
+  SondageStatus? _selectedStatusFilter;
 
   @override
   void initState() {
@@ -116,15 +119,50 @@ class _SondageMobileState extends State<SondageMobile>
     required String label,
     required int value,
     required Color color,
+    required SondageStatus status,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+    final isSelected = _selectedStatusFilter == status;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        setState(() {
+          _selectedStatusFilter = isSelected ? null : status;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withValues(alpha: 0.22)
+              : color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? color.withValues(alpha: 0.7)
+                : color.withValues(alpha: 0.2),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$label: $value',
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? color.withValues(alpha: 0.95) : null,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Text('$label: $value'),
     );
   }
 
@@ -132,6 +170,7 @@ class _SondageMobileState extends State<SondageMobile>
   void dispose() {
     tabController.removeListener(_handleTabChange);
     tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -251,6 +290,7 @@ class _SondageMobileState extends State<SondageMobile>
                               sondages,
                               SondageStatus.completed,
                             );
+                            final filteredSondages = _filterSondages(sondages);
 
                             final summaryHeader = Showcase(
                               key: _summaryKey,
@@ -263,15 +303,33 @@ class _SondageMobileState extends State<SondageMobile>
                               child: Row(
                                 children: [
                                   Expanded(
-                                    child: Text(
-                                      'Bozze e sondaggi attivi dei tuoi team',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Colors.grey[700],
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Bozze e sondaggi attivi dei tuoi team',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Colors.grey[700],
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        AppSearchField(
+                                          controller: _searchController,
+                                          hintText: _isItalian(context)
+                                              ? 'Cerca sondaggio, team o opzione'
+                                              : 'Search survey, team, or option',
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _searchQuery = value;
+                                            });
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   IconButton(
@@ -300,16 +358,19 @@ class _SondageMobileState extends State<SondageMobile>
                                       label: 'Draft',
                                       value: draftCount,
                                       color: Colors.orange,
+                                      status: SondageStatus.draft,
                                     ),
                                     _buildSummaryChip(
                                       label: 'Attivi',
                                       value: activeCount,
                                       color: Colors.green,
+                                      status: SondageStatus.active,
                                     ),
                                     _buildSummaryChip(
                                       label: 'Chiusi',
                                       value: completedCount,
                                       color: Colors.red,
+                                      status: SondageStatus.completed,
                                     ),
                                   ],
                                 ),
@@ -324,7 +385,7 @@ class _SondageMobileState extends State<SondageMobile>
                                   ? 'Da questa lista puoi aprire, modificare o eliminare i sondaggi che ti competono.'
                                   : 'Use this list to open, edit, or delete the surveys that belong to you or your teams.',
                               child: SondageDisplay(
-                                sondages: sondages,
+                                sondages: filteredSondages,
                                 onViewChanged: _handleViewTypeChanged,
                                 initialViewType: currentViewType,
                                 onDeleteTap: _confirmDelete,
@@ -411,5 +472,28 @@ class _SondageMobileState extends State<SondageMobile>
 
   bool _isItalian(BuildContext context) {
     return Localizations.localeOf(context).languageCode == 'it';
+  }
+
+  List<SondageEntity> _filterSondages(List<SondageEntity> sondages) {
+    final normalized = _searchQuery.trim().toLowerCase();
+    return sondages.where((sondage) {
+      final matchesStatus =
+          _selectedStatusFilter == null ||
+          sondage.status == _selectedStatusFilter;
+      if (!matchesStatus) {
+        return false;
+      }
+      if (normalized.isEmpty) {
+        return true;
+      }
+      final searchable = [
+        sondage.name,
+        sondage.focus,
+        sondage.description ?? '',
+        sondage.teamName ?? '',
+        ...sondage.options.map((option) => option.label),
+      ].join(' ').toLowerCase();
+      return searchable.contains(normalized);
+    }).toList();
   }
 }

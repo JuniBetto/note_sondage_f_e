@@ -9,7 +9,6 @@ import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.
 import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
 import 'package:note_sondage/feature/clocking/ui/utils/clocking_access_resolver.dart';
 import 'package:note_sondage/feature/clocking/ui/utils/clocking_pdf_export_service.dart';
-import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
@@ -581,6 +580,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       fullWidth: true,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       leadingIcon: const Icon(Icons.calendar_month_rounded),
+      minHeight: 54,
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
@@ -591,7 +591,6 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           ),
         ),
       ),
-      minHeight: 54,
     );
   }
 
@@ -648,6 +647,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       fullWidth: true,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       leadingIcon: const Icon(Icons.person_search_rounded),
+      minHeight: 54,
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
@@ -658,7 +658,6 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           ),
         ),
       ),
-      minHeight: 54,
     );
   }
 
@@ -981,6 +980,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       ),
     );
     final noteController = TextEditingController();
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -997,7 +997,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
-                      value: selectedUser.value,
+                      initialValue: selectedUser.value,
                       decoration: InputDecoration(
                         labelText: localization.userLabel,
                       ),
@@ -1304,6 +1304,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
         (widget.selectedDate ?? DateTime.now()).day,
       ),
     );
+    if (!mounted) return;
     final window = await _showPermissionDialog(
       title: localization.permission,
       builderPrefix: (dialogContext) => StatefulBuilder(
@@ -1312,7 +1313,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
-                value: selectedUser.value,
+                initialValue: selectedUser.value,
                 decoration: InputDecoration(labelText: localization.userLabel),
                 items: assignableMembers
                     .map(
@@ -1458,6 +1459,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     if (confirmed != true) {
       return null;
     }
+    if (!mounted) return null;
 
     final startMinutes = (start.hour * 60) + start.minute;
     final endMinutes = (end.hour * 60) + end.minute;

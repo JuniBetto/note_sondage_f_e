@@ -18,7 +18,7 @@ import 'package:note_sondage/ui/web/widgets/home/left_home_section.dart';
 import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
 import 'package:note_sondage/ui/widgets/auth/contact_email_setup_card.dart';
 import 'package:note_sondage/ui/widgets/authenticated_user_summary_card.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class SettingsWeb extends StatefulWidget {
   const SettingsWeb({super.key, this.child});

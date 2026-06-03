@@ -10,8 +10,9 @@ import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_search_field.dart';
 import 'package:note_sondage/ui/widgets/custom_dialog.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class TeamsWeb extends StatefulWidget {
   const TeamsWeb({super.key, this.title = "Create Team"});
@@ -26,13 +27,21 @@ class _TeamsWebState extends State<TeamsWeb> {
   final GlobalKey _createButtonKey = GlobalKey();
   final GlobalKey _viewToggleKey = GlobalKey();
   final GlobalKey _teamListKey = GlobalKey();
+  final TextEditingController _searchController = TextEditingController();
   int isGridView = 1;
   bool _tutorialScheduled = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _teamBloc = getIt<TeamBloc>();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _handleTeamCreated() {
@@ -89,47 +98,69 @@ class _TeamsWebState extends State<TeamsWeb> {
                     horizontal: 16.0,
                     vertical: 12.0,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.max,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Showcase(
-                        key: _createButtonKey,
-                        title: _isItalian(context)
-                            ? 'Nuova squadra'
-                            : 'New team',
-                        description: _isItalian(context)
-                            ? 'Apri qui la sotto-pagina di creazione per configurare una nuova squadra con nome, colore e membri.'
-                            : 'Open the creation subpage here to configure a new team with its name, color, and members.',
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            CustomDialog(
-                              title: widget.title,
-                              width: 700,
-                              child: CreateTeamWeb(
-                                onTeamCreated: _handleTeamCreated,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Showcase(
+                            key: _createButtonKey,
+                            title: _isItalian(context)
+                                ? 'Nuova squadra'
+                                : 'New team',
+                            description: _isItalian(context)
+                                ? 'Apri qui la sotto-pagina di creazione per configurare una nuova squadra con nome, colore e membri.'
+                                : 'Open the creation subpage here to configure a new team with its name, color, and members.',
+                            child: FilledButton.icon(
+                              onPressed: () {
+                                CustomDialog(
+                                  title: widget.title,
+                                  width: 700,
+                                  child: CreateTeamWeb(
+                                    onTeamCreated: _handleTeamCreated,
+                                  ),
+                                ).show(context);
+                              },
+                              icon: const Icon(
+                                Icons.group_add_rounded,
+                                size: 20,
                               ),
-                            ).show(context);
+                              label: Text(
+                                localization.createTeam,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF7C4DFF),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: AppSearchField(
+                          controller: _searchController,
+                          hintText: _isItalian(context)
+                              ? 'Cerca team per nome o descrizione'
+                              : 'Search teams by name or description',
+                          onChanged: (value) {
+                            setState(() {
+                              _searchQuery = value;
+                            });
                           },
-                          icon: const Icon(Icons.group_add_rounded, size: 20),
-                          label: Text(
-                            localization.createTeam,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF7C4DFF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 14,
-                            ),
-                          ),
                         ),
                       ),
                     ],
@@ -205,6 +236,7 @@ class _TeamsWebState extends State<TeamsWeb> {
                           child: ResponsiveGridTeams(
                             items: const <Map<String, dynamic>>[],
                             isRow: isGridView == 1,
+                            searchQuery: _searchQuery,
                           ),
                         ),
                       ),

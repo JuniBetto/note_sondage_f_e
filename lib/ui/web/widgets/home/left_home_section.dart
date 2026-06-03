@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/aspect_ratio.dart' as adaptive;
-import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
 
 class LeftHomeSection extends StatefulWidget {
   const LeftHomeSection({
@@ -65,7 +64,6 @@ class _LeftHomeSectionState extends State<LeftHomeSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
     final sidebarItems = _splitSidebarItems();
 
@@ -86,7 +84,7 @@ class _LeftHomeSectionState extends State<LeftHomeSection> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 4.0,bottom: 0.0, ),
+                    padding: const EdgeInsets.only(top: 4.0, bottom: 0.0),
                     child: IconButton(
                       onPressed: widget.onPressedResizeSidebar,
                       icon: Icon(
@@ -101,7 +99,7 @@ class _LeftHomeSectionState extends State<LeftHomeSection> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.only(top: 4.0,bottom: 4.0),
+                padding: const EdgeInsets.only(top: 4.0, bottom: 4.0),
                 child:
                     widget.title ??
                     Row(

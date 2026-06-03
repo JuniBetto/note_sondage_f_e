@@ -82,7 +82,8 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
         notification.eventType == 'TEAM_MEMBER_REMOVED' ||
         notification.eventType == 'TEAM_MEMBER_ROLE_UPDATED' ||
         notification.eventType == 'TEAM_MEMBER_INVITED' ||
-        notification.eventType == 'TEAM_INVITATION_CANCELLED') {
+        notification.eventType == 'TEAM_INVITATION_CANCELLED' ||
+        notification.eventType == 'TEAM_INVITATION_REJECTED') {
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
     }
   }

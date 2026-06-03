@@ -990,6 +990,82 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shiftCalendarSubtitle => 'Your personal and team shift schedule';
 
   @override
+  String get shiftTeamReportTitle => 'Team shift report';
+
+  @override
+  String get shiftTeamReportSubtitle =>
+      'Filter by period and users, then preview or download the report.';
+
+  @override
+  String get shiftTeamReportTooltip => 'Team shift report';
+
+  @override
+  String get shiftTeamReportButton => 'Team report';
+
+  @override
+  String get shiftReportUnavailable =>
+      'No manageable team available for reporting.';
+
+  @override
+  String get shiftReportStartDate => 'Start date';
+
+  @override
+  String get shiftReportEndDate => 'End date';
+
+  @override
+  String get shiftReportUsers => 'Users to include';
+
+  @override
+  String get shiftReportRefresh => 'Refresh report';
+
+  @override
+  String get shiftReportPeriod => 'Period';
+
+  @override
+  String get shiftReportShifts => 'Shifts';
+
+  @override
+  String get shiftReportMode => 'Mode';
+
+  @override
+  String get shiftReportCalendarMode => 'Calendar';
+
+  @override
+  String get shiftReportTableMode => 'Table';
+
+  @override
+  String get shiftReportSelectTeam => 'Select a team.';
+
+  @override
+  String get shiftReportNoResults =>
+      'No shifts found for the selected filters.';
+
+  @override
+  String get shiftReportLoadError =>
+      'We could not load the shift report right now.';
+
+  @override
+  String get shiftReportGeneratedAt => 'Generated at';
+
+  @override
+  String get shiftReportDateColumn => 'Date';
+
+  @override
+  String get shiftReportUserColumn => 'User';
+
+  @override
+  String get shiftReportProfileColumn => 'Profile';
+
+  @override
+  String get shiftReportTypeColumn => 'Type';
+
+  @override
+  String get shiftReportDefaultProfile => 'Shift';
+
+  @override
+  String get shiftReportPrivateType => 'Private';
+
+  @override
   String get addShift => 'Add Shift';
 
   @override

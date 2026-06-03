@@ -46,14 +46,16 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     // Phase 1: emit in-memory cache or Hive immediately (synchronous feel)
     var hadLocalData = false;
     if (_cachedTeams.isNotEmpty) {
+      _cachedTeams = _dedupeTeams(_cachedTeams);
       hadLocalData = true;
       emit(TeamsLoaded(_cachedTeams));
     } else {
       final local = await teamUseCase.getLocalTeams();
       if (local.isNotEmpty) {
         hadLocalData = true;
-        _cachedTeams = local;
-        emit(TeamsLoaded(local));
+        _cachedTeams = _dedupeTeams(local);
+        await teamLocalDataSource.saveAll(_cachedTeams);
+        emit(TeamsLoaded(_cachedTeams));
       } else {
         emit(TeamLoading());
       }
@@ -66,7 +68,6 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     teamUseCase
         .getAllTeams()
         .then((remote) {
-          _cachedTeams = remote;
           if (!isClosed) add(_TeamsRefreshedEvent(remote));
         })
         .catchError((error) {
@@ -98,14 +99,16 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     // Phase 1: emit in-memory cache or Hive immediately (synchronous feel)
     var hadLocalData = false;
     if (_cachedTeams.isNotEmpty) {
+      _cachedTeams = _dedupeTeams(_cachedTeams);
       hadLocalData = true;
       emit(TeamsLoaded(_cachedTeams));
     } else {
       final local = await teamUseCase.getLocalTeams();
       if (local.isNotEmpty) {
         hadLocalData = true;
-        _cachedTeams = local;
-        emit(TeamsLoaded(local));
+        _cachedTeams = _dedupeTeams(local);
+        await teamLocalDataSource.saveAll(_cachedTeams);
+        emit(TeamsLoaded(_cachedTeams));
       } else {
         emit(TeamLoading());
       }
@@ -118,7 +121,6 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     teamUseCase
         .getAllTeamsByUserId(event.userId)
         .then((remote) {
-          _cachedTeams = remote;
           if (!isClosed) add(_TeamsRefreshedEvent(remote));
         })
         .catchError((error) {
@@ -146,7 +148,9 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     _TeamsRefreshedEvent event,
     Emitter<TeamState> emit,
   ) async {
-    emit(TeamsLoaded(event.teams));
+    _cachedTeams = _mergeRemoteTeams(event.teams);
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamsLoaded(_cachedTeams));
   }
 
   Future<void> _onTeamsRefreshFailed(
@@ -340,18 +344,37 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     _TeamCreateCommittedEvent event,
     Emitter<TeamState> emit,
   ) async {
-    final existingIndex = _cachedTeams.indexWhere(
+    final temporaryIndex = _cachedTeams.indexWhere(
       (team) => team.id == event.temporaryId,
     );
-    if (existingIndex == -1) {
-      _cachedTeams = [..._cachedTeams, event.team];
-    } else {
+    final confirmedIndex = _cachedTeams.indexWhere(
+      (team) => team.id == event.team.id,
+    );
+    final logicalDuplicateIndex = _cachedTeams.indexWhere(
+      (team) =>
+          team.id != event.temporaryId &&
+          _sameLogicalTeam(team, event.team) &&
+          (_isTemporaryId(team.id) || _isTemporaryId(event.team.id)),
+    );
+
+    if (temporaryIndex != -1) {
       _cachedTeams = List<TeamEntity>.from(_cachedTeams)
-        ..[existingIndex] = event.team;
+        ..[temporaryIndex] = event.team;
+    } else if (confirmedIndex != -1) {
+      _cachedTeams = List<TeamEntity>.from(_cachedTeams)
+        ..[confirmedIndex] = event.team;
+    } else if (logicalDuplicateIndex != -1) {
+      _cachedTeams = List<TeamEntity>.from(_cachedTeams)
+        ..[logicalDuplicateIndex] = event.team;
+    } else {
+      _cachedTeams = [..._cachedTeams, event.team];
     }
+
+    _cachedTeams = _dedupeTeams(_cachedTeams);
     _syncingTeamIds.remove(event.temporaryId);
     await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamsLoaded(_cachedTeams));
+    _refreshTeamsInBackground();
   }
 
   Future<void> _onTeamUpdateCommitted(
@@ -374,6 +397,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     _syncingTeamIds.remove(event.teamId);
     await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamsLoaded(_cachedTeams));
+    _refreshTeamsInBackground();
   }
 
   Future<void> _onTeamMutationFailed(
@@ -389,6 +413,137 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
 
   String _temporaryId(String prefix) {
     return 'local_${prefix}_${DateTime.now().microsecondsSinceEpoch}';
+  }
+
+  void _refreshTeamsInBackground() {
+    const requestKey = 'all';
+    if (_teamsRefreshKey == requestKey) {
+      return;
+    }
+    _teamsRefreshKey = requestKey;
+    unawaited(
+      teamUseCase
+          .getAllTeams()
+          .then((remote) {
+            if (!isClosed) {
+              add(_TeamsRefreshedEvent(remote));
+            }
+          })
+          .catchError((_) {
+            // Best-effort silent reconciliation: keep the optimistic UI and
+            // avoid surfacing a second error after a successful mutation.
+          })
+          .whenComplete(() {
+            if (_teamsRefreshKey == requestKey) {
+              _teamsRefreshKey = null;
+            }
+          }),
+    );
+  }
+
+  List<TeamEntity> _mergeRemoteTeams(List<TeamEntity> remoteTeams) {
+    final merged = List<TeamEntity>.from(remoteTeams);
+
+    for (final localTeam in _cachedTeams) {
+      final localId = localTeam.id ?? '';
+      final isSyncing = _syncingTeamIds.contains(localId);
+      if (!isSyncing) {
+        continue;
+      }
+
+      if (_isTemporaryId(localTeam.id)) {
+        final remoteMatchIndex = merged.indexWhere(
+          (remoteTeam) => _sameLogicalTeam(remoteTeam, localTeam),
+        );
+        if (remoteMatchIndex == -1) {
+          merged.add(localTeam);
+        } else {
+          _syncingTeamIds.remove(localId);
+        }
+        continue;
+      }
+
+      final remoteMatchIndex = merged.indexWhere(
+        (remoteTeam) => remoteTeam.id == localTeam.id,
+      );
+      if (remoteMatchIndex == -1) {
+        merged.add(localTeam);
+      } else {
+        merged[remoteMatchIndex] = localTeam;
+      }
+    }
+
+    return _dedupeTeams(merged);
+  }
+
+  List<TeamEntity> _dedupeTeams(List<TeamEntity> teams) {
+    final deduped = <TeamEntity>[];
+
+    for (final team in teams) {
+      final existingIndex = deduped.indexWhere(
+        (existing) => _isSameTeamIdentity(existing, team),
+      );
+      if (existingIndex == -1) {
+        deduped.add(team);
+      } else {
+        deduped[existingIndex] = _preferTeamVersion(
+          deduped[existingIndex],
+          team,
+        );
+      }
+    }
+
+    return deduped;
+  }
+
+  bool _isSameTeamIdentity(TeamEntity a, TeamEntity b) {
+    if (a.id != null && b.id != null && a.id == b.id) {
+      return true;
+    }
+
+    final oneIsTemporary = _isTemporaryId(a.id) || _isTemporaryId(b.id);
+    return oneIsTemporary && _sameLogicalTeam(a, b);
+  }
+
+  TeamEntity _preferTeamVersion(TeamEntity current, TeamEntity candidate) {
+    final currentIsTemporary = _isTemporaryId(current.id);
+    final candidateIsTemporary = _isTemporaryId(candidate.id);
+
+    if (currentIsTemporary && !candidateIsTemporary) {
+      return candidate;
+    }
+    if (!currentIsTemporary && candidateIsTemporary) {
+      return current;
+    }
+
+    final currentIsSyncing = _syncingTeamIds.contains(current.id ?? '');
+    final candidateIsSyncing = _syncingTeamIds.contains(candidate.id ?? '');
+    if (currentIsSyncing && !candidateIsSyncing) {
+      return current;
+    }
+    if (!currentIsSyncing && candidateIsSyncing) {
+      return candidate;
+    }
+
+    return candidate;
+  }
+
+  bool _isTemporaryId(String? id) => id?.startsWith('local_') ?? false;
+
+  bool _sameLogicalTeam(TeamEntity a, TeamEntity b) {
+    final normalizedNameA = a.name.trim().toLowerCase();
+    final normalizedNameB = b.name.trim().toLowerCase();
+    final normalizedDescriptionA = a.description.trim().toLowerCase();
+    final normalizedDescriptionB = b.description.trim().toLowerCase();
+    final normalizedColorA = (a.color ?? '').trim().toLowerCase();
+    final normalizedColorB = (b.color ?? '').trim().toLowerCase();
+    final normalizedOwnerA = a.createdByUserId.trim().toLowerCase();
+    final normalizedOwnerB = b.createdByUserId.trim().toLowerCase();
+
+    return normalizedNameA == normalizedNameB &&
+        normalizedDescriptionA == normalizedDescriptionB &&
+        normalizedColorA == normalizedColorB &&
+        normalizedOwnerA == normalizedOwnerB;
   }
 
   TeamEntity _teamEntityFromUpdate(TeamUpdate update, {TeamEntity? previous}) {

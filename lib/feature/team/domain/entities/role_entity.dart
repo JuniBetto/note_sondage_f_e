@@ -1,5 +1,3 @@
-import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
-
 class RoleEntity {
   final String? id;
   final String teamId;

@@ -235,21 +235,29 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   @override
   Future<AuthUserEntity> signInWithGoogle() async {
     try {
-      final googleSignIn = GoogleSignIn.instance;
+      final firebase.UserCredential userCredential;
 
-      // authenticate() shows the Google sign-in UI and returns a GoogleSignInAccount
-      final googleUser = await googleSignIn.authenticate();
+      if (kIsWeb) {
+        final provider = firebase.GoogleAuthProvider()
+          ..setCustomParameters({'prompt': 'select_account'});
+        userCredential = await _firebaseAuth.signInWithPopup(provider);
+      } else {
+        final googleSignIn = GoogleSignIn.instance;
 
-      // Get the idToken from the authentication result
-      final idToken = googleUser.authentication.idToken;
+        // authenticate() shows the Google sign-in UI and returns a GoogleSignInAccount
+        final googleUser = await googleSignIn.authenticate();
 
-      final credential = firebase.GoogleAuthProvider.credential(
-        idToken: idToken,
-      );
+        // Get the idToken from the authentication result
+        final idToken = googleUser.authentication.idToken;
+        final accessToken = googleUser.authentication.accessToken;
 
-      final userCredential = await _firebaseAuth.signInWithCredential(
-        credential,
-      );
+        final credential = firebase.GoogleAuthProvider.credential(
+          accessToken: accessToken,
+          idToken: idToken,
+        );
+
+        userCredential = await _firebaseAuth.signInWithCredential(credential);
+      }
 
       // Scambia il Firebase token con il backend per ottenere il JWT interno
       if (userCredential.user != null) {
@@ -272,6 +280,11 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         factors: _mapFactorHints(e.resolver.hints),
         message: 'Enter the verification code sent to your second factor.',
       );
+    } on firebase.FirebaseAuthException catch (e) {
+      debugPrint(
+        '[Auth][Google] FirebaseAuthException ${e.code}: ${e.message}',
+      );
+      throw _mapFirebaseAuthException(e);
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         throw const AuthException(
@@ -279,13 +292,15 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           message: 'Google sign-in was cancelled by user.',
         );
       }
+      debugPrint(
+        '[Auth][Google] GoogleSignInException ${e.code}: ${e.description}',
+      );
       throw AuthException(
         code: 'google-sign-in-failed',
         message: e.description ?? 'Google sign-in failed.',
       );
-    } on firebase.FirebaseAuthException catch (e) {
-      throw _mapFirebaseAuthException(e);
     } catch (e) {
+      debugPrint('[Auth][Google] Unexpected error: $e');
       throw const AuthException(
         code: 'google-sign-in-failed',
         message:
@@ -537,7 +552,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     if (hasProfileImageUpdate) {
       avatarPath = await _backendAuth.uploadProfileImage(
         firebaseUid: currentUser.uid,
-        imageBytes: profileImageBytes!,
+        imageBytes: profileImageBytes,
         fileName: profileImageFileName ?? 'profile.jpg',
       );
     }
@@ -1083,6 +1098,23 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
           code: 'network-error',
           message: 'A network error occurred. Check your connection.',
         );
+      case 'popup-closed-by-user':
+        return const AuthException(
+          code: 'popup-closed-by-user',
+          message: 'Google sign-in was cancelled before completion.',
+        );
+      case 'popup-blocked':
+        return const AuthException(
+          code: 'popup-blocked',
+          message:
+              'The browser blocked the Google sign-in popup. Please allow popups and try again.',
+        );
+      case 'cancelled-popup-request':
+        return const AuthException(
+          code: 'cancelled-popup-request',
+          message:
+              'Another Google sign-in popup is already open. Please complete it or close it first.',
+        );
       default:
         return AuthException(
           code: e.code,
@@ -1289,6 +1321,10 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       );
     }).toList();
   }
+}
+
+extension on GoogleSignInAuthentication {
+  get accessToken => null;
 }
 
 /// Eccezione personalizzata per errori di autenticazione.

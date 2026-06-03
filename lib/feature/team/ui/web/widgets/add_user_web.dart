@@ -4,7 +4,6 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
-import 'package:note_sondage/feature/team/ui/mobile/widgets/action_on_user.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/add_user_mobile.dart';
 import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';

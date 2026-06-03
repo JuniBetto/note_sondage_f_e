@@ -15,7 +15,7 @@ import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 import 'package:note_sondage/ui/widgets/time_range_picker.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 const double _kSondageTeamDropdownMaxHeight = 360;
 
@@ -849,7 +849,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                         contentPadding: EdgeInsets.zero,
                         title: Text(localization.allowMultipleResponses),
                         value: _allowMultipleResponses,
-                        activeColor: colorScheme.selectionColor,
+                        activeThumbColor: colorScheme.selectionColor,
                         onChanged: (value) {
                           setState(() => _allowMultipleResponses = value);
                         },

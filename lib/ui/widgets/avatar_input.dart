@@ -20,7 +20,7 @@ class AvatarInput extends StatefulWidget {
   final Color borderColor;
 
   const AvatarInput({
-    Key? key,
+    super.key,
     this.size = 120,
     this.initialImageUrl,
     this.initialImageFile,
@@ -32,10 +32,10 @@ class AvatarInput extends StatefulWidget {
     this.showRemoveOption = true,
     this.borderWidth = 2,
     this.borderColor = Colors.grey,
-  }) : super(key: key);
+  });
 
   @override
-  _AvatarInputState createState() => _AvatarInputState();
+  State<AvatarInput> createState() => _AvatarInputState();
 }
 
 class _AvatarInputState extends State<AvatarInput> {
@@ -93,13 +93,13 @@ class _AvatarInputState extends State<AvatarInput> {
 
   Future<void> _pickMultiImage() async {
     try {
-      final List<XFile>? images = await _imagePicker.pickMultiImage(
+      final List<XFile> images = await _imagePicker.pickMultiImage(
         maxWidth: 800,
         maxHeight: 800,
         imageQuality: 85,
       );
 
-      if (images != null && images.isNotEmpty) {
+      if (images.isNotEmpty) {
         final firstImage = images.first;
 
         if (kIsWeb) {
@@ -354,7 +354,7 @@ class _AvatarInputState extends State<AvatarInput> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -377,7 +377,7 @@ class _AvatarInputState extends State<AvatarInput> {
                     border: Border.all(color: Colors.white, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),

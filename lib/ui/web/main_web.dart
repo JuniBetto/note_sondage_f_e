@@ -20,7 +20,7 @@ import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart'
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_event.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 import 'package:note_sondage/ui/widgets/theme_config/custom_toggle_switch.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class MainWeb extends StatefulWidget {
   const MainWeb({super.key, this.child});
@@ -88,8 +88,8 @@ class _MainWebState extends State<MainWeb> {
               isSmallScreen: isExpanded,
               onPressedResizeSidebar: onToggle,
               listSidebarItem: [
-                Showcase(
-                  key: _homeKey,
+                _buildShowcase(
+                  showcaseKey: _homeKey,
                   title: localizations.home,
                   description: _navDescription(context),
                   child: SidebarItem(
@@ -101,8 +101,8 @@ class _MainWebState extends State<MainWeb> {
                     lastIndexes: lastIndexes,
                   ),
                 ),
-                Showcase(
-                  key: _teamKey,
+                _buildShowcase(
+                  showcaseKey: _teamKey,
                   title: localizations.team,
                   description: _navDescription(context),
                   child: SidebarItem(
@@ -114,8 +114,8 @@ class _MainWebState extends State<MainWeb> {
                     lastIndexes: lastIndexes,
                   ),
                 ),
-                Showcase(
-                  key: _clockingKey,
+                _buildShowcase(
+                  showcaseKey: _clockingKey,
                   title: localizations.clockingInOut,
                   description: _navDescription(context),
                   child: SidebarItem(
@@ -127,8 +127,8 @@ class _MainWebState extends State<MainWeb> {
                     lastIndexes: lastIndexes,
                   ),
                 ),
-                Showcase(
-                  key: _sondageKey,
+                _buildShowcase(
+                  showcaseKey: _sondageKey,
                   title: localizations.sondage,
                   description: _navDescription(context),
                   child: SidebarItem(
@@ -140,8 +140,8 @@ class _MainWebState extends State<MainWeb> {
                     lastIndexes: lastIndexes,
                   ),
                 ),
-                Showcase(
-                  key: _shiftsKey,
+                _buildShowcase(
+                  showcaseKey: _shiftsKey,
                   title: localizations.myShifts,
                   description: _navDescription(context),
                   child: SidebarItem(
@@ -207,8 +207,8 @@ class _MainWebState extends State<MainWeb> {
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  Showcase(
-                    key: _contentKey,
+                  _buildShowcase(
+                    showcaseKey: _contentKey,
                     title: _contentTitle(localizations, currentNavIndex),
                     description: _contentDescription(context, currentNavIndex),
                     child: BlocBuilder<NavigationBloc, int>(
@@ -228,8 +228,8 @@ class _MainWebState extends State<MainWeb> {
                   Positioned(
                     top: 20,
                     right: 20,
-                    child: Showcase(
-                      key: _notificationsKey,
+                    child: _buildShowcase(
+                      showcaseKey: _notificationsKey,
                       title: localizations.notification,
                       description: _notificationsDescription(context),
                       child: const NotificationCenterButton(),
@@ -254,6 +254,24 @@ class _MainWebState extends State<MainWeb> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildShowcase({
+    required GlobalKey showcaseKey,
+    required String title,
+    required String description,
+    required Widget child,
+  }) {
+    if (_shouldBypassShowcaseInDebug()) {
+      return child;
+    }
+
+    return Showcase(
+      key: showcaseKey,
+      title: title,
+      description: description,
+      child: child,
     );
   }
 
@@ -307,6 +325,10 @@ class _MainWebState extends State<MainWeb> {
         navIndex == 3 ||
         navIndex == 4 ||
         navIndex == 5;
+  }
+
+  bool _shouldBypassShowcaseInDebug() {
+    return isInspectorSelectionActive;
   }
 
   GlobalKey _navigationKeyForIndex(int navIndex) {

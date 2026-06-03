@@ -16,6 +16,7 @@ import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_profile_manager.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_team_report_dialog.dart';
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_entries_sheet.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
@@ -27,7 +28,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:uuid/uuid.dart';
 
 /// Mobile widget embedded inside the clocking section (or standalone).
@@ -356,6 +357,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     DateTime date, {
     ShiftAssignmentEntity? existing,
   }) async {
+    final shiftBloc = context.read<ShiftBloc>();
     final result = await showShiftDayDialog(
       context: context,
       date: date,
@@ -375,13 +377,11 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
 
     if (result.deleted && existing != null) {
       if (existing.teamShiftGroupId != null && existing.isPublic) {
-        context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(existing.id));
+        shiftBloc.add(DeleteShiftAssignmentEvent(existing.id));
       } else {
         final assignmentsToDelete = _relatedPublicAssignments(existing);
         for (final assignment in assignmentsToDelete) {
-          context.read<ShiftBloc>().add(
-            DeleteShiftAssignmentEvent(assignment.id),
-          );
+          shiftBloc.add(DeleteShiftAssignmentEvent(assignment.id));
         }
       }
       return;
@@ -399,12 +399,12 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           existing,
         ).where((assignment) => assignment.id != existing.id);
         for (final a in toDelete) {
-          context.read<ShiftBloc>().add(DeleteShiftAssignmentEvent(a.id));
+          shiftBloc.add(DeleteShiftAssignmentEvent(a.id));
         }
       }
 
       // public → public: il backend aggiornerà TUTTE le righe del team in automatico
-      context.read<ShiftBloc>().add(
+      shiftBloc.add(
         UpdateShiftAssignmentEvent(
           assignmentId: existing.id,
           profileId: result.profileId,
@@ -436,7 +436,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     for (final scheduledDate in scheduledDates) {
       if (hasMemberSpecificPlans) {
         for (final plan in result.memberAssignmentPlans) {
-          context.read<ShiftBloc>().add(
+          shiftBloc.add(
             AssignShiftEvent(
               shiftDate: scheduledDate,
               profileId: plan.profileId ?? result.profileId,
@@ -456,7 +456,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       }
       final sharedGroupId = result.isPublic ? uuid.v4() : null;
       for (final targetUserId in targetUserIds) {
-        context.read<ShiftBloc>().add(
+        shiftBloc.add(
           AssignShiftEvent(
             shiftDate: scheduledDate,
             profileId: result.profileId,
@@ -517,6 +517,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     DateTime date,
     List<ShiftAssignmentEntity> assignments,
   ) async {
+    final shiftBloc = context.read<ShiftBloc>();
     final sortedAssignments = [...assignments]
       ..sort((a, b) {
         final byTime = a.startTime.hour * 60 + a.startTime.minute;
@@ -543,9 +544,9 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       date: date,
       assignments: sortedAssignments,
       canCreate: true,
-      syncingAssignmentIds: context.read<ShiftBloc>().syncingAssignmentIds,
+      syncingAssignmentIds: shiftBloc.syncingAssignmentIds,
     );
-    if (!mounted || action == null) return;
+    if (!context.mounted || action == null) return;
 
     switch (action.type) {
       case ShiftDayEntriesActionType.createNew:
@@ -564,58 +565,62 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   Future<void> _openProfilesSheet(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+    final shiftBloc = context.read<ShiftBloc>();
 
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       backgroundColor: colorScheme.bgNavbarSurface,
-      builder: (context) => SafeArea(
-        top: false,
-        child: DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.74,
-          minChildSize: 0.52,
-          maxChildSize: 0.94,
-          builder: (context, _) => Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        loc.shiftProfile,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+      builder: (sheetContext) => BlocProvider.value(
+        value: shiftBloc,
+        child: SafeArea(
+          top: false,
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.74,
+            minChildSize: 0.52,
+            maxChildSize: 0.94,
+            builder: (context, _) => Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          loc.shiftProfile,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                      splashColor: Colors.transparent,
-                      highlightColor: Colors.transparent,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Card(
-                    margin: EdgeInsets.zero,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: ShiftProfileManager(
-                        profiles: _profiles,
-                        syncingProfileIds: context
-                            .read<ShiftBloc>()
-                            .syncingProfileIds,
-                        isOwner: _canManageAnyTeam,
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Card(
+                      margin: EdgeInsets.zero,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: ShiftProfileManager(
+                          profiles: _profiles,
+                          syncingProfileIds: context
+                              .read<ShiftBloc>()
+                              .syncingProfileIds,
+                          isOwner: _canManageAnyTeam,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -749,6 +754,14 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
+                if (_canManageAnyTeam) ...[
+                  IconButton.outlined(
+                    tooltip: loc.shiftTeamReportTooltip,
+                    onPressed: () => _openTeamReport(context),
+                    icon: const Icon(Icons.assessment_outlined, size: 18),
+                  ),
+                  const SizedBox(width: 6),
+                ],
                 IconButton.outlined(
                   tooltip: _isItalian(context)
                       ? 'Profili turno'
@@ -855,5 +868,13 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
 
   bool _isItalian(BuildContext context) {
     return Localizations.localeOf(context).languageCode == 'it';
+  }
+
+  Future<void> _openTeamReport(BuildContext context) async {
+    await ShiftTeamReportDialog.show(
+      context,
+      teams: _manageableTeams,
+      compact: true,
+    );
   }
 }

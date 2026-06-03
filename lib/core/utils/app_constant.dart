@@ -6,13 +6,6 @@ const themeConfigBox = 'theme_config';
 const languageKeyBox = 'language_key';
 const languageConfigBox = 'language_config';
 
-const List<String> listStatusUser = [
-  'ACTIVE',
-  'DEACTIVATED',
-  'INVITED',
-  'PENDING',
-];
-
 const List<String> listPermissionsUser = [
   'Read',
   'Update',
@@ -20,5 +13,3 @@ const List<String> listPermissionsUser = [
   'Delete',
   'Manage',
 ];
-
-const List<String> listStatusClockCheck = ["Team with users", "Only user"];

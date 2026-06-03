@@ -10,7 +10,7 @@ import 'package:note_sondage/feature/clocking/ui/widgets/status_clockin_change_v
 import 'package:note_sondage/feature/clocking/ui/widgets/status_clocking.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class ClockingMobile extends StatefulWidget {

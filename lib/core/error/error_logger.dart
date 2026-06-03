@@ -80,17 +80,24 @@ class ErrorLogger {
         error,
         stackTrace: stackTrace,
         withScope: (scope) {
+          final sentryContexts = <String, Object?>{};
           if (context?.component != null) {
             scope.setTag('component', context!.component!);
-            scope.setExtra('component', context.component);
+            sentryContexts['component'] = context.component;
           }
           if (context?.category != null) {
             scope.setTag('error_category', context!.category!);
           }
-          if (context?.hint != null) {
-            scope.setExtra('error_hint', context!.hint);
+          final hint = context?.hint;
+          if (hint != null) {
+            sentryContexts['hint'] = hint;
           }
-          context?.extras.forEach(scope.setExtra);
+          if (context != null && context.extras.isNotEmpty) {
+            sentryContexts.addAll(context.extras);
+          }
+          if (sentryContexts.isNotEmpty) {
+            scope.setContexts('error_context', sentryContexts);
+          }
         },
       );
     } catch (e) {

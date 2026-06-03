@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/team/domain/entities/permission_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:uuid/uuid.dart';
 
 const _kDefaultBorderRadius = 12.0;
 
@@ -33,7 +31,7 @@ class GenericDropdownFormField<T> extends StatelessWidget {
   final bool enableFeedback;
 
   const GenericDropdownFormField({
-    Key? key,
+    super.key,
     required this.label,
     required this.items,
     required this.value,
@@ -57,7 +55,7 @@ class GenericDropdownFormField<T> extends StatelessWidget {
     this.iconSize,
     this.iconColor,
     this.enableFeedback = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +77,7 @@ class GenericDropdownFormField<T> extends StatelessWidget {
             ),
           ),
         DropdownButtonFormField<dynamic>(
-          value: value != null ? valueGetter(value as T) : null,
+          initialValue: value != null ? valueGetter(value as T) : null,
           items: items.map((T item) {
             return DropdownMenuItem<dynamic>(
               alignment: AlignmentGeometry.centerLeft,
@@ -174,7 +172,7 @@ class GenericMultiSelectDropdown<T> extends StatelessWidget {
   final int? maxChipsVisible;
 
   const GenericMultiSelectDropdown({
-    Key? key,
+    super.key,
     required this.label,
     required this.items,
     required this.selectedItems,
@@ -195,7 +193,7 @@ class GenericMultiSelectDropdown<T> extends StatelessWidget {
     this.chipColor,
     this.chipTextColor,
     this.maxChipsVisible,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -370,7 +368,7 @@ class _MultiSelectDialog<T> extends StatefulWidget {
   final bool enableSearch;
 
   const _MultiSelectDialog({
-    Key? key,
+    super.key,
     required this.items,
     required this.selectedItems,
     required this.displayText,
@@ -378,7 +376,7 @@ class _MultiSelectDialog<T> extends StatefulWidget {
     required this.dialogTitle,
     required this.searchHintText,
     required this.enableSearch,
-  }) : super(key: key);
+  });
 
   @override
   State<_MultiSelectDialog<T>> createState() => _MultiSelectDialogState<T>();
@@ -527,112 +525,3 @@ class _MultiSelectDialogState<T> extends State<_MultiSelectDialog<T>> {
     );
   }
 }
-
-Widget buildSelectOption(String item, String description) {
-  return DecoratedBox(
-    decoration: BoxDecoration(
-      border: Border.all(color: Colors.grey),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 4),
-                Expanded(
-                  child: Text(
-                    description,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-
-
-
-/**GenericMultiSelectDropdown<String>(
-                          label: '',
-                          items: listStatusUser,
-                          selectedItems: _selectedStatusList,
-                          displayText: (item) => item,
-                          valueGetter: (item) => item,
-                          onChanged: (List<String> selectedItems) {
-                            setState(() {
-                              _selectedStatusList = selectedItems;
-                            });
-                          },
-                          hintText: localization.selectedPermission,
-                        ),
-                        /* GenericDropdownFormField<String>(
-                          label: "",
-                          style: theme.textTheme.bodyMedium,
-                          items: listStatusUser,
-                          value: permissionsController.text.isEmpty
-                              ? null
-                              : permissionsController.text,
-                          displayText: (status) => status,
-                          valueGetter: (status) => status,
-                          onChanged: (value) {
-                            permissionsController.text = value ?? '';
-                          },
-                          hintText: localization.selectedPermission,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select a permission';
-                            }
-                            return null;
-                          },
-                        ),*/
-                        /* GenericDropdownFormField<PermissionEntity>(
-                          label: localization.selectedPermission,
-                          style: theme.textTheme.bodyMedium,
-                          items: _permissionsList,
-                          value: selectedPermissionId != null
-                              ? _permissionsList.firstWhere(
-                                  (e) => e.id == selectedPermissionId,
-                                  orElse: () => PermissionEntity(
-                                    id: '',
-                                    code: '',
-                                    description: '',
-                                  ),
-                                )
-                              : null,
-                          displayText: (permission) => permission.code,
-                          valueGetter: (permission) => permission.id,
-                          onChanged: (id) {
-                            setState(() {
-                              selectedPermissionId = id;
-                            });
-                            print('Selected permission ID: $id');
-                          },
-                          hintText: localization.selectedPermission,
-                          prefixIcon: Icon(Icons.lock),
-                          validator: (value) {
-                            if (value == null)
-                              return 'Please select a permission';
-                            return null;
-                          },
-                        ),*/ */

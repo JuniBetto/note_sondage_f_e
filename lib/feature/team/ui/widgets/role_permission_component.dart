@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/team/domain/entities/permission_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/action_on_user.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/edit_role.dart';
-import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 

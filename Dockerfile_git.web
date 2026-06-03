@@ -1,4 +1,4 @@
-FROM ghcr.io/cirruslabs/flutter:stable AS build
+FROM docker.io/library/nginx:1.27-alpine
 
 WORKDIR /app
 

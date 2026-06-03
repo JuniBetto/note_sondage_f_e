@@ -18,7 +18,7 @@ class ClockingMapper {
       } catch (_) {}
     }
 
-    DateTime? _parseDateTime(dynamic value) {
+    DateTime? parseDateTime(dynamic value) {
       if (value == null) return null;
       try {
         return DateTime.parse(value.toString());
@@ -66,11 +66,11 @@ class ClockingMapper {
       date: date,
       note: json['note']?.toString(),
       totalBreakMinutes: (json['totalBreakMinutes'] as num?)?.toInt(),
-      currentBreakStartedAt: _parseDateTime(json['currentBreakStartedAt']),
-      lastBreakStartedAt: _parseDateTime(json['lastBreakStartedAt']),
-      lastBreakEndedAt: _parseDateTime(json['lastBreakEndedAt']),
-      committedAt: _parseDateTime(json['committedAt']),
-      decommittedAt: _parseDateTime(json['decommittedAt']),
+      currentBreakStartedAt: parseDateTime(json['currentBreakStartedAt']),
+      lastBreakStartedAt: parseDateTime(json['lastBreakStartedAt']),
+      lastBreakEndedAt: parseDateTime(json['lastBreakEndedAt']),
+      committedAt: parseDateTime(json['committedAt']),
+      decommittedAt: parseDateTime(json['decommittedAt']),
       ownerEditable: json['ownerEditable'] == true,
       canDecommit: json['canDecommit'] == true,
       canCommit: json['canCommit'] == true,

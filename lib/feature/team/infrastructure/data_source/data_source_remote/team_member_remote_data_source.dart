@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:collection';
 
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
@@ -154,25 +153,28 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
         '$endpoint/$teamId/invitations',
       );
       final list = response.data as List<dynamic>? ?? [];
-      return list.map((e) {
-        final j = e as Map<String, dynamic>;
-        return TeamInvitationEntity(
-          id: j['id']?.toString() ?? '',
-          teamId: teamId,
-          invitedEmail: j['invitedEmail']?.toString() ?? '',
-          proposedRole: j['proposedRole']?.toString() ?? '',
-          status: j['status']?.toString() ?? 'PENDING',
-          expiresAt: j['expiresAt'] != null
-              ? DateTime.tryParse(j['expiresAt'].toString())
-              : null,
-          createdAt: j['createdAt'] != null
-              ? DateTime.tryParse(j['createdAt'].toString())
-              : null,
-        );
-      }).where((invitation) {
-        final status = invitation.status.trim().toUpperCase();
-        return status == 'PENDING' || status == 'PENDING_REGISTRATION';
-      }).toList();
+      return list
+          .map((e) {
+            final j = e as Map<String, dynamic>;
+            return TeamInvitationEntity(
+              id: j['id']?.toString() ?? '',
+              teamId: teamId,
+              invitedEmail: j['invitedEmail']?.toString() ?? '',
+              proposedRole: j['proposedRole']?.toString() ?? '',
+              status: j['status']?.toString() ?? 'PENDING',
+              expiresAt: j['expiresAt'] != null
+                  ? DateTime.tryParse(j['expiresAt'].toString())
+                  : null,
+              createdAt: j['createdAt'] != null
+                  ? DateTime.tryParse(j['createdAt'].toString())
+                  : null,
+            );
+          })
+          .where((invitation) {
+            final status = invitation.status.trim().toUpperCase();
+            return status == 'PENDING' || status == 'PENDING_REGISTRATION';
+          })
+          .toList();
     } catch (e) {
       throw Exception('Failed to fetch pending invitations: $e');
     }
@@ -201,7 +203,7 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
   }
 
   List<TeamMemberEntity> _deduplicateMembers(List<TeamMemberEntity> members) {
-    final uniqueMembers = LinkedHashMap<String, TeamMemberEntity>();
+    final uniqueMembers = <String, TeamMemberEntity>{};
     for (final member in members) {
       final key = _memberKey(member);
       final existing = uniqueMembers[key];

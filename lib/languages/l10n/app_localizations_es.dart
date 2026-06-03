@@ -998,7 +998,83 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shiftCalendar => 'Calendario de turnos';
 
   @override
-  String get shiftCalendarSubtitle => 'Your personal and team shift schedule';
+  String get shiftCalendarSubtitle => 'Tu calendario personal y del equipo';
+
+  @override
+  String get shiftTeamReportTitle => 'Informe de turnos del equipo';
+
+  @override
+  String get shiftTeamReportSubtitle =>
+      'Filtra por período y usuarios, luego visualiza o descarga el informe.';
+
+  @override
+  String get shiftTeamReportTooltip => 'Informe de turnos del equipo';
+
+  @override
+  String get shiftTeamReportButton => 'Informe del equipo';
+
+  @override
+  String get shiftReportUnavailable =>
+      'No hay ningún equipo gestionable disponible para el informe.';
+
+  @override
+  String get shiftReportStartDate => 'Fecha de inicio';
+
+  @override
+  String get shiftReportEndDate => 'Fecha de fin';
+
+  @override
+  String get shiftReportUsers => 'Usuarios a incluir';
+
+  @override
+  String get shiftReportRefresh => 'Actualizar informe';
+
+  @override
+  String get shiftReportPeriod => 'Período';
+
+  @override
+  String get shiftReportShifts => 'Turnos';
+
+  @override
+  String get shiftReportMode => 'Modo';
+
+  @override
+  String get shiftReportCalendarMode => 'Calendario';
+
+  @override
+  String get shiftReportTableMode => 'Tabla';
+
+  @override
+  String get shiftReportSelectTeam => 'Selecciona un equipo.';
+
+  @override
+  String get shiftReportNoResults =>
+      'No se encontraron turnos para los filtros seleccionados.';
+
+  @override
+  String get shiftReportLoadError =>
+      'No pudimos cargar el informe de turnos en este momento.';
+
+  @override
+  String get shiftReportGeneratedAt => 'Generado el';
+
+  @override
+  String get shiftReportDateColumn => 'Fecha';
+
+  @override
+  String get shiftReportUserColumn => 'Usuario';
+
+  @override
+  String get shiftReportProfileColumn => 'Perfil';
+
+  @override
+  String get shiftReportTypeColumn => 'Tipo';
+
+  @override
+  String get shiftReportDefaultProfile => 'Turno';
+
+  @override
+  String get shiftReportPrivateType => 'Privado';
 
   @override
   String get addShift => 'Agregar turno';

@@ -41,7 +41,7 @@ import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart'
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_state.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 import '../feature/auth/domain/entities/auth_user_entity.dart';
 
@@ -58,6 +58,8 @@ class _MainAppState extends State<MainApp> {
   StreamSubscription<RealtimeNotification>? _pushSubscription;
   StreamSubscription<NotificationActionIntent>? _localActionSubscription;
   final List<String> _processedNotificationIds = <String>[];
+  ShowcaseView? _showcaseView;
+  Locale? _showcaseLocale;
 
   @override
   void initState() {
@@ -87,6 +89,7 @@ class _MainAppState extends State<MainApp> {
     _realtimeSubscription?.cancel();
     _pushSubscription?.cancel();
     _localActionSubscription?.cancel();
+    _showcaseView?.unregister();
     super.dispose();
   }
 
@@ -197,11 +200,44 @@ class _MainAppState extends State<MainApp> {
       if (messenger == null) {
         return;
       }
-      messenger?.hideCurrentSnackBar();
-      messenger?.showSnackBar(
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(content: Text(teamDecision.snackBarMessage!)),
       );
     }
+  }
+
+  void _ensureShowcaseRegistration(BuildContext context) {
+    final locale = Localizations.maybeLocaleOf(context);
+    final localizations = AppLocalizations.of(context);
+    if (locale == null || localizations == null || _showcaseLocale == locale) {
+      return;
+    }
+
+    _showcaseView?.unregister();
+    _showcaseView = ShowcaseView.register(
+      globalTooltipActionConfig: const TooltipActionConfig(
+        alignment: MainAxisAlignment.spaceBetween,
+        position: TooltipActionPosition.inside,
+      ),
+      globalTooltipActions: [
+        TooltipActionButton(
+          type: TooltipDefaultActionType.skip,
+          name: localizations.tutorialSkip,
+        ),
+        TooltipActionButton(
+          type: TooltipDefaultActionType.previous,
+          name: localizations.tutorialPrevious,
+        ),
+        TooltipActionButton(
+          type: TooltipDefaultActionType.next,
+          name: localizations.tutorialNext,
+        ),
+      ],
+      enableAutoScroll: true,
+      blurValue: 1,
+    );
+    _showcaseLocale = locale;
   }
 
   ScaffoldMessengerState? _activeScaffoldMessenger() {
@@ -403,47 +439,17 @@ class _MainAppState extends State<MainApp> {
                   routerConfig: _router,
                   scaffoldMessengerKey: scaffoldMessengerKey,
                   builder: (context, child) {
-                    return ShowCaseWidget(
-                      globalTooltipActionConfig: const TooltipActionConfig(
-                        alignment: MainAxisAlignment.spaceBetween,
-                        position: TooltipActionPosition.inside,
-                      ),
-                      globalTooltipActions: [
-                        TooltipActionButton(
-                          type: TooltipDefaultActionType.skip,
-                          name: AppLocalizations.of(context)!.tutorialSkip,
-                        ),
-                        TooltipActionButton(
-                          type: TooltipDefaultActionType.previous,
-                          name: AppLocalizations.of(context)!.tutorialPrevious,
-                        ),
-                        TooltipActionButton(
-                          type: TooltipDefaultActionType.next,
-                          name: AppLocalizations.of(context)!.tutorialNext,
-                        ),
+                    _ensureShowcaseRegistration(context);
+
+                    final content = child ?? const SizedBox.shrink();
+                    final appContent = !kIsWeb
+                        ? content
+                        : WebMobileDownloadGate(child: content);
+                    return Stack(
+                      children: [
+                        Positioned.fill(child: appContent),
+                        const _AppSnackBarOverlayHost(),
                       ],
-                      enableAutoScroll: true,
-                      blurValue: 1,
-                      builder: (showcaseContext) {
-                        final content = child ?? const SizedBox.shrink();
-                        final appContent = !kIsWeb
-                            ? content
-                            : WebMobileDownloadGate(child: content);
-                        if (!kIsWeb) {
-                          return Stack(
-                            children: [
-                              Positioned.fill(child: appContent),
-                              const _AppSnackBarOverlayHost(),
-                            ],
-                          );
-                        }
-                        return Stack(
-                          children: [
-                            Positioned.fill(child: appContent),
-                            const _AppSnackBarOverlayHost(),
-                          ],
-                        );
-                      },
                     );
                   },
                   theme: themeState.themeData,

@@ -61,8 +61,10 @@ void main() {
       await Future.wait([
         // serverClientId = Web client ID (client_type: 3) da google-services.json.
         // Obbligatorio su Android per ottenere l'idToken da passare a Firebase Auth.
-        // Su web NON va passato: viene letto dal meta tag in index.html.
+        // Su web passiamo esplicitamente il web client ID per allinearci alle
+        // API correnti del plugin ed evitare dipendenze implicite dal meta tag.
         GoogleSignIn.instance.initialize(
+          clientId: kIsWeb ? RuntimeConfig.googleWebClientId : null,
           serverClientId: kIsWeb ? null : RuntimeConfig.googleServerClientId,
         ),
         HiveInitializer.initialize(),

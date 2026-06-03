@@ -998,7 +998,83 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shiftCalendar => 'Calendrier des quarts';
 
   @override
-  String get shiftCalendarSubtitle => 'Your personal and team shift schedule';
+  String get shiftCalendarSubtitle => 'Votre calendrier personnel et d\'équipe';
+
+  @override
+  String get shiftTeamReportTitle => 'Rapport des quarts d\'équipe';
+
+  @override
+  String get shiftTeamReportSubtitle =>
+      'Filtrez par période et par utilisateurs, puis prévisualisez ou téléchargez le rapport.';
+
+  @override
+  String get shiftTeamReportTooltip => 'Rapport des quarts d\'équipe';
+
+  @override
+  String get shiftTeamReportButton => 'Rapport d\'équipe';
+
+  @override
+  String get shiftReportUnavailable =>
+      'Aucune équipe gérable n\'est disponible pour le rapport.';
+
+  @override
+  String get shiftReportStartDate => 'Date de début';
+
+  @override
+  String get shiftReportEndDate => 'Date de fin';
+
+  @override
+  String get shiftReportUsers => 'Utilisateurs à inclure';
+
+  @override
+  String get shiftReportRefresh => 'Actualiser le rapport';
+
+  @override
+  String get shiftReportPeriod => 'Période';
+
+  @override
+  String get shiftReportShifts => 'Quarts';
+
+  @override
+  String get shiftReportMode => 'Mode';
+
+  @override
+  String get shiftReportCalendarMode => 'Calendrier';
+
+  @override
+  String get shiftReportTableMode => 'Tableau';
+
+  @override
+  String get shiftReportSelectTeam => 'Sélectionnez une équipe.';
+
+  @override
+  String get shiftReportNoResults =>
+      'Aucun quart trouvé pour les filtres sélectionnés.';
+
+  @override
+  String get shiftReportLoadError =>
+      'Nous n\'avons pas pu charger le rapport des quarts pour le moment.';
+
+  @override
+  String get shiftReportGeneratedAt => 'Généré le';
+
+  @override
+  String get shiftReportDateColumn => 'Date';
+
+  @override
+  String get shiftReportUserColumn => 'Utilisateur';
+
+  @override
+  String get shiftReportProfileColumn => 'Profil';
+
+  @override
+  String get shiftReportTypeColumn => 'Type';
+
+  @override
+  String get shiftReportDefaultProfile => 'Quart';
+
+  @override
+  String get shiftReportPrivateType => 'Privé';
 
   @override
   String get addShift => 'Ajouter un quart';

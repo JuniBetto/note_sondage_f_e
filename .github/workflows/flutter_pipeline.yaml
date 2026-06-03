@@ -5,11 +5,24 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      deploy_android:
+        description: Upload Android to Google Play Internal Testing
+        required: true
+        type: boolean
+        default: true
+      deploy_ios:
+        description: Upload iOS to TestFlight
+        required: true
+        type: boolean
+        default: true
+
+env:
+  FLUTTER_VERSION: "stable"
+  APP_ENV: Prod
 
 jobs:
-  # -----------------------------------------------------------
-  # BASE JOB: analyze + test + code metrics
-  # -----------------------------------------------------------
   analyze_test:
     name: Analyze + Test + Metrics
     runs-on: ubuntu-latest
@@ -21,7 +34,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
       - name: Install Dart Code Metrics
         run: dart pub global activate dart_code_metrics
@@ -33,12 +47,10 @@ jobs:
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Run Dart Code Metrics (metrics)
-        run: |
-          dart run dart_code_metrics:metrics analyze lib --reporter=github
+        run: dart run dart_code_metrics:metrics analyze lib --reporter=github
 
       - name: Run Dart Code Metrics (check unused code)
-        run: |
-          dart run dart_code_metrics:metrics check-unused-code lib
+        run: dart run dart_code_metrics:metrics check-unused-code lib
 
       - name: Run Tests + Coverage
         run: flutter test --coverage
@@ -49,9 +61,6 @@ jobs:
           name: test-coverage
           path: coverage/lcov.info
 
-  # -----------------------------------------------------------
-  # ANDROID BUILD
-  # -----------------------------------------------------------
   build_android:
     name: Build Android APK & AAB
     runs-on: ubuntu-latest
@@ -61,19 +70,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
       - name: Flutter Pub Get
         run: flutter pub get
 
       - name: Build APK Release
-        run: flutter build apk --release
+        run: >
+          flutter build apk --release
+          --build-number=${{ github.run_number }}
+          --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
+          --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
+          --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          --dart-define=APP_ENV=${{ env.APP_ENV }}
 
       - name: Build AAB Release
-        run: flutter build appbundle --release
+        run: >
+          flutter build appbundle --release
+          --build-number=${{ github.run_number }}
+          --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
+          --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
+          --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          --dart-define=APP_ENV=${{ env.APP_ENV }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -87,9 +115,6 @@ jobs:
           name: android-aab
           path: build/app/outputs/bundle/release/app-release.aab
 
-  # -----------------------------------------------------------
-  # WEB BUILD
-  # -----------------------------------------------------------
   build_web:
     name: Build Web
     runs-on: ubuntu-latest
@@ -101,12 +126,41 @@ jobs:
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
       - name: Flutter Pub Get
         run: flutter pub get
 
       - name: Build Web
-        run: flutter build web --release
+        run: >
+          flutter build web --release
+          --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
+          --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
+          --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          --dart-define=APP_ENV=${{ env.APP_ENV }}
+
+      - name: Deploy Flutter Web to VPS
+        if: github.event_name == 'push'
+        run: |
+          tar -czf web.tar.gz -C build/web .
+          scp web.tar.gz ${{ secrets.VPS_USER }}:/tmp/web.tar.gz
+          ssh ${{ secrets.VPS_USER }} << 'EOF'
+            set -e
+            sudo rm -rf /opt/note-sondage/web_new
+            sudo mkdir -p /opt/note-sondage/web_new
+            sudo tar -xzf /tmp/web.tar.gz -C /opt/note-sondage/web_new
+            sudo rm -f /tmp/web.tar.gz
+
+            sudo rm -rf /opt/note-sondage/web_old
+            if [ -d /opt/note-sondage/web ]; then
+              sudo mv /opt/note-sondage/web /opt/note-sondage/web_old
+            fi
+
+            sudo mv /opt/note-sondage/web_new /opt/note-sondage/web
+            podman restart note_sondage_web
+          EOF
 
       - name: Upload Web Artifact
         uses: actions/upload-artifact@v4
@@ -114,9 +168,6 @@ jobs:
           name: flutter-web
           path: build/web
 
-  # -----------------------------------------------------------
-  # iOS BUILD (richiede macOS)
-  # -----------------------------------------------------------
   build_ios:
     name: Build iOS
     runs-on: macos-latest
@@ -128,6 +179,9 @@ jobs:
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
       - name: Install CocoaPods
         run: sudo gem install cocoapods
@@ -136,10 +190,127 @@ jobs:
         run: flutter pub get
 
       - name: Build iOS (no codesign)
-        run: flutter build ios --release --no-codesign
+        run: >
+          flutter build ios --release --no-codesign
+          --build-number=${{ github.run_number }}
+          --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
+          --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
+          --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          --dart-define=APP_ENV=${{ env.APP_ENV }}
 
       - name: Upload iOS Folder
         uses: actions/upload-artifact@v4
         with:
           name: ios-release
           path: build/ios/iphoneos
+
+  publish_android_internal:
+    name: Publish Android Internal Testing
+    runs-on: ubuntu-latest
+    needs: analyze_test
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_android
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+
+      - name: Prepare Android signing
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=app/upload-keystore.jks
+          EOF
+
+      - name: Publish to Google Play Internal Testing
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          APP_ENV: ${{ env.APP_ENV }}
+          FLUTTER_BUILD_NAME: 1.0.0
+          FLUTTER_BUILD_NUMBER: ${{ github.run_number }}
+          PLAY_STORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+        run: bundle exec fastlane android internal
+
+  publish_ios_testflight:
+    name: Publish iOS TestFlight
+    runs-on: macos-latest
+    needs: analyze_test
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_ios
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
+
+      - name: Prepare iOS signing
+        env:
+          IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/certificate.p12"
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+
+          echo -n "$IOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          security default-keychain -s "$KEYCHAIN_PATH"
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
+
+      - name: Publish to TestFlight
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          APP_ENV: ${{ env.APP_ENV }}
+          FLUTTER_BUILD_NAME: 1.0.0
+          FLUTTER_BUILD_NUMBER: ${{ github.run_number }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: bundle exec fastlane ios testflight

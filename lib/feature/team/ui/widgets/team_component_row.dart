@@ -381,7 +381,6 @@ Widget buildTeamItem(
         size: 40,
         backgroundColor: member['color'] ?? Colors.grey,
         textColor: Colors.white,
-        onTap: () => print('Tapped on ${member['name']}'),
       );
     }).toList(),
   );

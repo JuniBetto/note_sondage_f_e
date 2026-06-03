@@ -17,7 +17,7 @@ import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart'
 import 'package:note_sondage/ui/widgets/logout_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class SettingsMobile extends StatefulWidget {
   const SettingsMobile({super.key});

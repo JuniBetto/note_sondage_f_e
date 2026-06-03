@@ -1,7 +1,3 @@
-enum LoginType { microsoft, google, facebook }
-
-enum ApiType { express, python }
-
 enum UserRole {
   owner('OWNER'),
   admin('ADMIN'),
@@ -24,16 +20,4 @@ enum UserRole {
 
   @override
   String toString() => value;
-}
-
-enum SettingCategory {
-  theme,
-  language,
-  notifications,
-  privacy,
-  contactus,
-  appearance,
-  account,
-  security,
-  general,
 }

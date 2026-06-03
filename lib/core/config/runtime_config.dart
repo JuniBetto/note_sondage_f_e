@@ -31,6 +31,16 @@ class RuntimeConfig {
     defaultValue: defaultGoogleServerClientId,
   );
 
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_SIGN_IN_WEB_CLIENT_ID',
+    defaultValue: defaultGoogleWebClientId,
+  );
+
+  static const bool enablePhoneSso = bool.fromEnvironment(
+    'ENABLE_PHONE_SSO',
+    defaultValue: false,
+  );
+
   static const String emailConfirmationUrl = String.fromEnvironment(
     'EMAIL_CONFIRMATION_URL',
     defaultValue: '',

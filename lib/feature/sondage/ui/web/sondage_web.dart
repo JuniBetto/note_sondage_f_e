@@ -10,8 +10,9 @@ import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_search_field.dart';
 import 'package:note_sondage/ui/widgets/custom_dialog.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class SondageWeb extends StatefulWidget {
   const SondageWeb({super.key, this.title = "Create Sondage"});
@@ -25,9 +26,12 @@ class _SondageWebState extends State<SondageWeb> {
   final GlobalKey _headerKey = GlobalKey();
   final GlobalKey _statsKey = GlobalKey();
   final GlobalKey _listKey = GlobalKey();
+  final TextEditingController _searchController = TextEditingController();
   int isGridView = 1;
   List<SondageEntity> _lastSondages = const <SondageEntity>[];
   bool _tutorialScheduled = false;
+  String _searchQuery = '';
+  SondageStatus? _selectedStatusFilter;
 
   @override
   void initState() {
@@ -41,6 +45,12 @@ class _SondageWebState extends State<SondageWeb> {
         context.read<SondageBloc>().add(LoadSondagesEvent());
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _confirmDelete(String sondageId) async {
@@ -96,25 +106,49 @@ class _SondageWebState extends State<SondageWeb> {
     required String label,
     required int value,
     required Color color,
+    required SondageStatus status,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 9,
-            height: 9,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    final isSelected = _selectedStatusFilter == status;
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        setState(() {
+          _selectedStatusFilter = isSelected ? null : status;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withValues(alpha: 0.22)
+              : color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? color.withValues(alpha: 0.75)
+                : color.withValues(alpha: 0.2),
+            width: isSelected ? 1.5 : 1,
           ),
-          const SizedBox(width: 8),
-          Text('$label: $value'),
-        ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$label: $value',
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? color.withValues(alpha: 0.95) : null,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -167,6 +201,7 @@ class _SondageWebState extends State<SondageWeb> {
           sondages,
           SondageStatus.completed,
         );
+        final filteredSondages = _filterSondages(sondages);
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
@@ -210,6 +245,18 @@ class _SondageWebState extends State<SondageWeb> {
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.descriptionColor,
                                 ),
+                              ),
+                              const SizedBox(height: 14),
+                              AppSearchField(
+                                controller: _searchController,
+                                hintText: _isItalian(context)
+                                    ? 'Cerca sondaggio, team o opzione'
+                                    : 'Search survey, team, or option',
+                                onChanged: (value) {
+                                  setState(() {
+                                    _searchQuery = value;
+                                  });
+                                },
                               ),
                             ],
                           ),
@@ -266,16 +313,19 @@ class _SondageWebState extends State<SondageWeb> {
                           label: 'Draft',
                           value: draftCount,
                           color: Colors.orange,
+                          status: SondageStatus.draft,
                         ),
                         _buildStatChip(
                           label: 'Attivi',
                           value: activeCount,
                           color: Colors.green,
+                          status: SondageStatus.active,
                         ),
                         _buildStatChip(
                           label: 'Chiusi',
                           value: completedCount,
                           color: Colors.red,
+                          status: SondageStatus.completed,
                         ),
                       ],
                     ),
@@ -290,7 +340,9 @@ class _SondageWebState extends State<SondageWeb> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${sondages.length} elementi nel feed',
+                          _searchQuery.trim().isEmpty
+                              ? '${sondages.length} elementi nel feed'
+                              : '${filteredSondages.length} risultati trovati',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -341,7 +393,7 @@ class _SondageWebState extends State<SondageWeb> {
                           child: isLoading
                               ? const Center(child: CircularProgressIndicator())
                               : ResponsiveGridSondages(
-                                  items: sondages,
+                                  items: filteredSondages,
                                   isRow: isGridView == 1,
                                   onDeleteTap: _confirmDelete,
                                   onEditTap: _openEditDialog,
@@ -379,5 +431,28 @@ class _SondageWebState extends State<SondageWeb> {
 
   bool _isItalian(BuildContext context) {
     return Localizations.localeOf(context).languageCode == 'it';
+  }
+
+  List<SondageEntity> _filterSondages(List<SondageEntity> sondages) {
+    final normalized = _searchQuery.trim().toLowerCase();
+    return sondages.where((sondage) {
+      final matchesStatus =
+          _selectedStatusFilter == null ||
+          sondage.status == _selectedStatusFilter;
+      if (!matchesStatus) {
+        return false;
+      }
+      if (normalized.isEmpty) {
+        return true;
+      }
+      final searchable = [
+        sondage.name,
+        sondage.focus,
+        sondage.description ?? '',
+        sondage.teamName ?? '',
+        ...sondage.options.map((option) => option.label),
+      ].join(' ').toLowerCase();
+      return searchable.contains(normalized);
+    }).toList();
   }
 }

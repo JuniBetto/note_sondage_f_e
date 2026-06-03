@@ -24,7 +24,7 @@ import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class CreateTeamMobile extends StatefulWidget {
   final String? teamId;
@@ -104,7 +104,8 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         notification.eventType == 'TEAM_MEMBER_REMOVED' ||
         notification.eventType == 'TEAM_MEMBER_ROLE_UPDATED' ||
         notification.eventType == 'TEAM_MEMBER_INVITED' ||
-        notification.eventType == 'TEAM_INVITATION_CANCELLED') {
+        notification.eventType == 'TEAM_INVITATION_CANCELLED' ||
+        notification.eventType == 'TEAM_INVITATION_REJECTED') {
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
     }
   }

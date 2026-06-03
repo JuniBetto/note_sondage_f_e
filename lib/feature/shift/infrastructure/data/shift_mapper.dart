@@ -85,15 +85,15 @@ class ShiftMapper {
     String? teamShiftGroupId,
     String? targetFirebaseUid,
   }) {
-    String? _fmt(TimeOfDay? t) => t == null
+    String? formatTime(TimeOfDay? t) => t == null
         ? null
         : '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
 
     return {
       'shiftDate': shiftDate.toIso8601String().split('T').first,
       if (profileId != null) 'profileId': profileId,
-      if (startTime != null) 'startTime': _fmt(startTime),
-      if (endTime != null) 'endTime': _fmt(endTime),
+      if (startTime != null) 'startTime': formatTime(startTime),
+      if (endTime != null) 'endTime': formatTime(endTime),
       if (overnight != null) 'overnight': overnight,
       if (note != null) 'note': note,
       if (alarmOffsets != null) 'alarmOffsets': alarmOffsets,

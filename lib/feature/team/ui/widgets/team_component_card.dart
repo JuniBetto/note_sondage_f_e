@@ -391,7 +391,6 @@ Widget buildTeamItem(
         size: 24,
         backgroundColor: member['color'] ?? Colors.grey,
         textColor: Colors.white,
-        onTap: () => print('Tapped on ${member['name']}'),
       );
     }).toList(),
   );
@@ -425,9 +424,6 @@ Widget buildRowTeamItem(
         ),
 
         GestureDetector(
-          onTap: () {
-            print('Tapped on add member');
-          },
           child: DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,

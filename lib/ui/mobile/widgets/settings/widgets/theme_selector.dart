@@ -32,13 +32,21 @@ class ThemeSelector extends StatelessWidget {
             border: Border.all(color: Colors.grey.shade300),
             borderRadius: BorderRadius.circular(30),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: themes.map((themeOption) {
-              final isSelected = selectedTheme == themeOption['code'];
-              return _buildThemeItem(themeOption, isSelected);
-            }).toList(),
+          child: RadioGroup<String>(
+            groupValue: selectedTheme,
+            onChanged: (value) {
+              if (value != null) {
+                onThemeChanged(value);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: themes.map((themeOption) {
+                final isSelected = selectedTheme == themeOption['code'];
+                return _buildThemeItem(themeOption, isSelected);
+              }).toList(),
+            ),
           ),
         ),
       ],
@@ -53,14 +61,7 @@ class ThemeSelector extends StatelessWidget {
         ),
       ),
       child: ListTile(
-        leading: Radio<String>(
-          value: themeOption['code'],
-          groupValue: selectedTheme,
-          onChanged: (value) {
-            if (value != null) onThemeChanged(value);
-          },
-          activeColor: Colors.blue,
-        ),
+        leading: Radio<String>(value: themeOption['code']),
         title: Text(
           themeOption['name'],
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),

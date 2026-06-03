@@ -29,10 +29,6 @@ class TimeRangePicker extends StatelessWidget {
     }
   }
 
-  String _format(BuildContext context, TimeOfDay time) {
-    return time.format(context);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(

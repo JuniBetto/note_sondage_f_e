@@ -60,7 +60,7 @@ class StatusClocking extends StatelessWidget {
             icon: Icons.login_rounded,
             label: localization.clockedInAt,
             time: latestRecord != null
-                ? latestRecord?.clockInFormatted ?? '--:--'
+                ? latestRecord.clockInFormatted
                 : '--:--',
             color: Colors.green,
           ),
@@ -70,7 +70,7 @@ class StatusClocking extends StatelessWidget {
             time: latestRecord != null
                 ? _formatTime(
                     activeRecord?.currentBreakStartedAt ??
-                        latestRecord?.lastBreakStartedAt,
+                        latestRecord.lastBreakStartedAt,
                   )
                 : '--:--',
             color: Colors.orange,
@@ -79,7 +79,7 @@ class StatusClocking extends StatelessWidget {
             icon: Icons.play_circle_outline,
             label: localization.endBreakAt,
             time: latestRecord != null
-                ? _formatTime(latestRecord?.lastBreakEndedAt)
+                ? _formatTime(latestRecord.lastBreakEndedAt)
                 : '--:--',
             color: Colors.blue,
           ),
@@ -87,7 +87,7 @@ class StatusClocking extends StatelessWidget {
             icon: Icons.logout_rounded,
             label: localization.clockedOutAt,
             time: latestRecord != null
-                ? (latestRecord?.clockOutFormatted ?? '--:--')
+                ? latestRecord.clockOutFormatted
                 : '--:--',
             color: Colors.red,
           ),
@@ -125,10 +125,7 @@ class StatusClocking extends StatelessWidget {
               ),
             );
           }
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: rows,
-          );
+          return Column(mainAxisSize: MainAxisSize.min, children: rows);
         }
 
         return Wrap(

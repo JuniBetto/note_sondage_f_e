@@ -845,6 +845,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   }
 
   @override
+  @override
+  @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
@@ -1259,7 +1261,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                             onChanged: (value) => setState(() {
                               _useMemberSpecificProfiles = value;
                             }),
-                           //title: const Text(''),
+                            //title: const Text(''),
                             title: Text(_useDifferentProfilesLabel(context)),
                             subtitle: Text(
                               _useDifferentProfilesSubtitle(context),
@@ -1480,6 +1482,7 @@ class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
     close();
   }
 
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -2390,7 +2393,7 @@ class _AlarmOffsetEditor extends StatelessWidget {
       runSpacing: 6,
       children: [
         ...offsets.map((offset) {
-          final label = offset < 0 ? '${offset} min' : '+$offset min';
+          final label = offset < 0 ? '$offset min' : '+$offset min';
           return Chip(
             label: Text(
               label,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +9,7 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/core/utils/extention_color.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_card.dart';
@@ -18,12 +21,14 @@ class ResponsiveGridTeams extends StatefulWidget {
     super.key,
     required this.items,
     required this.isRow,
+    this.searchQuery = '',
     this.isSelectionMode = false,
     this.shrinkWrapLayout = false,
     this.onTeamSelected,
   });
   final List<Map<String, dynamic>> items;
   final bool isRow;
+  final String searchQuery;
   final bool isSelectionMode;
   final bool shrinkWrapLayout;
   final void Function(Map<String, dynamic> selectedTeam)? onTeamSelected;
@@ -34,11 +39,13 @@ class ResponsiveGridTeams extends StatefulWidget {
 
 class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
   late final TeamBloc _teamBloc;
+  late final TeamMemberUseCase _teamMemberUseCase;
   late final UserArchiveService _archiveService;
   List<TeamEntityForView> teamsWithMembers = [];
   bool _syncedFromCurrentState = false;
   bool _showArchivedOnly = false;
   Set<String> _archivedTeamIds = <String>{};
+  int _membersRefreshGeneration = 0;
 
   String get _currentUserId => getIt<AuthBloc>().state.user.uid;
 
@@ -46,11 +53,9 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
   void initState() {
     super.initState();
     _teamBloc = getIt<TeamBloc>();
+    _teamMemberUseCase = getIt<TeamMemberUseCase>();
     _archiveService = getIt<UserArchiveService>();
-    final teamState = _teamBloc.state;
-    if (teamState is! TeamsLoaded && teamState is! TeamLoading) {
-      _teamBloc.add(LoadTeamsEvent());
-    }
+    _teamBloc.add(LoadTeamsEvent());
     _loadArchivedTeams();
   }
 
@@ -91,10 +96,9 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
 
         if (state is TeamsLoaded) {
           setState(() {
-            teamsWithMembers = state.teams
-                .map((team) => TeamEntityForView(team: team, members: const []))
-                .toList();
+            teamsWithMembers = _mergeWithExistingMembers(state.teams);
           });
+          unawaited(_refreshMembersForTeams(state.teams));
         }
       },
       builder: (context, teamState) {
@@ -105,12 +109,9 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
             setState(() {
-              teamsWithMembers = teamState.teams
-                  .map(
-                    (team) => TeamEntityForView(team: team, members: const []),
-                  )
-                  .toList();
+              teamsWithMembers = _mergeWithExistingMembers(teamState.teams);
             });
+            unawaited(_refreshMembersForTeams(teamState.teams));
           });
         }
 
@@ -159,13 +160,32 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
           };
         }).toList();
 
-        final foregroundItems = items
+        final normalizedSearch = widget.searchQuery.trim().toLowerCase();
+        final filteredItems = normalizedSearch.isEmpty
+            ? items
+            : items.where((item) {
+                final teamName = (item['teamName'] ?? '').toString();
+                final teamFocus = (item['teamFocus'] ?? '').toString();
+                final members = (item['members'] as List<dynamic>? ?? const [])
+                    .cast<Map<String, dynamic>>();
+                final memberText = members
+                    .map(
+                      (member) =>
+                          '${member['name'] ?? ''} ${member['email'] ?? ''}',
+                    )
+                    .join(' ');
+                final searchable = '$teamName $teamFocus $memberText'
+                    .toLowerCase();
+                return searchable.contains(normalizedSearch);
+              }).toList();
+
+        final foregroundItems = filteredItems
             .where(
               (item) =>
                   !_archivedTeamIds.contains((item['teamId'] ?? '') as String),
             )
             .toList();
-        final archivedItems = items
+        final archivedItems = filteredItems
             .where(
               (item) =>
                   _archivedTeamIds.contains((item['teamId'] ?? '') as String),
@@ -191,7 +211,9 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
         final content = displayedItems.isEmpty
             ? Center(
                 child: Text(
-                  _showArchivedOnly
+                  normalizedSearch.isNotEmpty
+                      ? 'Nessun team trovato per la ricerca.'
+                      : _showArchivedOnly
                       ? 'Nessun team archiviato.'
                       : 'Nessun team in primo piano.',
                 ),
@@ -258,6 +280,82 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
           ],
         );
       },
+    );
+  }
+
+  List<TeamEntityForView> _mergeWithExistingMembers(List<TeamEntity> teams) {
+    final existingById = {
+      for (final teamView in teamsWithMembers)
+        if ((teamView.team.id ?? '').isNotEmpty) teamView.team.id!: teamView,
+    };
+
+    return teams.map((team) {
+      final existing = existingById[team.id ?? ''];
+      return TeamEntityForView(team: team, members: existing?.members ?? []);
+    }).toList();
+  }
+
+  Future<void> _refreshMembersForTeams(List<TeamEntity> teams) async {
+    final generation = ++_membersRefreshGeneration;
+    final teamIds = teams
+        .map((team) => team.id ?? '')
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+
+    if (teamIds.isEmpty) {
+      return;
+    }
+
+    final membersByTeamId = <String, List<TeamMemberforView>>{};
+    await Future.wait(
+      teamIds.map((teamId) async {
+        try {
+          final members = await _teamMemberUseCase.getAllMembersByTeamId(
+            teamId,
+          );
+          membersByTeamId[teamId] = members
+              .map((member) => TeamMemberforView(teamMember: member))
+              .toList();
+        } catch (_) {
+          // Preserve the last successfully rendered data if this refresh fails.
+        }
+      }),
+    );
+
+    if (!mounted || generation != _membersRefreshGeneration) {
+      return;
+    }
+
+    if (membersByTeamId.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      teamsWithMembers = teamsWithMembers.map((teamView) {
+        final teamId = teamView.team.id ?? '';
+        final refreshedMembers = membersByTeamId[teamId];
+        if (refreshedMembers == null) {
+          return teamView;
+        }
+
+        return TeamEntityForView(
+          team: _teamWithMemberCount(teamView.team, refreshedMembers.length),
+          members: refreshedMembers,
+        );
+      }).toList();
+    });
+  }
+
+  TeamEntity _teamWithMemberCount(TeamEntity team, int memberCount) {
+    return TeamEntity(
+      team.id,
+      team.color,
+      team.pendingInvitations,
+      name: team.name,
+      description: team.description,
+      createdByUserId: team.createdByUserId,
+      memberCount: memberCount,
+      createdAt: team.createdAt,
     );
   }
 }

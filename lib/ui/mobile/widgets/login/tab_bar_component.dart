@@ -131,8 +131,8 @@ class _TabBarPillItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedColor = ColorPalette.primary[6]!;
-    final unselectedColor = Colors.grey[600]!;
+    final selectedColor = ColorPalette.primary[6];
+    final unselectedColor = Colors.grey[600];
 
     return Material(
       color: Colors.transparent,

@@ -998,6 +998,82 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shiftCalendarSubtitle => 'Il tuo calendario personale e del team';
 
   @override
+  String get shiftTeamReportTitle => 'Report turni team';
+
+  @override
+  String get shiftTeamReportSubtitle =>
+      'Filtra periodo e utenti, poi visualizza o scarica il report.';
+
+  @override
+  String get shiftTeamReportTooltip => 'Report turni team';
+
+  @override
+  String get shiftTeamReportButton => 'Report team';
+
+  @override
+  String get shiftReportUnavailable =>
+      'Nessun team gestibile disponibile per il report.';
+
+  @override
+  String get shiftReportStartDate => 'Data inizio';
+
+  @override
+  String get shiftReportEndDate => 'Data fine';
+
+  @override
+  String get shiftReportUsers => 'Utenti da includere';
+
+  @override
+  String get shiftReportRefresh => 'Aggiorna report';
+
+  @override
+  String get shiftReportPeriod => 'Periodo';
+
+  @override
+  String get shiftReportShifts => 'Turni';
+
+  @override
+  String get shiftReportMode => 'Modalità';
+
+  @override
+  String get shiftReportCalendarMode => 'Calendario';
+
+  @override
+  String get shiftReportTableMode => 'Tabella';
+
+  @override
+  String get shiftReportSelectTeam => 'Seleziona un team.';
+
+  @override
+  String get shiftReportNoResults =>
+      'Nessun turno trovato con i filtri selezionati.';
+
+  @override
+  String get shiftReportLoadError =>
+      'Non siamo riusciti a caricare il report turni.';
+
+  @override
+  String get shiftReportGeneratedAt => 'Generato il';
+
+  @override
+  String get shiftReportDateColumn => 'Data';
+
+  @override
+  String get shiftReportUserColumn => 'Utente';
+
+  @override
+  String get shiftReportProfileColumn => 'Profilo';
+
+  @override
+  String get shiftReportTypeColumn => 'Tipo';
+
+  @override
+  String get shiftReportDefaultProfile => 'Turno';
+
+  @override
+  String get shiftReportPrivateType => 'Privato';
+
+  @override
   String get addShift => 'Aggiungi turno';
 
   @override

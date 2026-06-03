@@ -1,18 +1,27 @@
 import 'dart:async';
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'browser_notification_bridge.dart';
 
 class _WebBrowserNotificationBridge implements BrowserNotificationBridge {
   @override
-  bool get isSupported => html.Notification.supported;
+  bool get isSupported {
+    try {
+      web.Notification.permission;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   @override
   Future<BrowserNotificationPermissionStatus> getPermissionStatus() async {
     if (!isSupported) {
       return BrowserNotificationPermissionStatus.unsupported;
     }
-    return _mapPermission(html.Notification.permission);
+    return _mapPermission(web.Notification.permission);
   }
 
   @override
@@ -20,7 +29,7 @@ class _WebBrowserNotificationBridge implements BrowserNotificationBridge {
     if (!isSupported) {
       return BrowserNotificationPermissionStatus.unsupported;
     }
-    final result = await html.Notification.requestPermission();
+    final result = (await web.Notification.requestPermission().toDart).toDart;
     return _mapPermission(result);
   }
 
@@ -31,15 +40,18 @@ class _WebBrowserNotificationBridge implements BrowserNotificationBridge {
     String? tag,
     Duration? autoCloseAfter,
   }) {
-    if (!isSupported || html.Notification.permission != 'granted') {
+    if (!isSupported || web.Notification.permission != 'granted') {
       return;
     }
 
-    final notification = html.Notification(title, body: body, tag: tag);
+    final options = tag == null
+        ? web.NotificationOptions(body: body)
+        : web.NotificationOptions(body: body, tag: tag);
+    final notification = web.Notification(title, options);
 
     final effectiveAutoClose = autoCloseAfter;
     if (effectiveAutoClose != null) {
-      Timer(effectiveAutoClose, notification.close);
+      Timer(effectiveAutoClose, () => notification.close());
     }
   }
 

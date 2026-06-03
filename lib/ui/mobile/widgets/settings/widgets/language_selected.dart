@@ -136,7 +136,7 @@ class _LanguageSelectorState extends State<LanguageSelector> {
             height: 24,
             fit: BoxFit.cover,
             placeholderBuilder: (context) {
-              print('Error loading flag image for ${language['name']}');
+              debugPrint('Error loading flag image for ${language['name']}');
               return Container(
                 width: 32,
                 height: 24,

@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
+import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'notification_center_state.dart';
@@ -174,10 +177,13 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     if (invitationId == null) {
       return;
     }
-    await _performAction(
+    final resolved = await _performAction(
       item.notificationId,
       () => _backendAuth.acceptTeamInvitationById(invitationId),
     );
+    if (resolved) {
+      _refreshTeamSurfaces();
+    }
   }
 
   Future<void> rejectInvitation(NotificationCenterItem item) async {
@@ -185,10 +191,13 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     if (invitationId == null) {
       return;
     }
-    await _performAction(
+    final resolved = await _performAction(
       item.notificationId,
       () => _backendAuth.rejectTeamInvitationById(invitationId),
     );
+    if (resolved) {
+      _refreshTeamSurfaces();
+    }
   }
 
   Future<void> approveClockingDecision(NotificationCenterItem item) async {
@@ -352,7 +361,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     }).toList();
   }
 
-  Future<void> _performAction(
+  Future<bool> _performAction(
     String notificationId,
     Future<void> Function() action,
   ) async {
@@ -388,6 +397,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         dismissedNotificationIds: dismissed,
         completedActionNotificationIds: completed,
       );
+      return true;
     } catch (e) {
       processing.remove(notificationId);
       if (_isTerminalInvitationConflict(e)) {
@@ -414,7 +424,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           dismissedNotificationIds: dismissed,
           completedActionNotificationIds: completed,
         );
-        return;
+        return true;
       }
       emit(
         state.copyWith(
@@ -422,7 +432,16 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           errorMessage: e.toString(),
         ),
       );
+      return false;
     }
+  }
+
+  void _refreshTeamSurfaces() {
+    final teamBloc = getIt<TeamBloc>();
+    teamBloc.add(const ResetTeamCacheEvent());
+    teamBloc.add(LoadTeamsEvent());
+    getIt<DashboardBloc>().add(RefreshDashboardEvent());
+    unawaited(loadNotifications(force: true));
   }
 
   bool _isTerminalInvitationConflict(Object error) {

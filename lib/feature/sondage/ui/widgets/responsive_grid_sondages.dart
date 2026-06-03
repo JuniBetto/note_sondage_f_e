@@ -17,6 +17,7 @@ class ResponsiveGridSondages extends StatefulWidget {
     required this.isRow,
     required this.onDeleteTap,
     required this.onEditTap,
+    this.searchQuery = '',
     this.shrinkWrapLayout = false,
   });
 
@@ -24,6 +25,7 @@ class ResponsiveGridSondages extends StatefulWidget {
   final bool isRow;
   final ValueChanged<String> onDeleteTap;
   final ValueChanged<SondageEntity> onEditTap;
+  final String searchQuery;
   final bool shrinkWrapLayout;
 
   @override
@@ -75,10 +77,24 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
       );
     }
 
-    final foregroundItems = widget.items
+    final normalizedSearch = widget.searchQuery.trim().toLowerCase();
+    final filteredItems = normalizedSearch.isEmpty
+        ? widget.items
+        : widget.items.where((item) {
+            final searchable = [
+              item.name,
+              item.focus,
+              item.description ?? '',
+              item.teamName ?? '',
+              ...item.options.map((option) => option.label),
+            ].join(' ').toLowerCase();
+            return searchable.contains(normalizedSearch);
+          }).toList();
+
+    final foregroundItems = filteredItems
         .where((item) => !_archivedSondageIds.contains(item.id))
         .toList();
-    final archivedItems = widget.items
+    final archivedItems = filteredItems
         .where((item) => _archivedSondageIds.contains(item.id))
         .toList();
     final displayedItems = _showArchivedOnly ? archivedItems : foregroundItems;
@@ -86,7 +102,9 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
     final content = displayedItems.isEmpty
         ? Center(
             child: Text(
-              _showArchivedOnly
+              normalizedSearch.isNotEmpty
+                  ? 'Nessun sondaggio trovato per la ricerca.'
+                  : _showArchivedOnly
                   ? 'Nessun sondaggio archiviato.'
                   : 'Nessun sondaggio in primo piano.',
             ),
@@ -142,50 +160,65 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
   }
 
   Widget _buildGridView(List<SondageEntity> items) {
-    return GridView.builder(
-      shrinkWrap: widget.shrinkWrapLayout,
-      physics: widget.shrinkWrapLayout
-          ? const NeverScrollableScrollPhysics()
-          : null,
-      padding: EdgeInsets.zero,
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 340,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        mainAxisExtent: 210,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        final sondageId = item.id;
-        final canEditAsCreator =
-            item.createdByUserId == _currentUserId && item.canEdit;
-        final isArchived = _archivedSondageIds.contains(sondageId);
-        return SondageComponentCard(
-          key: ValueKey('sondage_card_$sondageId'),
-          sondageName: item.name,
-          sondageFocus: (item.description?.trim().isNotEmpty ?? false)
-              ? item.description!
-              : item.focus,
-          sondageId: sondageId,
-          status: item.status.name,
-          responses: item.responses,
-          totalQuestions: item.totalQuestions,
-          createdDate: item.createdDate,
-          expiryDate: item.expiryDate,
-          colorSondage: item.color,
-          canDelete: item.canDelete,
-          canEdit: canEditAsCreator,
-          isSyncing: _sondageBloc.syncingSondageIds.contains(sondageId),
-          isArchived: isArchived,
-          isActive: _selectedSondageId == sondageId,
-          onTap: () {
-            setState(() => _selectedSondageId = sondageId);
-            context.go(RouterPaths.sondageDetail, extra: sondageId);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final mainAxisExtent = width < 430 ? 230.0 : 210.0;
+        final SliverGridDelegate gridDelegate = width < 520
+            ? SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                mainAxisExtent: mainAxisExtent,
+              )
+            : SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 320,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                mainAxisExtent: 210,
+              );
+
+        return GridView.builder(
+          shrinkWrap: widget.shrinkWrapLayout,
+          physics: widget.shrinkWrapLayout
+              ? const NeverScrollableScrollPhysics()
+              : null,
+          padding: EdgeInsets.zero,
+          gridDelegate: gridDelegate,
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final item = items[index];
+            final sondageId = item.id;
+            final canEditAsCreator =
+                item.createdByUserId == _currentUserId && item.canEdit;
+            final isArchived = _archivedSondageIds.contains(sondageId);
+            return SondageComponentCard(
+              key: ValueKey('sondage_card_$sondageId'),
+              sondageName: item.name,
+              sondageFocus: (item.description?.trim().isNotEmpty ?? false)
+                  ? item.description!
+                  : item.focus,
+              sondageId: sondageId,
+              status: item.status.name,
+              responses: item.responses,
+              totalQuestions: item.totalQuestions,
+              createdDate: item.createdDate,
+              expiryDate: item.expiryDate,
+              colorSondage: item.color,
+              canDelete: item.canDelete,
+              canEdit: canEditAsCreator,
+              isSyncing: _sondageBloc.syncingSondageIds.contains(sondageId),
+              isArchived: isArchived,
+              isActive: _selectedSondageId == sondageId,
+              onTap: () {
+                setState(() => _selectedSondageId = sondageId);
+                context.go(RouterPaths.sondageDetail, extra: sondageId);
+              },
+              onEditTap: canEditAsCreator ? () => widget.onEditTap(item) : null,
+              onArchiveTap: () => _toggleArchive(sondageId),
+              onDeleteTap: widget.onDeleteTap,
+            );
           },
-          onEditTap: canEditAsCreator ? () => widget.onEditTap(item) : null,
-          onArchiveTap: () => _toggleArchive(sondageId),
-          onDeleteTap: widget.onDeleteTap,
         );
       },
     );

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 extension ColorToString on Color {
   /// Converte un Color in una stringa esadecimale (es. #FFAABBCC)
   String toHexString({bool leadingHashSign = true, bool includeAlpha = true}) {
-    final hex = value.toRadixString(16).padLeft(8, '0');
+    final hex = toARGB32().toRadixString(16).padLeft(8, '0');
 
     if (includeAlpha) {
       return '${leadingHashSign ? '#' : ''}${hex.toUpperCase()}';
@@ -14,18 +14,20 @@ extension ColorToString on Color {
 
   /// Converte un Color in una stringa ARGB (es. 0xFFAABBCC)
   String toArgbString() {
-    return '0x${value.toRadixString(16).padLeft(8, '0').toUpperCase()}';
+    return '0x${toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
   }
 
   /// Converte un Color in una stringa RGB (es. rgb(255, 170, 187))
   String toRgbString() {
-    return 'rgb($red, $green, $blue)';
+    return 'rgb(${_channelToInt(r)}, ${_channelToInt(g)}, ${_channelToInt(b)})';
   }
 
   /// Converte un Color in una stringa RGBA (es. rgba(255, 170, 187, 0.5))
   String toRgbaString() {
-    return 'rgba($red, $green, $blue, ${alpha / 255})';
+    return 'rgba(${_channelToInt(r)}, ${_channelToInt(g)}, ${_channelToInt(b)}, $a)';
   }
+
+  int _channelToInt(double channel) => (channel * 255.0).round() & 0xff;
 }
 
 extension StringToColor on String {
