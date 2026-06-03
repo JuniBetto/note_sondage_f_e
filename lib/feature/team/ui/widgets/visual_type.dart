@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class VisualType extends StatelessWidget {
   final IconData? iconData1;
@@ -26,13 +27,20 @@ class VisualType extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final iconSize = size ?? 28;
+    final isCompact = iconSize <= 24;
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: background ?? Colors.grey[200],
+        color: background ?? colorScheme.homeSecondary!,
         borderRadius: BorderRadius.circular(30),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16),
+        padding: EdgeInsets.symmetric(
+          vertical: isCompact ? 8 : 12,
+          horizontal: isCompact ? 12 : 16,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           spacing: 8,
@@ -51,10 +59,10 @@ class VisualType extends StatelessWidget {
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: EdgeInsets.all(isCompact ? 6 : 8),
                   child: Icon(
                     iconData1 ?? Icons.edit,
-                    size: size ?? 28,
+                    size: iconSize,
                     color: isActive1 == true
                         ? color ?? Colors.blue[600]
                         : Colors.grey[600]!,
@@ -76,10 +84,10 @@ class VisualType extends StatelessWidget {
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: EdgeInsets.all(isCompact ? 6 : 8),
                   child: Icon(
                     iconData2 ?? Icons.delete_forever_outlined,
-                    size: size ?? 28,
+                    size: iconSize,
                     color: isActive2 == true
                         ? color ?? Colors.red[600]
                         : Colors.grey[600]!,

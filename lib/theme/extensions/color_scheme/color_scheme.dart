@@ -6,9 +6,36 @@ extension AppColorScheme on ColorScheme {
       ? ColorPalette.gray[7]
       : ColorPalette.gray[1];
 
-  Color? get bgLogin => brightness == Brightness.light
+  /* Color? get bgLogin => brightness == Brightness.light
       ? ColorPalette.primary[6]
-      : ColorPalette.gray[8];
+      : ColorPalette.gray[8];*/
+  Color? get bgSurface => brightness == Brightness.light
+      ? ColorPalette.surface
+      : ColorPalette.gray[5];
+
+  Color? get bgColor => brightness == Brightness.light
+      ? ColorPalette.gray[2]
+      : ColorPalette.gray[6];
+
+  Color? get homePrimary => brightness == Brightness.light
+      ? ColorPalette.gray[1]
+      : ColorPalette.gray[6];
+
+  Color? get homeSecondary => brightness == Brightness.light
+      ? ColorPalette.gray[1]
+      : ColorPalette.gray[5];
+
+  Color? get homeTertiary => brightness == Brightness.light
+      ? ColorPalette.gray[2]
+      : ColorPalette.gray[5];
+
+  Color? get bgDialogSecondary => brightness == Brightness.light
+      ? ColorPalette.gray[1]
+      : ColorPalette.gray[6];
+
+  Color? get dialogBackgroundColor => brightness == Brightness.light
+      ? ColorPalette.gray[2]
+      : ColorPalette.gray[5];
 
   Color? get bgborderLogin => brightness == Brightness.light
       ? ColorPalette.gray[3]
@@ -20,10 +47,6 @@ extension AppColorScheme on ColorScheme {
 
   Color? get textInvertedColor => brightness == Brightness.light
       ? ColorPalette.gray[1]
-      : ColorPalette.gray[7];
-
-  Color? get bgColor => brightness == Brightness.light
-      ? ColorPalette.gray[2]
       : ColorPalette.gray[7];
 
   Color? get bgColorNew => brightness == Brightness.light
@@ -38,9 +61,6 @@ extension AppColorScheme on ColorScheme {
       ? ColorPalette.primary[2]
       : ColorPalette.gray[7];
 
-  Color? get bgsurface => brightness == Brightness.light
-      ? ColorPalette.surface
-      : ColorPalette.gray[6];
   //navbar
   Color? get bgNavbarSurface => brightness == Brightness.light
       ? ColorPalette.gray[1]
@@ -93,10 +113,6 @@ extension AppColorScheme on ColorScheme {
   Color? get buttonIsDisableBg => brightness == Brightness.light
       ? ColorPalette.gray[4]
       : ColorPalette.gray[2];
-
-  Color? get dialogBackgroundColor => brightness == Brightness.light
-      ? ColorPalette.surface
-      : ColorPalette.gray[6];
 
   Color? get cursorColor => brightness == Brightness.light
       ? ColorPalette.primary[4]
@@ -171,4 +187,39 @@ extension AppColorScheme on ColorScheme {
   Color? get deleteCard => brightness == Brightness.light
       ? ColorPalette.error.withValues(alpha: 0.6)
       : ColorPalette.error.withValues(alpha: 0.9);
+
+  // ── Sondage status ──
+  Color get sondageStatusActive => ColorPalette.statusActive;
+  Color get sondageStatusDraft => ColorPalette.statusDraft;
+  Color get sondageStatusClosed => ColorPalette.statusClosed;
+  Color get sondageStatusCompleted => ColorPalette.statusCompleted;
+  Color get sondageStatusPublished => ColorPalette.statusPublished;
+
+  Color sondageStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return sondageStatusActive;
+      case 'draft':
+        return sondageStatusDraft;
+      case 'closed':
+        return sondageStatusClosed;
+      case 'completed':
+        return sondageStatusCompleted;
+      case 'published':
+        return sondageStatusPublished;
+      default:
+        return ColorPalette.gray[4];
+    }
+  }
+
+  // ── Semantic shortcuts ──
+  Color get successColor => ColorPalette.success;
+  Color get warningColor => ColorPalette.warning;
+  Color get errorColor => ColorPalette.error;
+  Color get infoColor => ColorPalette.info;
+
+  // ── Vote progress ──
+  Color? get voteBarBackground => brightness == Brightness.light
+      ? ColorPalette.gray[2]
+      : ColorPalette.gray[6];
 }

@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
-import 'package:note_sondage/feature/team/domain/entities/permission_entity.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_role.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_role_permission.dart';
-import 'package:note_sondage/theme/color_palette.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:note_sondage/ui/mobile/widgets/header_page.dart';
-import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class RolePage extends StatefulWidget {
@@ -21,7 +17,6 @@ class RolePage extends StatefulWidget {
 class _RolePageState extends State<RolePage>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
-  int currentViewType = 1;
 
   @override
   void initState() {
@@ -31,27 +26,9 @@ class _RolePageState extends State<RolePage>
   }
 
   void _handleTabChange() {
-    // Rimuovi il controllo indexIsChanging per reagire anche allo swipe
     if (!tabController.indexIsChanging) {
       setState(() {});
     }
-  }
-
-  void _handleViewTypeChanged(int viewType) {
-    setState(() {
-      currentViewType = viewType;
-    });
-  }
-
-  void _handleTeamCreated() {
-    // Logica per aggiornare la lista dei team
-    // Potresti qui fare una chiamata API e poi cambiare tab
-    setState(() {
-      // Aggiorna la lista dei team
-    });
-
-    // Torna alla tab dei team selezionati
-    tabController.animateTo(0);
   }
 
   @override
@@ -65,66 +42,95 @@ class _RolePageState extends State<RolePage>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final localization = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colorScheme.bgColor,
-      appBar: HeaderPage(
-        title: "Permission Team",
-        onBackPressed: () {
-          // context.read<NavigationBloc>().add(NavigationPositionChanged(1));
-          // context.go(RouterPaths.home);
-          context.goNamed(RouterPaths.updateTeam, extra: widget.teamId);
-        },
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: colorScheme.homeSecondary,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: colorScheme.borderColor!.withValues(alpha: 0.3),
+              ),
+            ),
+            child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          ),
+          onPressed: () {
+            context.goNamed(RouterPaths.updateTeam, extra: widget.teamId);
+          },
+        ),
+        centerTitle: true,
+        title: Text(
+          localization.roleManager,
+          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+        ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              TabBarComponent(
-                childTab1: Text(
-                  localization.grantList,
-                  style: TextStyle(
-                    color: tabController.index == 0
-                        ? ColorPalette.primary[6]
-                        : Colors.grey[600],
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+        child: Column(
+          children: [
+            // ── Tab Bar ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colorScheme.homeSecondary,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: colorScheme.borderColor!.withValues(alpha: 0.3),
                   ),
                 ),
-                childTab2: Text(
-                  localization.createGrant,
-                  style: TextStyle(
-                    color: tabController.index == 1
-                        ? ColorPalette.primary[6]
-                        : Colors.grey[600],
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                tabController: tabController,
-                setToUpdate: setState,
-              ),
-              SizedBox(height: 8),
-              Divider(height: 2, color: Colors.grey[400]),
-              SizedBox(height: 16),
-
-              // Contenuto dinamico basato sulla tab selezionata
-              Expanded(
-                child: TabBarView(
+                padding: const EdgeInsets.all(4),
+                child: TabBar(
                   controller: tabController,
-                  children: [
-                    // Prima tab: Lista permessi
-                    ListRolePermission(teamId: widget.teamId),
-                    // Seconda tab: Creazione permesso
-                    CreateRoleWidget(teamId: widget.teamId),
+                  indicator: BoxDecoration(
+                    color: const Color(0xFF7C4DFF),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7C4DFF).withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: colorScheme.descriptionColor,
+                  labelStyle: textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  unselectedLabelStyle: textTheme.labelMedium,
+                  tabs: [
+                    Tab(text: localization.grantList),
+                    Tab(text: localization.createGrant),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Content ──
+            Expanded(
+              child: TabBarView(
+                controller: tabController,
+                children: [
+                  ListRolePermission(teamId: widget.teamId),
+                  CreateRoleWidget(teamId: widget.teamId),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

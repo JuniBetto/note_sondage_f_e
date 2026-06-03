@@ -44,19 +44,14 @@ class UserEntityForUpdate extends UserEntity {
   final String status;
 
   UserEntityForUpdate(
-    String? id, {
-    required String fullName,
-    required String email,
-    DateTime? createdAt,
+    super.id, {
+    required super.fullName,
+    required super.email,
+    super.createdAt,
     required this.isActive,
     required this.teamMemberId,
     required this.role,
     required this.status,
     this.imageUrl,
-  }) : super(
-         id,
-         fullName: fullName,
-         email: email,
-         createdAt: createdAt ?? DateTime.now(),
-       );
+  });
 }

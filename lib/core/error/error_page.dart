@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 /// La pagina "Oops!" mostrata all'utente per un errore fatale
 /// che non è stato gestito.
@@ -10,6 +11,8 @@ class ErrorPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
@@ -45,14 +48,14 @@ class ErrorPage extends StatelessWidget {
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text("Torna Indietro"),
+                child: Text(localization.goBack),
               ),
               // Mostra i dettagli dell'errore solo in modalità DEBUG
               if (kDebugMode && error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 20.0),
                   child: ExpansionTile(
-                    title: const Text("Dettagli Errore (Debug)"),
+                    title: Text(localization.errorDetailsDebug),
                     children: [
                       Text(error!, style: const TextStyle(color: Colors.grey)),
                     ],

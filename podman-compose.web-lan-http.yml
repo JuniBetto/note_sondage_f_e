@@ -1,0 +1,13 @@
+services:
+  web-nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: note_sondage_web
+    env_file:
+      - .env.web
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx/templates-lan-http/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    restart: unless-stopped

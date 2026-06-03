@@ -3,6 +3,8 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 abstract class TeamRepository {
   Future<List<TeamEntity>> getAll();
 
+  Future<List<TeamEntity>> getLocalOnly();
+
   Future<List<TeamEntity>> getAllByUserId(String userId);
 
   Future<TeamEntity?> getById(String id);

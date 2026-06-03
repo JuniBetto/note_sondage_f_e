@@ -5,6 +5,7 @@ import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 
 class TeamMemberEntity {
   final String? id;
+  final String? userId;
   final String userEmail;
   final String teamId;
   final UserStatus status;
@@ -23,6 +24,7 @@ class TeamMemberEntity {
 
   TeamMemberEntity({
     this.id,
+    this.userId,
     required this.userEmail,
     required this.teamId,
     required this.status,
@@ -39,6 +41,7 @@ class TeamMemberEntity {
 
   TeamMemberEntity copyWith({
     String? id,
+    String? userId,
     String? userEmail,
     String? teamId,
     UserStatus? status,
@@ -51,6 +54,7 @@ class TeamMemberEntity {
   }) {
     return TeamMemberEntity(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       userEmail: userEmail ?? this.userEmail,
       teamId: teamId ?? this.teamId,
       status: status ?? this.status,

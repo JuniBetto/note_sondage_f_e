@@ -56,3 +56,64 @@ class DeleteTeamEvent extends TeamEvent {
   @override
   List<Object?> get props => [id, userId];
 }
+
+class ResetTeamCacheEvent extends TeamEvent {
+  const ResetTeamCacheEvent();
+}
+
+/// Internal event — dispatched when the background remote refresh completes.
+class _TeamsRefreshedEvent extends TeamEvent {
+  final List<TeamEntity> teams;
+  const _TeamsRefreshedEvent(this.teams);
+
+  @override
+  List<Object?> get props => [teams];
+}
+
+class _TeamsRefreshFailedEvent extends TeamEvent {
+  final String message;
+  final bool hadLocalData;
+
+  const _TeamsRefreshFailedEvent({
+    required this.message,
+    required this.hadLocalData,
+  });
+
+  @override
+  List<Object?> get props => [message, hadLocalData];
+}
+
+class _TeamCreateCommittedEvent extends TeamEvent {
+  final String temporaryId;
+  final TeamEntity team;
+
+  const _TeamCreateCommittedEvent(this.temporaryId, this.team);
+
+  @override
+  List<Object?> get props => [temporaryId, team];
+}
+
+class _TeamUpdateCommittedEvent extends TeamEvent {
+  final String teamId;
+  final TeamUpdate team;
+
+  const _TeamUpdateCommittedEvent(this.teamId, this.team);
+
+  @override
+  List<Object?> get props => [teamId, team];
+}
+
+class _TeamMutationFailedEvent extends TeamEvent {
+  final String message;
+  final List<TeamEntity> rollbackTeams;
+  final Set<String> syncingIdsToClear;
+
+  const _TeamMutationFailedEvent({
+    required this.message,
+    required this.rollbackTeams,
+    required this.syncingIdsToClear,
+  });
+
+  @override
+  List<Object?> get props => [message, rollbackTeams, syncingIdsToClear];
+}

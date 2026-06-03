@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class AvatarInput extends StatefulWidget {
   final double size;
@@ -18,7 +20,7 @@ class AvatarInput extends StatefulWidget {
   final Color borderColor;
 
   const AvatarInput({
-    Key? key,
+    super.key,
     this.size = 120,
     this.initialImageUrl,
     this.initialImageFile,
@@ -30,10 +32,10 @@ class AvatarInput extends StatefulWidget {
     this.showRemoveOption = true,
     this.borderWidth = 2,
     this.borderColor = Colors.grey,
-  }) : super(key: key);
+  });
 
   @override
-  _AvatarInputState createState() => _AvatarInputState();
+  State<AvatarInput> createState() => _AvatarInputState();
 }
 
 class _AvatarInputState extends State<AvatarInput> {
@@ -91,15 +93,15 @@ class _AvatarInputState extends State<AvatarInput> {
 
   Future<void> _pickMultiImage() async {
     try {
-      final List<XFile>? images = await _imagePicker.pickMultiImage(
+      final List<XFile> images = await _imagePicker.pickMultiImage(
         maxWidth: 800,
         maxHeight: 800,
         imageQuality: 85,
       );
 
-      if (images != null && images.isNotEmpty) {
+      if (images.isNotEmpty) {
         final firstImage = images.first;
-        
+
         if (kIsWeb) {
           final bytes = await firstImage.readAsBytes();
           setState(() {
@@ -142,6 +144,8 @@ class _AvatarInputState extends State<AvatarInput> {
   }
 
   void _showImageOptions() {
+    final localization = AppLocalizations.of(context)!;
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -155,7 +159,7 @@ class _AvatarInputState extends State<AvatarInput> {
             if (!kIsWeb)
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                title: const Text("Scatta foto"),
+                title: Text(localization.takePhoto),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
@@ -163,7 +167,7 @@ class _AvatarInputState extends State<AvatarInput> {
               ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.green),
-              title: const Text("Scegli dalla galleria"),
+              title: Text(localization.chooseFromGallery),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
@@ -173,17 +177,19 @@ class _AvatarInputState extends State<AvatarInput> {
             if (!kIsWeb)
               ListTile(
                 leading: const Icon(Icons.collections, color: Colors.purple),
-                title: const Text("Seleziona multiple"),
+                title: Text(localization.selectMultiple),
                 onTap: () {
                   Navigator.pop(context);
                   _pickMultiImage();
                 },
               ),
             if (widget.showRemoveOption &&
-                (_selectedImage != null || _selectedImageBytes != null || widget.initialImageUrl != null))
+                (_selectedImage != null ||
+                    _selectedImageBytes != null ||
+                    widget.initialImageUrl != null))
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text("Rimuovi immagine"),
+                title: Text(localization.removeImage),
                 onTap: () {
                   Navigator.pop(context);
                   _removeImage();
@@ -192,7 +198,7 @@ class _AvatarInputState extends State<AvatarInput> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.close),
-              title: const Text("Annulla"),
+              title: Text(localization.cancel),
               onTap: () => Navigator.pop(context),
             ),
           ],
@@ -244,28 +250,60 @@ class _AvatarInputState extends State<AvatarInput> {
       );
     }
 
-    if (widget.initialImageUrl != null && widget.initialImageUrl!.isNotEmpty) {
-      return ClipOval(
-        child: Image.network(
-          widget.initialImageUrl!,
-          width: widget.size,
-          height: widget.size,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                    : null,
+    final initialImageUrl = widget.initialImageUrl?.trim();
+    if (initialImageUrl != null && initialImageUrl.isNotEmpty) {
+      final resolvedUrl = DioClient.resolveImageUrl(initialImageUrl);
+      final requiresAuth = DioClient.usesAuthenticatedImageProxy(
+        initialImageUrl,
+      );
+
+      return FutureBuilder<Map<String, String>?>(
+        future: requiresAuth
+            ? DioClient.resolveImageHeaders(initialImageUrl)
+            : Future.value(null),
+        builder: (context, snapshot) {
+          if (requiresAuth &&
+              snapshot.connectionState != ConnectionState.done) {
+            return Container(
+              width: widget.size,
+              height: widget.size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.shade200,
               ),
+              child: const Center(child: CircularProgressIndicator()),
             );
-          },
-          errorBuilder: (context, error, stackTrace) {
+          }
+
+          if (requiresAuth &&
+              (snapshot.data == null || snapshot.data!.isEmpty)) {
             return _buildPlaceholder();
-          },
-        ),
+          }
+
+          return ClipOval(
+            child: Image.network(
+              resolvedUrl,
+              width: widget.size,
+              height: widget.size,
+              fit: BoxFit.cover,
+              headers: snapshot.data,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return _buildPlaceholder();
+              },
+            ),
+          );
+        },
       );
     }
 
@@ -316,7 +354,7 @@ class _AvatarInputState extends State<AvatarInput> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -339,7 +377,7 @@ class _AvatarInputState extends State<AvatarInput> {
                     border: Border.all(color: Colors.white, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),

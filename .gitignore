@@ -100,3 +100,13 @@ firebase-debug.log
 # Environment files (if you store secrets)
 *.env
 *.env.*
+!.env.web.public.example
+!.env.web.lan-http.example
+!.env.web.lan-https.example
+
+# Android signing examples
+!android/key.properties.example
+key.properties
+**/*.keystore
+**/*.jks
+**.properties.example

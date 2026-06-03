@@ -1,0 +1,316 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
+import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
+import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/firebase_options.dart';
+
+const String _backgroundTeamInviteCategoryId = 'team_invite_actions';
+
+/// Gestisce i messaggi FCM quando l'app è in background o terminata.
+///
+/// REGOLE OBBLIGATORIE:
+/// - Deve essere una funzione top-level (non un metodo di classe).
+/// - Deve avere `@pragma('vm:entry-point')` altrimenti il tree-shaker
+///   di Dart la rimuove in release mode e le notifiche background spariscono.
+/// - NON può usare `getIt` (il DI non è inizializzato in questo isolate).
+/// - Deve inizializzare Firebase e flutter_local_notifications
+///   autonomamente prima di usarli.
+///
+/// QUANDO VIENE CHIAMATO:
+/// - Messaggi data-only (nessun blocco `notification` nel payload FCM).
+///   I messaggi con blocco `notification` vengono mostrati direttamente
+///   dall'OS senza passare per questo handler.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // 1. Firebase deve essere inizializzato anche in questo isolate separato.
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 2. Legge title/body dal payload data o dal blocco notification (fallback).
+  final data = message.data;
+  final title = data['title']?.toString().isNotEmpty == true
+      ? data['title']!
+      : message.notification?.title ?? 'Notifica';
+  final body = data['body']?.toString().isNotEmpty == true
+      ? data['body']!
+      : message.notification?.body ?? '';
+  final metadata = {
+    for (final entry in data.entries)
+      if (entry.value.isNotEmpty &&
+          !_reservedKeys.contains(entry.key.toString()))
+        entry.key.toString(): entry.value.toString(),
+  };
+  final notificationItem = NotificationCenterItem(
+    notificationId:
+        data['notificationId']?.toString() ??
+        message.messageId ??
+        'push-${DateTime.now().millisecondsSinceEpoch}',
+    eventType: data['eventType']?.toString() ?? 'PUSH_NOTIFICATION',
+    sourceService: data['sourceService']?.toString() ?? 'push',
+    title: title,
+    body: body,
+    occurredAt:
+        DateTime.tryParse(data['occurredAt']?.toString() ?? '') ??
+        DateTime.now(),
+    metadata: metadata,
+  );
+  final canRespondToInvite =
+      notificationItem.eventType == 'TEAM_MEMBER_INVITED' &&
+      notificationItem.invitationId != null &&
+      (notificationItem.metadata['invitedUserId']?.trim().isNotEmpty ?? false);
+  final payload = jsonEncode(notificationItem.toJson());
+
+  // Nessun testo = niente da mostrare (es. silent sync messages).
+  if (title.isEmpty && body.isEmpty) return;
+
+  // 3. Inizializza flutter_local_notifications standalone.
+  final plugin = FlutterLocalNotificationsPlugin();
+  const androidSettings = AndroidInitializationSettings('ic_stat_notify');
+  const darwinSettings = DarwinInitializationSettings();
+  await plugin.initialize(
+    const InitializationSettings(android: androidSettings, iOS: darwinSettings),
+    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+  );
+
+  // 4. Assicura che il canale Android esista.
+  const channel = AndroidNotificationChannel(
+    'team_updates',
+    'Team updates',
+    description: 'Realtime updates about teams and invitations',
+    importance: Importance.max,
+  );
+  await plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(channel);
+
+  // 5. Mostra la notifica.
+  final notificationDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'team_updates',
+      'Team updates',
+      channelDescription: 'Realtime updates about teams and invitations',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: 'ic_stat_notify',
+      actions: canRespondToInvite
+          ? const <AndroidNotificationAction>[
+              AndroidNotificationAction(
+                'accept_team_invite',
+                'Accetta',
+                showsUserInterface: true,
+                cancelNotification: true,
+              ),
+              AndroidNotificationAction(
+                'reject_team_invite',
+                'Rifiuta',
+                showsUserInterface: true,
+                cancelNotification: true,
+              ),
+            ]
+          : null,
+    ),
+    iOS: DarwinNotificationDetails(
+      categoryIdentifier: canRespondToInvite
+          ? _backgroundTeamInviteCategoryId
+          : null,
+      threadIdentifier: notificationItem.metadata['teamId'],
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    ),
+  );
+
+  await plugin.show(
+    notificationItem.notificationId.hashCode,
+    title,
+    body,
+    notificationDetails,
+    payload: payload,
+  );
+}
+
+class PushNotificationService {
+  PushNotificationService({
+    BackendAuthDataSource? backendAuth,
+    LocalNotificationService? localNotifications,
+  }) : _backendAuth = backendAuth ?? BackendAuthDataSource(),
+       _localNotifications = localNotifications ?? LocalNotificationService();
+
+  static const _deviceFingerprintKey = 'push_device_fingerprint';
+
+  final BackendAuthDataSource _backendAuth;
+  final LocalNotificationService _localNotifications;
+  final StreamController<RealtimeNotification> _controller =
+      StreamController<RealtimeNotification>.broadcast();
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+
+  StreamSubscription<String>? _tokenRefreshSubscription;
+  bool _initialized = false;
+  bool _available = true;
+
+  Stream<RealtimeNotification> get stream => _controller.stream;
+
+  Future<void> init() async {
+    if (_initialized) {
+      _initialized = true;
+      return;
+    }
+
+    _initialized = true;
+    if (!_supportsPushPlatform) {
+      _available = false;
+      return;
+    }
+
+    try {
+      await _messaging.requestPermission();
+
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+
+      final initialMessage = await _messaging.getInitialMessage();
+      if (initialMessage != null) {
+        _handleMessage(initialMessage);
+      }
+
+      _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
+        if (token.isEmpty) return;
+        unawaited(syncDeviceRegistration(forceToken: token));
+      });
+    } on MissingPluginException catch (error) {
+      _available = false;
+      debugPrint(
+        '[PushNotificationService] firebase_messaging not available on this build: $error',
+      );
+    } on PlatformException catch (error) {
+      _available = false;
+      debugPrint(
+        '[PushNotificationService] push init skipped due to platform error: ${error.message ?? error.code}',
+      );
+    } catch (error) {
+      _available = false;
+      debugPrint('[PushNotificationService] push init failed: $error');
+    }
+  }
+
+  Future<void> syncDeviceRegistration({String? forceToken}) async {
+    if (!_available || !_supportsPushPlatform) return;
+
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return;
+
+    try {
+      final token = forceToken ?? await _messaging.getToken();
+      if (token == null || token.isEmpty) return;
+
+      final fingerprint = await _getOrCreateDeviceFingerprint();
+      await _backendAuth.registerCurrentDevice(
+        deviceFingerprint: fingerprint,
+        deviceName: defaultTargetPlatform.name,
+        platform: defaultTargetPlatform.name,
+        clientApp: 'flutter_app',
+        pushProvider: 'FIREBASE',
+        pushToken: token,
+      );
+    } on MissingPluginException catch (error) {
+      _available = false;
+      debugPrint(
+        '[PushNotificationService] device registration skipped because plugin is unavailable: $error',
+      );
+    } on PlatformException catch (error) {
+      debugPrint(
+        '[PushNotificationService] device registration skipped due to platform error: ${error.message ?? error.code}',
+      );
+    } catch (error) {
+      debugPrint(
+        '[PushNotificationService] device registration failed: $error',
+      );
+    }
+  }
+
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    final notification = _emitNotification(message);
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (currentUserId.isNotEmpty) {
+      await _localNotifications.showRealtimeNotification(
+        NotificationCenterItem.fromRealtime(notification),
+        currentUserId: currentUserId,
+      );
+    }
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    _emitNotification(message);
+  }
+
+  RealtimeNotification _emitNotification(RemoteMessage message) {
+    final data = message.data;
+    final notification = RealtimeNotification(
+      notificationId:
+          data['notificationId']?.toString() ??
+          message.messageId ??
+          'push-${DateTime.now().millisecondsSinceEpoch}',
+      eventType: data['eventType']?.toString() ?? 'PUSH_NOTIFICATION',
+      sourceService: data['sourceService']?.toString() ?? 'push',
+      title:
+          data['title']?.toString() ??
+          message.notification?.title ??
+          'Notification',
+      body: data['body']?.toString() ?? message.notification?.body ?? '',
+      occurredAt:
+          DateTime.tryParse(data['occurredAt']?.toString() ?? '') ??
+          DateTime.now(),
+      metadata: {
+        for (final entry in data.entries)
+          if (entry.value.isNotEmpty &&
+              !_reservedKeys.contains(entry.key.toString()))
+            entry.key.toString(): entry.value.toString(),
+      },
+    );
+    _controller.add(notification);
+    return notification;
+  }
+
+  Future<String> _getOrCreateDeviceFingerprint() async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString(_deviceFingerprintKey);
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+
+    final fingerprint =
+        '${defaultTargetPlatform.name}-${DateTime.now().microsecondsSinceEpoch}';
+    await prefs.setString(_deviceFingerprintKey, fingerprint);
+    return fingerprint;
+  }
+
+  Future<void> dispose() async {
+    await _tokenRefreshSubscription?.cancel();
+    await _controller.close();
+  }
+
+  bool get _supportsPushPlatform =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+}
+
+const Set<String> _reservedKeys = {
+  'notificationId',
+  'eventType',
+  'sourceService',
+  'title',
+  'body',
+  'occurredAt',
+};

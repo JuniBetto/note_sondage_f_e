@@ -1,12 +1,8 @@
-import 'dart:ui';
-
-import 'package:note_sondage/domain/entities/user_mapper.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
-import 'package:note_sondage/feature/team/infrastructure/data/team_member_mapper.dart';
+import 'package:note_sondage/feature/team/infrastructure/data/invite_team_member_request_mapper.dart';
 
 class TeamMapper {
   static TeamEntity fromJson(Map<String, dynamic> json) {
-    // Gestisce createdAt null
     DateTime? createdAt;
     if (json['createdAt'] != null) {
       try {
@@ -16,24 +12,41 @@ class TeamMapper {
       }
     }
 
+    // Spring returns "ownerId", Python returned "createdByUserId" — handle both
+    final createdByUserId =
+        (json['ownerId'] ?? json['createdByUserId'])?.toString() ?? '';
+
+    final rawColor = json['color']?.toString();
+    final color = (rawColor != null && rawColor.isNotEmpty) ? rawColor : null;
+
     return TeamEntity(
       json['id']?.toString(),
-      json['color']?.toString() ?? '',
+      color,
+      null, // pendingInvitations is not returned by the API
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
-      createdByUserId: json['createdByUserId']?.toString() ?? '',
+      createdByUserId: createdByUserId,
+      memberCount: (json['memberCount'] as num?)?.toInt() ?? 0,
       createdAt: createdAt,
     );
   }
 
+  /// Serializes a [TeamEntity] for the POST /api/aggregate/teams endpoint.
   static Map<String, dynamic> toJson(TeamEntity entity) {
+    final name = entity.name;
+    final slug = name.toLowerCase().replaceAll(RegExp(r'\s+'), '-');
     return {
-      'id': entity.id,
-      if (entity.color != null) 'color': entity.color,
-      'name': entity.name,
+      'name': name,
+      'slug': slug,
       'description': entity.description,
-      'createdByUserId': entity.createdByUserId,
-      'createdAt': entity.createdAt.toIso8601String(),
+      if (entity.color != null && entity.color!.isNotEmpty)
+        'color': entity.color,
+      'organisationId': null,
+      if (entity.pendingInvitations != null &&
+          entity.pendingInvitations!.isNotEmpty)
+        'members': entity.pendingInvitations!
+            .map(InviteTeamMemberRequestMapper.toJson)
+            .toList(),
     };
   }
 
@@ -41,30 +54,23 @@ class TeamMapper {
     return {
       'name': entity.name,
       'description': entity.description,
-      'color': entity.color,
-      'list_member': entity.listMember
-          .map((member) => TeamMemberMapper.toJsonForUpdate(member))
-          .toList(),
+      if (entity.color != null && entity.color!.isNotEmpty)
+        'color': entity.color,
     };
   }
 
   static TeamUpdate fromJsonForUpdate(Map<String, dynamic> json) {
     return TeamUpdate(
-      json['is_deleted'] as bool?,
+      json['isActive'] != null ? !(json['isActive'] as bool) : false,
       id: json['id']?.toString(),
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
-      createdByUserId: json['created_by_user_id']?.toString() ?? '',
-      color: json['color']?.toString() ?? '',
-      listMember:
-          (json['list_member'] as List<dynamic>?)
-              ?.map(
-                (memberJson) => TeamMemberMapper.fromJsonUpdate(
-                  memberJson as Map<String, dynamic>,
-                ),
-              )
-              .toList() ??
-          [],
+      createdByUserId:
+          (json['ownerId'] ?? json['created_by_user_id'])?.toString() ?? '',
+      color: (json['color']?.toString().isNotEmpty ?? false)
+          ? json['color']!.toString()
+          : null,
+      listMember: [],
     );
   }
 }

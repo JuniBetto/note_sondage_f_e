@@ -6,27 +6,28 @@ import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 class TeamMemberMapper {
   static TeamMemberEntity fromJson(Map<String, dynamic> json) {
     return TeamMemberEntity(
-      id: json['id']?.toString(),
-      userEmail: json['user_email']?.toString() ?? '',
-      teamId: json['team_id']?.toString() ?? '',
+      id: (json['id'] ?? json['memberId'])?.toString(),
+      userId: (json['userId'] ?? json['user_id'])?.toString(),
+      userEmail: (json['user_email'] ?? json['email'])?.toString() ?? '',
+      teamId: (json['teamId'] ?? json['team_id'])?.toString() ?? '',
       status: UserStatus.values.firstWhere(
         (e) => e.value == json['status'],
-        orElse: () => UserStatus.pending,
+        orElse: () =>
+            UserStatus.active, // Spring backend implies active if member
       ),
-      roleId: json['role_id']?.toString() ?? '',
-      imageUrl: json['image_url']?.toString(),
+      roleId: (json['role_id'] ?? json['role'])?.toString() ?? '',
+      imageUrl: (json['image_url'] ?? json['avatarUrl'])?.toString(),
       fileName: json['file_name']?.toString() ?? '',
-      imageFile:
-          json['image_file'], // imageFile e imageBytes non vengono dal server
+      imageFile: json['image_file'],
       imageBytes: json['image_bytes'],
-      initialName: json['initialname']?.toString() ?? '',
-      // imageFile e imageBytes non vengono dal server
+      initialName: (json['initialname'] ?? json['fullName'])?.toString() ?? '',
     );
   }
 
   static Map<String, dynamic> toJson(TeamMemberEntity member) {
     return {
       if (member.id != null) 'id': member.id,
+      if (member.userId != null) 'user_id': member.userId,
       'user_email': member.userEmail,
       'team_id': member.teamId,
       'status': member.status.value,

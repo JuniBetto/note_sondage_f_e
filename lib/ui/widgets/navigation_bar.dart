@@ -47,26 +47,22 @@ class NavigationBarWidget extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
+        //color: colorScheme.bgSurface,
         border: Border(
-          // Assumendo che colorScheme.bottomOutline sia un colore
           top: BorderSide(
-            color: colorScheme.surface, // Sostituito con background per demo
-            width: 1,
+            color: colorScheme.borderColor!,
+            width: 2,
           ),
         ),
       ),
       child: Theme(
-        data: ThemeData(
+        data: Theme.of(context).copyWith(
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
         ),
         child: BottomNavigationBar(
-          backgroundColor:
-              colorScheme.surface, // Sostituito con background per demo
-
           selectedLabelStyle: textTheme.labelMedium!.copyWith(
-            backgroundColor:
-                ColorPalette.primary[6], // Sostituito con background per demo
+            backgroundColor: ColorPalette.primary[6],
           ),
           unselectedLabelStyle: textTheme.labelMedium,
           currentIndex: position,
@@ -100,7 +96,9 @@ class NavigationBarWidget extends StatelessWidget {
             BottomNavigationBarItem(
               icon: _buildSectionTitle(
                 context,
-                const Icon(Icons.people_outlined),
+                Icon(Icons.people_outlined,
+                  //color: colorScheme.textInvertedColor,
+                ),
                 Text(l10n.team),
               ),
               activeIcon: _buildSectionTitle(

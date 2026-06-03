@@ -1,8 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:note_sondage/core/utils/extention_color.dart';
-import 'package:note_sondage/languages/l10n/app_localizations.dart';
-import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 /// ScrollBehavior personalizzato per abilitare il drag scroll sul web
 class WebDragScrollBehavior extends MaterialScrollBehavior {
@@ -26,9 +24,13 @@ class ListCheckbox extends StatefulWidget {
     super.key,
     required this.selectedColor,
     this.isEditMode = false,
+    this.isEnabled = true,
+    this.onColorChanged,
   });
   final List<String> selectedColor;
   final bool? isEditMode;
+  final bool isEnabled;
+  final ValueChanged<String>? onColorChanged;
 
   @override
   State<ListCheckbox> createState() => _ListCheckboxState();
@@ -62,15 +64,11 @@ class _ListCheckboxState extends State<ListCheckbox> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final localization = AppLocalizations.of(context)!;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colorScheme.bgNavbarSurface,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(12.0),
         ),
         child: Padding(
@@ -88,7 +86,9 @@ class _ListCheckboxState extends State<ListCheckbox> {
                       final ColorOption colorOption = e;
                       return ColorCheckboxCard(
                         colorOption: colorOption,
+                        isEnabled: widget.isEnabled,
                         onChanged: (value) {
+                          if (!widget.isEnabled) return;
                           setState(() {
                             for (var option in colorOptions) {
                               option.isSelected = false;
@@ -99,6 +99,7 @@ class _ListCheckboxState extends State<ListCheckbox> {
                               final String colorString = colorOption.color
                                   .toArgbString();
                               widget.selectedColor.add(colorString);
+                              widget.onColorChanged?.call(colorString);
                             }
                           });
                         },
@@ -117,13 +118,15 @@ class _ListCheckboxState extends State<ListCheckbox> {
 
 class ColorCheckboxCard extends StatelessWidget {
   final ColorOption colorOption;
+  final bool isEnabled;
   final ValueChanged<bool?> onChanged;
 
   const ColorCheckboxCard({
-    Key? key,
+    super.key,
     required this.colorOption,
+    this.isEnabled = true,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +142,7 @@ class ColorCheckboxCard extends StatelessWidget {
           ),
         ),
         onTap: () {
+          if (!isEnabled) return;
           onChanged(!colorOption.isSelected);
         },
         child: Padding(

@@ -1,11 +1,11 @@
 {
-    "name": "note_sondage",
-    "short_name": "note_sondage",
+    "name": "TeamManagement",
+    "short_name": "TeamManagement",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "TeamManagement web app for teams, surveys, shifts, and clocking.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

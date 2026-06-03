@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'color_palette.dart';
 
 class AppTypography {
-  static const String fontFamily = "Roboto";
+  static const String fontFamily = "Nunito";
 
   static TextTheme textTheme(bool isLightTheme) {
     return TextTheme(

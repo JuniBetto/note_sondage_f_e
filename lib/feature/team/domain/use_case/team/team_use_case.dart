@@ -53,6 +53,10 @@ class TeamUseCase {
     }
   }
 
+  Future<List<TeamEntity>> getLocalTeams() async {
+    return await repository.getLocalOnly();
+  }
+
   Future<bool> deleteTeam(String id) async {
     try {
       return await repository.delete(id);

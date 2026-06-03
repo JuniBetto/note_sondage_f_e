@@ -48,9 +48,13 @@ class ApiResponse<T> {
     required R Function(T data) onSuccess,
     required R Function(ApiError error) onError,
   }) {
-    if (isSuccess && data != null) {
-      return onSuccess(data!);
-    } else if (error != null) {
+    if (isSuccess) {
+      final value = data;
+      if (value is T) {
+        return onSuccess(value);
+      }
+    }
+    if (error != null) {
       return onError(error!);
     }
     throw StateError('Invalid ApiResponse state');

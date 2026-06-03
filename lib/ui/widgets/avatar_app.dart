@@ -21,9 +21,18 @@ class AvatarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedUrl = imageUrl != null && imageUrl!.isNotEmpty
-        ? DioClient.resolveImageUrl(imageUrl!)
+    final originalUrl = imageUrl?.trim();
+    final resolvedUrl = originalUrl != null && originalUrl.isNotEmpty
+        ? DioClient.resolveImageUrl(originalUrl)
         : null;
+    final authImageUrl = originalUrl;
+    final requiresAuth =
+        originalUrl != null &&
+        originalUrl.isNotEmpty &&
+        DioClient.usesAuthenticatedImageProxy(originalUrl);
+    final authHeadersFuture = requiresAuth && authImageUrl != null
+        ? DioClient.resolveImageHeaders(authImageUrl)
+        : Future<Map<String, String>?>.value(null);
 
     return GestureDetector(
       onTap: onTap,
@@ -31,19 +40,11 @@ class AvatarApp extends StatelessWidget {
         width: size,
         height: size,
         child: resolvedUrl != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(size / 2),
-                child: Image.network(
-                  resolvedUrl,
-                  width: size,
-                  height: size,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    debugPrint('❌ AvatarApp: Failed to load image: $resolvedUrl – $error');
-                    return _buildFallback();
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
+            ? FutureBuilder<Map<String, String>?>(
+                future: authHeadersFuture,
+                builder: (context, snapshot) {
+                  if (requiresAuth &&
+                      snapshot.connectionState != ConnectionState.done) {
                     return DecoratedBox(
                       decoration: BoxDecoration(
                         color: backgroundColor,
@@ -53,18 +54,59 @@ class AvatarApp extends StatelessWidget {
                         child: SizedBox(
                           width: size * 0.5,
                           height: size * 0.5,
-                          child: CircularProgressIndicator(
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2,
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
                           ),
                         ),
                       ),
                     );
-                  },
-                ),
+                  }
+
+                  if (requiresAuth &&
+                      (snapshot.data == null || snapshot.data!.isEmpty)) {
+                    return _buildFallback();
+                  }
+
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(size / 2),
+                    child: Image.network(
+                      resolvedUrl,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                      headers: snapshot.data,
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint(
+                          '❌ AvatarApp: Failed to load image: $resolvedUrl – $error',
+                        );
+                        return _buildFallback();
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: backgroundColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: SizedBox(
+                              width: size * 0.5,
+                              height: size * 0.5,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               )
             : _buildFallback(),
       ),
@@ -73,10 +115,7 @@ class AvatarApp extends StatelessWidget {
 
   Widget _buildFallback() {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: backgroundColor, shape: BoxShape.circle),
       child: initials != null
           ? Center(
               child: Text(
@@ -89,11 +128,7 @@ class AvatarApp extends StatelessWidget {
               ),
             )
           : Center(
-              child: Icon(
-                Icons.person,
-                size: size * 0.5,
-                color: textColor,
-              ),
+              child: Icon(Icons.person, size: size * 0.5, color: textColor),
             ),
     );
   }

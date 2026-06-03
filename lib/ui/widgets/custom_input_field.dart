@@ -17,10 +17,13 @@ class CustomInputField extends StatefulWidget {
   final IconData? prefixIcon; // Icona opzionale a sinistra
   final TextEditingController controller;
   final bool isPassword;
+  final bool isSearch; // Se true, mostra l'icona di ricerca a destra
   final bool isNumber;
   final int? minLines;
   final int? maxLines;
+  final bool enabled;
   final String? Function(String?)? validator; // Funzione di validazione
+  final void Function()? onSearchPressed; // Callback per il pulsante di ricerca
 
   const CustomInputField({
     super.key,
@@ -28,10 +31,13 @@ class CustomInputField extends StatefulWidget {
     required this.controller,
     this.prefixIcon,
     this.isPassword = false, // Default: false
+    this.isSearch = false, // Default: false
     this.isNumber = false, // Default: false
+    this.enabled = true,
     this.validator,
     this.minLines,
     this.maxLines = 1,
+    this.onSearchPressed,
   });
 
   @override
@@ -47,9 +53,11 @@ class _CustomInputFieldState extends State<CustomInputField> {
     final colorScheme = theme.colorScheme;
 
     return TextFormField(
+      enabled: widget.enabled,
       maxLines: widget.maxLines,
       minLines: widget.minLines,
       controller: widget.controller,
+      cursorColor: colorScheme.cursorColor,
       // Logica per nascondere il testo se è una password
       obscureText: widget.isPassword ? _isObscured : false,
       // Logica per la tastiera: Numerica o Testo
@@ -84,6 +92,11 @@ class _CustomInputFieldState extends State<CustomInputField> {
                   });
                 },
               )
+            : widget.isSearch
+            ? IconButton(
+                icon: Icon(Icons.search, color: colorScheme.bgIcons),
+                onPressed: widget.onSearchPressed,
+              )
             : null,
 
         // =========================================================
@@ -110,6 +123,53 @@ class _CustomInputFieldState extends State<CustomInputField> {
           borderSide: BorderSide(color: colorScheme.error, width: 2.0),
         ), // Usa costante
         // =========================================================
+      ),
+    );
+  }
+}
+
+// Widget per i campi di testo personalizzati
+class CustomTextFieldImmersive extends StatefulWidget {
+  final String hintText;
+  final int maxLines;
+  final Widget? suffixIcon;
+  final TextEditingController controller;
+  final Function(String)? onChanged;
+
+  const CustomTextFieldImmersive({
+    super.key,
+    required this.hintText,
+    this.maxLines = 1,
+    required this.controller,
+    this.suffixIcon,
+    this.onChanged,
+  });
+
+  @override
+  State<CustomTextFieldImmersive> createState() =>
+      _CustomTextFieldImmersiveState();
+}
+
+class _CustomTextFieldImmersiveState extends State<CustomTextFieldImmersive> {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: TextFormField(
+        maxLines: widget.maxLines,
+        cursorColor: Theme.of(context).colorScheme.cursorColor,
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+          hintStyle: TextStyle(color: Colors.grey[400]),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(20),
+          suffixIcon: widget.suffixIcon,
+        ),
+        controller: widget.controller,
+        onChanged: widget.onChanged,
       ),
     );
   }

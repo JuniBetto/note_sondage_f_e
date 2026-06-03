@@ -33,25 +33,34 @@ class AppTheme {
     return ThemeData(
       colorScheme: ColorScheme(
         primary: colorScheme.bgColor!,
-        secondary: colorScheme.bgsecondary!,
-        surface: colorScheme.bgsurface!,
+        secondary: Colors.blue, //colorScheme.bgsecondary!,
+        surface: colorScheme.bgSurface!,
         surfaceContainer: colorScheme.error,
         error: colorScheme.error,
         onPrimary: colorScheme.onPrimary,
         onSecondary: colorScheme.onSecondary,
         onSurface: colorScheme.textColor!,
         onError: Colors.transparent,
+
         brightness: isDark ? Brightness.dark : Brightness.light,
       ),
-      scaffoldBackgroundColor: colorScheme.bgsurface!,
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: colorScheme.cursorColor,
+        selectionColor: colorScheme.selectionColor?.withValues(alpha: 0.35),
+        selectionHandleColor: colorScheme.cursorColor,
+      ),
+      scaffoldBackgroundColor: colorScheme.bgSurface!,
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.bgNavbarSurface,
+        //backgroundColor: colorScheme.error,
         elevation: 2,
         titleTextStyle: AppTypography.textTheme(isDark).displayLarge,
         leadingWidth: 100,
         shape: Border(
           bottom: BorderSide(color: colorScheme.bgborderLogin!, width: 3),
         ),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: colorScheme.bgNavbarSurface,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -78,9 +87,15 @@ class AppTheme {
           textStyle: AppTypography.textTheme(isDark).labelLarge,
         ),
       ),
-      /*textTheme: ThemeData.light().textTheme.apply(
-        fontSizeFactor: appTheme.fontSizeScale,
-      ), */
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: colorScheme.textfieldFillColor,
+        hintStyle: AppTypography.textTheme(!isDark).bodyMedium?.copyWith(
+          color: colorScheme.descriptionColor,
+        ),
+      ),
+      fontFamily: AppTypography.fontFamily,
+      textTheme: AppTypography.textTheme(!isDark),
     );
   }
 }

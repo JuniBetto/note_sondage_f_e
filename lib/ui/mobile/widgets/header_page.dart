@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class HeaderPage extends StatelessWidget implements PreferredSizeWidget {
   const HeaderPage({
@@ -31,7 +30,12 @@ class HeaderPage extends StatelessWidget implements PreferredSizeWidget {
             )
           : null,
       centerTitle: true,
-      title: Text(title, style: Theme.of(context).textTheme.headlineMedium),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.headlineMedium,
+      ),
       actions: [closeAction ?? const SizedBox(width: 48)],
     );
   }

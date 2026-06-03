@@ -7,7 +7,13 @@ import 'package:note_sondage/ui/web/widgets/web_navbar.dart';
 
 class LoginWeb extends StatelessWidget {
   final bool? isForgetPassword;
-  const LoginWeb({super.key, this.isForgetPassword = false});
+  final Map<String, String>? queryParameters;
+
+  const LoginWeb({
+    super.key,
+    this.isForgetPassword = false,
+    this.queryParameters,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,11 +24,11 @@ class LoginWeb extends StatelessWidget {
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          /* gradient: LinearGradient(
             colors: [colorScheme.surface, Colors.white],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-          ),
+          ),*/
         ),
         child: Column(
           children: [
@@ -37,9 +43,11 @@ class LoginWeb extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          localization.welcomeBack,
-                          style: textTheme.displayLarge,
+                        Expanded(
+                          child: Text(
+                            localization.welcomeBack,
+                            style: textTheme.displayLarge,
+                          ),
                         ),
                       ],
                     ),
@@ -62,7 +70,7 @@ class LoginWeb extends StatelessWidget {
                     height: 800,
                     child: isForgetPassword!
                         ? ForgetPassword()
-                        : AuthTabLogin(),
+                        : AuthTabLogin(queryParameters: queryParameters),
                   ),
                 ],
               ),

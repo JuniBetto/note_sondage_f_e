@@ -30,8 +30,8 @@ class ActionOnUser extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color:
-              color?.withOpacity(0.2) ??
-              colorScheme.selectionColor!.withOpacity(0.2),
+              color?.withValues(alpha: 0.2) ??
+              colorScheme.selectionColor!.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
             color: color ?? colorScheme.cursorColor!,

@@ -1,61 +1,118 @@
 import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:note_sondage/core/config/runtime_config.dart';
+import 'package:note_sondage/core/network/auth_interceptor.dart';
+import 'package:note_sondage/core/network/token_service.dart';
 
 class DioClient {
   static DioClient? _instance;
   final Dio dio;
 
+  static void debugWarnIfMisconfiguredForPlatform() {
+    if (kIsWeb || !RuntimeConfig.hasCustomApiBaseUrl) {
+      return;
+    }
+
+    final configuredUri = Uri.tryParse(RuntimeConfig.resolvedApiBaseUrl);
+    final configuredHost = configuredUri?.host;
+    if (configuredHost == null || configuredHost.isEmpty) {
+      return;
+    }
+
+    if (Platform.isIOS && configuredHost == '10.0.2.2') {
+      debugPrint(
+        '[DioClient] API_BASE_URL points to 10.0.2.2 on iOS. '
+        '10.0.2.2 is the Android emulator loopback alias. '
+        'Use your Mac/host LAN IP or 127.0.0.1 only when the backend runs on the same Mac.',
+      );
+    }
+  }
+
+  static String get _scheme {
+    if (kIsWeb) {
+      return Uri.base.scheme == 'https' ? 'https' : 'http';
+    }
+    return 'http';
+  }
+
   /// The host to use depending on platform
   static String get _host {
-    if (kIsWeb) return '127.0.0.1';
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      return host.isNotEmpty ? host : '127.0.0.1';
+    }
     if (Platform.isAndroid) return '10.0.2.2';
     return '127.0.0.1';
   }
 
+  static String get _resolvedHostForAbsoluteUrls {
+    if (RuntimeConfig.hasCustomApiBaseUrl) {
+      final configuredHost = Uri.tryParse(
+        RuntimeConfig.resolvedApiBaseUrl,
+      )?.host;
+      if (configuredHost != null && configuredHost.isNotEmpty) {
+        return configuredHost;
+      }
+    }
+    return _host;
+  }
+
   /// Returns the correct base URL depending on the platform:
-  /// - Web / iOS / macOS / desktop: http://127.0.0.1:8001
-  /// - Android emulator:            http://10.0.2.2:8001
-  static String get baseUrl => 'http://$_host:8001';
+  /// - Web / iOS / macOS / desktop: http://127.0.0.1:8081
+  /// - Android emulator:            http://10.0.2.2:8081
+  static String get baseUrl {
+    if (RuntimeConfig.hasCustomApiBaseUrl) {
+      return RuntimeConfig.resolvedApiBaseUrl;
+    }
+    return '$_scheme://$_host:8080';
+  }
 
-  /// MinIO API port for direct access (only used if bucket is public)
-  static String get _minioBaseUrl => 'http://$_host:9002/bucket1';
+  static bool usesAuthenticatedImageProxy(String url) {
+    if (url.isEmpty) return false;
+    return !(url.startsWith('http://') || url.startsWith('https://'));
+  }
 
-  /// Resolves an image URL from the server (e.g. MinIO) so it works
-  /// on every platform.
+  static Future<Map<String, String>?> resolveImageHeaders(String url) async {
+    if (!usesAuthenticatedImageProxy(url)) {
+      return null;
+    }
+
+    final token = await TokenService().getToken();
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+
+    return {'Authorization': 'Bearer $token'};
+  }
+
+  /// Resolves a server-side image path to a URL that works across platforms.
   ///
-  /// Since MinIO requires authentication (access_key / secret_key),
-  /// images are served through the backend API as a proxy.
-  ///
-  /// The imageUrl from the backend is a relative path like:
-  ///   "team_member/{member_id}/{filename}.jpg"
-  ///
-  /// We build: http://{host}:8001/team-members/{member_id}/profile-image
+  /// Relative paths like `user/{uid}/{file}.jpg` or
+  /// `team_member/{id}/{file}.jpg` are private MinIO objects and must be
+  /// fetched through the authenticated backend gateway.
   static String resolveImageUrl(String url) {
     if (url.isEmpty) return url;
 
     // Already a full URL – just fix the host
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url.replaceAll('localhost', _host).replaceAll('127.0.0.1', _host);
+      return url
+          .replaceAll('localhost', _resolvedHostForAbsoluteUrls)
+          .replaceAll('127.0.0.1', _resolvedHostForAbsoluteUrls);
     }
 
-    // Relative path from MinIO: "team_member/{member_id}/{filename}"
-    // Route through backend API proxy
     final path = url.startsWith('/') ? url.substring(1) : url;
-    final parts = path.split('/');
-
-    // Expected format: team_member/{member_id}/{filename}
-    if (parts.length >= 2) {
-      final memberId = parts[1]; // second segment is the member_id
-      return '$baseUrl/team-members/$memberId/profile-image';
-    }
-
-    // Fallback: try direct MinIO URL
-    return '$_minioBaseUrl/$path';
+    final encodedPath = Uri.encodeQueryComponent(path);
+    return '$baseUrl/api/storage/file?path=$encodedPath';
   }
 
   DioClient._(this.dio) {
+    debugWarnIfMisconfiguredForPlatform();
+
+    // Interceptor per autenticazione: aggiunge il JWT del backend a ogni richiesta
+    dio.interceptors.add(AuthInterceptor(tokenService: TokenService()));
+
     // Aggiungi interceptors nel costruttore privato
     dio.interceptors.add(
       LogInterceptor(

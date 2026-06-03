@@ -1,146 +1,261 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 
-enum ButtonType { elevated, text, outlined, card }
+enum ButtonType { elevated, filled, filledTonal, text, outlined, card }
 
-const _kDefaultHorizontalPadding = EdgeInsets.symmetric(horizontal: 12.0);
+const _kDefaultHorizontalPadding = EdgeInsets.symmetric(
+  horizontal: 14,
+  vertical: 12,
+);
 
 class CustomAppButton extends StatelessWidget {
+  const CustomAppButton({
+    super.key,
+    required this.onPressed,
+    required this.isActive,
+    required this.child,
+    this.type = ButtonType.filled,
+    this.iconCard,
+    this.leadingIcon,
+    this.trailingIcon,
+    this.backgroundColor,
+    this.foregroundColor,
+    this.borderColor,
+    this.customTextStyle,
+    this.borderRadius = 12.0,
+    this.elevation = 0.0,
+    this.shadows,
+    this.padding,
+    this.margin,
+    this.fullWidth = false,
+    this.isLoading = false,
+    this.minHeight,
+  });
+
   final VoidCallback? onPressed;
   final Widget child;
   final Widget? iconCard;
-
+  final Widget? leadingIcon;
+  final Widget? trailingIcon;
   final ButtonType type;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final Color? borderColor;
   final TextStyle? customTextStyle;
-
   final bool isActive;
   final double borderRadius;
   final double elevation;
   final List<BoxShadow>? shadows;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
+  final bool fullWidth;
+  final bool isLoading;
+  final double? minHeight;
 
-  const CustomAppButton({
-    super.key,
-    required this.onPressed,
-    this.type = ButtonType.elevated,
-    this.backgroundColor,
-    this.foregroundColor,
-    this.customTextStyle, // Rinominato in customTextStyle
-    this.borderRadius = 8.0,
-    this.elevation = 0.0,
-    this.shadows,
-    this.padding,
-    this.margin,
-    required this.isActive,
-    required this.child,
-    this.iconCard,
-  });
+  bool get _isEnabled => onPressed != null && !isLoading;
 
-  // Funzione helper per calcolare lo stile (più facile da profilare)
   ButtonStyle _getButtonStyle(
     BuildContext context,
     ColorScheme colorScheme,
     TextStyle finalTextStyle,
   ) {
-    // Usiamo la costante cached
-    const defaultPadding = _kDefaultHorizontalPadding;
+    final defaultPadding = padding ?? _kDefaultHorizontalPadding;
+    final minimumSize = Size(fullWidth ? double.infinity : 0, minHeight ?? 0);
+    final primaryButtonColor =
+        backgroundColor ?? colorScheme.bgNavbarbutton ?? colorScheme.primary;
+    final primaryForegroundColor =
+        foregroundColor ?? colorScheme.bgNavbartextactive ?? Colors.white;
+    final disabledBackgroundColor =
+        colorScheme.buttonIsDisableBg ?? colorScheme.surfaceContainerHighest;
+    final disabledForegroundColor =
+        colorScheme.descriptionColor ?? colorScheme.onSurfaceVariant;
+    final outlinedForegroundColor =
+        foregroundColor ?? colorScheme.primaryColor ?? colorScheme.primary;
+    final outlinedBorderColor =
+        borderColor ??
+        foregroundColor ??
+        (colorScheme.primaryColor ?? colorScheme.primary).withValues(
+          alpha: 0.65,
+        );
+    final filledTonalBackgroundColor =
+        backgroundColor ??
+        (colorScheme.primaryColor ?? colorScheme.primary).withValues(
+          alpha: 0.12,
+        );
+    final filledTonalForegroundColor =
+        foregroundColor ?? colorScheme.primaryColor ?? colorScheme.primary;
 
     return switch (type) {
       ButtonType.elevated => ElevatedButton.styleFrom(
-        backgroundColor: backgroundColor ?? colorScheme.bgsecondary!,
-        foregroundColor: foregroundColor ?? colorScheme.textColor!,
+        backgroundColor: primaryButtonColor,
+        disabledBackgroundColor: disabledBackgroundColor,
+        foregroundColor: primaryForegroundColor,
+        disabledForegroundColor: disabledForegroundColor,
         elevation: elevation,
-        padding: padding ?? defaultPadding, // Usiamo la costante
+        padding: defaultPadding,
+        minimumSize: minimumSize,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         textStyle: finalTextStyle,
       ),
-      ButtonType.outlined => OutlinedButton.styleFrom(
-        backgroundColor: backgroundColor ?? Colors.transparent,
-        foregroundColor: foregroundColor ?? colorScheme.textColor!,
+      ButtonType.filled => FilledButton.styleFrom(
+        backgroundColor: primaryButtonColor,
+        disabledBackgroundColor: disabledBackgroundColor,
+        foregroundColor: primaryForegroundColor,
+        disabledForegroundColor: disabledForegroundColor,
         elevation: elevation,
-        padding: padding ?? defaultPadding, // Usiamo la costante
+        padding: defaultPadding,
+        minimumSize: minimumSize,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
         ),
-        side: BorderSide(
-          color: foregroundColor ?? colorScheme.primary,
-          width: 1.0,
+        textStyle: finalTextStyle,
+      ),
+      ButtonType.filledTonal => FilledButton.styleFrom(
+        backgroundColor: filledTonalBackgroundColor,
+        disabledBackgroundColor: disabledBackgroundColor.withValues(alpha: 0.7),
+        foregroundColor: filledTonalForegroundColor,
+        disabledForegroundColor: disabledForegroundColor,
+        elevation: elevation,
+        padding: defaultPadding,
+        minimumSize: minimumSize,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
         ),
         textStyle: finalTextStyle,
       ),
+      ButtonType.outlined =>
+        OutlinedButton.styleFrom(
+          backgroundColor: backgroundColor ?? Colors.transparent,
+          disabledBackgroundColor: Colors.transparent,
+          foregroundColor: outlinedForegroundColor,
+          disabledForegroundColor: disabledForegroundColor,
+          elevation: elevation,
+          padding: defaultPadding,
+          minimumSize: minimumSize,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+          side: BorderSide(color: outlinedBorderColor, width: 1.0),
+          textStyle: finalTextStyle,
+        ).copyWith(
+          side: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return BorderSide(
+                color: disabledForegroundColor.withValues(alpha: 0.45),
+                width: 1.0,
+              );
+            }
+            return BorderSide(color: outlinedBorderColor, width: 1.0);
+          }),
+        ),
       ButtonType.text => TextButton.styleFrom(
         foregroundColor:
             foregroundColor ??
             (isActive
                 ? colorScheme.bgNavbartextactive!
-                : colorScheme.textColor!),
+                : colorScheme.primaryColor ?? colorScheme.primary),
+        disabledForegroundColor: disabledForegroundColor,
         backgroundColor:
             backgroundColor ??
-            (isActive ? colorScheme.bgsecondary! : Colors.transparent),
+            (isActive
+                ? colorScheme.bgNavbarbutton ?? colorScheme.primary
+                : Colors.transparent),
+        disabledBackgroundColor: Colors.transparent,
         elevation: elevation,
-        padding: padding ?? defaultPadding, // Usiamo la costante
+        padding: defaultPadding,
+        minimumSize: minimumSize,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         textStyle: finalTextStyle,
       ),
       ButtonType.card => ButtonStyle(
-        // Lo stile del "card" è gestito nel build
+        padding: WidgetStatePropertyAll(defaultPadding),
       ),
     };
   }
 
+  Widget _buildContent(BuildContext context) {
+    final effectiveForeground =
+        foregroundColor ??
+        (type == ButtonType.filled || type == ButtonType.elevated
+            ? (Theme.of(context).colorScheme.bgNavbartextactive ?? Colors.white)
+            : Theme.of(context).colorScheme.primary);
+
+    final content = isLoading
+        ? SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.2,
+              color: effectiveForeground,
+            ),
+          )
+        : child;
+
+    if (leadingIcon == null && trailingIcon == null) {
+      return content;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (leadingIcon != null) ...[leadingIcon!, const SizedBox(width: 8)],
+        Flexible(child: content),
+        if (trailingIcon != null) ...[const SizedBox(width: 8), trailingIcon!],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 1. Accesso al tema (necessario)
     final colorScheme = Theme.of(context).colorScheme;
-    // 2. Calcolo dello stile di testo (Dipendenza da getDefaultAppTextStyle)
-    //final TextStyle defaultTextStyle = getDefaultAppTextStyle(context, isDark);
-    final TextStyle? defaultTextStyle = context.textTheme.labelLarge;
-    final TextStyle finalTextStyle = defaultTextStyle!.merge(customTextStyle);
-
-    // 3. Ottieni lo stile del pulsante (chiama la funzione helper)
-    final ButtonStyle style = _getButtonStyle(
-      context,
-      colorScheme,
-      finalTextStyle,
+    final defaultTextStyle = context.textTheme.labelLarge;
+    final finalTextStyle = (defaultTextStyle ?? const TextStyle()).merge(
+      customTextStyle,
     );
+    final style = _getButtonStyle(context, colorScheme, finalTextStyle);
+    final content = _buildContent(context);
 
-    // 4. Implementa il pulsante
-    final Widget button = switch (type) {
+    Widget button = switch (type) {
       ButtonType.elevated => ElevatedButton(
-        onPressed: onPressed,
+        onPressed: _isEnabled ? onPressed : null,
         style: style,
-        child: child,
+        child: content,
+      ),
+      ButtonType.filled || ButtonType.filledTonal => FilledButton(
+        onPressed: _isEnabled ? onPressed : null,
+        style: style,
+        child: content,
       ),
       ButtonType.outlined => OutlinedButton(
-        onPressed: onPressed,
+        onPressed: _isEnabled ? onPressed : null,
         style: style,
-        child: child,
+        child: content,
       ),
       ButtonType.text => TextButton(
-        onPressed: onPressed,
+        onPressed: _isEnabled ? onPressed : null,
         style: style,
-        child: child,
+        child: content,
       ),
       ButtonType.card => GestureDetector(
-        onTap: onPressed,
+        onTap: _isEnabled ? onPressed : null,
         child: Row(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [child, iconCard ?? SizedBox()],
+          children: [content, iconCard ?? const SizedBox()],
         ),
       ),
     };
 
-    // 5. Gestione Box/Shadow e Margin
-    if (shadows != null && shadows!.isNotEmpty || margin != null) {
+    if (fullWidth) {
+      button = SizedBox(width: double.infinity, child: button);
+    }
+
+    if ((shadows != null && shadows!.isNotEmpty) || margin != null) {
       return Container(
         margin: margin,
         decoration: BoxDecoration(boxShadow: shadows),
@@ -148,7 +263,6 @@ class CustomAppButton extends StatelessWidget {
       );
     }
 
-    // Se non ci sono margini o ombre, restituisci solo il pulsante
     return button;
   }
 }

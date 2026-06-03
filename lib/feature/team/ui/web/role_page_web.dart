@@ -5,7 +5,6 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 const _kMaxWidth = 1200.0;
 const _kHeightRatio = 0.88;
-const _kPadding = EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0);
 
 class RolePageWeb extends StatefulWidget {
   const RolePageWeb({super.key, required this.teamId});
@@ -18,7 +17,6 @@ class RolePageWeb extends StatefulWidget {
 class _RolePageWebState extends State<RolePageWeb>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
-  int currentViewType = 1;
 
   @override
   void initState() {
@@ -29,28 +27,8 @@ class _RolePageWebState extends State<RolePageWeb>
 
   void _handleTabChange() {
     if (tabController.indexIsChanging) {
-      setState(() {
-        // Reset della view quando cambi tab (opzionale)
-        // currentViewType = 1;
-      });
+      setState(() {});
     }
-  }
-
-  void _handleViewTypeChanged(int viewType) {
-    setState(() {
-      currentViewType = viewType;
-    });
-  }
-
-  void _handleTeamCreated() {
-    // Logica per aggiornare la lista dei team
-    // Potresti qui fare una chiamata API e poi cambiare tab
-    setState(() {
-      // Aggiorna la lista dei team
-    });
-
-    // Torna alla tab dei team selezionati
-    tabController.animateTo(0);
   }
 
   @override
@@ -64,7 +42,6 @@ class _RolePageWebState extends State<RolePageWeb>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final colorScheme = theme.colorScheme;
     final localization = AppLocalizations.of(context)!;
 
     return LayoutBuilder(

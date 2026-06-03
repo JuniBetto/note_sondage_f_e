@@ -12,6 +12,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get login => 'Accesso';
 
   @override
+  String get logout => 'disconnessione';
+
+  @override
   String get register => 'Registrati';
 
   @override
@@ -28,6 +31,149 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get forgotPassword => 'Password dimenticata';
+
+  @override
+  String get deleteAccount => 'Disattiva account';
+
+  @override
+  String get accountDeletionDialogMessage =>
+      'Inserisci l\'email dell\'account che vuoi disattivare. Ti invieremo un link di conferma prima di bloccarlo.';
+
+  @override
+  String get sendConfirmationEmail => 'Invia email di conferma';
+
+  @override
+  String get accountDeletionRequestSentTitle => 'Controlla la tua email';
+
+  @override
+  String get accountDeletionRequestSentMessage =>
+      'Se esiste un account con questa email, abbiamo inviato un link di conferma per completare la disattivazione.';
+
+  @override
+  String get accountDeletionRequestFailedTitle =>
+      'Impossibile avviare la disattivazione';
+
+  @override
+  String get accountDeletionRequestFailedMessage =>
+      'Non siamo riusciti a inviare l\'email di conferma della disattivazione. Riprova tra poco.';
+
+  @override
+  String get accountDeletionOpenEmailTitle => 'Apri l\'email di disattivazione';
+
+  @override
+  String get accountDeletionOpenEmailMessage =>
+      'Usa il link di conferma ricevuto via email per completare la disattivazione dell\'account.';
+
+  @override
+  String get accountDeletionConfirmedTitle => 'Account disattivato';
+
+  @override
+  String get accountDeletionConfirmedMessage =>
+      'Il tuo account è stato disattivato con successo. Ora puoi chiudere questa pagina.';
+
+  @override
+  String get accountDeletionFailedTitle => 'Disattivazione non disponibile';
+
+  @override
+  String get accountDeletionFailedMessage =>
+      'Non siamo riusciti a confermare questo link di disattivazione. Richiedi una nuova email e riprova.';
+
+  @override
+  String get accountDeletionLoadingTitle => 'Conferma disattivazione';
+
+  @override
+  String get accountDeletionLoadingMessage =>
+      'Stiamo verificando il link di disattivazione del tuo account...';
+
+  @override
+  String get reactivateAccount => 'Riattiva account';
+
+  @override
+  String get accountReactivationDialogMessage =>
+      'Inserisci l\'email dell\'account che vuoi riattivare. Ti invieremo un link di conferma prima di ripristinare l\'accesso.';
+
+  @override
+  String get accountReactivationRequestSentTitle => 'Controlla la tua email';
+
+  @override
+  String get accountReactivationRequestSentMessage =>
+      'Se esiste un account con questa email, abbiamo inviato un link di conferma per completare la riattivazione.';
+
+  @override
+  String get accountReactivationRequestFailedTitle =>
+      'Impossibile avviare la riattivazione';
+
+  @override
+  String get accountReactivationRequestFailedMessage =>
+      'Non siamo riusciti a inviare l\'email di conferma della riattivazione. Riprova tra poco.';
+
+  @override
+  String get accountReactivationOpenEmailTitle =>
+      'Apri l\'email di riattivazione';
+
+  @override
+  String get accountReactivationOpenEmailMessage =>
+      'Usa il link di conferma ricevuto via email per ripristinare l\'accesso al tuo account.';
+
+  @override
+  String get accountReactivationConfirmedTitle => 'Account riattivato';
+
+  @override
+  String get accountReactivationConfirmedMessage =>
+      'Il tuo account è di nuovo attivo. Ora puoi accedere.';
+
+  @override
+  String get accountReactivationFailedTitle => 'Riattivazione non disponibile';
+
+  @override
+  String get accountReactivationFailedMessage =>
+      'Non siamo riusciti a confermare questo link di riattivazione. Richiedi una nuova email e riprova.';
+
+  @override
+  String get accountReactivationLoadingTitle => 'Conferma riattivazione';
+
+  @override
+  String get accountReactivationLoadingMessage =>
+      'Stiamo verificando il link di riattivazione del tuo account...';
+
+  @override
+  String get backToLogin => 'Torna al login';
+
+  @override
+  String get tryAgain => 'Riprova';
+
+  @override
+  String get reviewTutorial => 'Rivedi tutorial';
+
+  @override
+  String get tutorialPrevious => 'Indietro';
+
+  @override
+  String get tutorialNext => 'Avanti';
+
+  @override
+  String get tutorialSkip => 'Salta';
+
+  @override
+  String get webMobileAppOnlyTitle => 'Scarica l\'app mobile';
+
+  @override
+  String get webMobileAppOnlyMessage =>
+      'Questa esperienza web è disponibile solo su schermi più grandi. Sui telefoni con larghezza inferiore a 576px, continua dall\'app mobile.';
+
+  @override
+  String get webMobileAppOnlyHint =>
+      'Apri TeamManagement da tablet o desktop, oppure installa l\'app dal tuo store.';
+
+  @override
+  String get downloadOnAppStore => 'Scarica su App Store';
+
+  @override
+  String get getItOnGooglePlay => 'Scarica da Google Play';
+
+  @override
+  String get mobileStoreLinksUnavailable =>
+      'I link agli store non sono ancora configurati. Contatta il supporto oppure apri l\'app da uno schermo più grande.';
 
   @override
   String get continueWithGoogle => 'Continua con Google';
@@ -70,7 +216,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get attendance => 'Frequenza';
 
   @override
-  String get clockingInOut => 'La timbratura';
+  String get clockingInOut => 'Timbratura';
 
   @override
   String get explorer => 'esploratore';
@@ -120,10 +266,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get selectedTeamcolor => 'Seleziona il colore della squadra';
 
   @override
-  String get roleManager => 'gezione dei ruoli';
+  String get roleManager => 'gestione dei ruoli';
 
   @override
-  String get permissionManager => 'Gezione dei permessi';
+  String get permissionManager => 'gestione dei permessi';
 
   @override
   String get grantList => 'List dei permessi';
@@ -160,4 +306,1082 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get editTeam => 'Modificare squadra';
+
+  @override
+  String get teamDetails => 'Dettagli squadra';
+
+  @override
+  String get language => 'Lingua';
+
+  @override
+  String get notification => 'Notification';
+
+  @override
+  String get contactUs => 'Contattaci';
+
+  @override
+  String get privacy => 'Privacy';
+
+  @override
+  String get askQuestion => 'Fai una domanda';
+
+  @override
+  String get options => 'Opzioni';
+
+  @override
+  String get option => 'Opzione';
+
+  @override
+  String get allowMultipleResponses => 'Consenti più risposte';
+
+  @override
+  String get makeResponsesAnonymous => 'Rendi anonimi le risposte';
+
+  @override
+  String get selectTeam => 'Seleziona squadra';
+
+  @override
+  String get teamLabel => 'Squadra:';
+
+  @override
+  String get surveyCreatedSuccessfully => 'Sondaggio creato con successo!';
+
+  @override
+  String get create => 'Crea';
+
+  @override
+  String get responses => 'risposte';
+
+  @override
+  String get questions => 'domande';
+
+  @override
+  String get system => 'Sistema';
+
+  @override
+  String get dark => 'Scuro';
+
+  @override
+  String get light => 'Chiaro';
+
+  @override
+  String get preferences => 'Preferenze';
+
+  @override
+  String get manageYourPrivacySettings =>
+      'Gestisci le tue impostazioni sulla privacy';
+
+  @override
+  String get getInTouchWithOurSupportTeam =>
+      'Mettiti in contatto con il nostro team di supporto';
+
+  @override
+  String get themeTitle => 'Tema';
+
+  @override
+  String get languageTitle => 'Lingua';
+
+  @override
+  String get lightMode => 'Modalità Chiara';
+
+  @override
+  String get darkMode => 'Modalità Scura';
+
+  @override
+  String get systemDefault => 'Predefinito del Sistema';
+
+  @override
+  String get defaultLightTheme => 'Tema chiaro predefinito';
+
+  @override
+  String get darkThemeForLowLight => 'Tema scuro per poca luce';
+
+  @override
+  String get followSystemSettings => 'Segui le impostazioni di sistema';
+
+  @override
+  String get selectYourLanguage => 'Seleziona la tua lingua';
+
+  @override
+  String get settingsNotification => 'Impostazioni Notifiche';
+
+  @override
+  String get notificationsSettingsIntro =>
+      'Scegli come ricevere aggiornamenti e promemoria dei turni.';
+
+  @override
+  String get notificationsGeneral => 'Generale';
+
+  @override
+  String get emailNotifications => 'Notifiche email';
+
+  @override
+  String get receiveUpdatesByEmail => 'Ricevi aggiornamenti via email';
+
+  @override
+  String get pushNotifications => 'Notifiche push';
+
+  @override
+  String get receivePushNotificationsOnYourDevice =>
+      'Ricevi notifiche push sul tuo dispositivo';
+
+  @override
+  String get shiftReminders => 'Promemoria turni';
+
+  @override
+  String get reminderMode => 'Modalità promemoria';
+
+  @override
+  String get notificationReminderModeDescription =>
+      'Scegli in ogni turno se vuoi una notifica standard o un allarme più forte.';
+
+  @override
+  String get webBehavior => 'Comportamento web';
+
+  @override
+  String get alarmBehaviorOnWeb =>
+      'Sul web, la modalità Allarme usa le notifiche del browser. La scheda deve restare aperta e il browser controlla il comportamento finale di suono e vibrazione.';
+
+  @override
+  String get howItWorks => 'Come funziona';
+
+  @override
+  String get notificationAndAlarmDifference =>
+      'La notifica mostra un promemoria normale. L\'allarme usa le impostazioni qui sotto ed è pensato per avvisi turno più evidenti.';
+
+  @override
+  String get alarmDelivery => 'Consegna allarme';
+
+  @override
+  String get alarmStyle => 'Stile allarme';
+
+  @override
+  String get webAlarmDeliveryDescription =>
+      'Le notifiche del browser vengono usate mentre questa scheda resta aperta. Suono e vibrazione sono gestiti dal browser e dal sistema operativo.';
+
+  @override
+  String get alarmStyleDescription =>
+      'Scegli se la modalità Allarme deve vibrare o riprodurre una suoneria. Predefinito: vibrazione.';
+
+  @override
+  String get alarmStyleDescriptionIos =>
+      'Su iPhone, la modalità Allarme usa una suoneria. Gli allarmi solo vibrazione non sono disponibili per le notifiche locali.';
+
+  @override
+  String get vibrate => 'Vibrazione';
+
+  @override
+  String get ringtone => 'Suoneria';
+
+  @override
+  String get browserNotification => 'Notifica browser';
+
+  @override
+  String get notificationVisibility => 'Visibilità notifica';
+
+  @override
+  String get alarmDuration => 'Durata allarme';
+
+  @override
+  String get webNotificationVisibilityDescription =>
+      'Controlla per quanto tempo la notifica browser resta visibile dopo la comparsa.';
+
+  @override
+  String get alarmDurationAppliesOnlyToAlarmMode =>
+      'Questa durata si applica solo quando un turno usa la modalità Allarme.';
+
+  @override
+  String get activity => 'Attività';
+
+  @override
+  String get surveyReminders => 'Promemoria sondaggi';
+
+  @override
+  String get getRemindedAboutPendingSurveys =>
+      'Ricevi promemoria sui sondaggi in attesa';
+
+  @override
+  String get teamUpdates => 'Aggiornamenti team';
+
+  @override
+  String get notificationsAboutTeamChanges =>
+      'Notifiche sui cambiamenti del team';
+
+  @override
+  String get clockingAlerts => 'Avvisi timbratura';
+
+  @override
+  String get remindersToClockInAndOut =>
+      'Promemoria per timbrare entrata e uscita';
+
+  @override
+  String get shiftNotifications => 'Notifiche turni';
+
+  @override
+  String get assignmentsUpdatesAndShiftReminders =>
+      'Assegnazioni, aggiornamenti e promemoria turni';
+
+  @override
+  String get debugTools => 'Strumenti debug';
+
+  @override
+  String get debugToolsBrowserMessage =>
+      'Usa questi test solo mentre stai verificando le notifiche in questo browser.';
+
+  @override
+  String get debugToolsDeviceMessage =>
+      'Usa questi test solo mentre stai verificando le notifiche su questo dispositivo.';
+
+  @override
+  String get testNotificationNow => 'Testa notifica ora';
+
+  @override
+  String get testAlarmIn10Seconds => 'Testa allarme tra 10s';
+
+  @override
+  String get testCurrentMode => 'Testa modalità attuale';
+
+  @override
+  String get alarmModeStatus => 'Stato modalità allarme';
+
+  @override
+  String get pendingRequests => 'Richieste in attesa';
+
+  @override
+  String get inspectRealShifts => 'Ispeziona turni reali';
+
+  @override
+  String get privacyPolicy => 'Informativa sulla privacy';
+
+  @override
+  String get howWeProtectYourData => 'Come proteggiamo i tuoi dati';
+
+  @override
+  String get dataProtection => 'Protezione dei dati';
+
+  @override
+  String get dataProtectionDescription =>
+      'I tuoi dati sono criptati a riposo e in transito. Usiamo protocolli di cifratura standard del settore per mantenere sicure le tue informazioni.';
+
+  @override
+  String get dataCollection => 'Raccolta dei dati';
+
+  @override
+  String get dataCollectionDescription =>
+      'Raccogliamo solo i dati necessari per fornire i nostri servizi. Questo include informazioni account, risposte ai sondaggi e registrazioni di timbratura.';
+
+  @override
+  String get dataSharing => 'Condivisione dei dati';
+
+  @override
+  String get dataSharingDescription =>
+      'Non condividiamo mai i tuoi dati personali con terze parti senza il tuo consenso esplicito. I dati del team sono condivisi solo all\'interno della tua organizzazione.';
+
+  @override
+  String get dataRetention => 'Conservazione dei dati';
+
+  @override
+  String get dataRetentionDescription =>
+      'I tuoi dati vengono conservati finché il tuo account è attivo. Dopo la disattivazione dell\'account, i dati personali vengono rimossi definitivamente entro 30 giorni.';
+
+  @override
+  String get yourRights => 'I tuoi diritti';
+
+  @override
+  String get yourRightsDescription =>
+      'Hai il diritto di accedere, rettificare o cancellare i tuoi dati personali in qualsiasi momento. Contatta il supporto per richieste legate alla privacy.';
+
+  @override
+  String get privacyLastUpdated => 'Ultimo aggiornamento: gennaio 2025';
+
+  @override
+  String get yourName => 'Il tuo Nome';
+
+  @override
+  String get yourEmail => 'La tua Email';
+
+  @override
+  String get message => 'Messaggio';
+
+  @override
+  String get submit => 'Invia';
+
+  @override
+  String get contactUsDescription =>
+      'Raccontaci cosa è successo e invieremo il messaggio direttamente al nostro team di supporto.';
+
+  @override
+  String get contactUsDraftHint =>
+      'Il tuo messaggio verrà inviato direttamente a contactus@teammanagement.it.';
+
+  @override
+  String get contactUsReplyTime =>
+      'Di solito rispondiamo entro 1-2 giorni lavorativi.';
+
+  @override
+  String get supportEmail => 'Email supporto';
+
+  @override
+  String get sendEmail => 'Invia email';
+
+  @override
+  String get copyEmail => 'Copia email';
+
+  @override
+  String get emailCopied =>
+      'L\'email di supporto è stata copiata negli appunti.';
+
+  @override
+  String get couldNotOpenEmailApp =>
+      'Non siamo riusciti ad aprire la tua app email. Copia l\'indirizzo e invia il messaggio manualmente.';
+
+  @override
+  String get contactUsEmailSubject => 'Richiesta supporto TeamManagement';
+
+  @override
+  String get contactUsTopicsTitle => 'Bug, feedback, idee prodotto';
+
+  @override
+  String get contactUsTopicsBody =>
+      'Usa questo spazio per segnalare problemi, chiedere aiuto o condividere miglioramenti che vorresti vedere nell\'app.';
+
+  @override
+  String get contactUsFormHint =>
+      'Il messaggio includerà i tuoi dettagli, così il supporto potrà risponderti più velocemente.';
+
+  @override
+  String get contactUsSentSuccess =>
+      'Il tuo messaggio è stato inviato al supporto.';
+
+  @override
+  String get contactUsSendFailed =>
+      'Non siamo riusciti a inviare il messaggio in questo momento. Riprova tra poco.';
+
+  @override
+  String get none => 'Nessuno';
+
+  @override
+  String get personalStatusClockingActions => 'Azioni personali di timbratura';
+
+  @override
+  String get clockedInAt => 'Entrata alle:';
+
+  @override
+  String get startBreakAt => 'Inizio pausa alle:';
+
+  @override
+  String get endBreakAt => 'Fine pausa alle:';
+
+  @override
+  String get clockedOutAt => 'Uscita alle:';
+
+  @override
+  String get allUsers => 'Tutti gli utenti';
+
+  @override
+  String get clockInSuccessful => 'Entrata registrata con successo';
+
+  @override
+  String get clockOutSuccessful => 'Uscita registrata con successo';
+
+  @override
+  String get teamCreatedSuccessfully => 'Team creato con successo!';
+
+  @override
+  String get errorPrefix => 'Errore:';
+
+  @override
+  String get memberAddedSuccessfully => 'Membro aggiunto con successo!';
+
+  @override
+  String get memberErrorPrefix => 'Errore membro:';
+
+  @override
+  String get noTeamsFound => 'Nessun team trovato';
+
+  @override
+  String get roleCreatedSuccessfully => 'Ruolo creato con successo!';
+
+  @override
+  String get noRolesAvailable => 'Nessun ruolo disponibile';
+
+  @override
+  String get userList => 'Lista utenti';
+
+  @override
+  String get addUser => 'Aggiungi utente';
+
+  @override
+  String get clearAll => 'Cancella tutto';
+
+  @override
+  String get cancel => 'Annulla';
+
+  @override
+  String get close => 'Chiudi';
+
+  @override
+  String get confirm => 'Conferma';
+
+  @override
+  String get saveChanges => 'Salva modifiche';
+
+  @override
+  String get goBack => 'Torna indietro';
+
+  @override
+  String get errorDetailsDebug => 'Dettagli errore (Debug)';
+
+  @override
+  String get aboutPageText => 'Questa è la pagina Chi siamo';
+
+  @override
+  String get teamPageMobileText => 'Questa è la pagina Team per Mobile';
+
+  @override
+  String get noTeamMembersFound => 'Nessun membro del team trovato.';
+
+  @override
+  String get takePhoto => 'Scatta foto';
+
+  @override
+  String get chooseFromGallery => 'Scegli dalla galleria';
+
+  @override
+  String get selectMultiple => 'Seleziona multiple';
+
+  @override
+  String get removeImage => 'Rimuovi immagine';
+
+  @override
+  String get settingsWeb => 'Impostazioni Web';
+
+  @override
+  String get webNavbar => 'Barra di navigazione Web';
+
+  @override
+  String get surveyMobile => 'Sondaggio Mobile';
+
+  @override
+  String get progress => 'Progresso';
+
+  @override
+  String get createdDate => 'Data creazione';
+
+  @override
+  String get expiryDate => 'Data scadenza';
+
+  @override
+  String get dashboardSubtitle =>
+      'Ecco un rapido riepilogo del tuo spazio di lavoro';
+
+  @override
+  String get quickActions => 'Azioni rapide';
+
+  @override
+  String get recentActivity => 'Attività recente';
+
+  @override
+  String get activeTeams => 'Team attivi';
+
+  @override
+  String get activeSurveys => 'Sondaggi attivi';
+
+  @override
+  String get todayClocking => 'Timbratura di oggi';
+
+  @override
+  String get totalMembers => 'Membri totali';
+
+  @override
+  String get viewAll => 'Vedi tutto';
+
+  @override
+  String get noRecentActivity => 'Nessuna attività recente';
+
+  @override
+  String get getStarted => 'Inizia esplorando il tuo spazio di lavoro';
+
+  @override
+  String get logoutConfirmation => 'Sei sicuro di voler uscire?';
+
+  @override
+  String get clockInRequiredForBreak => 'Timbratura richiesta per la pausa';
+
+  @override
+  String get endActiveBreak => 'Termina Pausa';
+
+  @override
+  String get startActiveBreak => 'Inizia Pausa';
+
+  @override
+  String get selectTeamToClockIn => 'Seleziona un team per timbrare';
+
+  @override
+  String get allDates => 'Tutte le date';
+
+  @override
+  String get teamClockings => 'Timbrature del Team';
+
+  @override
+  String get downloadPdf => 'Scarica PDF';
+
+  @override
+  String get clockingOwnerHint => 'Proprietario Timbratura';
+
+  @override
+  String get searchByNameOrTeam => 'Cerca per nome o team...';
+
+  @override
+  String get resetFilters => 'Resetta Filtri';
+
+  @override
+  String get reset => 'Resetta';
+
+  @override
+  String get selectTeamToViewClockings =>
+      'Seleziona un team per vedere le timbrature';
+
+  @override
+  String get noClockingsForTeam => 'Nessuna timbratura trovata per questo team';
+
+  @override
+  String get committed => 'Confermato';
+
+  @override
+  String get decommitted => 'Annullato';
+
+  @override
+  String get editClocking => 'Modifica Timbratura';
+
+  @override
+  String get breakMinutes => 'Pausa (minuti)';
+
+  @override
+  String get note => 'Nota';
+
+  @override
+  String get invalidDateFormat => 'Formato data non valido';
+
+  @override
+  String get noClockingsToExport =>
+      'Nessuna timbratura disponibile da esportare';
+
+  @override
+  String get ownerOnly => 'Solo Proprietario';
+
+  @override
+  String get decommit => 'Annulla';
+
+  @override
+  String get commit => 'Conferma';
+
+  @override
+  String get editAction => 'Modifica';
+
+  @override
+  String get noActionAvailable => 'Nessuna azione disponibile';
+
+  @override
+  String get setExpiry => 'Imposta data di scadenza';
+
+  @override
+  String get invitationSent => 'Invitazione inviata con successo';
+
+  @override
+  String get noActiveMembersYet => 'Nessun membro attivo al momento';
+
+  @override
+  String get editRoleTooltip => 'Modifica Ruolo';
+
+  @override
+  String get removeAction => 'Rimuovi';
+
+  @override
+  String get selectRole => 'Seleziona un ruolo';
+
+  @override
+  String get pendingInvitations => 'Inviti in attesa';
+
+  @override
+  String get cancelInvitation => 'Annulla Invito';
+
+  @override
+  String get inviteStatusAccepted => 'Accettato';
+
+  @override
+  String get inviteStatusRejected => 'Rifiutato';
+
+  @override
+  String get inviteStatusUnregistered => 'Registrazione in attesa';
+
+  @override
+  String get inviteStatusPending => 'In attesa';
+
+  @override
+  String get memberStatusInvited => 'Invitato';
+
+  @override
+  String get memberStatusInactive => 'Inattivo';
+
+  @override
+  String get memberStatusSuspended => 'Sospeso';
+
+  @override
+  String exportPdfError(Object error) {
+    return 'Errore esportazione PDF: $error';
+  }
+
+  @override
+  String get surveyNotFound => 'Sondaggio non trovato';
+
+  @override
+  String get focus => 'Focus';
+
+  @override
+  String get noOptionsAvailable => 'Nessuna opzione disponibile';
+
+  @override
+  String get alreadyVoted => 'Hai già votato';
+
+  @override
+  String get cannotVote => 'Non puoi votare';
+
+  @override
+  String get publish => 'Pubblica';
+
+  @override
+  String get closeSurvey => 'Chiudi Sondaggio';
+
+  @override
+  String get statusActive => 'Attivo';
+
+  @override
+  String get statusDraft => 'Bozza';
+
+  @override
+  String get statusClosed => 'Chiuso';
+
+  @override
+  String get statusCompleted => 'Completato';
+
+  @override
+  String get statusPublished => 'Pubblicato';
+
+  @override
+  String votes(int count) {
+    return '$count voti';
+  }
+
+  @override
+  String activeTurnOn(String teamName) {
+    return 'Turno attivo su $teamName';
+  }
+
+  @override
+  String get openYourTurn => 'Apri il tuo turno';
+
+  @override
+  String get loadingClockingState => 'Caricamento stato timbratura...';
+
+  @override
+  String get noClockingsForFilter =>
+      'Nessuna timbratura trovata per i filtri selezionati';
+
+  @override
+  String get myShifts => 'I miei turni';
+
+  @override
+  String get shiftCalendar => 'Calendario turni';
+
+  @override
+  String get shiftCalendarSubtitle => 'Il tuo calendario personale e del team';
+
+  @override
+  String get shiftTeamReportTitle => 'Report turni team';
+
+  @override
+  String get shiftTeamReportSubtitle =>
+      'Filtra periodo e utenti, poi visualizza o scarica il report.';
+
+  @override
+  String get shiftTeamReportTooltip => 'Report turni team';
+
+  @override
+  String get shiftTeamReportButton => 'Report team';
+
+  @override
+  String get shiftReportUnavailable =>
+      'Nessun team gestibile disponibile per il report.';
+
+  @override
+  String get shiftReportStartDate => 'Data inizio';
+
+  @override
+  String get shiftReportEndDate => 'Data fine';
+
+  @override
+  String get shiftReportUsers => 'Utenti da includere';
+
+  @override
+  String get shiftReportRefresh => 'Aggiorna report';
+
+  @override
+  String get shiftReportPeriod => 'Periodo';
+
+  @override
+  String get shiftReportShifts => 'Turni';
+
+  @override
+  String get shiftReportMode => 'Modalità';
+
+  @override
+  String get shiftReportCalendarMode => 'Calendario';
+
+  @override
+  String get shiftReportTableMode => 'Tabella';
+
+  @override
+  String get shiftReportSelectTeam => 'Seleziona un team.';
+
+  @override
+  String get shiftReportNoResults =>
+      'Nessun turno trovato con i filtri selezionati.';
+
+  @override
+  String get shiftReportLoadError =>
+      'Non siamo riusciti a caricare il report turni.';
+
+  @override
+  String get shiftReportGeneratedAt => 'Generato il';
+
+  @override
+  String get shiftReportDateColumn => 'Data';
+
+  @override
+  String get shiftReportUserColumn => 'Utente';
+
+  @override
+  String get shiftReportProfileColumn => 'Profilo';
+
+  @override
+  String get shiftReportTypeColumn => 'Tipo';
+
+  @override
+  String get shiftReportDefaultProfile => 'Turno';
+
+  @override
+  String get shiftReportPrivateType => 'Privato';
+
+  @override
+  String get addShift => 'Aggiungi turno';
+
+  @override
+  String get shiftProfile => 'Profilo turno';
+
+  @override
+  String get shiftStart => 'Inizio';
+
+  @override
+  String get shiftEnd => 'Fine';
+
+  @override
+  String get overnightShift => 'Turno notturno';
+
+  @override
+  String get shiftRepeatUntil => 'Ripeti fino al';
+
+  @override
+  String get shiftRepeatUntilHelp =>
+      'Verrà creato un turno per ogni giorno dell\'intervallo selezionato.';
+
+  @override
+  String get shiftEndMustBeAfterStart =>
+      'L\'orario di fine deve essere successivo all\'orario di inizio. Se il turno finisce il giorno dopo, attiva Turno notturno.';
+
+  @override
+  String get alarms => 'Allarmi';
+
+  @override
+  String get createCustomProfile => 'Crea profilo personalizzato';
+
+  @override
+  String get editShiftProfile => 'Modifica profilo';
+
+  @override
+  String get shiftProfileName => 'Nome profilo';
+
+  @override
+  String get shiftColor => 'Colore';
+
+  @override
+  String get deleteShiftProfileConfirm =>
+      'Sei sicuro di voler eliminare questo profilo?';
+
+  @override
+  String get customProfile => 'Profili personalizzati';
+
+  @override
+  String get noShiftsThisMonth => 'Nessun turno questo mese';
+
+  @override
+  String get systemProfile => 'Profili di sistema';
+
+  @override
+  String get clockingDateLabel => 'Data timbratura';
+
+  @override
+  String get calendarWeek => 'Settimana';
+
+  @override
+  String get calendarMonth => 'Mese';
+
+  @override
+  String get today => 'Oggi';
+
+  @override
+  String get clockingOverviewTitle => 'Panoramica timbratura';
+
+  @override
+  String get clockingOverviewDescription =>
+      'Questa intestazione riassume l\'area di timbratura e il suo scopo principale.';
+
+  @override
+  String get clockingCurrentStatusTitle => 'Stato attuale';
+
+  @override
+  String get clockingCurrentStatusDescription =>
+      'Questa sezione ti mostra subito lo stato della tua timbratura e le informazioni principali della giornata.';
+
+  @override
+  String get personal => 'Personale';
+
+  @override
+  String get markVacation => 'Segna ferie';
+
+  @override
+  String get markPermission => 'Segna permesso';
+
+  @override
+  String get requestClocking => 'Richiedi timbratura';
+
+  @override
+  String get requestVacation => 'Richiedi ferie';
+
+  @override
+  String get requestPermission => 'Richiedi permesso';
+
+  @override
+  String get vacationStatus => 'Ferie';
+
+  @override
+  String get clockingOpenRecordAnotherDay =>
+      'Hai una timbratura aperta in un altro giorno. Selezionalo per continuare.';
+
+  @override
+  String dayAlreadyHasClocking(String date) {
+    return 'Esiste gia una timbratura per $date.';
+  }
+
+  @override
+  String get manualClockingUseInlineForPastDays =>
+      'Per i giorni diversi da oggi usa la sezione di inserimento manuale qui sotto.';
+
+  @override
+  String get manualClockingRequiresApproval =>
+      'Per questa data devi chiedere l\'approvazione di un manager oppure usare un team che gestisci.';
+
+  @override
+  String get selectedDayMarkedAsVacation =>
+      'Il giorno selezionato e segnato come ferie.';
+
+  @override
+  String get clockingCurrentTimeOverlapsExistingRecord =>
+      'L\'orario attuale ricade gia dentro una timbratura o un permesso registrato oggi.';
+
+  @override
+  String createClockingForDate(String date) {
+    return 'Crea una timbratura per $date';
+  }
+
+  @override
+  String get breakOnlyCurrentDay =>
+      'Le pause sono disponibili solo per il giorno corrente.';
+
+  @override
+  String get manualClockingTitle => 'Inserisci timbratura';
+
+  @override
+  String manualClockingDescription(String date) {
+    return 'Compila la timbratura per $date o aggiungi altri giorni passati.';
+  }
+
+  @override
+  String get manualClockingResolveOpenRecord =>
+      'Hai una timbratura aperta in un altro giorno. Chiudila o seleziona quel giorno prima di salvare una timbratura manuale.';
+
+  @override
+  String get selectedDays => 'Giorni selezionati';
+
+  @override
+  String get addDay => 'Aggiungi giorno';
+
+  @override
+  String get clockInLabel => 'Clock-in';
+
+  @override
+  String get clockOutLabel => 'Clock-out';
+
+  @override
+  String get optionalNoteHint => 'Nota opzionale';
+
+  @override
+  String get saving => 'Salvataggio...';
+
+  @override
+  String get saveClocking => 'Salva timbratura';
+
+  @override
+  String get manualClockingTodayLiveOnly =>
+      'Per oggi usa le azioni live di clock-in, pause e clock-out.';
+
+  @override
+  String get invalidBreakMinutes =>
+      'Il tempo di pausa deve essere un numero valido.';
+
+  @override
+  String get clockOutMustBeAfterClockIn =>
+      'L\'orario di clock-out deve essere successivo al clock-in.';
+
+  @override
+  String get breakMustBeShorterThanShift =>
+      'La pausa deve essere piu corta della durata del turno.';
+
+  @override
+  String get manualClockingSavedSingle => 'Timbratura salvata con successo.';
+
+  @override
+  String manualClockingSavedMultiple(int count) {
+    return '$count timbrature salvate con successo.';
+  }
+
+  @override
+  String get manualClockingSaveError =>
+      'Non siamo riusciti a salvare la timbratura manuale.';
+
+  @override
+  String get noTeamSelected => 'Nessun team selezionato';
+
+  @override
+  String get changeOrSearchTeam => 'Apri per cambiare team o cercarne uno';
+
+  @override
+  String get teamAvailableForClocking => 'Team disponibile per la timbratura';
+
+  @override
+  String get searchTeam => 'Cerca team...';
+
+  @override
+  String get noTeamFound => 'Nessun team trovato';
+
+  @override
+  String get selectTeamFirst => 'Seleziona prima un team.';
+
+  @override
+  String get selectTeamBeforeVacation =>
+      'Seleziona un team prima di segnare le ferie.';
+
+  @override
+  String markSelectedDateAsVacation(String date) {
+    return 'Segna $date come ferie';
+  }
+
+  @override
+  String get markSelectedDayAsVacationDescription =>
+      'Questa azione segnera il giorno selezionato come ferie.';
+
+  @override
+  String markPermissionForDate(String date) {
+    return 'Segna permesso per $date';
+  }
+
+  @override
+  String get start => 'Inizio';
+
+  @override
+  String get end => 'Fine';
+
+  @override
+  String get permissionInvalidRange =>
+      'L\'orario di fine deve essere successivo all\'orario di inizio del permesso.';
+
+  @override
+  String get noAssignableMembersForTeam =>
+      'Nessun membro assegnabile trovato per questo team.';
+
+  @override
+  String get assignVacationToMember => 'Segna ferie per un membro';
+
+  @override
+  String get userLabel => 'Utente';
+
+  @override
+  String optionalNoteFor(String name) {
+    return 'Nota opzionale per $name';
+  }
+
+  @override
+  String get optionalRequestNoteHint => 'Nota opzionale per la richiesta';
+
+  @override
+  String get clockingApprovalRequestHint =>
+      'Puoi richiedere timbratura, ferie o permesso per il team e la data selezionati.';
+
+  @override
+  String requestClockingForSelectedDate(String date) {
+    return 'Richiedi timbratura per $date';
+  }
+
+  @override
+  String get noMembersAvailableForClockingRequest =>
+      'Nessun membro disponibile per la richiesta di timbratura.';
+
+  @override
+  String get sendRequest => 'Invia richiesta';
+
+  @override
+  String get clockingRequestSentSuccess =>
+      'Richiesta di timbratura inviata con successo.';
+
+  @override
+  String get clockingRequestSentError =>
+      'Non siamo riusciti a inviare la richiesta di timbratura al membro del team.';
+
+  @override
+  String get vacationRequestSentSuccess =>
+      'Richiesta ferie inviata con successo.';
+
+  @override
+  String get vacationRequestSentError =>
+      'Non siamo riusciti a inviare la richiesta ferie.';
+
+  @override
+  String get permissionRequestSentSuccess =>
+      'Richiesta permesso inviata con successo.';
+
+  @override
+  String get permissionRequestSentError =>
+      'Non siamo riusciti a inviare la richiesta permesso.';
+
+  @override
+  String get approveRequest => 'Approva';
+
+  @override
+  String get rejectRequest => 'Rifiuta';
+
+  @override
+  String get clockInDateTimeLabel => 'Clock-in (AAAA-MM-GG HH:MM)';
+
+  @override
+  String get clockOutDateTimeLabel => 'Clock-out (AAAA-MM-GG HH:MM)';
 }
