@@ -85,10 +85,18 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
+      - name: Extract Version from pubspec.yaml
+        run: |
+          FULL_VERSION=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2)
+          BUILD_NAME=$(echo $FULL_VERSION | cut -d '+' -f 1)
+          BUILD_NUMBER=$(echo $FULL_VERSION | cut -d '+' -f 2)
+          echo "APP_BUILD_NAME=$BUILD_NAME" >> $GITHUB_ENV
+          echo "APP_BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+
       - name: Build APK Release
         run: >
           flutter build apk --release
-          --build-number=${{ github.run_number }}
+          --build-number=${{ env.APP_BUILD_NUMBER }}
           --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
           --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
           --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
@@ -97,7 +105,7 @@ jobs:
       - name: Build AAB Release
         run: >
           flutter build appbundle --release
-          --build-number=${{ github.run_number }}
+          --build-number=${{ env.APP_BUILD_NUMBER }}
           --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
           --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
           --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
@@ -189,10 +197,18 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
+      - name: Extract Version from pubspec.yaml
+        run: |
+          FULL_VERSION=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2)
+          BUILD_NAME=$(echo $FULL_VERSION | cut -d '+' -f 1)
+          BUILD_NUMBER=$(echo $FULL_VERSION | cut -d '+' -f 2)
+          echo "APP_BUILD_NAME=$BUILD_NAME" >> $GITHUB_ENV
+          echo "APP_BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+
       - name: Build iOS (no codesign)
         run: >
           flutter build ios --release --no-codesign
-          --build-number=${{ github.run_number }}
+          --build-number=${{ env.APP_BUILD_NUMBER }}
           --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
           --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
           --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
@@ -241,6 +257,15 @@ jobs:
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           storeFile=upload-keystore.jks
           EOF
+      - name: Extract Version from pubspec.yaml
+        id: extract_version
+        run: |
+          FULL_VERSION=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2)
+          BUILD_NAME=$(echo $FULL_VERSION | cut -d '+' -f 1)
+          BUILD_NUMBER=$(echo $FULL_VERSION | cut -d '+' -f 2)
+          
+          echo "APP_BUILD_NAME=$BUILD_NAME" >> $GITHUB_ENV
+          echo "APP_BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
 
       - name: Publish to Google Play Internal Testing
         env:
@@ -248,8 +273,8 @@ jobs:
           EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           APP_ENV: ${{ env.APP_ENV }}
-          FLUTTER_BUILD_NAME: 1.0.0
-          FLUTTER_BUILD_NUMBER: ${{ github.run_number }}
+          FLUTTER_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
+          FLUTTER_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
           PLAY_STORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
         run: bundle exec fastlane android internal
 
@@ -276,7 +301,7 @@ jobs:
           bundler-cache: true
 
       - name: Install CocoaPods
-        run: sudo gem install cocoapods
+        run: gem install cocoapods
 
       - name: Prepare iOS signing
         env:
@@ -302,14 +327,22 @@ jobs:
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
 
+      - name: Extract Version from pubspec.yaml
+        run: |
+          FULL_VERSION=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2)
+          BUILD_NAME=$(echo $FULL_VERSION | cut -d '+' -f 1)
+          BUILD_NUMBER=$(echo $FULL_VERSION | cut -d '+' -f 2)
+          echo "APP_BUILD_NAME=$BUILD_NAME" >> $GITHUB_ENV
+          echo "APP_BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+
       - name: Publish to TestFlight
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           APP_ENV: ${{ env.APP_ENV }}
-          FLUTTER_BUILD_NAME: 1.0.0
-          FLUTTER_BUILD_NUMBER: ${{ github.run_number }}
+          FLUTTER_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
+          FLUTTER_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
