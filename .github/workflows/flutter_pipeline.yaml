@@ -302,7 +302,7 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
 
-      - name: Install CocoaPods
+      - name: Force Ruby 3.2 CocoaPods
         run: |
           brew uninstall cocoapods || true
           gem install cocoapods
