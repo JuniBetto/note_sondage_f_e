@@ -39,7 +39,7 @@ Così eviti di inviare una build agli store a ogni push su `main`.
 
 ### iOS / TestFlight
 
-- `APP_STORE_CONNECT_KEY_ID`
+- `APP_STORE_CONNECT_API_KEY_ID`
 - `APP_STORE_CONNECT_ISSUER_ID`
 - `APP_STORE_CONNECT_PRIVATE_KEY`
 - `IOS_CERTIFICATE_P12_BASE64`
