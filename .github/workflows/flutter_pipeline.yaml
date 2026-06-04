@@ -192,7 +192,9 @@ jobs:
           cache: true
 
       - name: Install CocoaPods
-        run: sudo gem install cocoapods
+        run: |
+          brew uninstall cocoapods || true
+          gem install cocoapods
 
       - name: Flutter Pub Get
         run: flutter pub get
@@ -301,7 +303,9 @@ jobs:
           bundler-cache: true
 
       - name: Install CocoaPods
-        run: gem install cocoapods
+        run: |
+          brew uninstall cocoapods || true
+          gem install cocoapods
 
       - name: Prepare iOS signing
         env:
