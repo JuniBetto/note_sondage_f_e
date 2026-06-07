@@ -232,6 +232,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Remove old Gemfile.lock
+        run: rm -f Gemfile.lock
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -289,6 +292,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Remove old Gemfile.lock
+        run: rm -f Gemfile.lock
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
