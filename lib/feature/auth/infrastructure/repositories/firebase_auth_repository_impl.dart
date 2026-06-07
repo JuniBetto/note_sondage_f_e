@@ -80,6 +80,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         if (firebaseIdToken != null) {
           final backendJwt = await _backendAuth.exchangeToken(firebaseIdToken);
           await _tokenService.saveToken(backendJwt);
+          final email = user.email?.trim() ?? '';
+          if (email.isNotEmpty) {
+            try {
+              await _backendAuth.linkInvitationsAfterRegistration(email);
+            } catch (e) {
+              debugPrint('[Auth] Invitation linking skipped: $e');
+            }
+          }
           _lastSuccessfulExchangeUid = uid;
           _lastSuccessfulExchangeAt = DateTime.now();
           debugPrint('[Auth] Backend JWT ottenuto con successo.');
@@ -521,6 +529,11 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> updateContactEmail({required String email}) async {
     await _backendAuth.updateContactEmail(email);
+    try {
+      await _backendAuth.linkInvitationsAfterRegistration(email);
+    } catch (e) {
+      debugPrint('[Auth] Contact-email invitation linking skipped: $e');
+    }
     await refreshBackendSession();
   }
 

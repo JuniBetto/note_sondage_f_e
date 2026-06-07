@@ -82,12 +82,26 @@ class ShiftRemoteDataSource {
   Future<List<ShiftAssignmentEntity>> getAssignments({
     required DateTime from,
     required DateTime to,
+    List<String>? visibleTeamIds,
+    List<String>? visibleUserIds,
   }) async {
+    final normalizedTeamIds = visibleTeamIds
+        ?.map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+    final normalizedUserIds = visibleUserIds
+        ?.map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
     final response = await _dio.get(
       '/api/aggregate/shift/assignments',
       queryParameters: {
         'from': from.toIso8601String().split('T').first,
         'to': to.toIso8601String().split('T').first,
+        if (normalizedTeamIds != null && normalizedTeamIds.isNotEmpty)
+          'visibleTeamIds': normalizedTeamIds,
+        if (normalizedUserIds != null && normalizedUserIds.isNotEmpty)
+          'visibleUserIds': normalizedUserIds,
       },
     );
     final data = response.data as List<dynamic>? ?? const [];

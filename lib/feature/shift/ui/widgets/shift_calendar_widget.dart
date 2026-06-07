@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/theme/text_theme.dart';
 
 /// Interactive monthly calendar that shows shift assignments.
 ///
@@ -31,21 +33,6 @@ class ShiftCalendarWidget extends StatelessWidget {
   /// Called with the tapped date and all visible assignments for that day.
   final void Function(DateTime date, List<ShiftAssignmentEntity> assignments)
   onDayTap;
-
-  static const List<String> _months = [
-    'Gennaio',
-    'Febbraio',
-    'Marzo',
-    'Aprile',
-    'Maggio',
-    'Giugno',
-    'Luglio',
-    'Agosto',
-    'Settembre',
-    'Ottobre',
-    'Novembre',
-    'Dicembre',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +78,7 @@ class ShiftCalendarWidget extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     _HeaderPickerButton(
-                      label: _monthName(focusedMonth),
+                      label: _monthName(context, focusedMonth),
                       onTap: () async {
                         final selectedMonth = await _pickMonth(context);
                         if (selectedMonth == null) {
@@ -190,39 +177,45 @@ class ShiftCalendarWidget extends StatelessWidget {
         date.day == now.day;
   }
 
-  String _monthName(DateTime date) {
-    return _months[date.month - 1];
+  String _monthName(BuildContext context, DateTime date) {
+    return _capitalize(DateFormat.MMMM(_localeTag(context)).format(date));
   }
 
-  List<String> _weekdayLabels(BuildContext context) => [
-    'Lun',
-    'Mar',
-    'Mer',
-    'Gio',
-    'Ven',
-    'Sab',
-    'Dom',
-  ];
+  List<String> _weekdayLabels(BuildContext context) {
+    final locale = _localeTag(context);
+    final mondayReference = DateTime(2024, 1, 1); // Monday
+    return List<String>.generate(7, (index) {
+      final label = DateFormat.E(
+        locale,
+      ).format(mondayReference.add(Duration(days: index)));
+      return _capitalize(label);
+    });
+  }
 
   Future<int?> _pickMonth(BuildContext context) async {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final locale = _localeTag(context);
 
     return showDialog<int>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Seleziona mese'),
+          title: Text(_monthPickerTitle(context)),
           content: SizedBox(
             width: 360,
             child: Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: List.generate(_months.length, (index) {
+              children: List.generate(12, (index) {
                 final month = index + 1;
                 final isSelected = month == focusedMonth.month;
                 return ChoiceChip(
-                  label: Text(_months[index]),
+                  label: Text(
+                    _capitalize(
+                      DateFormat.MMMM(locale).format(DateTime(2024, month)),
+                    ),
+                  ),
                   selected: isSelected,
                   onSelected: (_) => Navigator.of(dialogContext).pop(month),
                   selectedColor: (colorScheme.selectItem ?? colorScheme.primary)
@@ -250,7 +243,7 @@ class ShiftCalendarWidget extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Seleziona anno'),
+          title: Text(_yearPickerTitle(context)),
           content: SizedBox(
             width: 320,
             height: 320,
@@ -267,6 +260,35 @@ class ShiftCalendarWidget extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _localeTag(BuildContext context) {
+    return Localizations.localeOf(context).toLanguageTag();
+  }
+
+  String _capitalize(String value) {
+    if (value.isEmpty) {
+      return value;
+    }
+    return '${value[0].toUpperCase()}${value.substring(1)}';
+  }
+
+  String _monthPickerTitle(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Seleziona mese',
+      'fr' => 'Selectionner le mois',
+      'es' => 'Seleccionar mes',
+      _ => 'Select month',
+    };
+  }
+
+  String _yearPickerTitle(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Seleziona anno',
+      'fr' => 'Selectionner l\'annee',
+      'es' => 'Seleccionar ano',
+      _ => 'Select year',
+    };
   }
 }
 
@@ -328,7 +350,9 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final appPrimary = colorScheme.primaryColor ?? colorScheme.primary;
     final assignment = assignments.isNotEmpty ? assignments.first : null;
     final shiftColor = assignment?.displayColor;
@@ -405,16 +429,15 @@ class _DayCell extends StatelessWidget {
                 if (assignments.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   ...assignments.take(2).map((item) {
-                    final label = item.userName?.trim().isNotEmpty == true
-                        ? '${_abbreviate(item.profileName ?? '?')} ${_initials(item.userName!)}'
-                        : _abbreviate(item.profileName ?? '?');
+                    final userBadge = _userBadge(item);
+                    final profileBadge = _profileBadge(item);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 2),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 2,
-                          vertical: 1,
+                          horizontal: 4,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: item.displayColor.withValues(
@@ -424,15 +447,56 @@ class _DayCell extends StatelessWidget {
                           ),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(
-                          label,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 1,
+                          runSpacing: 2,
+                          //mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _timeRangeLabel(item),
+                              textAlign: TextAlign.center,
+                              style: textTheme.largeText.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (profileBadge != null || userBadge != null) ...[
+                              const SizedBox(height: 2),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 3,
+                                runSpacing: 2,
+                                children: [
+                                  if (profileBadge != null)
+                                    Tooltip(
+                                      message: item.profileName?.trim() ?? '',
+                                      child: _MiniBadge(
+                                        label: profileBadge,
+                                        alpha: 0.14,
+                                        borderAlpha: 0.22,
+                                      ),
+                                    ),
+                                  if (userBadge != null)
+                                    Tooltip(
+                                      message:
+                                          item.userName?.trim().isNotEmpty ==
+                                              true
+                                          ? item.userName!.trim()
+                                          : item.userId,
+                                      child: _MiniBadge(
+                                        label: userBadge,
+                                        alpha: 0.18,
+                                        borderAlpha: 0.28,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     );
@@ -459,9 +523,77 @@ class _DayCell extends StatelessWidget {
     return name.substring(0, 3).toUpperCase();
   }
 
+  String _timeRangeLabel(ShiftAssignmentEntity assignment) {
+    String format(TimeOfDay time) {
+      final hour = time.hour.toString().padLeft(2, '0');
+      final minute = time.minute.toString().padLeft(2, '0');
+      if (time.minute == 0) {
+        return hour;
+      }
+      return '$hour:$minute';
+    }
+
+    return '${format(assignment.startTime)}-${format(assignment.endTime)}';
+  }
+
   String _initials(String raw) {
     final parts = raw.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
     final initials = parts.take(2).map((part) => part[0].toUpperCase()).join();
     return initials.isEmpty ? '?' : initials;
+  }
+
+  String? _profileBadge(ShiftAssignmentEntity assignment) {
+    final profileName = assignment.profileName?.trim();
+    if (profileName == null || profileName.isEmpty) {
+      return null;
+    }
+    return _abbreviate(profileName);
+  }
+
+  String? _userBadge(ShiftAssignmentEntity assignment) {
+    final name = assignment.userName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return _initials(name);
+    }
+
+    final userId = assignment.userId.trim();
+    if (userId.isEmpty) {
+      return null;
+    }
+
+    return userId.substring(0, userId.length >= 2 ? 2 : 1).toUpperCase();
+  }
+}
+
+class _MiniBadge extends StatelessWidget {
+  const _MiniBadge({
+    required this.label,
+    required this.alpha,
+    required this.borderAlpha,
+  });
+
+  final String label;
+  final double alpha;
+  final double borderAlpha;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: alpha),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: borderAlpha)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 7,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+          height: 1,
+        ),
+      ),
+    );
   }
 }

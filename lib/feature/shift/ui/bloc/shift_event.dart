@@ -79,10 +79,17 @@ class DeleteShiftProfileEvent extends ShiftEvent {
 class LoadShiftAssignmentsEvent extends ShiftEvent {
   final DateTime from;
   final DateTime to;
-  LoadShiftAssignmentsEvent({required this.from, required this.to});
+  final List<String>? visibleTeamIds;
+  final List<String>? visibleUserIds;
+  LoadShiftAssignmentsEvent({
+    required this.from,
+    required this.to,
+    this.visibleTeamIds,
+    this.visibleUserIds,
+  });
 
   @override
-  List<Object?> get props => [from, to];
+  List<Object?> get props => [from, to, visibleTeamIds, visibleUserIds];
 }
 
 class AssignShiftEvent extends ShiftEvent {

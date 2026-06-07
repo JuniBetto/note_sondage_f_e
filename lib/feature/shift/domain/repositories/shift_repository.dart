@@ -31,6 +31,8 @@ abstract class ShiftRepository {
   Future<List<ShiftAssignmentEntity>> getAssignments({
     required DateTime from,
     required DateTime to,
+    List<String>? visibleTeamIds,
+    List<String>? visibleUserIds,
   });
 
   Future<ShiftAssignmentEntity> assign({

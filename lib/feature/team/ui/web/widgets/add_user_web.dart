@@ -55,6 +55,12 @@ class _AddUserWebState extends State<AddUserWeb> {
     }
   }
 
+  List<RoleEntity> _assignableRoles(List<RoleEntity> roles) {
+    return roles
+        .where((role) => (role.id ?? '').trim().toUpperCase() != 'OWNER')
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -74,7 +80,7 @@ class _AddUserWebState extends State<AddUserWeb> {
           );
         } else if (roleState is RolesLoaded) {
           setState(() {
-            selectedRoles = roleState.roles;
+            selectedRoles = _assignableRoles(roleState.roles);
           });
         }
       },

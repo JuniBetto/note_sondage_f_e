@@ -58,9 +58,7 @@ class _SondageWebState extends State<SondageWeb> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Elimina sondaggio'),
-        content: const Text(
-          'Vuoi davvero eliminare questo draft del sondaggio?',
-        ),
+        content: const Text('Vuoi davvero eliminare questo sondaggio?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -87,6 +85,15 @@ class _SondageWebState extends State<SondageWeb> {
   }
 
   void _openEditDialog(SondageEntity sondage) {
+    if (!sondage.canEdit) {
+      AppSnackBar.showWarning(
+        context,
+        Localizations.localeOf(context).languageCode == 'it'
+            ? 'Non hai i permessi per modificare questo sondaggio.'
+            : 'You do not have permission to edit this survey.',
+      );
+      return;
+    }
     CustomDialog(
       title: 'Modifica sondaggio',
       width: 760,

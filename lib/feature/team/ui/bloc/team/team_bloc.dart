@@ -31,6 +31,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     on<_TeamsRefreshFailedEvent>(_onTeamsRefreshFailed);
     on<_TeamCreateCommittedEvent>(_onTeamCreateCommitted);
     on<_TeamUpdateCommittedEvent>(_onTeamUpdateCommitted);
+    on<_TeamDeleteCommittedEvent>(_onTeamDeleteCommitted);
     on<_TeamMutationFailedEvent>(_onTeamMutationFailed);
     on<CreateTeamEvent>(_onCreateTeam);
     on<UpdateTeamEvent>(_onUpdateTeam);
@@ -301,34 +302,44 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     DeleteTeamEvent event,
     Emitter<TeamState> emit,
   ) async {
-    try {
-      final success = await teamUseCase.deleteTeam(event.id);
-      if (success) {
-        emit(TeamDeleted());
+    final rollbackTeams = List<TeamEntity>.from(_cachedTeams);
+    _syncingTeamIds.add(event.id);
+    _cachedTeams = _cachedTeams.where((team) => team.id != event.id).toList();
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamDeleted());
+    emit(TeamsLoaded(_cachedTeams));
 
-        // Optimistic update: remove from cache
-        _cachedTeams = _cachedTeams.where((t) => t.id != event.id).toList();
-        await teamLocalDataSource.saveAll(_cachedTeams);
-        emit(TeamsLoaded(_cachedTeams));
-      } else {
-        emit(const TeamError('We could not delete the team right now.'));
-        if (_cachedTeams.isNotEmpty) {
-          emit(TeamsLoaded(_cachedTeams));
+    unawaited(() async {
+      try {
+        final success = await teamUseCase.deleteTeam(event.id);
+        if (!isClosed) {
+          if (success) {
+            add(_TeamDeleteCommittedEvent(event.id));
+          } else {
+            add(
+              _TeamMutationFailedEvent(
+                message: 'We could not delete the team right now.',
+                rollbackTeams: rollbackTeams,
+                syncingIdsToClear: {event.id},
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (!isClosed) {
+          add(
+            _TeamMutationFailedEvent(
+              message: AppErrorMessageResolver.resolve(
+                e,
+                fallback: 'We could not delete the team right now.',
+              ),
+              rollbackTeams: rollbackTeams,
+              syncingIdsToClear: {event.id},
+            ),
+          );
         }
       }
-    } catch (e) {
-      emit(
-        TeamError(
-          AppErrorMessageResolver.resolve(
-            e,
-            fallback: 'We could not delete the team right now.',
-          ),
-        ),
-      );
-      if (_cachedTeams.isNotEmpty) {
-        emit(TeamsLoaded(_cachedTeams));
-      }
-    }
+    }());
   }
 
   Future<void> _onResetCache(
@@ -394,6 +405,16 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
         ..[existingIndex] = confirmedTeam;
     }
 
+    _syncingTeamIds.remove(event.teamId);
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamsLoaded(_cachedTeams));
+    _refreshTeamsInBackground();
+  }
+
+  Future<void> _onTeamDeleteCommitted(
+    _TeamDeleteCommittedEvent event,
+    Emitter<TeamState> emit,
+  ) async {
     _syncingTeamIds.remove(event.teamId);
     await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamsLoaded(_cachedTeams));

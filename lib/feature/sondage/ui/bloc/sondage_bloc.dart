@@ -33,9 +33,11 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     on<DeleteSondageEvent>(_onDeleteSondage);
     on<PublishSondageEvent>(_onPublishSondage);
     on<CloseSondageEvent>(_onCloseSondage);
+    on<ReopenSondageEvent>(_onReopenSondage);
     on<VoteSondageEvent>(_onVoteSondage);
     on<_SondageCreateCommittedEvent>(_onSondageCreateCommitted);
     on<_SondageUpdateCommittedEvent>(_onSondageUpdateCommitted);
+    on<_SondageDeleteCommittedEvent>(_onSondageDeleteCommitted);
     on<_SondageMutationFailedEvent>(_onSondageMutationFailed);
     on<ResetSondageCacheEvent>(_onResetCache);
   }
@@ -239,25 +241,39 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     DeleteSondageEvent event,
     Emitter<SondageState> emit,
   ) async {
-    try {
-      await sondageUseCase.deleteSondage(event.id);
-      emit(SondageDeleted());
-      _cachedSondages = _cachedSondages.where((s) => s.id != event.id).toList();
-      await _persistCache();
-      emit(SondagesLoaded(_cachedSondages));
-    } catch (e) {
-      emit(
-        SondageError(
-          AppErrorMessageResolver.resolve(
-            e,
-            fallback: 'We could not delete the survey right now.',
-          ),
-        ),
-      );
-      if (_cachedSondages.isNotEmpty) {
-        emit(SondagesLoaded(_cachedSondages));
-      }
+    final rollbackSondages = _cachedSondages.isNotEmpty
+        ? List<SondageEntity>.from(_cachedSondages)
+        : await sondageLocalDataSource.getAll();
+    if (_cachedSondages.isEmpty) {
+      _cachedSondages = List<SondageEntity>.from(rollbackSondages);
     }
+
+    _syncingSondageIds.add(event.id);
+    _cachedSondages = _cachedSondages.where((s) => s.id != event.id).toList();
+    await _persistCache();
+    emit(SondagesLoaded(_cachedSondages));
+
+    unawaited(() async {
+      try {
+        await sondageUseCase.deleteSondage(event.id);
+        if (!isClosed) {
+          add(_SondageDeleteCommittedEvent(event.id));
+        }
+      } catch (e) {
+        if (!isClosed) {
+          add(
+            _SondageMutationFailedEvent(
+              message: AppErrorMessageResolver.resolve(
+                e,
+                fallback: 'We could not delete the survey right now.',
+              ),
+              rollbackSondages: rollbackSondages,
+              syncingIdsToClear: {event.id},
+            ),
+          );
+        }
+      }
+    }());
   }
 
   Future<void> _onPublishSondage(
@@ -299,6 +315,29 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
           AppErrorMessageResolver.resolve(
             e,
             fallback: 'We could not close the survey right now.',
+          ),
+        ),
+      );
+      if (_cachedSondages.isNotEmpty) emit(SondagesLoaded(_cachedSondages));
+    }
+  }
+
+  Future<void> _onReopenSondage(
+    ReopenSondageEvent event,
+    Emitter<SondageState> emit,
+  ) async {
+    try {
+      final sondage = await sondageUseCase.reopenSondage(event.id);
+      _upsertCache(sondage);
+      await _persistCache();
+      emit(SondageActionSuccess(sondage));
+      emit(SondagesLoaded(_cachedSondages));
+    } catch (e) {
+      emit(
+        SondageError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not reopen the survey right now.',
           ),
         ),
       );
@@ -385,6 +424,16 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     emit(SondagesLoaded(_cachedSondages));
   }
 
+  Future<void> _onSondageDeleteCommitted(
+    _SondageDeleteCommittedEvent event,
+    Emitter<SondageState> emit,
+  ) async {
+    _syncingSondageIds.remove(event.sondageId);
+    await _persistCache();
+    emit(SondageDeleted());
+    emit(SondagesLoaded(_cachedSondages));
+  }
+
   Future<void> _onSondageMutationFailed(
     _SondageMutationFailedEvent event,
     Emitter<SondageState> emit,
@@ -393,6 +442,13 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     _syncingSondageIds.removeAll(event.syncingIdsToClear);
     await _persistCache();
     emit(SondageError(event.message));
+    try {
+      final refreshed = await sondageUseCase.getAllSondages();
+      _cachedSondages = refreshed;
+      await _persistCache();
+    } catch (_) {
+      // Keep the rollback cache if the authoritative refresh is unavailable.
+    }
     emit(SondagesLoaded(_cachedSondages));
   }
 

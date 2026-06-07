@@ -4,6 +4,7 @@ import 'color_palette.dart';
 class AppTypography {
   static const String fontFamily = "Nunito";
 
+
   static TextTheme textTheme(bool isLightTheme) {
     return TextTheme(
       displayLarge: TextStyle(
@@ -119,6 +120,34 @@ class AppTypography {
         fontWeight: FontWeight.w400,
         color: isLightTheme ? ColorPalette.gray[7] : ColorPalette.gray[3],
       ),
+
     );
   }
+}
+
+extension CustomStyles on TextTheme{
+  TextStyle get largeText =>TextStyle(
+  fontFamily: AppTypography.fontFamily,
+  height: 12 / 8,
+  fontSize: 8,
+  letterSpacing: 0.5,
+  fontWeight: FontWeight.w400,
+  color: bodyLarge?.color
+  );
+  TextStyle get mediumText => TextStyle(
+  fontFamily: AppTypography.fontFamily,
+  height: 8 / 6,
+  fontSize: 6,
+  letterSpacing: 0.25,
+  fontWeight: FontWeight.w400,
+  color: bodyMedium?.color,
+  );
+  TextStyle get smallText =>  TextStyle(
+  fontFamily: AppTypography.fontFamily,
+  height: 6 / 4,
+  fontSize: 4,
+  letterSpacing: 0.25,
+  fontWeight: FontWeight.w400,
+  color: bodySmall?.color,
+  );
 }

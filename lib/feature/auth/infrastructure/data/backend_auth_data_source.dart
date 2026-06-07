@@ -379,6 +379,42 @@ class BackendAuthDataSource {
     }
   }
 
+  Future<void> dismissNotification(String notificationId) async {
+    try {
+      await _authenticatedDio.post(
+        '/api/aggregate/notifications/me/$notificationId/dismiss',
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Notification dismiss failed: ${e.message}');
+      throw Exception(
+        'Failed to dismiss notification: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<void> linkInvitationsAfterRegistration(String email) async {
+    final normalizedEmail = email.trim();
+    if (normalizedEmail.isEmpty) {
+      return;
+    }
+
+    try {
+      await _authenticatedDio.post(
+        '/api/aggregate/teams/invitations/link',
+        queryParameters: {'email': normalizedEmail},
+      );
+    } on DioException catch (e) {
+      debugPrint(
+        '[BackendAuth] Invitation link-after-registration failed: ${e.message}',
+      );
+      throw Exception(
+        'Failed to link pending invitations: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
   Future<void> approveClockingRequest({
     required String teamId,
     required String requesterUserId,

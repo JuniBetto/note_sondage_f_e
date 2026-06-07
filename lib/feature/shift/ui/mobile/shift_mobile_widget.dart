@@ -17,6 +17,7 @@ import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_profile_manager.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_team_report_dialog.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_entries_sheet.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
@@ -60,6 +61,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   Set<String> _archivedAssignmentIds = <String>{};
   bool _showArchivedOnly = false;
   bool _tutorialScheduled = false;
+  String? _selectedCalendarTeamId;
 
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid;
   String get _currentEmail =>
@@ -78,6 +80,28 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   }
 
   bool get _canManageAnyTeam => _manageableTeams.isNotEmpty;
+
+  TeamEntityForView? get _selectedCalendarTeam {
+    final selectedId = _selectedCalendarTeamId;
+    if (selectedId == null || selectedId.isEmpty) {
+      return null;
+    }
+    return _manageableTeams
+        .where((team) => team.team.id == selectedId)
+        .firstOrNull;
+  }
+
+  List<ShiftAssignmentEntity> _filterAssignmentsForSelectedCalendarTeam(
+    List<ShiftAssignmentEntity> assignments,
+  ) {
+    final selectedTeamId = _selectedCalendarTeamId;
+    if (selectedTeamId == null || selectedTeamId.isEmpty) {
+      return assignments;
+    }
+    return assignments
+        .where((assignment) => assignment.teamId == selectedTeamId)
+        .toList();
+  }
 
   @override
   void initState() {
@@ -119,8 +143,25 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   void _loadAssignments() {
     final first = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     final last = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
+    final selectedTeam = _selectedCalendarTeam;
+    final visibleTeamIds = selectedTeam == null
+        ? const <String>[]
+        : <String>[
+            selectedTeam.team.id ?? '',
+          ].where((teamId) => teamId.isNotEmpty).toList();
+    final visibleUserIds =
+        (selectedTeam?.members ?? const <TeamMemberforView>[])
+            .map((member) => member.teamMember.userId ?? '')
+            .where((userId) => userId.isNotEmpty && userId != _currentUid)
+            .toSet()
+            .toList();
     context.read<ShiftBloc>().add(
-      LoadShiftAssignmentsEvent(from: first, to: last),
+      LoadShiftAssignmentsEvent(
+        from: first,
+        to: last,
+        visibleTeamIds: visibleTeamIds.isEmpty ? null : visibleTeamIds,
+        visibleUserIds: visibleUserIds.isEmpty ? null : visibleUserIds,
+      ),
     );
   }
 
@@ -632,12 +673,18 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final foregroundAssignments = _assignments
-        .where((assignment) => !_archivedAssignmentIds.contains(assignment.id))
-        .toList();
-    final archivedAssignments = _assignments
-        .where((assignment) => _archivedAssignmentIds.contains(assignment.id))
-        .toList();
+    final foregroundAssignments = _filterAssignmentsForSelectedCalendarTeam(
+      _assignments
+          .where(
+            (assignment) => !_archivedAssignmentIds.contains(assignment.id),
+          )
+          .toList(),
+    );
+    final archivedAssignments = _filterAssignmentsForSelectedCalendarTeam(
+      _assignments
+          .where((assignment) => _archivedAssignmentIds.contains(assignment.id))
+          .toList(),
+    );
 
     AppTutorialController.registerTargets(
       tutorialId: 'mobile-shifts',
@@ -711,8 +758,18 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           bloc: _teamBloc,
           listener: (context, state) {
             if (state is TeamsLoaded) {
-              setState(() => _teams = state.teams);
+              setState(() {
+                _teams = state.teams;
+                final selectedTeamId = _selectedCalendarTeamId;
+                if (selectedTeamId != null &&
+                    !_manageableTeams.any(
+                      (team) => team.team.id == selectedTeamId,
+                    )) {
+                  _selectedCalendarTeamId = null;
+                }
+              });
               _ensureTeamAccessContextLoaded(state.teams);
+              _loadAssignments();
             }
           },
         ),
@@ -727,6 +784,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                     .map((member) => TeamMemberforView(teamMember: member))
                     .toList();
               });
+              _loadAssignments();
             }
             if (state is TeamMemberError) {
               _loadingTeamMemberIds.clear();
@@ -738,10 +796,14 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
+
             Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Icon(
+               /* Icon(
                   Icons.calendar_month_rounded,
                   color: colorScheme.descriptionColor,
                   size: 18,
@@ -752,14 +814,17 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                   style: Theme.of(
                     context,
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const Spacer(),
+                ),*/
+               // const Spacer(),
                 if (_canManageAnyTeam) ...[
                   IconButton.outlined(
                     tooltip: loc.shiftTeamReportTooltip,
                     onPressed: () => _openTeamReport(context),
-                    icon: const Icon(Icons.assessment_outlined, size: 18),
-                  ),
+                    icon:  Icon(Icons.assessment_outlined, size: 18,color: colorScheme.textInvertedColor,),
+          style: ElevatedButton.styleFrom(
+        backgroundColor: colorScheme.bgNavbarbutton,
+side: BorderSide(color: colorScheme.bgNavbarbutton!)
+                  )),
                   const SizedBox(width: 6),
                 ],
                 IconButton.outlined(
@@ -767,7 +832,10 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                       ? 'Profili turno'
                       : 'Shift profiles',
                   onPressed: () => _openProfilesSheet(context),
-                  icon: const Icon(Icons.palette_outlined, size: 18),
+                  icon:  Icon(Icons.palette_outlined,color: colorScheme.textInvertedColor, size: 18),style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.bgNavbarbutton,
+                    side: BorderSide(color: colorScheme.bgNavbarbutton!)
+                )
                 ),
                 if (_canManageAnyTeam) ...[
                   const SizedBox(width: 6),
@@ -780,6 +848,19 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
               ],
             ),
             const SizedBox(height: 12),
+            if (_canManageAnyTeam && !_showArchivedOnly) ...[
+              ShiftCalendarTeamPicker(
+                teams: _manageableTeams,
+                selectedTeamId: _selectedCalendarTeamId,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCalendarTeamId = value;
+                  });
+                  _loadAssignments();
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
             Showcase(
               key: _archiveToggleKey,
               title: _isItalian(context)
@@ -830,15 +911,18 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                           _setAssignmentArchived(assignment, false);
                         },
                       )
-                    : ShiftCalendarWidget(
-                        assignments: foregroundAssignments,
-                        syncingAssignmentIds: context
-                            .read<ShiftBloc>()
-                            .syncingAssignmentIds,
-                        focusedMonth: _focusedMonth,
-                        onMonthChanged: _onMonthChanged,
-                        onDayTap: (date, assignments) =>
-                            _onDayTap(context, date, assignments),
+                    : SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: ShiftCalendarWidget(
+                          assignments: foregroundAssignments,
+                          syncingAssignmentIds: context
+                              .read<ShiftBloc>()
+                              .syncingAssignmentIds,
+                          focusedMonth: _focusedMonth,
+                          onMonthChanged: _onMonthChanged,
+                          onDayTap: (date, assignments) =>
+                              _onDayTap(context, date, assignments),
+                        ),
                       ),
               ),
             ),

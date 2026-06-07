@@ -19,6 +19,7 @@ import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controll
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_entries_sheet.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_profile_manager.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_team_report_dialog.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
@@ -60,6 +61,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   Set<String> _archivedAssignmentIds = <String>{};
   bool _showArchivedOnly = false;
   bool _tutorialScheduled = false;
+  String? _selectedCalendarTeamId;
 
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid;
   String get _currentEmail =>
@@ -82,6 +84,28 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   );
 
   bool get _canManageAnyTeam => _manageableTeams.isNotEmpty;
+
+  TeamEntityForView? get _selectedCalendarTeam {
+    final selectedId = _selectedCalendarTeamId;
+    if (selectedId == null || selectedId.isEmpty) {
+      return null;
+    }
+    return _manageableTeams
+        .where((team) => team.team.id == selectedId)
+        .firstOrNull;
+  }
+
+  List<ShiftAssignmentEntity> _filterAssignmentsForSelectedCalendarTeam(
+    List<ShiftAssignmentEntity> assignments,
+  ) {
+    final selectedTeamId = _selectedCalendarTeamId;
+    if (selectedTeamId == null || selectedTeamId.isEmpty) {
+      return assignments;
+    }
+    return assignments
+        .where((assignment) => assignment.teamId == selectedTeamId)
+        .toList();
+  }
 
   @override
   void initState() {
@@ -119,8 +143,25 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   void _loadAssignments() {
     final first = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     final last = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
+    final selectedTeam = _selectedCalendarTeam;
+    final visibleTeamIds = selectedTeam == null
+        ? const <String>[]
+        : <String>[
+            selectedTeam.team.id ?? '',
+          ].where((teamId) => teamId.isNotEmpty).toList();
+    final visibleUserIds =
+        (selectedTeam?.members ?? const <TeamMemberforView>[])
+            .map((member) => member.teamMember.userId ?? '')
+            .where((userId) => userId.isNotEmpty && userId != _currentUid)
+            .toSet()
+            .toList();
     context.read<ShiftBloc>().add(
-      LoadShiftAssignmentsEvent(from: first, to: last),
+      LoadShiftAssignmentsEvent(
+        from: first,
+        to: last,
+        visibleTeamIds: visibleTeamIds.isEmpty ? null : visibleTeamIds,
+        visibleUserIds: visibleUserIds.isEmpty ? null : visibleUserIds,
+      ),
     );
   }
 
@@ -564,15 +605,23 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final appPrimary = colorScheme.primaryColor ?? colorScheme.primary;
     final borderColor = colorScheme.borderColor ?? colorScheme.outlineVariant;
-    final foregroundAssignments = _assignments
-        .where((assignment) => !_archivedAssignmentIds.contains(assignment.id))
-        .toList();
-    final archivedAssignments = _assignments
-        .where((assignment) => _archivedAssignmentIds.contains(assignment.id))
-        .toList();
+    final foregroundAssignments = _filterAssignmentsForSelectedCalendarTeam(
+      _assignments
+          .where(
+            (assignment) => !_archivedAssignmentIds.contains(assignment.id),
+          )
+          .toList(),
+    );
+    final archivedAssignments = _filterAssignmentsForSelectedCalendarTeam(
+      _assignments
+          .where((assignment) => _archivedAssignmentIds.contains(assignment.id))
+          .toList(),
+    );
 
     AppTutorialController.registerTargets(
       tutorialId: 'web-shifts',
@@ -653,8 +702,18 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
           bloc: _teamBloc,
           listener: (context, state) {
             if (state is TeamsLoaded) {
-              setState(() => _teams = state.teams);
+              setState(() {
+                _teams = state.teams;
+                final selectedTeamId = _selectedCalendarTeamId;
+                if (selectedTeamId != null &&
+                    !_manageableTeams.any(
+                      (team) => team.team.id == selectedTeamId,
+                    )) {
+                  _selectedCalendarTeamId = null;
+                }
+              });
               _ensureTeamAccessContextLoaded(state.teams);
+              _loadAssignments();
             }
           },
         ),
@@ -669,6 +728,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                     .map((member) => TeamMemberforView(teamMember: member))
                     .toList();
               });
+              _loadAssignments();
             }
             if (state is TeamMemberError) {
               _loadingTeamMemberIds.clear();
@@ -779,14 +839,34 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                       const SizedBox(width: 12),
                       FilledButton.icon(
                         onPressed: () => _openTeamReport(context),
-                        icon: const Icon(Icons.assessment_outlined, size: 18),
-                        label: Text(loc.shiftTeamReportButton),
+                        icon: Icon(Icons.assessment_outlined, size: 18,color: colorScheme.textInvertedColor,),
+                        label: Text(loc.shiftTeamReportButton,style: textTheme.bodyMedium?.copyWith(color: colorScheme.textInvertedColor),),
+                      style: ElevatedButton.styleFrom(backgroundColor: colorScheme.bgNavbarbutton),
                       ),
                     ],
                   ],
                 ),
               ),
               const SizedBox(height: 20),
+              if (_canManageAnyTeam && !_showArchivedOnly) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    child: ShiftCalendarTeamPicker(
+                      teams: _manageableTeams,
+                      selectedTeamId: _selectedCalendarTeamId,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCalendarTeamId = value;
+                        });
+                        _loadAssignments();
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               Showcase(
                 key: _archiveToggleKey,
                 title: _isItalian(context)

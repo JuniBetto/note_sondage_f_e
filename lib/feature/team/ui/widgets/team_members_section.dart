@@ -186,6 +186,12 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     }
   }
 
+  List<RoleEntity> get _assignableRoles =>
+      _roles.where((role) => !_isOwnerRole(role.id)).toList();
+
+  bool _isOwnerRole(String? roleCode) =>
+      (roleCode ?? '').trim().toUpperCase() == 'OWNER';
+
   void _deleteMember(String memberId) {
     _memberBloc.add(
       DeleteTeamMemberEvent(
@@ -430,7 +436,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
               formKey: _formKey,
               emailController: _emailCtrl,
               roleController: _roleCtrl,
-              roles: _roles,
+              roles: _assignableRoles,
               onInvite: _invite,
             )
           else
@@ -590,6 +596,12 @@ class _MemberRow extends StatelessWidget {
     required this.onRoleChanged,
   });
 
+  List<RoleEntity> get _editableRoles =>
+      roles.where((role) => !_isOwnerRole(role.id)).toList();
+
+  bool _isOwnerRole(String? roleCode) =>
+      (roleCode ?? '').trim().toUpperCase() == 'OWNER';
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -698,8 +710,8 @@ class _MemberRow extends StatelessWidget {
           child: GenericDropdownFormField<RoleEntity>(
             label: '',
             style: Theme.of(context).textTheme.bodySmall,
-            items: roles,
-            value: roles
+            items: _editableRoles,
+            value: _editableRoles
                 .where((r) => r.id == (editingRoleId ?? member.roleId))
                 .firstOrNull,
             displayText: (r) => r.name,
@@ -1046,6 +1058,9 @@ class _InviteForm extends StatelessWidget {
     required this.onInvite,
   });
 
+  bool _isOwnerRole(String? roleCode) =>
+      (roleCode ?? '').trim().toUpperCase() == 'OWNER';
+
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
@@ -1084,10 +1099,16 @@ class _InviteForm extends StatelessWidget {
           GenericDropdownFormField<RoleEntity>(
             label: '',
             style: theme.textTheme.bodyMedium,
-            items: roles,
+            items: roles.where((role) => !_isOwnerRole(role.id)).toList(),
             value: roleController.text.isEmpty
                 ? null
-                : roles.where((r) => r.id == roleController.text).firstOrNull,
+                : roles
+                      .where(
+                        (role) =>
+                            !_isOwnerRole(role.id) &&
+                            role.id == roleController.text,
+                      )
+                      .firstOrNull,
             displayText: (r) => r.name,
             valueGetter: (r) => r,
             onChanged: (r) => roleController.text = r?.id ?? '',

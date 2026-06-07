@@ -77,12 +77,34 @@ class SondageRemoteDataSource {
     return SondageMapper.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<SondageEntity> reopen(String id) async {
+    final response = await DioClient().dio.post('$_endpoint/$id/reopen');
+    return SondageMapper.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<SondageEntity> vote(String sondageId, String optionId) async {
     final response = await DioClient().dio.post(
       '$_endpoint/$sondageId/vote',
       data: {'optionId': optionId},
     );
     return SondageMapper.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<int> remindPendingVoters(
+    String sondageId, {
+    List<String>? recipientUserIds,
+  }) async {
+    final response = await DioClient().dio.post(
+      '$_endpoint/$sondageId/remind',
+      data: {
+        if (recipientUserIds != null) 'recipientUserIds': recipientUserIds,
+      },
+    );
+    final data = response.data;
+    if (data is Map && data['notifiedCount'] is num) {
+      return (data['notifiedCount'] as num).toInt();
+    }
+    return 0;
   }
 
   List<Map<String, dynamic>> _extractList(dynamic data) {

@@ -129,11 +129,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
   }
 
   void markAsSeen(String notificationId) {
-    if (notificationId.isEmpty) return;
-    final seen = Set<String>.from(state.seenNotificationIds)
-      ..add(notificationId);
-    emit(state.copyWith(seenNotificationIds: seen));
-    unawaited(_persistLocalState(seenNotificationIds: seen));
+    consumeNotification(notificationId);
   }
 
   void markManyAsSeen(Iterable<String> notificationIds) {
@@ -142,8 +138,27 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         .toSet();
     if (filtered.isEmpty) return;
     final seen = Set<String>.from(state.seenNotificationIds)..addAll(filtered);
-    emit(state.copyWith(seenNotificationIds: seen));
-    unawaited(_persistLocalState(seenNotificationIds: seen));
+    final dismissed = Set<String>.from(state.dismissedNotificationIds)
+      ..addAll(filtered);
+    final remainingNotifications = state.notifications
+        .where((item) => !filtered.contains(item.notificationId))
+        .toList();
+    emit(
+      state.copyWith(
+        notifications: remainingNotifications,
+        seenNotificationIds: seen,
+        dismissedNotificationIds: dismissed,
+      ),
+    );
+    unawaited(
+      Future.wait([
+        _persistLocalState(
+          seenNotificationIds: seen,
+          dismissedNotificationIds: dismissed,
+        ),
+        _dismissNotificationsRemotely(filtered),
+      ]),
+    );
   }
 
   void consumeNotification(String notificationId) {
@@ -165,10 +180,13 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       ),
     );
     unawaited(
-      _persistLocalState(
-        seenNotificationIds: seen,
-        dismissedNotificationIds: dismissed,
-      ),
+      Future.wait([
+        _persistLocalState(
+          seenNotificationIds: seen,
+          dismissedNotificationIds: dismissed,
+        ),
+        _dismissNotificationsRemotely([notificationId]),
+      ]),
     );
   }
 
@@ -377,6 +395,8 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         ..add(notificationId);
       final dismissed = Set<String>.from(state.dismissedNotificationIds)
         ..add(notificationId);
+      final seen = Set<String>.from(state.seenNotificationIds)
+        ..add(notificationId);
       final remainingNotifications = state.notifications
           .where((item) => item.notificationId != notificationId)
           .toList();
@@ -387,16 +407,18 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           processingNotificationIds: processing,
           completedActionNotificationIds: completed,
           dismissedNotificationIds: dismissed,
-          seenNotificationIds: Set<String>.from(state.seenNotificationIds)
-            ..add(notificationId),
+          seenNotificationIds: seen,
           errorMessage: null,
         ),
       );
-      await _persistLocalState(
-        seenNotificationIds: Set<String>.from(state.seenNotificationIds),
-        dismissedNotificationIds: dismissed,
-        completedActionNotificationIds: completed,
-      );
+      await Future.wait([
+        _persistLocalState(
+          seenNotificationIds: seen,
+          dismissedNotificationIds: dismissed,
+          completedActionNotificationIds: completed,
+        ),
+        _dismissNotificationsRemotely([notificationId]),
+      ]);
       return true;
     } catch (e) {
       processing.remove(notificationId);
@@ -404,6 +426,8 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         final completed = Set<String>.from(state.completedActionNotificationIds)
           ..add(notificationId);
         final dismissed = Set<String>.from(state.dismissedNotificationIds)
+          ..add(notificationId);
+        final seen = Set<String>.from(state.seenNotificationIds)
           ..add(notificationId);
         final remainingNotifications = state.notifications
             .where((item) => item.notificationId != notificationId)
@@ -414,16 +438,18 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             processingNotificationIds: processing,
             completedActionNotificationIds: completed,
             dismissedNotificationIds: dismissed,
-            seenNotificationIds: Set<String>.from(state.seenNotificationIds)
-              ..add(notificationId),
+            seenNotificationIds: seen,
             errorMessage: null,
           ),
         );
-        await _persistLocalState(
-          seenNotificationIds: Set<String>.from(state.seenNotificationIds),
-          dismissedNotificationIds: dismissed,
-          completedActionNotificationIds: completed,
-        );
+        await Future.wait([
+          _persistLocalState(
+            seenNotificationIds: seen,
+            dismissedNotificationIds: dismissed,
+            completedActionNotificationIds: completed,
+          ),
+          _dismissNotificationsRemotely([notificationId]),
+        ]);
         return true;
       }
       emit(
@@ -451,6 +477,26 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         raw.contains('already accepted') ||
         raw.contains('has expired') ||
         raw.contains('expired');
+  }
+
+  Future<void> _dismissNotificationsRemotely(
+    Iterable<String> notificationIds,
+  ) async {
+    final ids = notificationIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    if (ids.isEmpty) {
+      return;
+    }
+
+    for (final id in ids) {
+      try {
+        await _backendAuth.dismissNotification(id);
+      } catch (_) {
+        // Keep the local dismissal even if the backend feed cannot be updated.
+      }
+    }
   }
 
   Future<void> _ensureHydrated() {

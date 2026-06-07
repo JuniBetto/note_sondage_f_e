@@ -94,9 +94,16 @@ class ShiftRepositoryImpl implements ShiftRepository {
   Future<List<ShiftAssignmentEntity>> getAssignments({
     required DateTime from,
     required DateTime to,
+    List<String>? visibleTeamIds,
+    List<String>? visibleUserIds,
   }) async {
     try {
-      final assignments = await _remote.getAssignments(from: from, to: to);
+      final assignments = await _remote.getAssignments(
+        from: from,
+        to: to,
+        visibleTeamIds: visibleTeamIds,
+        visibleUserIds: visibleUserIds,
+      );
       final cached = await _local.getAssignments();
       final requestedDays = <String>{
         for (

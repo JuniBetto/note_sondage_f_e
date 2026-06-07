@@ -103,6 +103,15 @@ class _TeamUpdateCommittedEvent extends TeamEvent {
   List<Object?> get props => [teamId, team];
 }
 
+class _TeamDeleteCommittedEvent extends TeamEvent {
+  final String teamId;
+
+  const _TeamDeleteCommittedEvent(this.teamId);
+
+  @override
+  List<Object?> get props => [teamId];
+}
+
 class _TeamMutationFailedEvent extends TeamEvent {
   final String message;
   final List<TeamEntity> rollbackTeams;
