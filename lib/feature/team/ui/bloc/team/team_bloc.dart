@@ -418,7 +418,6 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     _syncingTeamIds.remove(event.teamId);
     await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamsLoaded(_cachedTeams));
-    _refreshTeamsInBackground();
   }
 
   Future<void> _onTeamMutationFailed(

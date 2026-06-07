@@ -13,7 +13,7 @@ import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
-import 'package:note_sondage/theme/text_theme.dart';
+
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class ShiftTeamReportDialog extends StatefulWidget {
@@ -1371,16 +1371,16 @@ class _SoftBadge extends StatelessWidget {
     required this.label,
     required this.foreground,
     required this.background,
-    this.textStyle,
   });
 
   final String label;
   final Color foreground;
   final Color background;
-  final TextStyle? textStyle;
+  //final TextStyle? textStyle;
 
   @override
   Widget build(BuildContext context) {
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
@@ -1390,7 +1390,7 @@ class _SoftBadge extends StatelessWidget {
       child: Text(
         label,
         style:
-            textStyle ??
+           // textStyle ??
             Theme.of(context).textTheme.labelMedium?.copyWith(
               color: foreground,
               fontWeight: FontWeight.w700,

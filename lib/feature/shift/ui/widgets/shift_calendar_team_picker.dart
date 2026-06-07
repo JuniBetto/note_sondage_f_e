@@ -51,7 +51,7 @@ class _ShiftCalendarTeamPickerState extends State<ShiftCalendarTeamPicker> {
     }
     return widget.teams.where((team) {
       final name = team.team.name.toLowerCase();
-      final description = (team.team.description ?? '').toLowerCase();
+      final description = (team.team.description).toLowerCase();
       return name.contains(query) || description.contains(query);
     }).toList();
   }
@@ -125,8 +125,8 @@ class _ShiftCalendarTeamPickerState extends State<ShiftCalendarTeamPicker> {
                           (widget.includePersonalOption ? 1 : 0)];
                   return _PickerOptionTile(
                     label: team.team.name,
-                    subtitle: (team.team.description ?? '').trim().isNotEmpty
-                        ? team.team.description!.trim()
+                    subtitle: (team.team.description).trim().isNotEmpty
+                        ? team.team.description.trim()
                         : teamFallbackSubtitle,
                     isSelected: team.team.id == widget.selectedTeamId,
                     onTap: () {
