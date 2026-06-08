@@ -20,6 +20,8 @@ class ShiftAssignmentEntity {
     required this.alarmOffsets,
     this.profile,
     this.isPublic = false,
+    this.memberEditUnlocked = false,
+    this.memberChangeRequestPending = false,
   });
 
   final String id;
@@ -43,6 +45,12 @@ class ShiftAssignmentEntity {
   /// True → visible to all team members; False → private (owner only).
   final bool isPublic;
 
+  /// True when the assigned member may edit non-time fields of a public shift.
+  final bool memberEditUnlocked;
+
+  /// True when a shift-change request is awaiting manager approval.
+  final bool memberChangeRequestPending;
+
   Color get displayColor {
     final hex = profileColor;
     if (hex == null) return Colors.blueGrey;
@@ -62,6 +70,8 @@ class ShiftAssignmentEntity {
     List<int>? alarmOffsets,
     ShiftProfileEntity? profile,
     bool? isPublic,
+    bool? memberEditUnlocked,
+    bool? memberChangeRequestPending,
     String? teamId,
     String? teamShiftGroupId,
   }) {
@@ -82,6 +92,9 @@ class ShiftAssignmentEntity {
       alarmOffsets: alarmOffsets ?? this.alarmOffsets,
       profile: profile ?? this.profile,
       isPublic: isPublic ?? this.isPublic,
+      memberEditUnlocked: memberEditUnlocked ?? this.memberEditUnlocked,
+      memberChangeRequestPending:
+          memberChangeRequestPending ?? this.memberChangeRequestPending,
     );
   }
 }

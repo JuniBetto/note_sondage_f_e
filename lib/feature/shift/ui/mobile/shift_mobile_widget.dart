@@ -6,11 +6,13 @@ import 'package:get_it/get_it.dart';
 import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments_list.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
@@ -46,6 +48,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   final TeamBloc _teamBloc = GetIt.instance<TeamBloc>();
   final TeamMemberBloc _teamMemberBloc = GetIt.instance<TeamMemberBloc>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
+  final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
   final UserArchiveService _archiveService =
       GetIt.instance<UserArchiveService>();
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
@@ -321,6 +324,20 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         _manageableTeams.any((team) => team.team.id == assignment.teamId);
   }
 
+  bool _canRequestAssignmentChange(ShiftAssignmentEntity assignment) {
+    return assignment.isPublic &&
+        assignment.userId == _currentUid &&
+        !assignment.memberEditUnlocked &&
+        !_canManageAssignment(assignment);
+  }
+
+  bool _canEditApprovedAssignment(ShiftAssignmentEntity assignment) {
+    return assignment.isPublic &&
+        assignment.userId == _currentUid &&
+        assignment.memberEditUnlocked &&
+        !_canManageAssignment(assignment);
+  }
+
   bool _canManageTeam(TeamEntity team) {
     final teamId = team.id;
     if (teamId == null) return false;
@@ -407,9 +424,24 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       canManagePublicShifts: existing == null
           ? _canManageAnyTeam
           : _canManageAssignment(existing),
+      canRequestPublicShiftChanges: existing != null
+          ? _canRequestAssignmentChange(existing)
+          : false,
+      hasPendingPublicShiftChangeRequest: existing != null
+          ? _hasPendingAssignmentChangeRequest(existing)
+          : false,
+      canEditApprovedPublicShift: existing != null
+          ? _canEditApprovedAssignment(existing)
+          : false,
       ownerTeams: _manageableTeams,
     );
     if (result == null) return;
+    if (!context.mounted) return;
+
+    if (result.requestedChange && existing != null) {
+      await _requestAssignmentChange(context, existing, result);
+      return;
+    }
 
     if (result.archived && existing != null) {
       await _setAssignmentArchived(existing, true);
@@ -514,6 +546,59 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         );
       }
     }
+  }
+
+  Future<void> _requestAssignmentChange(
+    BuildContext context,
+    ShiftAssignmentEntity existing,
+    ShiftDayDialogResult result,
+  ) async {
+    try {
+      await _shiftRepository.requestAssignmentChange(
+        existing.id,
+        startTime: result.startTime,
+        endTime: result.endTime,
+        overnight: result.overnight,
+        note: result.note,
+      );
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackBar.showSuccess(
+        context,
+        'La richiesta di modifica turno e stata inviata.',
+      );
+      _loadAssignments();
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback:
+            'Non siamo riusciti a inviare la richiesta di modifica turno.',
+      );
+    }
+  }
+
+  bool _hasPendingAssignmentChangeRequest(ShiftAssignmentEntity assignment) {
+    if (assignment.memberChangeRequestPending) {
+      return true;
+    }
+    final state = context.read<NotificationCenterCubit>().state;
+    return state.notifications.any((item) {
+      if (item.eventType != 'SHIFT_CHANGE_REQUESTED') {
+        return false;
+      }
+      if (state.dismissedNotificationIds.contains(item.notificationId) ||
+          state.completedActionNotificationIds.contains(item.notificationId)) {
+        return false;
+      }
+      return item.requestType == 'shift_change' &&
+          item.requesterUserId == _currentUid &&
+          item.metadata['assignmentId']?.trim() == assignment.id;
+    });
   }
 
   Iterable<ShiftAssignmentEntity> _relatedPublicAssignments(
@@ -798,12 +883,11 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
 
           children: [
-
             Row(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-               /* Icon(
+                /* Icon(
                   Icons.calendar_month_rounded,
                   color: colorScheme.descriptionColor,
                   size: 18,
@@ -815,16 +899,21 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                     context,
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),*/
-               // const Spacer(),
+                // const Spacer(),
                 if (_canManageAnyTeam) ...[
                   IconButton.outlined(
                     tooltip: loc.shiftTeamReportTooltip,
                     onPressed: () => _openTeamReport(context),
-                    icon:  Icon(Icons.assessment_outlined, size: 18,color: colorScheme.textInvertedColor,),
-          style: ElevatedButton.styleFrom(
-        backgroundColor: colorScheme.bgNavbarbutton,
-side: BorderSide(color: colorScheme.bgNavbarbutton!)
-                  )),
+                    icon: Icon(
+                      Icons.assessment_outlined,
+                      size: 18,
+                      color: colorScheme.textInvertedColor,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.bgNavbarbutton,
+                      side: BorderSide(color: colorScheme.bgNavbarbutton!),
+                    ),
+                  ),
                   const SizedBox(width: 6),
                 ],
                 IconButton.outlined(
@@ -832,10 +921,15 @@ side: BorderSide(color: colorScheme.bgNavbarbutton!)
                       ? 'Profili turno'
                       : 'Shift profiles',
                   onPressed: () => _openProfilesSheet(context),
-                  icon:  Icon(Icons.palette_outlined,color: colorScheme.textInvertedColor, size: 18),style: ElevatedButton.styleFrom(
+                  icon: Icon(
+                    Icons.palette_outlined,
+                    color: colorScheme.textInvertedColor,
+                    size: 18,
+                  ),
+                  style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.bgNavbarbutton,
-                    side: BorderSide(color: colorScheme.bgNavbarbutton!)
-                )
+                    side: BorderSide(color: colorScheme.bgNavbarbutton!),
+                  ),
                 ),
                 if (_canManageAnyTeam) ...[
                   const SizedBox(width: 6),

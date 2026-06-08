@@ -45,10 +45,18 @@ class AuthInterceptor extends Interceptor {
     // backend sia stato ancora scambiato/salvato. In quel caso proviamo a
     // generarlo on-demand prima di far partire la richiesta protetta.
     if ((token == null || token.isEmpty) && firebaseUser != null) {
-      token = await _exchangeFirebaseTokenForBackendJwt(
-        baseUrl: options.baseUrl,
-        firebaseUser: firebaseUser,
-      );
+      try {
+        token = await _exchangeFirebaseTokenForBackendJwt(
+          baseUrl: options.baseUrl,
+          firebaseUser: firebaseUser,
+        );
+      } catch (error) {
+        _logExchangeFailure(
+          phase: 'onRequest',
+          error: error,
+          requestOptions: options,
+        );
+      }
     }
 
     if (token != null && token.isNotEmpty) {
@@ -102,7 +110,11 @@ class AuthInterceptor extends Interceptor {
           }
         }
       } catch (e) {
-        debugPrint('[AuthInterceptor] Token refresh failed: $e');
+        _logExchangeFailure(
+          phase: 'onError',
+          error: e,
+          requestOptions: err.requestOptions,
+        );
       }
     }
     handler.next(err);
@@ -153,21 +165,30 @@ class AuthInterceptor extends Interceptor {
         ),
       );
 
-      final response = await dio.post(
-        '/public/api/auth/verify',
-        data: {'firebaseToken': firebaseToken},
-      );
+      try {
+        final response = await dio.post(
+          '/public/api/auth/verify',
+          data: {'firebaseToken': firebaseToken},
+        );
 
-      if (response.data is! Map<String, dynamic> ||
-          !response.data.containsKey('token')) {
-        return null;
+        if (response.data is! Map<String, dynamic> ||
+            !response.data.containsKey('token')) {
+          return null;
+        }
+
+        final backendToken = response.data['token'] as String;
+        await _tokenService.saveToken(backendToken);
+        _lastSuccessfulExchangeUid = uid;
+        _lastSuccessfulExchangeAt = DateTime.now();
+        return backendToken;
+      } on DioException catch (error) {
+        _logExchangeFailure(
+          phase: 'exchange',
+          error: error,
+          requestOptions: error.requestOptions,
+        );
+        rethrow;
       }
-
-      final backendToken = response.data['token'] as String;
-      await _tokenService.saveToken(backendToken);
-      _lastSuccessfulExchangeUid = uid;
-      _lastSuccessfulExchangeAt = DateTime.now();
-      return backendToken;
     }();
 
     if (!forceRefreshFirebaseToken) {
@@ -183,5 +204,28 @@ class AuthInterceptor extends Interceptor {
         _exchangeUid = null;
       }
     }
+  }
+
+  void _logExchangeFailure({
+    required String phase,
+    required Object error,
+    required RequestOptions requestOptions,
+  }) {
+    if (error is DioException) {
+      final response = error.response;
+      debugPrint(
+        '[AuthInterceptor][$phase] ${requestOptions.method} '
+        '${requestOptions.baseUrl}${requestOptions.path} failed '
+        'with status=${response?.statusCode} '
+        'type=${error.type} '
+        'response=${response?.data}',
+      );
+      return;
+    }
+
+    debugPrint(
+      '[AuthInterceptor][$phase] ${requestOptions.method} '
+      '${requestOptions.baseUrl}${requestOptions.path} failed: $error',
+    );
   }
 }

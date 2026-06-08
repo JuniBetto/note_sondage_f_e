@@ -214,29 +214,37 @@ class _MainAppState extends State<MainApp> {
       return;
     }
 
-    _showcaseView?.unregister();
-    _showcaseView = ShowcaseView.register(
+    final tooltipActions = <TooltipActionButton>[
+      TooltipActionButton(
+        type: TooltipDefaultActionType.skip,
+        name: localizations.tutorialSkip,
+      ),
+      TooltipActionButton(
+        type: TooltipDefaultActionType.previous,
+        name: localizations.tutorialPrevious,
+      ),
+      TooltipActionButton(
+        type: TooltipDefaultActionType.next,
+        name: localizations.tutorialNext,
+      ),
+    ];
+
+    _showcaseView ??= ShowcaseView.register(
       globalTooltipActionConfig: const TooltipActionConfig(
         alignment: MainAxisAlignment.spaceBetween,
         position: TooltipActionPosition.inside,
       ),
-      globalTooltipActions: [
-        TooltipActionButton(
-          type: TooltipDefaultActionType.skip,
-          name: localizations.tutorialSkip,
-        ),
-        TooltipActionButton(
-          type: TooltipDefaultActionType.previous,
-          name: localizations.tutorialPrevious,
-        ),
-        TooltipActionButton(
-          type: TooltipDefaultActionType.next,
-          name: localizations.tutorialNext,
-        ),
-      ],
       enableAutoScroll: true,
       blurValue: 1,
     );
+    _showcaseView!
+      ..globalTooltipActionConfig = const TooltipActionConfig(
+        alignment: MainAxisAlignment.spaceBetween,
+        position: TooltipActionPosition.inside,
+      )
+      ..globalTooltipActions = tooltipActions
+      ..enableAutoScroll = true
+      ..blurValue = 1;
     _showcaseLocale = locale;
   }
 

@@ -158,7 +158,14 @@ class _TabBarPillItem extends StatelessWidget {
               data: IconThemeData(
                 color: isSelected ? selectedColor : unselectedColor,
               ),
-              child: SizedBox.expand(child: Center(child: label)),
+              child: SizedBox.expand(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: FittedBox(fit: BoxFit.scaleDown, child: label),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

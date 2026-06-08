@@ -64,4 +64,14 @@ abstract class ShiftRepository {
   });
 
   Future<void> deleteAssignment(String assignmentId);
+
+  Future<void> requestAssignmentChange(
+    String assignmentId, {
+    String? profileId,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    bool? overnight,
+    String? note,
+    List<int>? alarmOffsets,
+  });
 }

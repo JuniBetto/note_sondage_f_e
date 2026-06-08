@@ -95,7 +95,6 @@ class AppTutorialController {
 
       try {
         final showcase = ShowcaseView.get();
-        showcase.dismiss();
         showcase.startShowCase(attachedKeys);
       } catch (error, stack) {
         debugPrint('[Tutorial] Unable to replay tutorial: $error\n$stack');

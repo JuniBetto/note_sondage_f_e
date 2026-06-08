@@ -222,16 +222,16 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     final teamId = item.metadata['teamId']?.trim();
     final requesterUserId = item.requesterUserId;
     final requestedDate = item.requestedDate;
-    if (teamId == null ||
-        teamId.isEmpty ||
-        requesterUserId == null ||
-        requestedDate == null) {
+    if (requesterUserId == null) {
       return;
     }
 
     await _performAction(item.notificationId, () async {
       switch (item.requestType) {
         case 'clocking':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.approveClockingRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -240,6 +240,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           );
           break;
         case 'vacation':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.approveVacationRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -248,6 +251,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           );
           break;
         case 'permission':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.approvePermissionRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -255,6 +261,24 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             startTime: item.permissionStartTime ?? '',
             endTime: item.permissionEndTime ?? '',
             note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'shift_change':
+          final assignmentId = item.metadata['assignmentId']?.trim();
+          if (assignmentId == null || assignmentId.isEmpty) {
+            return;
+          }
+          await _backendAuth.approveShiftChangeRequest(
+            assignmentId: assignmentId,
+            requesterUserId: requesterUserId,
+            profileId: item.metadata['shiftProfileId']?.trim(),
+            startTime: item.metadata['shiftStartTime']?.trim(),
+            endTime: item.metadata['shiftEndTime']?.trim(),
+            overnight: _parseOptionalBool(item.metadata['shiftOvernight']),
+            note: item.metadata['shiftNote']?.trim(),
+            alarmOffsets: _parseAlarmOffsets(
+              item.metadata['shiftAlarmOffsets'],
+            ),
           );
           break;
       }
@@ -265,16 +289,16 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     final teamId = item.metadata['teamId']?.trim();
     final requesterUserId = item.requesterUserId;
     final requestedDate = item.requestedDate;
-    if (teamId == null ||
-        teamId.isEmpty ||
-        requesterUserId == null ||
-        requestedDate == null) {
+    if (requesterUserId == null) {
       return;
     }
 
     await _performAction(item.notificationId, () async {
       switch (item.requestType) {
         case 'clocking':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.rejectClockingRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -283,6 +307,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           );
           break;
         case 'vacation':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.rejectVacationRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -291,6 +318,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           );
           break;
         case 'permission':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.rejectPermissionRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -298,6 +328,24 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             startTime: item.permissionStartTime ?? '',
             endTime: item.permissionEndTime ?? '',
             note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'shift_change':
+          final assignmentId = item.metadata['assignmentId']?.trim();
+          if (assignmentId == null || assignmentId.isEmpty) {
+            return;
+          }
+          await _backendAuth.rejectShiftChangeRequest(
+            assignmentId: assignmentId,
+            requesterUserId: requesterUserId,
+            profileId: item.metadata['shiftProfileId']?.trim(),
+            startTime: item.metadata['shiftStartTime']?.trim(),
+            endTime: item.metadata['shiftEndTime']?.trim(),
+            overnight: _parseOptionalBool(item.metadata['shiftOvernight']),
+            note: item.metadata['shiftNote']?.trim(),
+            alarmOffsets: _parseAlarmOffsets(
+              item.metadata['shiftAlarmOffsets'],
+            ),
           );
           break;
       }
@@ -354,6 +402,33 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
 
   bool _isRealtimeOnlyMetadata(Map<String, String> metadata) {
     return metadata['realtimeOnly']?.toLowerCase() == 'true';
+  }
+
+  bool? _parseOptionalBool(String? value) {
+    final normalized = value?.trim().toLowerCase();
+    if (normalized == 'true') {
+      return true;
+    }
+    if (normalized == 'false') {
+      return false;
+    }
+    return null;
+  }
+
+  List<int>? _parseAlarmOffsets(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    final offsets = normalized
+        .split(',')
+        .map((entry) => int.tryParse(entry.trim()))
+        .whereType<int>()
+        .toList(growable: false);
+    if (offsets.isEmpty) {
+      return null;
+    }
+    return offsets;
   }
 
   List<NotificationCenterItem> _normalizeNotifications(

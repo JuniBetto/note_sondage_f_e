@@ -312,6 +312,54 @@ String _archiveTooltipText(BuildContext context) => _localizedShiftDayText(
   es: 'Archivar',
 );
 
+String _requestShiftChangeTitle(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Richiedi modifica turno',
+  en: 'Request shift change',
+  fr: 'Demander une modification du service',
+  es: 'Solicitar cambio de turno',
+);
+
+String _requestShiftChangeBanner(
+  BuildContext context,
+) => _localizedShiftDayText(
+  context,
+  it: 'Puoi proporre una modifica del tuo turno. La richiesta verra inviata ai gestori del team per approvazione.',
+  en: 'You can propose a change to your shift. The request will be sent to the team managers for approval.',
+  fr: 'Vous pouvez proposer une modification de votre service. La demande sera envoyee aux responsables de l\'equipe pour approbation.',
+  es: 'Puedes proponer un cambio de tu turno. La solicitud se enviara a los responsables del equipo para su aprobacion.',
+);
+
+String _requestShiftChangeButton(BuildContext context) =>
+    _requestShiftChangeTitle(context);
+
+String _pendingShiftChangeButton(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Richiesta gia in attesa',
+      en: 'Request already pending',
+      fr: 'Demande deja en attente',
+      es: 'Solicitud ya pendiente',
+    );
+
+String _pendingShiftChangeBanner(
+  BuildContext context,
+) => _localizedShiftDayText(
+  context,
+  it: 'Hai gia una richiesta di modifica turno in attesa. Finche non viene approvata o rifiutata non puoi inviarne un\'altra.',
+  en: 'You already have a pending shift-change request. You cannot send another one until it is approved or rejected.',
+  fr: 'Vous avez deja une demande de modification de service en attente. Vous ne pouvez pas en envoyer une autre tant qu\'elle n\'est pas approuvee ou refusee.',
+  es: 'Ya tienes una solicitud de cambio de turno pendiente. No puedes enviar otra hasta que sea aprobada o rechazada.',
+);
+
+String _approvedShiftEditBanner(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'La richiesta oraria e stata approvata. Puoi modificare il turno, ma gli orari start e end restano bloccati su quelli approvati.',
+  en: 'The time-change request was approved. You can edit the shift, but the start and end times stay locked to the approved values.',
+  fr: 'La demande d\'horaire a ete approuvee. Vous pouvez modifier le service, mais les heures de debut et de fin restent verrouillees sur celles approuvees.',
+  es: 'La solicitud de horario fue aprobada. Puedes editar el turno, pero la hora de inicio y fin queda bloqueada con los valores aprobados.',
+);
+
 String _notificationModeLabel(BuildContext context) => _localizedShiftDayText(
   context,
   it: 'Notifica',
@@ -435,6 +483,7 @@ class ShiftDayDialogResult {
     this.targetUserIds = const [],
     this.memberAssignmentPlans = const [],
     this.scheduledDates = const [],
+    this.requestedChange = false,
   });
 
   final String? profileId;
@@ -462,6 +511,8 @@ class ShiftDayDialogResult {
 
   /// Days on which the shift should be created.
   final List<DateTime> scheduledDates;
+
+  final bool requestedChange;
 }
 
 /// Modal bottom-sheet / dialog for assigning or editing a shift on a single day.
@@ -471,6 +522,9 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
   required List<ShiftProfileEntity> profiles,
   ShiftAssignmentEntity? existing,
   bool canManagePublicShifts = false,
+  bool canRequestPublicShiftChanges = false,
+  bool hasPendingPublicShiftChangeRequest = false,
+  bool canEditApprovedPublicShift = false,
 
   /// Teams where the current user is owner (to enable team assignment).
   List<TeamEntityForView> ownerTeams = const [],
@@ -481,6 +535,9 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
     profiles: profiles,
     existing: existing,
     canManagePublicShifts: canManagePublicShifts,
+    canRequestPublicShiftChanges: canRequestPublicShiftChanges,
+    hasPendingPublicShiftChangeRequest: hasPendingPublicShiftChangeRequest,
+    canEditApprovedPublicShift: canEditApprovedPublicShift,
     ownerTeams: ownerTeams,
     useDialogLayout: isWideLayout,
   );
@@ -511,6 +568,9 @@ class _ShiftDaySheet extends StatefulWidget {
     required this.profiles,
     this.existing,
     this.canManagePublicShifts = false,
+    this.canRequestPublicShiftChanges = false,
+    this.hasPendingPublicShiftChangeRequest = false,
+    this.canEditApprovedPublicShift = false,
     this.ownerTeams = const [],
     this.useDialogLayout = false,
   });
@@ -519,6 +579,9 @@ class _ShiftDaySheet extends StatefulWidget {
   final List<ShiftProfileEntity> profiles;
   final ShiftAssignmentEntity? existing;
   final bool canManagePublicShifts;
+  final bool canRequestPublicShiftChanges;
+  final bool hasPendingPublicShiftChangeRequest;
+  final bool canEditApprovedPublicShift;
   final List<TeamEntityForView> ownerTeams;
   final bool useDialogLayout;
 
@@ -540,6 +603,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   ShiftAlarmType _alarmType = ShiftAlarmType.alarm;
   late bool _isPublic;
   late bool _readOnly;
+  late bool _requestModeActive;
   late DateTime _rangeEndDate;
   final _noteCtrl = TextEditingController();
   final Map<String, List<TeamMemberforView>> _membersByTeamId =
@@ -554,6 +618,26 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   final Map<String, String?> _memberProfileIds = <String, String?>{};
 
   bool get _hasOwnerTeams => widget.ownerTeams.isNotEmpty;
+  bool get _canOpenRequestMode =>
+      widget.existing != null &&
+      widget.existing!.isPublic &&
+      widget.canRequestPublicShiftChanges &&
+      !widget.hasPendingPublicShiftChangeRequest &&
+      !widget.canManagePublicShifts;
+  bool get _hasPendingRequest =>
+      widget.existing != null &&
+      widget.existing!.isPublic &&
+      widget.hasPendingPublicShiftChangeRequest &&
+      !widget.canManagePublicShifts;
+  bool get _requestMode => _requestModeActive;
+  bool get _viewOnlyRequestMode =>
+      _readOnly && (_canOpenRequestMode || _hasPendingRequest) && !_requestMode;
+  bool get _approvedSelfEditMode =>
+      widget.existing != null &&
+      widget.existing!.isPublic &&
+      widget.canEditApprovedPublicShift &&
+      !widget.canManagePublicShifts;
+  bool get _timeLocked => _approvedSelfEditMode;
   bool get _isTeamScopedSelection => _selectedTeam != null;
   bool get _effectiveIsPublic => _isTeamScopedSelection || _isPublic;
   bool get _isSelectedTeamLoading {
@@ -643,10 +727,19 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   bool get _hasValidTimeRange {
     final startMinutes = _startTime.hour * 60 + _startTime.minute;
     final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    if (_requestMode) {
+      return startMinutes != endMinutes;
+    }
     if (_overnight) {
       return startMinutes != endMinutes;
     }
     return endMinutes > startMinutes;
+  }
+
+  bool _deriveOvernightFromTimes(TimeOfDay startTime, TimeOfDay endTime) {
+    final startMinutes = startTime.hour * 60 + startTime.minute;
+    final endMinutes = endTime.hour * 60 + endTime.minute;
+    return endMinutes <= startMinutes;
   }
 
   List<DateTime> get _scheduledDates {
@@ -712,11 +805,26 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       _isPublic = false;
       _rangeEndDate = widget.date;
     }
+    _requestModeActive = false;
     // Non-owners cannot edit existing public shifts
     _readOnly =
+        !_requestMode &&
+        !_approvedSelfEditMode &&
         !widget.canManagePublicShifts &&
         widget.existing != null &&
         (widget.existing!.isPublic);
+  }
+
+  void _enterRequestMode() {
+    if (!_canOpenRequestMode || !mounted) {
+      return;
+    }
+    setState(() {
+      _requestModeActive = true;
+      _readOnly = false;
+      _overnight = _deriveOvernightFromTimes(_startTime, _endTime);
+      _noteCtrl.clear();
+    });
   }
 
   Future<void> _pickRangeEndDate(AppLocalizations loc) async {
@@ -809,9 +917,11 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   void _applyProfile(ShiftProfileEntity p) {
     setState(() {
       _selectedProfile = p;
-      _startTime = p.startTime;
-      _endTime = p.endTime;
-      _overnight = p.overnight;
+      if (!_timeLocked) {
+        _startTime = p.startTime;
+        _endTime = p.endTime;
+        _overnight = p.overnight;
+      }
       _alarmOffsets = List.from(p.alarmOffsets);
     });
   }
@@ -844,8 +954,25 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     );
   }
 
-  @override
-  @override
+  void _submitShiftChangeRequest() {
+    if (_readOnly || !_hasValidTimeRange) {
+      return;
+    }
+    Navigator.of(context).pop(
+      ShiftDayDialogResult(
+        profileId: _selectedProfile?.id,
+        startTime: _startTime,
+        endTime: _endTime,
+        overnight: _overnight,
+        alarmOffsets: _alarmOffsets,
+        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+        isPublic: true,
+        teamId: widget.existing?.teamId,
+        requestedChange: true,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -876,9 +1003,13 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: SubmitOnEnterScope(
-          onSubmit: _readOnly || !_hasValidTeamSelection || !_hasValidTimeRange
+          onSubmit: _readOnly
               ? null
-              : _submitShiftDay,
+              : (_requestMode
+                    ? (_hasValidTimeRange ? _submitShiftChangeRequest : null)
+                    : (_hasValidTeamSelection && _hasValidTimeRange
+                          ? _submitShiftDay
+                          : null)),
           child: Container(
             decoration: BoxDecoration(
               color: dialogBackground,
@@ -916,15 +1047,22 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                     children: [
                       Expanded(
                         child: Text(
-                          widget.existing != null
-                              ? '${loc.editAction} – $dateLabel'
-                              : '${loc.addShift} – $dateLabel',
+                          _requestMode
+                              ? '${_requestShiftChangeTitle(context)} - $dateLabel'
+                              : (_viewOnlyRequestMode
+                                    ? 'Shift - $dateLabel'
+                                    : (widget.existing != null
+                                          ? '${loc.editAction} - $dateLabel'
+                                          : '${loc.addShift} - $dateLabel')),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                      if (widget.existing != null && !_readOnly)
+                      if (widget.existing != null &&
+                          !_readOnly &&
+                          !_requestMode &&
+                          !_approvedSelfEditMode)
                         IconButton(
                           icon: Icon(
                             Icons.archive_outlined,
@@ -941,7 +1079,10 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                             ),
                           ),
                         ),
-                      if (widget.existing != null && !_readOnly)
+                      if (widget.existing != null &&
+                          !_readOnly &&
+                          !_requestMode &&
+                          !_approvedSelfEditMode)
                         IconButton(
                           icon: Icon(Icons.delete_outline, color: appError),
                           tooltip: loc.removeAction,
@@ -968,7 +1109,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                   const SizedBox(height: 16),
 
                   // ── Read-only banner (public shift, non-owner) ────────────────
-                  if (_readOnly)
+                  if (_readOnly || _requestMode || _approvedSelfEditMode)
                     Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.symmetric(
@@ -988,7 +1129,17 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              _publicShiftReadOnlyBanner(context),
+                              _requestMode
+                                  ? _requestShiftChangeBanner(context)
+                                  : (_hasPendingRequest
+                                        ? _pendingShiftChangeBanner(context)
+                                        : (_approvedSelfEditMode
+                                              ? _approvedShiftEditBanner(
+                                                  context,
+                                                )
+                                              : _publicShiftReadOnlyBanner(
+                                                  context,
+                                                ))),
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: appPrimary,
                               ),
@@ -998,392 +1149,492 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       ),
                     ),
 
-                  // ── Profile selector ──────────────────────────────────────────
-                  Text(
-                    loc.shiftProfile,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.descriptionColor,
+                  if (_viewOnlyRequestMode) ...[
+                    _ShiftViewSection(
+                      theme: theme,
+                      borderColor: borderColor,
+                      mutedSurface: mutedSurface,
+                      dateLabel: dateLabel,
+                      profileName:
+                          _selectedProfile?.name ??
+                          widget.existing?.profileName ??
+                          '-',
+                      userName: widget.existing?.userName,
+                      teamName: _selectedTeam?.team.name,
+                      startTime: _startTime,
+                      endTime: _endTime,
+                      overnight: _overnight,
+                      note: _noteCtrl.text.trim(),
+                      isPublic: _effectiveIsPublic,
+                      alarmOffsets: _alarmOffsets,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: widget.profiles.map((p) {
-                      final selected = _selectedProfile?.id == p.id;
-                      return GestureDetector(
-                        onTap: _readOnly ? null : () => _applyProfile(p),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? p.displayColor.withValues(alpha: 0.2)
-                                : mutedSurface,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: selected ? p.displayColor : borderColor,
-                              width: selected ? 2 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: p.displayColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                p.name,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  fontWeight: selected
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Time pickers ──────────────────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _TimePicker(
-                          label: loc.shiftStart,
-                          value: _startTime,
-                          readOnly: _readOnly,
-                          onChanged: (t) => setState(() => _startTime = t),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _TimePicker(
-                          label: loc.shiftEnd,
-                          value: _endTime,
-                          readOnly: _readOnly,
-                          onChanged: (t) => setState(() => _endTime = t),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (!widget.useDialogLayout && widget.existing == null)
-                    const SizedBox(height: 12),
-                  if (widget.existing == null)
-                    InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: _readOnly ? null : () => _pickRangeEndDate(loc),
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          labelText: loc.shiftRepeatUntil,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          isDense: true,
-                          suffixIcon: const Icon(Icons.calendar_today_outlined),
-                          helperText: loc.shiftRepeatUntilHelp,
-                        ),
-                        child: Text(_formatDateLabel(_rangeEndDate)),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-
-                  // ── Overnight toggle ──────────────────────────────────────────
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      loc.overnightShift,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    value: _overnight,
-                    onChanged: _readOnly
-                        ? null
-                        : (v) => setState(() => _overnight = v),
-                  ),
-                  if (!_hasValidTimeRange)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        loc.shiftEndMustBeAfterStart,
+                    const SizedBox(height: 20),
+                  ] else ...[
+                    // ── Profile selector ──────────────────────────────────────────
+                    if (!_requestMode) ...[
+                      Text(
+                        loc.shiftProfile,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: appError,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.descriptionColor,
                         ),
                       ),
-                    ),
-
-                  // ── Alarm offsets ─────────────────────────────────────────────
-                  Text(
-                    loc.alarms,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.descriptionColor,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  _AlarmOffsetEditor(
-                    offsets: _alarmOffsets,
-                    readOnly: _readOnly,
-                    onChanged: (offsets) =>
-                        setState(() => _alarmOffsets = offsets),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // ── Alarm type toggle ─────────────────────────────────────────
-                  if (!_readOnly)
-                    SegmentedButton<ShiftAlarmType>(
-                      style: SegmentedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        textStyle: theme.textTheme.labelSmall,
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: widget.profiles.map((p) {
+                          final selected = _selectedProfile?.id == p.id;
+                          return GestureDetector(
+                            onTap: _readOnly ? null : () => _applyProfile(p),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? p.displayColor.withValues(alpha: 0.2)
+                                    : mutedSurface,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: selected
+                                      ? p.displayColor
+                                      : borderColor,
+                                  width: selected ? 2 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: p.displayColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    p.name,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontWeight: selected
+                                          ? FontWeight.w700
+                                          : FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      selected: {_alarmType},
-                      onSelectionChanged: (newSet) {
-                        final selected = newSet.first;
-                        setState(() => _alarmType = selected);
-                        unawaited(
-                          _localNotifications.setShiftAlarmType(selected),
-                        );
-                        if (selected == ShiftAlarmType.alarm) {
-                          unawaited(_requestAlarmPermissionsIfNeeded());
-                        }
-                      },
-                      segments: [
-                        ButtonSegment(
-                          value: ShiftAlarmType.notification,
-                          label: Text(_notificationModeLabel(context)),
-                          icon: const Icon(
-                            Icons.notifications_outlined,
-                            size: 16,
+                      const SizedBox(height: 16),
+                    ],
+
+                    // ── Time pickers ──────────────────────────────────────────────
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _TimePicker(
+                            label: loc.shiftStart,
+                            value: _startTime,
+                            readOnly: _readOnly || _timeLocked,
+                            onChanged: (t) => setState(() {
+                              _startTime = t;
+                              if (_requestMode) {
+                                _overnight = _deriveOvernightFromTimes(
+                                  _startTime,
+                                  _endTime,
+                                );
+                              }
+                            }),
                           ),
                         ),
-                        ButtonSegment(
-                          value: ShiftAlarmType.alarm,
-                          label: Text(_alarmModeLabel(context)),
-                          icon: const Icon(Icons.alarm, size: 16),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _TimePicker(
+                            label: loc.shiftEnd,
+                            value: _endTime,
+                            readOnly: _readOnly || _timeLocked,
+                            onChanged: (t) => setState(() {
+                              _endTime = t;
+                              if (_requestMode) {
+                                _overnight = _deriveOvernightFromTimes(
+                                  _startTime,
+                                  _endTime,
+                                );
+                              }
+                            }),
+                          ),
                         ),
                       ],
                     ),
-                  const SizedBox(height: 12),
-
-                  // ── Note ──────────────────────────────────────────────────────
-                  TextField(
-                    controller: _noteCtrl,
-                    readOnly: _readOnly,
-                    decoration: InputDecoration(
-                      labelText: loc.note,
-                      border: OutlineInputBorder(
+                    const SizedBox(height: 16),
+                    if (!widget.useDialogLayout && widget.existing == null)
+                      const SizedBox(height: 12),
+                    if (widget.existing == null)
+                      InkWell(
                         borderRadius: BorderRadius.circular(10),
+                        onTap: _readOnly ? null : () => _pickRangeEndDate(loc),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            labelText: loc.shiftRepeatUntil,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            isDense: true,
+                            suffixIcon: const Icon(
+                              Icons.calendar_today_outlined,
+                            ),
+                            helperText: loc.shiftRepeatUntilHelp,
+                          ),
+                          child: Text(_formatDateLabel(_rangeEndDate)),
+                        ),
                       ),
-                      isDense: true,
-                    ),
-                    maxLines: 2,
-                  ),
-                  // ── Team assignment (managers: create + edit of public shifts) ──
-                  if (_hasOwnerTeams &&
-                      (widget.existing == null ||
-                          (widget.canManagePublicShifts &&
-                              widget.existing!.isPublic))) ...[
-                    const SizedBox(height: 12),
-                    _TeamAssignmentSection(
-                      ownerTeams: widget.ownerTeams,
-                      selectedTeam: _selectedTeam,
-                      selectedMemberIds: _selectedMemberIds,
-                      assignToAllMembers: _assignToAllMembers,
-                      teamMembers: _teamMembers,
-                      isLoadingMembers: _isSelectedTeamLoading,
-                      onTeamChanged: (team) {
-                        setState(() {
-                          _selectedTeam = team;
-                          _assignToAllMembers = true;
-                          _useMemberSpecificProfiles = false;
-                          _selectedMemberIds.clear();
-                          if (team == null && widget.existing == null) {
-                            _isPublic = false;
+                    const SizedBox(height: 8),
+
+                    // ── Overnight toggle ──────────────────────────────────────────
+                    if (!_requestMode)
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          loc.overnightShift,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                        value: _overnight,
+                        onChanged: (_readOnly || _timeLocked)
+                            ? null
+                            : (v) => setState(() => _overnight = v),
+                      ),
+                    if (!_hasValidTimeRange)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          loc.shiftEndMustBeAfterStart,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: appError,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                    // ── Alarm offsets ─────────────────────────────────────────────
+                    if (!_requestMode) ...[
+                      Text(
+                        loc.alarms,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.descriptionColor,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _AlarmOffsetEditor(
+                        offsets: _alarmOffsets,
+                        readOnly: _readOnly,
+                        onChanged: (offsets) =>
+                            setState(() => _alarmOffsets = offsets),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+
+                    // ── Alarm type toggle ─────────────────────────────────────────
+                    if (!_readOnly && !_requestMode)
+                      SegmentedButton<ShiftAlarmType>(
+                        style: SegmentedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          textStyle: theme.textTheme.labelSmall,
+                        ),
+                        selected: {_alarmType},
+                        onSelectionChanged: (newSet) {
+                          final selected = newSet.first;
+                          setState(() => _alarmType = selected);
+                          unawaited(
+                            _localNotifications.setShiftAlarmType(selected),
+                          );
+                          if (selected == ShiftAlarmType.alarm) {
+                            unawaited(_requestAlarmPermissionsIfNeeded());
                           }
-                        });
-                        unawaited(_ensureTeamMembersLoaded(team));
-                      },
-                      onAssignToAllChanged: (value) => setState(() {
-                        _assignToAllMembers = value;
-                        if (value) {
-                          _useMemberSpecificProfiles = false;
-                        }
-                        if (value) {
-                          _selectedMemberIds.clear();
-                        }
-                      }),
-                      onMemberToggled: (uid, selected) => setState(() {
-                        _assignToAllMembers = false;
-                        if (selected) {
-                          _selectedMemberIds.add(uid);
-                        } else {
-                          _selectedMemberIds.remove(uid);
-                          _memberProfileIds.remove(uid);
-                        }
-                        if (_selectedMemberIds.length < 2) {
-                          _useMemberSpecificProfiles = false;
-                        }
-                      }),
-                    ),
-                  ],
-                  if (!_readOnly &&
-                      widget.existing == null &&
-                      _selectedTeam != null &&
-                      !_assignToAllMembers &&
-                      _selectedMemberIds.length > 1) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: mutedSurface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            value: _useMemberSpecificProfiles,
-                            onChanged: (value) => setState(() {
-                              _useMemberSpecificProfiles = value;
-                            }),
-                            //title: const Text(''),
-                            title: Text(_useDifferentProfilesLabel(context)),
-                            subtitle: Text(
-                              _useDifferentProfilesSubtitle(context),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.descriptionColor,
-                              ),
+                        },
+                        segments: [
+                          ButtonSegment(
+                            value: ShiftAlarmType.notification,
+                            label: Text(_notificationModeLabel(context)),
+                            icon: const Icon(
+                              Icons.notifications_outlined,
+                              size: 16,
                             ),
                           ),
-                          if (_useMemberSpecificProfiles) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              _commonShiftMemberHint(context),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.descriptionColor,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            ..._selectedSpecificMembers.map((member) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: _MemberSpecificProfileTile(
-                                  label: member.displayLabel(context),
-                                  subtitle: member.secondaryLabel,
-                                  profiles: widget.profiles,
-                                  selectedProfileId:
-                                      _memberProfileIds[member.userId!],
-                                  onProfileChanged: (profileId) => setState(() {
-                                    _memberProfileIds[member.userId!] =
-                                        profileId;
-                                  }),
-                                ),
-                              );
-                            }),
-                          ],
+                          ButtonSegment(
+                            value: ShiftAlarmType.alarm,
+                            label: Text(_alarmModeLabel(context)),
+                            icon: const Icon(Icons.alarm, size: 16),
+                          ),
                         ],
                       ),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                  // ── Visibility toggle (owners only) ───────────────────────────
-                  if (widget.canManagePublicShifts || _effectiveIsPublic)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _effectiveIsPublic
-                            ? appPrimary.withValues(alpha: 0.08)
-                            : mutedSurface,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: _effectiveIsPublic
-                              ? appPrimary.withValues(alpha: 0.35)
-                              : borderColor,
+                    // ── Note ──────────────────────────────────────────────────────
+                    TextField(
+                      controller: _noteCtrl,
+                      readOnly: _readOnly,
+                      decoration: InputDecoration(
+                        labelText: loc.note,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        isDense: true,
                       ),
-                      child: SwitchListTile.adaptive(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 0,
-                        ),
-                        value: _effectiveIsPublic,
-                        onChanged:
-                            widget.canManagePublicShifts &&
-                                !_isTeamScopedSelection
-                            ? (v) => setState(() => _isPublic = v)
-                            : null,
-                        secondary: Icon(
-                          _effectiveIsPublic
-                              ? Icons.public
-                              : Icons.lock_outline,
-                          size: 18,
-                          color: _effectiveIsPublic
-                              ? appPrimary
-                              : colorScheme.outline,
-                        ),
-                        title: Text(
-                          _effectiveIsPublic
-                              ? _publicVisibleToTeamTitle(context)
-                              : _privateVisibleOnlyToYouTitle(context),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: _effectiveIsPublic ? appPrimary : null,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _isTeamScopedSelection
-                              ? _teamSelectedCreatesPublicShiftText(context)
-                              : _effectiveIsPublic
-                              ? _allTeamMembersSeeShiftText(context)
-                              : _onlyYouCanSeeShiftText(context),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colorScheme.descriptionColor,
-                          ),
-                        ),
-                      ),
+                      maxLines: 2,
                     ),
-                  const SizedBox(height: 20),
+                    // ── Team assignment (managers: create + edit of public shifts) ──
+                    if (!_requestMode &&
+                        _hasOwnerTeams &&
+                        (widget.existing == null ||
+                            (widget.canManagePublicShifts &&
+                                widget.existing!.isPublic))) ...[
+                      const SizedBox(height: 12),
+                      _TeamAssignmentSection(
+                        ownerTeams: widget.ownerTeams,
+                        selectedTeam: _selectedTeam,
+                        selectedMemberIds: _selectedMemberIds,
+                        assignToAllMembers: _assignToAllMembers,
+                        teamMembers: _teamMembers,
+                        isLoadingMembers: _isSelectedTeamLoading,
+                        onTeamChanged: (team) {
+                          setState(() {
+                            _selectedTeam = team;
+                            _assignToAllMembers = true;
+                            _useMemberSpecificProfiles = false;
+                            _selectedMemberIds.clear();
+                            if (team == null && widget.existing == null) {
+                              _isPublic = false;
+                            }
+                          });
+                          unawaited(_ensureTeamMembersLoaded(team));
+                        },
+                        onAssignToAllChanged: (value) => setState(() {
+                          _assignToAllMembers = value;
+                          if (value) {
+                            _useMemberSpecificProfiles = false;
+                          }
+                          if (value) {
+                            _selectedMemberIds.clear();
+                          }
+                        }),
+                        onMemberToggled: (uid, selected) => setState(() {
+                          _assignToAllMembers = false;
+                          if (selected) {
+                            _selectedMemberIds.add(uid);
+                          } else {
+                            _selectedMemberIds.remove(uid);
+                            _memberProfileIds.remove(uid);
+                          }
+                          if (_selectedMemberIds.length < 2) {
+                            _useMemberSpecificProfiles = false;
+                          }
+                        }),
+                      ),
+                    ],
+                    if (!_requestMode &&
+                        !_readOnly &&
+                        widget.existing == null &&
+                        _selectedTeam != null &&
+                        !_assignToAllMembers &&
+                        _selectedMemberIds.length > 1) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: mutedSurface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              value: _useMemberSpecificProfiles,
+                              onChanged: (value) => setState(() {
+                                _useMemberSpecificProfiles = value;
+                              }),
+                              //title: const Text(''),
+                              title: Text(_useDifferentProfilesLabel(context)),
+                              subtitle: Text(
+                                _useDifferentProfilesSubtitle(context),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.descriptionColor,
+                                ),
+                              ),
+                            ),
+                            if (_useMemberSpecificProfiles) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                _commonShiftMemberHint(context),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.descriptionColor,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              ..._selectedSpecificMembers.map((member) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _MemberSpecificProfileTile(
+                                    label: member.displayLabel(context),
+                                    subtitle: member.secondaryLabel,
+                                    profiles: widget.profiles,
+                                    selectedProfileId:
+                                        _memberProfileIds[member.userId!],
+                                    onProfileChanged: (profileId) =>
+                                        setState(() {
+                                          _memberProfileIds[member.userId!] =
+                                              profileId;
+                                        }),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+
+                    // ── Visibility toggle (owners only) ───────────────────────────
+                    if ((widget.canManagePublicShifts || _effectiveIsPublic) &&
+                        !_requestMode &&
+                        !_approvedSelfEditMode)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: _effectiveIsPublic
+                              ? appPrimary.withValues(alpha: 0.08)
+                              : mutedSurface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _effectiveIsPublic
+                                ? appPrimary.withValues(alpha: 0.35)
+                                : borderColor,
+                          ),
+                        ),
+                        child: SwitchListTile.adaptive(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 0,
+                          ),
+                          value: _effectiveIsPublic,
+                          onChanged:
+                              widget.canManagePublicShifts &&
+                                  !_isTeamScopedSelection
+                              ? (v) => setState(() => _isPublic = v)
+                              : null,
+                          secondary: Icon(
+                            _effectiveIsPublic
+                                ? Icons.public
+                                : Icons.lock_outline,
+                            size: 18,
+                            color: _effectiveIsPublic
+                                ? appPrimary
+                                : colorScheme.outline,
+                          ),
+                          title: Text(
+                            _effectiveIsPublic
+                                ? _publicVisibleToTeamTitle(context)
+                                : _privateVisibleOnlyToYouTitle(context),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: _effectiveIsPublic ? appPrimary : null,
+                            ),
+                          ),
+                          subtitle: Text(
+                            _isTeamScopedSelection
+                                ? _teamSelectedCreatesPublicShiftText(context)
+                                : _effectiveIsPublic
+                                ? _allTeamMembersSeeShiftText(context)
+                                : _onlyYouCanSeeShiftText(context),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.descriptionColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+                  ],
 
                   // ── Confirm / Close button ────────────────────────────────────
                   SizedBox(
                     width: double.infinity,
                     child: _readOnly
-                        ? CustomAppButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            type: ButtonType.outlined,
-                            borderRadius: 10,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            isActive: true,
-                            fullWidth: true,
-                            child: Text(loc.close),
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_canOpenRequestMode ||
+                                  _hasPendingRequest) ...[
+                                CustomAppButton(
+                                  onPressed: _hasPendingRequest
+                                      ? null
+                                      : _enterRequestMode,
+                                  type: ButtonType.filled,
+                                  backgroundColor: appPrimary,
+                                  borderRadius: 10,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  isActive: !_hasPendingRequest,
+                                  fullWidth: true,
+                                  child: Text(
+                                    _hasPendingRequest
+                                        ? _pendingShiftChangeButton(context)
+                                        : _requestShiftChangeButton(context),
+                                  ),
+                                ),
+                                if (_hasPendingRequest) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _pendingShiftChangeBanner(context),
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.descriptionColor,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 10),
+                              ],
+                              CustomAppButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                type: ButtonType.outlined,
+                                borderRadius: 10,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                isActive: true,
+                                fullWidth: true,
+                                child: Text(loc.close),
+                              ),
+                            ],
                           )
                         : CustomAppButton(
                             onPressed:
-                                !_hasValidTeamSelection || !_hasValidTimeRange
+                                (_requestMode
+                                    ? !_hasValidTimeRange
+                                    : (!_hasValidTeamSelection ||
+                                          !_hasValidTimeRange))
                                 ? null
-                                : _submitShiftDay,
+                                : (_requestMode
+                                      ? _submitShiftChangeRequest
+                                      : _submitShiftDay),
                             type: ButtonType.filled,
                             backgroundColor: appPrimary,
                             borderRadius: 10,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             isActive: true,
                             fullWidth: true,
-                            child: Text(loc.save),
+                            child: Text(
+                              _requestMode
+                                  ? _requestShiftChangeButton(context)
+                                  : loc.save,
+                            ),
                           ),
                   ),
                 ],
@@ -1425,6 +1676,129 @@ class _TeamAssignmentSection extends StatefulWidget {
 
   @override
   State<_TeamAssignmentSection> createState() => _TeamAssignmentSectionState();
+}
+
+class _ShiftViewSection extends StatelessWidget {
+  const _ShiftViewSection({
+    required this.theme,
+    required this.borderColor,
+    required this.mutedSurface,
+    required this.dateLabel,
+    required this.profileName,
+    required this.userName,
+    required this.teamName,
+    required this.startTime,
+    required this.endTime,
+    required this.overnight,
+    required this.note,
+    required this.isPublic,
+    required this.alarmOffsets,
+  });
+
+  final ThemeData theme;
+  final Color borderColor;
+  final Color mutedSurface;
+  final String dateLabel;
+  final String profileName;
+  final String? userName;
+  final String? teamName;
+  final TimeOfDay startTime;
+  final TimeOfDay endTime;
+  final bool overnight;
+  final String note;
+  final bool isPublic;
+  final List<int> alarmOffsets;
+
+  String _formatTime(TimeOfDay value) {
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _formatAlarmOffsets() {
+    if (alarmOffsets.isEmpty) {
+      return '-';
+    }
+    return alarmOffsets.map((value) => '$value min').join(', ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
+    final rows = <({String label, String value})>[
+      (label: 'Date', value: dateLabel),
+      (
+        label: 'Member',
+        value: (userName != null && userName!.trim().isNotEmpty)
+            ? userName!.trim()
+            : '-',
+      ),
+      (
+        label: 'Team',
+        value: (teamName != null && teamName!.trim().isNotEmpty)
+            ? teamName!.trim()
+            : '-',
+      ),
+      (label: localization.shiftProfile, value: profileName),
+      (label: localization.shiftStart, value: _formatTime(startTime)),
+      (label: localization.shiftEnd, value: _formatTime(endTime)),
+      (label: localization.overnightShift, value: overnight ? 'Yes' : 'No'),
+      (
+        label: 'Visibility',
+        value: isPublic ? 'Public team shift' : 'Private shift',
+      ),
+      (
+        label: localization.note,
+        value: note.trim().isEmpty ? '-' : note.trim(),
+      ),
+      (label: localization.alarms, value: _formatAlarmOffsets()),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: mutedSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Shift details',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...rows.map(
+            (row) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 112,
+                    child: Text(
+                      row.label,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(row.value, style: theme.textTheme.bodyMedium),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {

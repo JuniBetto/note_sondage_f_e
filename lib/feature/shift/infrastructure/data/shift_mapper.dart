@@ -47,6 +47,9 @@ class ShiftMapper {
       note: json['note'] as String?,
       alarmOffsets: offsets,
       isPublic: (json['isPublic'] as bool?) ?? false,
+      memberEditUnlocked: (json['memberEditUnlocked'] as bool?) ?? false,
+      memberChangeRequestPending:
+          (json['memberChangeRequestPending'] as bool?) ?? false,
     );
   }
 

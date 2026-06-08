@@ -208,4 +208,25 @@ class ShiftRepositoryImpl implements ShiftRepository {
       cached.where((item) => item.id != assignmentId).toList(),
     );
   }
+
+  @override
+  Future<void> requestAssignmentChange(
+    String assignmentId, {
+    String? profileId,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    bool? overnight,
+    String? note,
+    List<int>? alarmOffsets,
+  }) {
+    return _remote.requestAssignmentChange(
+      assignmentId,
+      profileId: profileId,
+      startTime: startTime,
+      endTime: endTime,
+      overnight: overnight,
+      note: note,
+      alarmOffsets: alarmOffsets,
+    );
+  }
 }

@@ -44,7 +44,9 @@ class NotificationCenterItem extends Equatable {
     );
   }
 
-  factory NotificationCenterItem.fromRealtime(RealtimeNotification notification) {
+  factory NotificationCenterItem.fromRealtime(
+    RealtimeNotification notification,
+  ) {
     return NotificationCenterItem(
       notificationId: notification.notificationId,
       eventType: notification.eventType,
@@ -159,14 +161,16 @@ class NotificationCenterItem extends Equatable {
   bool get isPendingClockingManagerDecision =>
       eventType == 'CLOCKING_CLOCKING_REQUESTED' ||
       eventType == 'CLOCKING_VACATION_REQUESTED' ||
-      eventType == 'CLOCKING_PERMISSION_REQUESTED';
+      eventType == 'CLOCKING_PERMISSION_REQUESTED' ||
+      eventType == 'SHIFT_CHANGE_REQUESTED';
 
   bool supportsClockingDecision() {
     return isPendingClockingManagerDecision &&
-        teamName != null &&
         requesterUserId != null &&
-        requestedDate != null &&
-        requestType != null;
+        requestType != null &&
+        ((requestType == 'shift_change' &&
+                metadata['assignmentId']?.trim().isNotEmpty == true) ||
+            (teamName != null && requestedDate != null));
   }
 
   bool supportsApprovedManualClockingFor({
