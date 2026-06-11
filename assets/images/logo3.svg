@@ -1,0 +1,24 @@
+<svg width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+
+  
+  <!-- Cerchio decorativo -->
+  <circle cx="150" cy="150" r="110" stroke="#000" stroke-width="2" fill="none"/>
+
+  <!-- Lettera A -->
+  <text x="95" y="185"
+        font-family="Didot, Bodoni, serif"
+        font-size="140"
+        fill="#000"
+        stroke-width="2">
+    A
+  </text>
+
+  <!-- Lettera B sovrapposta -->
+  <text x="130" y="185"
+        font-family="Didot, Bodoni, serif"
+        font-size="140"
+        fill="#000"
+        stroke-width="2">
+    B
+  </text>
+</svg>

@@ -1,0 +1,28 @@
+FROM ghcr.io/cirruslabs/flutter:stable AS build
+
+WORKDIR /app
+
+COPY pubspec.yaml pubspec.lock ./
+RUN flutter pub get
+
+COPY assets ./assets
+COPY lib ./lib
+COPY web ./web
+COPY l10n.yaml ./
+COPY analysis_options.yaml ./
+COPY .env.web ./.env.web
+
+RUN test -f ./.env.web \
+    && set -a \
+    && . ./.env.web \
+    && set +a \
+    && flutter build web --release \
+      --dart-define=API_BASE_URL="${API_BASE_URL}" \
+      --dart-define=EMAIL_CONFIRMATION_URL="${EMAIL_CONFIRMATION_URL}" \
+      --dart-define=APPLE_STORE_URL="${APPLE_STORE_URL}" \
+      --dart-define=ANDROID_STORE_URL="${ANDROID_STORE_URL}" \
+      --dart-define=SENTRY_DSN="${SENTRY_DSN}"
+
+FROM docker.io/library/nginx:1.27-alpine
+
+COPY --from=build /app/build/web /usr/share/nginx/html

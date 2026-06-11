@@ -1,0 +1,23 @@
+server {
+    listen 80;
+    server_name ${PUBLIC_WEB_DOMAIN};
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    client_max_body_size 20m;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.(?:js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2)$ {
+        expires 1d;
+        add_header Cache-Control "public, max-age=86400";
+        try_files $uri =404;
+    }
+}

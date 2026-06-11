@@ -1,0 +1,128 @@
+require "shellwords"
+
+default_platform(:ios)
+
+def require_env!(keys)
+  missing = keys.select { |key| ENV[key].to_s.strip.empty? }
+  return if missing.empty?
+
+  UI.user_error!("Missing required environment variables: #{missing.join(', ')}")
+end
+
+def flutter_build_name
+  ENV["FLUTTER_BUILD_NAME"].to_s.strip.empty? ? "1.0.0" : ENV["FLUTTER_BUILD_NAME"].strip
+end
+
+def flutter_build_number
+  value = ENV["FLUTTER_BUILD_NUMBER"].to_s.strip
+  return value unless value.empty?
+
+  ENV["GITHUB_RUN_NUMBER"].to_s.strip.empty? ? Time.now.to_i.to_s : ENV["GITHUB_RUN_NUMBER"].strip
+end
+
+def dart_define_args
+  {
+    "API_BASE_URL" => ENV["API_BASE_URL"],
+    "EMAIL_CONFIRMATION_URL" => ENV["EMAIL_CONFIRMATION_URL"],
+    "SENTRY_DSN" => ENV["SENTRY_DSN"],
+    "APP_ENV" => ENV["APP_ENV"].to_s.strip.empty? ? "Prod" : ENV["APP_ENV"].strip,
+  }.filter_map do |key, value|
+    next if value.to_s.strip.empty?
+
+    "--dart-define=#{key}=#{value}"
+  end
+end
+
+def shell_join(parts)
+  parts.map { |part| Shellwords.escape(part.to_s) }.join(" ")
+end
+
+def flutter_pub_get
+  sh("flutter pub get")
+end
+
+platform :android do
+  desc "Build and upload Android app bundle to Google Play Internal Testing"
+  lane :internal do
+    require_env!(%w[
+      API_BASE_URL
+      EMAIL_CONFIRMATION_URL
+      PLAY_STORE_SERVICE_ACCOUNT_JSON
+    ])
+
+    flutter_pub_get
+
+    sh(
+      shell_join(
+        [
+          "flutter",
+          "build",
+          "appbundle",
+          "--release",
+          "--build-name=#{flutter_build_name}",
+          "--build-number=#{flutter_build_number}",
+        ] + dart_define_args,
+      ),
+    )
+
+    upload_to_play_store(
+      package_name: "com.arthbet.noteSondage",
+      track: "internal",
+      aab: "build/app/outputs/bundle/release/app-release.aab",
+      json_key_data: ENV["PLAY_STORE_SERVICE_ACCOUNT_JSON"],
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed",
+    )
+  end
+end
+
+platform :ios do
+  desc "Build and upload iOS app to TestFlight"
+  lane :testflight do
+    require_env!(%w[
+      API_BASE_URL
+      EMAIL_CONFIRMATION_URL
+      APP_STORE_CONNECT_API_KEY_ID
+      APP_STORE_CONNECT_ISSUER_ID
+      APP_STORE_CONNECT_PRIVATE_KEY
+    ])
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_content: ENV["APP_STORE_CONNECT_PRIVATE_KEY"],
+      duration: 1200,
+      in_house: false,
+    )
+
+    flutter_pub_get
+
+    sh(
+      shell_join(
+        [
+          "flutter",
+          "build",
+          "ipa",
+          "--release",
+          "--build-name=#{flutter_build_name}",
+          "--build-number=#{flutter_build_number}",
+          "--export-method=app-store",
+        ] + dart_define_args,
+      ),
+    )
+
+    ipa_path = Dir["build/ios/ipa/*.ipa"].first
+    UI.user_error!("No IPA found in build/ios/ipa") if ipa_path.to_s.empty?
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: ipa_path,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false,
+    )
+  end
+end
