@@ -2,6 +2,10 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/invite_team_member_request_mapper.dart';
 
 class TeamMapper {
+  static const String _defaultReminderTime = '09:00';
+  static const String _defaultMissingAlertTime = '10:00';
+  static const String _defaultOpenAlertTime = '18:00';
+
   static TeamEntity fromJson(Map<String, dynamic> json) {
     DateTime? createdAt;
     if (json['createdAt'] != null) {
@@ -18,6 +22,7 @@ class TeamMapper {
 
     final rawColor = json['color']?.toString();
     final color = (rawColor != null && rawColor.isNotEmpty) ? rawColor : null;
+    final clockingRequired = json['clockingRequired'] == true;
 
     return TeamEntity(
       json['id']?.toString(),
@@ -26,6 +31,19 @@ class TeamMapper {
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       createdByUserId: createdByUserId,
+      clockingRequired: clockingRequired,
+      clockingReminderTime: _normalizeTimeString(
+        json['clockingReminderTime'],
+        fallback: _defaultReminderTime,
+      ),
+      clockingMissingAlertTime: _normalizeTimeString(
+        json['clockingMissingAlertTime'],
+        fallback: _defaultMissingAlertTime,
+      ),
+      clockingOpenAlertTime: _normalizeTimeString(
+        json['clockingOpenAlertTime'],
+        fallback: _defaultOpenAlertTime,
+      ),
       memberCount: (json['memberCount'] as num?)?.toInt() ?? 0,
       createdAt: createdAt,
     );
@@ -41,6 +59,19 @@ class TeamMapper {
       'description': entity.description,
       if (entity.color != null && entity.color!.isNotEmpty)
         'color': entity.color,
+      'clockingRequired': entity.clockingRequired,
+      'clockingReminderTime': _timeForApi(
+        entity.clockingReminderTime,
+        fallback: _defaultReminderTime,
+      ),
+      'clockingMissingAlertTime': _timeForApi(
+        entity.clockingMissingAlertTime,
+        fallback: _defaultMissingAlertTime,
+      ),
+      'clockingOpenAlertTime': _timeForApi(
+        entity.clockingOpenAlertTime,
+        fallback: _defaultOpenAlertTime,
+      ),
       'organisationId': null,
       if (entity.pendingInvitations != null &&
           entity.pendingInvitations!.isNotEmpty)
@@ -56,6 +87,19 @@ class TeamMapper {
       'description': entity.description,
       if (entity.color != null && entity.color!.isNotEmpty)
         'color': entity.color,
+      'clockingRequired': entity.clockingRequired,
+      'clockingReminderTime': _timeForApi(
+        entity.clockingReminderTime,
+        fallback: _defaultReminderTime,
+      ),
+      'clockingMissingAlertTime': _timeForApi(
+        entity.clockingMissingAlertTime,
+        fallback: _defaultMissingAlertTime,
+      ),
+      'clockingOpenAlertTime': _timeForApi(
+        entity.clockingOpenAlertTime,
+        fallback: _defaultOpenAlertTime,
+      ),
     };
   }
 
@@ -70,7 +114,39 @@ class TeamMapper {
       color: (json['color']?.toString().isNotEmpty ?? false)
           ? json['color']!.toString()
           : null,
+      clockingRequired: json['clockingRequired'] == true,
+      clockingReminderTime: _normalizeTimeString(
+        json['clockingReminderTime'],
+        fallback: _defaultReminderTime,
+      ),
+      clockingMissingAlertTime: _normalizeTimeString(
+        json['clockingMissingAlertTime'],
+        fallback: _defaultMissingAlertTime,
+      ),
+      clockingOpenAlertTime: _normalizeTimeString(
+        json['clockingOpenAlertTime'],
+        fallback: _defaultOpenAlertTime,
+      ),
       listMember: [],
     );
+  }
+
+  static String _timeForApi(String? value, {required String fallback}) {
+    final normalized = _normalizeTimeString(value, fallback: fallback);
+    if (normalized == null || normalized.isEmpty) {
+      return fallback;
+    }
+    return '$normalized:00';
+  }
+
+  static String? _normalizeTimeString(dynamic raw, {String? fallback}) {
+    final value = raw?.toString().trim();
+    if (value == null || value.isEmpty) {
+      return fallback;
+    }
+    if (value.length >= 5) {
+      return value.substring(0, 5);
+    }
+    return value;
   }
 }

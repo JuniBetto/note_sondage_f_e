@@ -32,6 +32,10 @@ class TeamLocalDataSource {
         createdByUserId: e.createdByUserId,
         createdAt: e.createdAt.toIso8601String(),
         color: e.color,
+        clockingRequired: e.clockingRequired,
+        clockingReminderTime: e.clockingReminderTime,
+        clockingMissingAlertTime: e.clockingMissingAlertTime,
+        clockingOpenAlertTime: e.clockingOpenAlertTime,
       ),
     );
     await box.addAll(models);
@@ -53,6 +57,10 @@ class TeamLocalDataSource {
             name: m.name,
             description: m.description,
             createdByUserId: m.createdByUserId,
+            clockingRequired: m.clockingRequired,
+            clockingReminderTime: m.clockingReminderTime,
+            clockingMissingAlertTime: m.clockingMissingAlertTime,
+            clockingOpenAlertTime: m.clockingOpenAlertTime,
             createdAt: DateTime.tryParse(m.createdAt),
           ),
         )

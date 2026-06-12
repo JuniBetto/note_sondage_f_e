@@ -102,6 +102,10 @@ class TeamRepositoryImpl implements TeamRepository {
                     name: updated.name,
                     description: updated.description,
                     createdByUserId: updated.createdByUserId,
+                    clockingRequired: updated.clockingRequired,
+                    clockingReminderTime: updated.clockingReminderTime,
+                    clockingMissingAlertTime: updated.clockingMissingAlertTime,
+                    clockingOpenAlertTime: updated.clockingOpenAlertTime,
                     createdAt: updated.createdAt,
                   )
                 : t,

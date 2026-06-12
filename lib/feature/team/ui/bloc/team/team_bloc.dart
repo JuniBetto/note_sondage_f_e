@@ -206,6 +206,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       name: event.team.name,
       description: event.team.description,
       createdByUserId: event.team.createdByUserId,
+      clockingRequired: event.team.clockingRequired,
+      clockingReminderTime: event.team.clockingReminderTime,
+      clockingMissingAlertTime: event.team.clockingMissingAlertTime,
+      clockingOpenAlertTime: event.team.clockingOpenAlertTime,
       memberCount: event.team.memberCount,
       createdAt: event.team.createdAt,
     );
@@ -576,6 +580,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       createdByUserId: update.createdByUserId.isNotEmpty
           ? update.createdByUserId
           : (previous?.createdByUserId ?? ''),
+      clockingRequired: update.clockingRequired,
+      clockingReminderTime: update.clockingReminderTime,
+      clockingMissingAlertTime: update.clockingMissingAlertTime,
+      clockingOpenAlertTime: update.clockingOpenAlertTime,
       memberCount: previous?.memberCount ?? 0,
       createdAt: previous?.createdAt ?? update.createdAt,
     );

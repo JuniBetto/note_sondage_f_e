@@ -13,6 +13,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/add_user_web.dart';
+import 'package:note_sondage/feature/team/ui/widgets/team_clocking_requirement_section.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_members_section.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -51,6 +52,10 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   ];
 
   List<String> selectedColor = [];
+  bool _clockingRequired = false;
+  String _clockingReminderTime = '09:00';
+  String _clockingMissingAlertTime = '10:00';
+  String _clockingOpenAlertTime = '18:00';
   late final TeamBloc _teamBloc;
   bool _isLoading = true;
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
@@ -104,6 +109,11 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
           focusTeamController.text = team.description;
           setState(() {
             selectedColor = team.color != null ? [team.color!] : [];
+            _clockingRequired = team.clockingRequired;
+            _clockingReminderTime = team.clockingReminderTime ?? '09:00';
+            _clockingMissingAlertTime =
+                team.clockingMissingAlertTime ?? '10:00';
+            _clockingOpenAlertTime = team.clockingOpenAlertTime ?? '18:00';
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated) {
@@ -260,6 +270,29 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
 
                 const SizedBox(height: 24),
 
+                _buildSectionTitle(context, 'Clocking'),
+                const SizedBox(height: 12),
+                TeamClockingRequirementSection(
+                  clockingRequired: _clockingRequired,
+                  onClockingRequiredChanged: (value) {
+                    setState(() => _clockingRequired = value);
+                  },
+                  reminderTime: _clockingReminderTime,
+                  onReminderTimeChanged: (value) {
+                    setState(() => _clockingReminderTime = value);
+                  },
+                  missingAlertTime: _clockingMissingAlertTime,
+                  onMissingAlertTimeChanged: (value) {
+                    setState(() => _clockingMissingAlertTime = value);
+                  },
+                  openAlertTime: _clockingOpenAlertTime,
+                  onOpenAlertTimeChanged: (value) {
+                    setState(() => _clockingOpenAlertTime = value);
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
                 // ── Members Section ──
                 _buildSectionTitle(context, localization.userList),
                 const SizedBox(height: 12),
@@ -364,6 +397,10 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
         name: nameTeamController.text,
         description: focusTeamController.text,
         createdByUserId: null,
+        clockingRequired: _clockingRequired,
+        clockingReminderTime: _clockingReminderTime,
+        clockingMissingAlertTime: _clockingMissingAlertTime,
+        clockingOpenAlertTime: _clockingOpenAlertTime,
         listMember: listteamMember,
       );
 

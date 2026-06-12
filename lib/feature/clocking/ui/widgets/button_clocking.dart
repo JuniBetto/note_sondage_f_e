@@ -65,6 +65,13 @@ class _ButtonClockingState extends State<ButtonClocking> {
   void initState() {
     super.initState();
     _syncManualDatesFromSelectedDate();
+    final teamState = context.read<TeamBloc>().state;
+    if (teamState is! TeamsLoaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<TeamBloc>().add(LoadTeamsEvent());
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncClockingAccess());
   }
 
@@ -153,6 +160,12 @@ class _ButtonClockingState extends State<ButtonClocking> {
           final teams = teamState is TeamsLoaded
               ? teamState.teams
               : <TeamEntity>[];
+          if (teams.isEmpty && teamState is! TeamLoading) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              context.read<TeamBloc>().add(LoadTeamsEvent());
+            });
+          }
           _ensureSelectedTeam(teams);
           if (widget.selectedTeamId != _resolvedTeamId) {
             WidgetsBinding.instance.addPostFrameCallback(

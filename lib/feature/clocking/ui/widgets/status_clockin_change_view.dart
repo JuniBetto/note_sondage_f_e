@@ -210,6 +210,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           final teamState = context.watch<TeamBloc>().state;
           final selectedTeam = _selectedTeam(teamState, widget.selectedTeamId);
           final authState = context.watch<AuthBloc>().state;
+          final currentUserId = authState.user.uid;
           final isOwner =
               authState.user.isNotEmpty &&
               selectedTeam?.createdByUserId == authState.user.uid;
@@ -446,6 +447,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _MobileRecordCard(
                             record: record,
+                            currentUserId: currentUserId,
                             isSyncing: context
                                 .read<ClockingBloc>()
                                 .syncingRecordIds
@@ -469,6 +471,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _WebRecordRow(
                             record: record,
+                            currentUserId: currentUserId,
                             isSyncing: context
                                 .read<ClockingBloc>()
                                 .syncingRecordIds
@@ -828,11 +831,29 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       builder: (dialogContext) {
         final loc = AppLocalizations.of(dialogContext)!;
         return AlertDialog(
-          title: Text(loc.editClocking),
+          title: Text(
+            record.userName.trim().isEmpty
+                ? loc.editClocking
+                : '${loc.editClocking} • ${record.userName}',
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (record.userName.trim().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        record.teamName.trim().isNotEmpty
+                            ? 'Team: ${record.teamName}'
+                            : record.userName,
+                        style: Theme.of(dialogContext).textTheme.bodySmall
+                            ?.copyWith(color: Colors.grey[600]),
+                      ),
+                    ),
+                  ),
                 TextField(
                   controller: clockInController,
                   decoration: InputDecoration(
@@ -1536,6 +1557,7 @@ class _InfoState extends StatelessWidget {
 class _WebRecordRow extends StatelessWidget {
   const _WebRecordRow({
     required this.record,
+    required this.currentUserId,
     this.isSyncing = false,
     required this.isOwner,
     required this.isArchived,
@@ -1546,6 +1568,7 @@ class _WebRecordRow extends StatelessWidget {
   });
 
   final ClockingRecordEntity record;
+  final String currentUserId;
   final bool isSyncing;
   final bool isOwner;
   final bool isArchived;
@@ -1567,6 +1590,7 @@ class _WebRecordRow extends StatelessWidget {
         if (useStackedLayout) {
           return _MobileRecordCard(
             record: record,
+            currentUserId: currentUserId,
             isSyncing: isSyncing,
             isOwner: isOwner,
             isArchived: isArchived,
@@ -1591,7 +1615,11 @@ class _WebRecordRow extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 2,
-                  child: _RecordSummary(record: record, isSyncing: isSyncing),
+                  child: _RecordSummary(
+                    record: record,
+                    currentUserId: currentUserId,
+                    isSyncing: isSyncing,
+                  ),
                 ),
                 Expanded(
                   child: _RecordTimeColumn(
@@ -1634,6 +1662,7 @@ class _WebRecordRow extends StatelessWidget {
                   width: 210,
                   child: _OwnerActions(
                     record: record,
+                    currentUserId: currentUserId,
                     isSyncing: isSyncing,
                     isOwner: isOwner,
                     onDecommit: onDecommit,
@@ -1664,6 +1693,7 @@ class _WebRecordRow extends StatelessWidget {
 class _MobileRecordCard extends StatelessWidget {
   const _MobileRecordCard({
     required this.record,
+    required this.currentUserId,
     this.isSyncing = false,
     required this.isOwner,
     required this.isArchived,
@@ -1674,6 +1704,7 @@ class _MobileRecordCard extends StatelessWidget {
   });
 
   final ClockingRecordEntity record;
+  final String currentUserId;
   final bool isSyncing;
   final bool isOwner;
   final bool isArchived;
@@ -1702,7 +1733,11 @@ class _MobileRecordCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: _RecordSummary(record: record, isSyncing: isSyncing),
+                  child: _RecordSummary(
+                    record: record,
+                    currentUserId: currentUserId,
+                    isSyncing: isSyncing,
+                  ),
                 ),
                 IconButton(
                   tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
@@ -1739,6 +1774,7 @@ class _MobileRecordCard extends StatelessWidget {
             const SizedBox(height: 12),
             _OwnerActions(
               record: record,
+              currentUserId: currentUserId,
               isSyncing: isSyncing,
               isOwner: isOwner,
               onDecommit: onDecommit,
@@ -1754,14 +1790,21 @@ class _MobileRecordCard extends StatelessWidget {
 }
 
 class _RecordSummary extends StatelessWidget {
-  const _RecordSummary({required this.record, this.isSyncing = false});
+  const _RecordSummary({
+    required this.record,
+    required this.currentUserId,
+    this.isSyncing = false,
+  });
 
   final ClockingRecordEntity record;
+  final String currentUserId;
   final bool isSyncing;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isCurrentUserRecord =
+        currentUserId.trim().isNotEmpty && currentUserId == record.userId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1817,6 +1860,12 @@ class _RecordSummary extends StatelessWidget {
               color: _statusColor(record.status),
             ),
             if (isSyncing) _StatusBadge(label: 'Syncing', color: Colors.amber),
+            _StatusBadge(
+              label: isCurrentUserRecord
+                  ? 'La tua timbratura'
+                  : 'Timbratura membro',
+              color: isCurrentUserRecord ? Colors.indigo : Colors.deepOrange,
+            ),
             if (record.note != null && record.note!.trim().isNotEmpty)
               _StatusBadge(
                 label: AppLocalizations.of(context)!.note,
@@ -1832,6 +1881,7 @@ class _RecordSummary extends StatelessWidget {
 class _OwnerActions extends StatelessWidget {
   const _OwnerActions({
     required this.record,
+    required this.currentUserId,
     this.isSyncing = false,
     required this.isOwner,
     required this.onDecommit,
@@ -1841,6 +1891,7 @@ class _OwnerActions extends StatelessWidget {
   });
 
   final ClockingRecordEntity record;
+  final String currentUserId;
   final bool isSyncing;
   final bool isOwner;
   final VoidCallback onDecommit;
@@ -1860,6 +1911,8 @@ class _OwnerActions extends StatelessWidget {
     }
 
     final loc = AppLocalizations.of(context)!;
+    final isCurrentUserRecord =
+        currentUserId.trim().isNotEmpty && currentUserId == record.userId;
     final buttons = <Widget>[
       if (record.canDecommit)
         CustomAppButton(
@@ -1880,7 +1933,11 @@ class _OwnerActions extends StatelessWidget {
           onPressed: isSyncing ? null : onEdit,
           type: ButtonType.filled,
           isActive: !isSyncing,
-          child: Text(loc.editAction),
+          child: Text(
+            record.isActive && !isCurrentUserRecord
+                ? 'Chiudi timbratura'
+                : loc.editAction,
+          ),
         ),
     ];
 
