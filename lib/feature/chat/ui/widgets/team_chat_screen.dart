@@ -80,11 +80,13 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   bool _refreshingMessages = false;
   bool _loadingOlderMessages = false;
   bool _hasMoreOlderMessages = true;
-  bool _sending = false;
+  int _pendingSendCount = 0;
   bool _markingConversationRead = false;
   bool _pendingForceLatestFocus = false;
   ChatDraftAttachment? _selectedAttachment;
   ChatMessageEntity? _replyTarget;
+
+  bool get _sending => _pendingSendCount > 0;
 
   TeamEntity? get _selectedTeam {
     for (final team in _teams) {
@@ -461,8 +463,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     final content = _messageController.text.trim();
     final selectedAttachment = _selectedAttachment;
     if (conversation == null ||
-        (content.isEmpty && selectedAttachment == null) ||
-        _sending) {
+        (content.isEmpty && selectedAttachment == null)) {
       return;
     }
 
@@ -474,7 +475,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     );
 
     setState(() {
-      _sending = true;
+      _pendingSendCount += 1;
       _selectedAttachment = null;
       _replyTarget = null;
       _messages = <ChatMessageEntity>[..._messages, temporaryMessage];
@@ -502,46 +503,54 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         _messages = _messages
             .map((item) => item.id == temporaryMessage.id ? message : item)
             .toList();
-        _sending = false;
+        _pendingSendCount = _pendingSendCount > 0 ? _pendingSendCount - 1 : 0;
       });
       _scrollToBottom();
     } catch (error) {
       if (!mounted) return;
+      final shouldRestoreDraft =
+          _messageController.text.trim().isEmpty &&
+          _selectedAttachment == null &&
+          _replyTarget == null;
       setState(() {
         _messages = _messages
             .where((item) => item.id != temporaryMessage.id)
             .toList();
-        _sending = false;
-        _selectedAttachment = selectedAttachment;
-        _replyTarget = temporaryMessage.replyTo == null
-            ? null
-            : ChatMessageEntity(
-                id: temporaryMessage.replyTo!.messageId,
-                conversationId: conversation.id,
-                senderUserId: '',
-                senderName: temporaryMessage.replyTo!.senderName,
-                senderAvatarUrl: null,
-                contentText: temporaryMessage.replyTo!.contentPreview,
-                messageType: temporaryMessage.replyTo!.messageType,
-                attachmentPath: null,
-                attachmentOriginalName: null,
-                attachmentContentType: null,
-                attachmentSizeBytes: null,
-                replyTo: null,
-                reactions: const [],
-                deleted: temporaryMessage.replyTo!.deleted,
-                deletedAt: null,
-                createdAt: DateTime.now(),
-                readByCurrentUser: true,
-                deliveredByOtherCount: 0,
-                readByOtherCount: 0,
-                mine: false,
-              );
+        _pendingSendCount = _pendingSendCount > 0 ? _pendingSendCount - 1 : 0;
+        if (shouldRestoreDraft) {
+          _selectedAttachment = selectedAttachment;
+          _replyTarget = temporaryMessage.replyTo == null
+              ? null
+              : ChatMessageEntity(
+                  id: temporaryMessage.replyTo!.messageId,
+                  conversationId: conversation.id,
+                  senderUserId: '',
+                  senderName: temporaryMessage.replyTo!.senderName,
+                  senderAvatarUrl: null,
+                  contentText: temporaryMessage.replyTo!.contentPreview,
+                  messageType: temporaryMessage.replyTo!.messageType,
+                  attachmentPath: null,
+                  attachmentOriginalName: null,
+                  attachmentContentType: null,
+                  attachmentSizeBytes: null,
+                  replyTo: null,
+                  reactions: const [],
+                  deleted: temporaryMessage.replyTo!.deleted,
+                  deletedAt: null,
+                  createdAt: DateTime.now(),
+                  readByCurrentUser: true,
+                  deliveredByOtherCount: 0,
+                  readByOtherCount: 0,
+                  mine: false,
+                );
+        }
       });
-      _messageController.text = content;
-      _messageController.selection = TextSelection.fromPosition(
-        TextPosition(offset: _messageController.text.length),
-      );
+      if (shouldRestoreDraft) {
+        _messageController.text = content;
+        _messageController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _messageController.text.length),
+        );
+      }
       AppSnackBar.showError(
         context,
         AppErrorMessageResolver.resolve(
@@ -1173,12 +1182,25 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     final preservedOlderMessages = currentMessages
         .where(
           (message) =>
+              !message.isPendingLocal &&
               message.createdAt.isBefore(firstLatestTimestamp) &&
               !latestIds.contains(message.id),
         )
         .toList();
+    final pendingLocalMessages = currentMessages
+        .where(
+          (message) =>
+              message.isPendingLocal && !latestIds.contains(message.id),
+        )
+        .toList();
 
-    return <ChatMessageEntity>[...preservedOlderMessages, ...latestMessages];
+    final merged = <ChatMessageEntity>[
+      ...preservedOlderMessages,
+      ...latestMessages,
+      ...pendingLocalMessages,
+    ]..sort((left, right) => left.createdAt.compareTo(right.createdAt));
+
+    return merged;
   }
 
   ChatMessageEntity _buildOptimisticMessage({

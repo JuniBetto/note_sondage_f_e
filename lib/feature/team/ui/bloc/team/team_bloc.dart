@@ -216,9 +216,9 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
 
     _syncingTeamIds.add(optimisticTeam.id ?? '');
     _cachedTeams = [..._cachedTeams, optimisticTeam];
-    await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamCreated(optimisticTeam));
     emit(TeamsLoaded(_cachedTeams));
+    unawaited(teamLocalDataSource.saveAll(_cachedTeams));
 
     unawaited(() async {
       try {
@@ -275,9 +275,9 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
         ..[existingIndex] = optimisticTeam;
     }
 
-    await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamUpdated(optimisticTeam));
     emit(TeamsLoaded(_cachedTeams));
+    unawaited(teamLocalDataSource.saveAll(_cachedTeams));
 
     unawaited(() async {
       try {
@@ -309,9 +309,9 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     final rollbackTeams = List<TeamEntity>.from(_cachedTeams);
     _syncingTeamIds.add(event.id);
     _cachedTeams = _cachedTeams.where((team) => team.id != event.id).toList();
-    await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamDeleted());
     emit(TeamsLoaded(_cachedTeams));
+    unawaited(teamLocalDataSource.saveAll(_cachedTeams));
 
     unawaited(() async {
       try {

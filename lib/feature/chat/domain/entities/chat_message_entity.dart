@@ -62,4 +62,6 @@ class ChatMessageEntity {
   bool get isReadByOthers => readByOtherCount > 0;
 
   bool get hasReply => replyTo != null;
+
+  bool get isPendingLocal => id.startsWith('local-');
 }

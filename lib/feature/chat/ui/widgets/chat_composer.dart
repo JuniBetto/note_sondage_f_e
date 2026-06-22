@@ -523,7 +523,7 @@ class _PrimaryComposerButton extends StatelessWidget {
     final size = compact ? 32.0 : 38.0;
 
     return FilledButton(
-      onPressed: sending ? null : onPressed,
+      onPressed: onPressed,
       style: FilledButton.styleFrom(
         minimumSize: Size(size, size),
         maximumSize: Size(size, size),
@@ -532,18 +532,7 @@ class _PrimaryComposerButton extends StatelessWidget {
         foregroundColor: palette.onAccentColor,
         shape: const CircleBorder(),
       ),
-      child: sending
-          ? SizedBox(
-              width: compact ? 16 : 18,
-              height: compact ? 16 : 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  palette.onAccentColor,
-                ),
-              ),
-            )
-          : Icon(icon, size: compact ? 18 : 20),
+      child: Icon(icon, size: compact ? 18 : 20),
     );
   }
 }

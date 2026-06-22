@@ -58,6 +58,7 @@ class ChatMessageBubble extends StatelessWidget {
           timestamp: message.createdAt,
           localeName: loc.localeName,
           mine: message.mine,
+          isPending: message.isPendingLocal,
           isDelivered: message.isDeliveredToOthers,
           isSeen: message.isReadByOthers,
           accentColor: accentColor,
@@ -135,6 +136,7 @@ class _MessageHeaderRow extends StatelessWidget {
     required this.timestamp,
     required this.localeName,
     required this.mine,
+    required this.isPending,
     required this.isDelivered,
     required this.metaColor,
     required this.isSeen,
@@ -146,6 +148,7 @@ class _MessageHeaderRow extends StatelessWidget {
   final DateTime timestamp;
   final String localeName;
   final bool mine;
+  final bool isPending;
   final bool isDelivered;
   final Color metaColor;
   final bool isSeen;
@@ -197,6 +200,7 @@ class _MessageHeaderRow extends StatelessWidget {
               ),
               if (mine)
                 _ReadStateIndicator(
+                  isPending: isPending,
                   isDelivered: isDelivered,
                   isSeen: isSeen,
                   accentColor: accentColor,
@@ -213,6 +217,7 @@ class _MessageHeaderRow extends StatelessWidget {
 
 class _ReadStateIndicator extends StatelessWidget {
   const _ReadStateIndicator({
+    required this.isPending,
     required this.isDelivered,
     required this.isSeen,
     required this.accentColor,
@@ -220,6 +225,7 @@ class _ReadStateIndicator extends StatelessWidget {
     required this.seenLabel,
   });
 
+  final bool isPending;
   final bool isDelivered;
   final bool isSeen;
   final Color accentColor;
@@ -228,6 +234,14 @@ class _ReadStateIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (isPending) {
+      return Icon(
+        Icons.schedule_rounded,
+        size: 15,
+        color: metaColor.withValues(alpha: 0.86),
+      );
+    }
+
     final iconColor = isSeen
         ? accentColor.withValues(alpha: 0.92)
         : metaColor.withValues(alpha: isDelivered ? 0.92 : 0.78);

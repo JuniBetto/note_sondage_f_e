@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
@@ -94,6 +95,7 @@ class TeamMembersSection extends StatefulWidget {
 
 class _TeamMembersSectionState extends State<TeamMembersSection> {
   // ── Private bloc instances (NOT from singleton)
+  late final TeamMemberUseCase _teamMemberUseCase;
   late final TeamMemberBloc _memberBloc;
   late final TeamMemberBloc
   _inviteBloc; // separate instance for invitations list
@@ -106,6 +108,9 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
   List<RoleEntity> _roles = [];
   List<TeamMemberEntity> _members = [];
   List<TeamInvitationEntity> _invitations = [];
+  final Set<String> _optimisticInvitationIds = <String>{};
+  final Set<String> _pendingDeletedMemberIds = <String>{};
+  final Set<String> _pendingCancelledInvitationIds = <String>{};
   TeamSectionPermissions _permissions = TeamSectionPermissions.readOnly();
 
   String? _editingMemberId;
@@ -116,8 +121,9 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
   void initState() {
     super.initState();
     // Create fresh instances so they're isolated from the singleton
-    _memberBloc = TeamMemberBloc(teamMemberUseCase: getIt<TeamMemberUseCase>());
-    _inviteBloc = TeamMemberBloc(teamMemberUseCase: getIt<TeamMemberUseCase>());
+    _teamMemberUseCase = getIt<TeamMemberUseCase>();
+    _memberBloc = TeamMemberBloc(teamMemberUseCase: _teamMemberUseCase);
+    _inviteBloc = TeamMemberBloc(teamMemberUseCase: _teamMemberUseCase);
     _roleBloc = RoleBloc(roleUseCase: getIt<RoleUseCase>());
 
     _memberBloc.add(LoadTeamMembersByTeamIdEvent(widget.teamId));
@@ -174,18 +180,63 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     }
   }
 
-  void _invite() {
+  Future<void> _invite() async {
     if (_formKey.currentState?.validate() ?? false) {
-      _memberBloc.add(
-        InviteTeamMemberEvent(
-          teamId: widget.teamId,
-          email: _emailCtrl.text.trim(),
-          roleId: _roleCtrl.text.trim(),
-        ),
+      final email = _emailCtrl.text.trim();
+      final roleId = _roleCtrl.text.trim();
+      final optimisticId =
+          'local-invite-${DateTime.now().microsecondsSinceEpoch}';
+      final optimisticInvitation = TeamInvitationEntity(
+        id: optimisticId,
+        teamId: widget.teamId,
+        invitedEmail: email,
+        proposedRole: roleId,
+        status: 'PENDING',
+        createdAt: DateTime.now(),
       );
+
+      setState(() {
+        _optimisticInvitationIds.add(optimisticId);
+        _invitations = [..._invitations, optimisticInvitation];
+      });
       _emailCtrl.clear();
       _roleCtrl.clear();
       _formKey.currentState?.reset();
+
+      try {
+        final success = await _teamMemberUseCase.inviteMember(
+          widget.teamId,
+          email,
+          roleId,
+        );
+        if (!success) {
+          throw Exception('Failed to invite team member');
+        }
+        if (!mounted) return;
+        setState(() {
+          _optimisticInvitationIds.remove(optimisticId);
+        });
+        _inviteBloc.add(LoadTeamInvitationsEvent(widget.teamId));
+        AppSnackBar.showSuccess(
+          context,
+          AppLocalizations.of(context)!.invitationSent,
+        );
+      } catch (error) {
+        if (!mounted) return;
+        setState(() {
+          _optimisticInvitationIds.remove(optimisticId);
+          _invitations = _invitations
+              .where((invitation) => invitation.id != optimisticId)
+              .toList();
+        });
+        AppSnackBar.showError(
+          context,
+          AppErrorMessageResolver.resolve(
+            error,
+            fallback: 'We could not send the team invitation right now.',
+          ),
+        );
+      }
     }
   }
 
@@ -195,13 +246,54 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
   bool _isOwnerRole(String? roleCode) =>
       (roleCode ?? '').trim().toUpperCase() == 'OWNER';
 
-  void _deleteMember(String memberId) {
-    _memberBloc.add(
-      DeleteTeamMemberEvent(
-        '${widget.teamId}/$memberId',
-        teamId: widget.teamId,
-      ),
+  Future<void> _deleteMember(String memberId) async {
+    final existingIndex = _members.indexWhere(
+      (member) => member.id == memberId,
     );
+    if (existingIndex == -1) {
+      return;
+    }
+    final removedMember = _members[existingIndex];
+
+    setState(() {
+      _pendingDeletedMemberIds.add(memberId);
+      _members = List<TeamMemberEntity>.from(_members)..removeAt(existingIndex);
+    });
+    _updatePermissions(_members);
+
+    try {
+      final success = await _teamMemberUseCase.deleteMember(
+        '${widget.teamId}/$memberId',
+      );
+      if (!success) {
+        throw Exception('Failed to delete team member');
+      }
+      if (!mounted) return;
+      setState(() {
+        _pendingDeletedMemberIds.remove(memberId);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _pendingDeletedMemberIds.remove(memberId);
+        final restoredMembers = List<TeamMemberEntity>.from(_members);
+        final safeIndex = existingIndex < 0
+            ? 0
+            : existingIndex > restoredMembers.length
+            ? restoredMembers.length
+            : existingIndex;
+        restoredMembers.insert(safeIndex, removedMember);
+        _members = restoredMembers;
+      });
+      _updatePermissions(_members);
+      AppSnackBar.showError(
+        context,
+        AppErrorMessageResolver.resolve(
+          error,
+          fallback: 'We could not remove the team member right now.',
+        ),
+      );
+    }
   }
 
   void _updatePermissions(List<TeamMemberEntity> members) {
@@ -312,13 +404,52 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     });
   }
 
-  void _cancelInvitation(String invitationId) {
-    _inviteBloc.add(
-      CancelTeamInvitationEvent(
-        teamId: widget.teamId,
-        invitationId: invitationId,
-      ),
+  Future<void> _cancelInvitation(String invitationId) async {
+    final existingIndex = _invitations.indexWhere(
+      (invitation) => invitation.id == invitationId,
     );
+    if (existingIndex == -1) {
+      return;
+    }
+    final removedInvitation = _invitations[existingIndex];
+
+    setState(() {
+      _optimisticInvitationIds.remove(invitationId);
+      _pendingCancelledInvitationIds.add(invitationId);
+      _invitations = List<TeamInvitationEntity>.from(_invitations)
+        ..removeAt(existingIndex);
+    });
+
+    try {
+      await _teamMemberUseCase.cancelInvitation(widget.teamId, invitationId);
+      if (!mounted) return;
+      setState(() {
+        _pendingCancelledInvitationIds.remove(invitationId);
+      });
+      _inviteBloc.add(LoadTeamInvitationsEvent(widget.teamId));
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _pendingCancelledInvitationIds.remove(invitationId);
+        final restoredInvitations = List<TeamInvitationEntity>.from(
+          _invitations,
+        );
+        final safeIndex = existingIndex < 0
+            ? 0
+            : existingIndex > restoredInvitations.length
+            ? restoredInvitations.length
+            : existingIndex;
+        restoredInvitations.insert(safeIndex, removedInvitation);
+        _invitations = restoredInvitations;
+      });
+      AppSnackBar.showError(
+        context,
+        AppErrorMessageResolver.resolve(
+          error,
+          fallback: 'We could not cancel the invitation right now.',
+        ),
+      );
+    }
   }
 
   @override
@@ -329,17 +460,15 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
           bloc: _memberBloc,
           listener: (context, state) {
             if (state is TeamMembersLoaded) {
-              setState(() => _members = state.members);
-              _updatePermissions(state.members);
+              final visibleMembers = state.members
+                  .where(
+                    (member) => !_pendingDeletedMemberIds.contains(member.id),
+                  )
+                  .toList();
+              setState(() => _members = visibleMembers);
+              _updatePermissions(visibleMembers);
             }
-            if (state is TeamMemberInvited) {
-              _reload();
-              AppSnackBar.showSuccess(
-                context,
-                AppLocalizations.of(context)!.invitationSent,
-              );
-            }
-            if (state is TeamMemberDeleted || state is TeamMemberUpdated) {
+            if (state is TeamMemberUpdated) {
               _memberBloc.add(LoadTeamMembersByTeamIdEvent(widget.teamId));
             }
             if (state is TeamMemberError) {
@@ -351,14 +480,36 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
           bloc: _inviteBloc,
           listener: (context, state) {
             if (state is TeamInvitationsLoaded) {
-              setState(
-                () => _invitations = List<TeamInvitationEntity>.from(
-                  state.invitations,
-                ),
-              );
-            }
-            if (state is TeamInvitationCancelled) {
-              _inviteBloc.add(LoadTeamInvitationsEvent(widget.teamId));
+              setState(() {
+                final loadedInvitations =
+                    List<TeamInvitationEntity>.from(state.invitations).where((
+                      invitation,
+                    ) {
+                      return !_pendingCancelledInvitationIds.contains(
+                        invitation.id,
+                      );
+                    }).toList();
+                final optimisticInvitations = _invitations.where(
+                  (invitation) =>
+                      _optimisticInvitationIds.contains(invitation.id),
+                );
+                _invitations = [
+                  ...loadedInvitations,
+                  ...optimisticInvitations.where(
+                    (optimisticInvitation) => !loadedInvitations.any(
+                      (loadedInvitation) =>
+                          loadedInvitation.invitedEmail.trim().toLowerCase() ==
+                              optimisticInvitation.invitedEmail
+                                  .trim()
+                                  .toLowerCase() &&
+                          loadedInvitation.proposedRole.trim().toUpperCase() ==
+                              optimisticInvitation.proposedRole
+                                  .trim()
+                                  .toUpperCase(),
+                    ),
+                  ),
+                ];
+              });
             }
             if (state is TeamMemberError) {
               AppSnackBar.showError(context, state.message);
@@ -402,7 +553,9 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
                 permissions: _permissions,
                 editingMemberId: _editingMemberId,
                 editingRoleId: _editingRoleId,
-                onDelete: _deleteMember,
+                onDelete: (memberId) {
+                  unawaited(_deleteMember(memberId));
+                },
                 onEditStart: (m) => setState(() {
                   _editingMemberId = m.id;
                   _editingRoleId = m.roleId;
@@ -426,8 +579,11 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
               if (_invitations.isEmpty) return const SizedBox.shrink();
               return _InvitationsSection(
                 invitations: _invitations,
+                optimisticInvitationIds: _optimisticInvitationIds,
                 canCancelInvitations: _permissions.canCancelInvitations,
-                onCancel: _cancelInvitation,
+                onCancel: (invitationId) {
+                  unawaited(_cancelInvitation(invitationId));
+                },
               );
             },
           ),
@@ -443,7 +599,9 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
               emailController: _emailCtrl,
               roleController: _roleCtrl,
               roles: _assignableRoles,
-              onInvite: _invite,
+              onInvite: () {
+                unawaited(_invite());
+              },
             )
           else
             _EmptyPlaceholder(
@@ -773,11 +931,13 @@ class _MemberRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 class _InvitationsSection extends StatelessWidget {
   final List<TeamInvitationEntity> invitations;
+  final Set<String> optimisticInvitationIds;
   final bool canCancelInvitations;
   final void Function(String invitationId) onCancel;
 
   const _InvitationsSection({
     required this.invitations,
+    required this.optimisticInvitationIds,
     required this.canCancelInvitations,
     required this.onCancel,
   });
@@ -833,6 +993,7 @@ class _InvitationsSection extends StatelessWidget {
         ...invitations.map(
           (inv) => _InvitationRow(
             invitation: inv,
+            isOptimistic: optimisticInvitationIds.contains(inv.id),
             canCancel: canCancelInvitations,
             onCancel: () => onCancel(inv.id),
           ),
@@ -844,11 +1005,13 @@ class _InvitationsSection extends StatelessWidget {
 
 class _InvitationRow extends StatelessWidget {
   final TeamInvitationEntity invitation;
+  final bool isOptimistic;
   final bool canCancel;
   final VoidCallback onCancel;
 
   const _InvitationRow({
     required this.invitation,
+    required this.isOptimistic,
     required this.canCancel,
     required this.onCancel,
   });
@@ -889,7 +1052,18 @@ class _InvitationRow extends StatelessWidget {
             flex: 2,
             child: _InviteStatusChip(status: invitation.status),
           ),
-          if (invitation.isCancellable && canCancel)
+          if (isOptimistic)
+            const SizedBox(
+              width: 40,
+              child: Center(
+                child: SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else if (invitation.isCancellable && canCancel)
             _ActionIcon(
               icon: Icons.cancel_outlined,
               color: Colors.orange,
