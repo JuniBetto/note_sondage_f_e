@@ -223,6 +223,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sondage => 'Sondage';
 
   @override
+  String get sondageChat => 'Sondage/Chat';
+
+  @override
   String get selectedTeam => 'Select Team';
 
   @override
@@ -1253,6 +1256,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requestClocking => 'Request clocking';
 
   @override
+  String get requestDecommit => 'Request decommit';
+
+  @override
   String get requestVacation => 'Request vacation';
 
   @override
@@ -1301,6 +1307,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String manualClockingDescription(String date) {
     return 'Fill in the clocking for $date or add more past days.';
+  }
+
+  @override
+  String manualClockingSingleDayDescription(String date) {
+    return 'Fill in the clocking for $date.';
   }
 
   @override
@@ -1354,6 +1365,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get manualClockingSaveError =>
       'We couldn\'t save the manual clocking.';
+
+  @override
+  String get manualClockingBackToTodayTooltip => 'Back to today';
+
+  @override
+  String get manualClockingBackToTodayTitle => 'Back to today?';
+
+  @override
+  String get manualClockingBackToTodayMessage =>
+      'You are about to leave manual clocking mode.\n\nIf you want to edit a clocking from a past day, you will need to submit a new manual clocking request for that day.';
+
+  @override
+  String get manualClockingBackToTodayConfirm => 'Back to today';
+
+  @override
+  String get manualClockingOverlapTitle => 'Overlap detected';
+
+  @override
+  String manualClockingOverlapMessage(
+    String newRange,
+    String existingRange,
+    String newEndTime,
+  ) {
+    return 'The new clocking ($newRange) overlaps with an existing clocking ($existingRange).\n\nDo you want to shorten the existing clocking so it ends at $newEndTime?';
+  }
+
+  @override
+  String get manualClockingOverlapConfirmAdjust => 'Yes, shorten it';
 
   @override
   String get noTeamSelected => 'No team selected';
@@ -1421,11 +1460,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clockingApprovalRequestHint =>
-      'You can request clocking, vacation, or permission for the selected team and date.';
+      'You can request clocking, decommit, vacation, or permission for the selected team and date.';
 
   @override
   String requestClockingForSelectedDate(String date) {
     return 'Request clocking for $date';
+  }
+
+  @override
+  String requestDecommitForSelectedDate(String date) {
+    return 'Request decommit for $date';
   }
 
   @override
@@ -1442,6 +1486,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clockingRequestSentError =>
       'We couldn\'t send the clocking request to the team member.';
+
+  @override
+  String get decommitRequestSentSuccess =>
+      'Decommit request sent successfully.';
+
+  @override
+  String get decommitRequestSentError =>
+      'We couldn\'t send the decommit request.';
 
   @override
   String get vacationRequestSentSuccess =>
@@ -1470,4 +1522,250 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clockOutDateTimeLabel => 'Clock-out (YYYY-MM-DD HH:MM)';
+
+  @override
+  String get chatTitle => 'Chat';
+
+  @override
+  String get chatLive => 'Live';
+
+  @override
+  String get chatTeamTitle => 'Team chat';
+
+  @override
+  String get chatRefresh => 'Refresh';
+
+  @override
+  String get chatChooseConversation => 'Choose a conversation';
+
+  @override
+  String get chatListDescriptionWeb =>
+      'Pick a team channel or reopen one of your direct chats.';
+
+  @override
+  String get chatListDescriptionMobile =>
+      'Open a team channel or jump back into one of your direct chats.';
+
+  @override
+  String get chatTeamChannels => 'Team channels';
+
+  @override
+  String get chatDirectChats => 'Direct chats';
+
+  @override
+  String get chatNoDirectContacts =>
+      'Your direct chat history will appear here.';
+
+  @override
+  String get chatNoTeamsAvailable => 'No teams available for chat right now.';
+
+  @override
+  String get chatChooseTeamHeader => 'Choose a team to start chatting.';
+
+  @override
+  String chatHeaderDirectDescription(String name) {
+    return 'Direct chat with $name';
+  }
+
+  @override
+  String chatHeaderTeamDescription(String name) {
+    return 'Team chat for $name';
+  }
+
+  @override
+  String get chatRefreshed => 'Chat refreshed.';
+
+  @override
+  String get chatLoadTeamsError => 'We couldn\'t load your chat teams.';
+
+  @override
+  String get chatLoadConversationError =>
+      'We couldn\'t load this conversation.';
+
+  @override
+  String get chatSendMessageError => 'We couldn\'t send the message.';
+
+  @override
+  String get chatReactionUpdateError => 'We couldn\'t update the reaction.';
+
+  @override
+  String get chatDeleteError => 'We couldn\'t delete the message.';
+
+  @override
+  String get chatReactTitle => 'React to message';
+
+  @override
+  String get chatReactHint => 'Choose an emoji reaction.';
+
+  @override
+  String get chatDeleteTitle => 'Delete message';
+
+  @override
+  String get chatDeleteMessage => 'Do you want to delete this message?';
+
+  @override
+  String get chatYouLabel => 'You';
+
+  @override
+  String get chatTimelineBeginning => 'The conversation starts here';
+
+  @override
+  String chatTimelineActive(String name) {
+    return '$name is active';
+  }
+
+  @override
+  String chatTimelineResumed(String duration) {
+    return 'Conversation resumed after $duration';
+  }
+
+  @override
+  String chatDurationMinutesShort(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes min',
+      one: '1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatDurationHoursShort(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hrs',
+      one: '1 hr',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatDurationDaysShort(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatReplyAction => 'Reply';
+
+  @override
+  String get chatLoadingOlderMessages => 'Loading older messages...';
+
+  @override
+  String get chatNoMessagesYet => 'No messages yet';
+
+  @override
+  String get chatEmptyDescription =>
+      'Write the first message to start this conversation.';
+
+  @override
+  String get chatSeen => 'Seen';
+
+  @override
+  String get chatDeletedMessage => 'Message deleted';
+
+  @override
+  String get chatAttachmentFallback => 'Attachment';
+
+  @override
+  String get chatOpenDocument => 'Open document';
+
+  @override
+  String get chatOpenSharedConversation => 'Open the shared team conversation.';
+
+  @override
+  String get chatOpenConversation => 'Open conversation';
+
+  @override
+  String chatDirectConversationInTeam(String teamName) {
+    return 'Direct conversation in $teamName';
+  }
+
+  @override
+  String get chatDirectActionDescription =>
+      'Open a private chat with this team member.';
+
+  @override
+  String get chatOpenDirectAction => 'Open direct chat';
+
+  @override
+  String get chatReturnToChatList => 'Back to chat list';
+
+  @override
+  String get chatReturnToTeamList => 'Back to team list';
+
+  @override
+  String get chatComposerHint => 'Write a message';
+
+  @override
+  String get chatPickImage => 'Add image';
+
+  @override
+  String get chatPickDocument => 'Add document';
+
+  @override
+  String get chatAddEmoji => 'Add emoji';
+
+  @override
+  String chatReplyingTo(String name) {
+    return 'Replying to $name';
+  }
+
+  @override
+  String get chatCancelReply => 'Cancel reply';
+
+  @override
+  String get chatImageReadyToSend => 'Image ready to send';
+
+  @override
+  String get chatDocumentReadyToSend => 'Document ready to send';
+
+  @override
+  String get chatRemoveAttachment => 'Remove attachment';
+
+  @override
+  String get chatJustNow => 'just now';
+
+  @override
+  String chatMinutesAgo(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes min ago',
+      one: '1 min ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatHoursAgo(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hrs ago',
+      one: '1 hr ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatYesterday => 'yesterday';
+
+  @override
+  String chatDaysAgo(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days ago',
+      one: '1 day ago',
+    );
+    return '$_temp0';
+  }
 }

@@ -704,6 +704,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final navButtonColor = colorScheme.bgNavbarbutton ?? colorScheme.primary;
     final appPrimary = colorScheme.primaryColor ?? colorScheme.primary;
     final borderColor = colorScheme.borderColor ?? colorScheme.outlineVariant;
     final foregroundAssignments = _filterAssignmentsForSelectedCalendarTeam(
@@ -816,18 +817,28 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         BlocListener<TeamMemberBloc, TeamMemberState>(
           bloc: _teamMemberBloc,
           listener: (context, state) {
-            if (state is TeamMembersLoaded && state.members.isNotEmpty) {
-              final teamId = state.members.first.teamId;
-              _loadingTeamMemberIds.remove(teamId);
-              setState(() {
-                _teamMembersByTeamId[teamId] = state.members
-                    .map((member) => TeamMemberforView(teamMember: member))
-                    .toList();
-              });
-              _loadAssignments();
+            if (state is TeamMembersLoaded) {
+              final teamId =
+                  state.teamId ??
+                  (state.members.isNotEmpty
+                      ? state.members.first.teamId
+                      : null);
+              if (teamId != null) {
+                _loadingTeamMemberIds.remove(teamId);
+                setState(() {
+                  _teamMembersByTeamId[teamId] = state.members
+                      .map((member) => TeamMemberforView(teamMember: member))
+                      .toList();
+                });
+                _loadAssignments();
+              }
             }
             if (state is TeamMemberError) {
-              _loadingTeamMemberIds.clear();
+              if (state.teamId != null) {
+                _loadingTeamMemberIds.remove(state.teamId);
+              } else {
+                _loadingTeamMemberIds.clear();
+              }
             }
           },
         ),
@@ -947,7 +958,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.bgNavbarbutton,
+                          backgroundColor: navButtonColor,
                         ),
                       ),
                     ],

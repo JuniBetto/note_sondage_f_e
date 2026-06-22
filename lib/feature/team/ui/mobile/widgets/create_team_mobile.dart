@@ -70,11 +70,14 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   String _clockingReminderTime = '09:00';
   String _clockingMissingAlertTime = '10:00';
   String _clockingOpenAlertTime = '18:00';
+  TeamSectionPermissions _teamPermissions = TeamSectionPermissions.readOnly();
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
   bool _tutorialScheduled = false;
 
   bool get _isEditMode => widget.teamId != null;
   bool get _supportsCreateTutorial => !_isEditMode && !widget.readOnly;
+  bool get _showClockingSection =>
+      !_isEditMode || _teamPermissions.canManageClockingSettings;
 
   @override
   void initState() {
@@ -303,33 +306,34 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
 
                       const SizedBox(height: 24),
 
-                      _buildSectionHeader(
-                        context,
-                        'Clocking',
-                        Icons.alarm_on_rounded,
-                      ),
-                      const SizedBox(height: 10),
-                      TeamClockingRequirementSection(
-                        clockingRequired: _clockingRequired,
-                        onClockingRequiredChanged: (value) {
-                          setState(() => _clockingRequired = value);
-                        },
-                        reminderTime: _clockingReminderTime,
-                        onReminderTimeChanged: (value) {
-                          setState(() => _clockingReminderTime = value);
-                        },
-                        missingAlertTime: _clockingMissingAlertTime,
-                        onMissingAlertTimeChanged: (value) {
-                          setState(() => _clockingMissingAlertTime = value);
-                        },
-                        openAlertTime: _clockingOpenAlertTime,
-                        onOpenAlertTimeChanged: (value) {
-                          setState(() => _clockingOpenAlertTime = value);
-                        },
-                        readOnly: widget.readOnly,
-                      ),
-
-                      const SizedBox(height: 24),
+                      if (_showClockingSection) ...[
+                        _buildSectionHeader(
+                          context,
+                          'Clocking',
+                          Icons.alarm_on_rounded,
+                        ),
+                        const SizedBox(height: 10),
+                        TeamClockingRequirementSection(
+                          clockingRequired: _clockingRequired,
+                          onClockingRequiredChanged: (value) {
+                            setState(() => _clockingRequired = value);
+                          },
+                          reminderTime: _clockingReminderTime,
+                          onReminderTimeChanged: (value) {
+                            setState(() => _clockingReminderTime = value);
+                          },
+                          missingAlertTime: _clockingMissingAlertTime,
+                          onMissingAlertTimeChanged: (value) {
+                            setState(() => _clockingMissingAlertTime = value);
+                          },
+                          openAlertTime: _clockingOpenAlertTime,
+                          onOpenAlertTimeChanged: (value) {
+                            setState(() => _clockingOpenAlertTime = value);
+                          },
+                          readOnly: widget.readOnly,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
 
                       // ── Members Section ──
                       _buildSectionHeader(
@@ -362,8 +366,15 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                                   teamId: widget.teamId!,
                                   ownerUserId: _ownerUserId,
                                   forceReadOnly: widget.readOnly,
-                                  onPermissionsChanged:
-                                      widget.onPermissionsChanged,
+                                  onPermissionsChanged: (permissions) {
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _teamPermissions = permissions;
+                                    });
+                                    widget.onPermissionsChanged?.call(
+                                      permissions,
+                                    );
+                                  },
                                 )
                               : AddUserMobile(
                                   listInviteFormData: listInviteFormData,

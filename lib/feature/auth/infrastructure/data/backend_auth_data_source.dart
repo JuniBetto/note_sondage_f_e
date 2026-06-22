@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/auth/domain/entities/user_device_entity.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/preferences/notification_preferences_entity.dart';
 
@@ -28,11 +29,8 @@ class BackendAuthDataSource {
               baseUrl: DioClient.baseUrl,
               connectTimeout: _defaultConnectTimeout,
               receiveTimeout: _defaultReceiveTimeout,
-              sendTimeout: _defaultSendTimeout,
-              headers: const {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              },
+              sendTimeout: kIsWeb ? null : _defaultSendTimeout,
+              headers: const {'Accept': 'application/json'},
             ),
           ),
       _authenticatedDio = DioClient().dio;
@@ -326,6 +324,26 @@ class BackendAuthDataSource {
     }
   }
 
+  Future<List<UserDeviceEntity>> getCurrentDevices() async {
+    try {
+      final response = await _authenticatedDio.get('/api/users/me/devices');
+      final list = response.data as List<dynamic>? ?? [];
+      return list
+          .map(
+            (entry) => UserDeviceEntity.fromJson(
+              Map<String, dynamic>.from(entry as Map<String, dynamic>),
+            ),
+          )
+          .toList(growable: false);
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Devices fetch failed: ${e.message}');
+      throw Exception(
+        'Failed to fetch current devices: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
   Future<List<NotificationCenterItem>> getMyNotifications({
     int limit = 30,
   }) async {
@@ -433,6 +451,26 @@ class BackendAuthDataSource {
     );
   }
 
+  Future<void> approveDecommitRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    required String recordId,
+    String? note,
+  }) async {
+    await _postClockingDecision(
+      '/api/aggregate/clocking/approve-decommit-request',
+      {
+        'teamId': teamId,
+        'targetUserId': requesterUserId,
+        'date': requestedDate,
+        'recordId': recordId,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+      'approve decommit request',
+    );
+  }
+
   Future<void> rejectClockingRequest({
     required String teamId,
     required String requesterUserId,
@@ -448,6 +486,26 @@ class BackendAuthDataSource {
         if (note != null && note.isNotEmpty) 'note': note,
       },
       'reject clocking request',
+    );
+  }
+
+  Future<void> rejectDecommitRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    required String recordId,
+    String? note,
+  }) async {
+    await _postClockingDecision(
+      '/api/aggregate/clocking/reject-decommit-request',
+      {
+        'teamId': teamId,
+        'targetUserId': requesterUserId,
+        'date': requestedDate,
+        'recordId': recordId,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+      'reject decommit request',
     );
   }
 

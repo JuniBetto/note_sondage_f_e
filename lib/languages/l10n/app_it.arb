@@ -64,6 +64,7 @@
     "clockingInOut": "Timbratura",
     "explorer": "esploratore",
     "sondage": "Sondaggio",
+    "sondageChat": "Sondaggio/Chat",
     "selectedTeam": "Seleziona squadra",
     "createTeam": "Creare squadra",
     "teamMember": "Membri della squadra",
@@ -406,6 +407,7 @@
     "markVacation": "Segna ferie",
     "markPermission": "Segna permesso",
     "requestClocking": "Richiedi timbratura",
+    "requestDecommit": "Richiedi decommit",
     "requestVacation": "Richiedi ferie",
     "requestPermission": "Richiedi permesso",
     "vacationStatus": "Ferie",
@@ -443,6 +445,15 @@
             }
         }
     },
+    "manualClockingSingleDayDescription": "Compila la timbratura per {date}.",
+    "@manualClockingSingleDayDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
     "manualClockingResolveOpenRecord": "Hai una timbratura aperta in un altro giorno. Chiudila o seleziona quel giorno prima di salvare una timbratura manuale.",
     "selectedDays": "Giorni selezionati",
     "addDay": "Aggiungi giorno",
@@ -466,6 +477,29 @@
         }
     },
     "manualClockingSaveError": "Non siamo riusciti a salvare la timbratura manuale.",
+    "manualClockingBackToTodayTooltip": "Torna a oggi",
+    "manualClockingBackToTodayTitle": "Torna a oggi?",
+    "manualClockingBackToTodayMessage": "Stai per uscire dalla modalita di timbratura manuale.\n\nSe vuoi modificare una timbratura di un giorno passato, dovrai fare una nuova richiesta di timbratura manuale per quel giorno.",
+    "manualClockingBackToTodayConfirm": "Torna a oggi",
+    "manualClockingOverlapTitle": "Sovrapposizione rilevata",
+    "manualClockingOverlapMessage": "La nuova timbratura ({newRange}) si sovrappone con una timbratura esistente ({existingRange}).\n\nVuoi ridurre la timbratura esistente facendola terminare alle {newEndTime}?",
+    "@manualClockingOverlapMessage": {
+        "placeholders": {
+            "newRange": {
+                "type": "String",
+                "example": "09:00 - 12:00"
+            },
+            "existingRange": {
+                "type": "String",
+                "example": "08:00 - 13:00"
+            },
+            "newEndTime": {
+                "type": "String",
+                "example": "09:00"
+            }
+        }
+    },
+    "manualClockingOverlapConfirmAdjust": "Si, riduci",
     "noTeamSelected": "Nessun team selezionato",
     "changeOrSearchTeam": "Apri per cambiare team o cercarne uno",
     "teamAvailableForClocking": "Team disponibile per la timbratura",
@@ -508,9 +542,18 @@
         }
     },
     "optionalRequestNoteHint": "Nota opzionale per la richiesta",
-    "clockingApprovalRequestHint": "Puoi richiedere timbratura, ferie o permesso per il team e la data selezionati.",
+    "clockingApprovalRequestHint": "Puoi richiedere timbratura, decommit, ferie o permesso per il team e la data selezionati.",
     "requestClockingForSelectedDate": "Richiedi timbratura per {date}",
     "@requestClockingForSelectedDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "requestDecommitForSelectedDate": "Richiedi decommit per {date}",
+    "@requestDecommitForSelectedDate": {
         "placeholders": {
             "date": {
                 "type": "String",
@@ -522,6 +565,8 @@
     "sendRequest": "Invia richiesta",
     "clockingRequestSentSuccess": "Richiesta di timbratura inviata con successo.",
     "clockingRequestSentError": "Non siamo riusciti a inviare la richiesta di timbratura al membro del team.",
+    "decommitRequestSentSuccess": "Richiesta di decommit inviata con successo.",
+    "decommitRequestSentError": "Non siamo riusciti a inviare la richiesta di decommit.",
     "vacationRequestSentSuccess": "Richiesta ferie inviata con successo.",
     "vacationRequestSentError": "Non siamo riusciti a inviare la richiesta ferie.",
     "permissionRequestSentSuccess": "Richiesta permesso inviata con successo.",
@@ -529,5 +574,161 @@
     "approveRequest": "Approva",
     "rejectRequest": "Rifiuta",
     "clockInDateTimeLabel": "Clock-in (AAAA-MM-GG HH:MM)",
-    "clockOutDateTimeLabel": "Clock-out (AAAA-MM-GG HH:MM)"
+    "clockOutDateTimeLabel": "Clock-out (AAAA-MM-GG HH:MM)",
+    "chatTitle": "Chat",
+    "chatLive": "Live",
+    "chatTeamTitle": "Chat team",
+    "chatRefresh": "Aggiorna",
+    "chatChooseConversation": "Scegli una conversazione",
+    "chatListDescriptionWeb": "Seleziona un canale del team o riapri una delle tue chat dirette.",
+    "chatListDescriptionMobile": "Apri un canale del team o rientra in una delle tue chat dirette.",
+    "chatTeamChannels": "Canali team",
+    "chatDirectChats": "Chat dirette",
+    "chatNoDirectContacts": "Qui comparirà lo storico delle tue chat dirette.",
+    "chatNoTeamsAvailable": "Nessun team disponibile per la chat in questo momento.",
+    "chatChooseTeamHeader": "Scegli un team per iniziare a chattare.",
+    "chatHeaderDirectDescription": "Chat diretta con {name}",
+    "@chatHeaderDirectDescription": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Giovanni"
+            }
+        }
+    },
+    "chatHeaderTeamDescription": "Chat del team {name}",
+    "@chatHeaderTeamDescription": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Operazioni"
+            }
+        }
+    },
+    "chatRefreshed": "Chat aggiornata.",
+    "chatLoadTeamsError": "Non siamo riusciti a caricare i team della chat.",
+    "chatLoadConversationError": "Non siamo riusciti a caricare questa conversazione.",
+    "chatSendMessageError": "Non siamo riusciti a inviare il messaggio.",
+    "chatReactionUpdateError": "Non siamo riusciti ad aggiornare la reazione.",
+    "chatDeleteError": "Non siamo riusciti a eliminare il messaggio.",
+    "chatReactTitle": "Reagisci al messaggio",
+    "chatReactHint": "Scegli una reazione emoji.",
+    "chatDeleteTitle": "Elimina messaggio",
+    "chatDeleteMessage": "Vuoi eliminare questo messaggio?",
+    "chatYouLabel": "Tu",
+    "chatTimelineBeginning": "La conversazione inizia qui",
+    "chatTimelineActive": "{name} è attivo",
+    "@chatTimelineActive": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Team"
+            }
+        }
+    },
+    "chatTimelineResumed": "Conversazione ripresa dopo {duration}",
+    "@chatTimelineResumed": {
+        "placeholders": {
+            "duration": {
+                "type": "String",
+                "example": "15 min"
+            }
+        }
+    },
+    "chatDurationMinutesShort": "{minutes, plural, =1{1 min} other{{minutes} min}}",
+    "@chatDurationMinutesShort": {
+        "placeholders": {
+            "minutes": {
+                "type": "int",
+                "example": "15"
+            }
+        }
+    },
+    "chatDurationHoursShort": "{hours, plural, =1{1 ora} other{{hours} ore}}",
+    "@chatDurationHoursShort": {
+        "placeholders": {
+            "hours": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "chatDurationDaysShort": "{days, plural, =1{1 giorno} other{{days} giorni}}",
+    "@chatDurationDaysShort": {
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "chatReplyAction": "Rispondi",
+    "chatLoadingOlderMessages": "Caricamento messaggi precedenti...",
+    "chatNoMessagesYet": "Nessun messaggio",
+    "chatEmptyDescription": "Scrivi il primo messaggio per iniziare questa conversazione.",
+    "chatSeen": "Visto",
+    "chatDeletedMessage": "Messaggio eliminato",
+    "chatAttachmentFallback": "Allegato",
+    "chatOpenDocument": "Apri documento",
+    "chatOpenSharedConversation": "Apri la conversazione condivisa del team.",
+    "chatOpenConversation": "Apri conversazione",
+    "chatDirectConversationInTeam": "Conversazione diretta in {teamName}",
+    "@chatDirectConversationInTeam": {
+        "placeholders": {
+            "teamName": {
+                "type": "String",
+                "example": "Operazioni"
+            }
+        }
+    },
+    "chatDirectActionDescription": "Apri una chat privata con questo membro del team.",
+    "chatOpenDirectAction": "Apri chat diretta",
+    "chatReturnToChatList": "Torna alla lista chat",
+    "chatReturnToTeamList": "Torna alla lista team",
+    "chatComposerHint": "Scrivi un messaggio",
+    "chatPickImage": "Aggiungi immagine",
+    "chatPickDocument": "Aggiungi documento",
+    "chatAddEmoji": "Aggiungi emoji",
+    "chatReplyingTo": "Rispondi a {name}",
+    "@chatReplyingTo": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Giovanni"
+            }
+        }
+    },
+    "chatCancelReply": "Annulla risposta",
+    "chatImageReadyToSend": "Immagine pronta da inviare",
+    "chatDocumentReadyToSend": "Documento pronto da inviare",
+    "chatRemoveAttachment": "Rimuovi allegato",
+    "chatJustNow": "proprio adesso",
+    "chatMinutesAgo": "{minutes, plural, =1{1 min fa} other{{minutes} min fa}}",
+    "@chatMinutesAgo": {
+        "placeholders": {
+            "minutes": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "chatHoursAgo": "{hours, plural, =1{1 ora fa} other{{hours} ore fa}}",
+    "@chatHoursAgo": {
+        "placeholders": {
+            "hours": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "chatYesterday": "ieri",
+    "chatDaysAgo": "{days, plural, =1{1 giorno fa} other{{days} giorni fa}}",
+    "@chatDaysAgo": {
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "4"
+            }
+        }
+    }
 }

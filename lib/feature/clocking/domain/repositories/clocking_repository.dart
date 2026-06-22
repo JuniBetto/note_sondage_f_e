@@ -76,6 +76,14 @@ abstract class ClockingRepository {
     String? note,
   });
 
+  Future<void> requestDecommit({
+    required String teamId,
+    required String targetUserId,
+    required DateTime date,
+    required String recordId,
+    String? note,
+  });
+
   Future<void> requestVacation({
     required String teamId,
     required DateTime date,

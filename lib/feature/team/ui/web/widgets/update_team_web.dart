@@ -56,9 +56,12 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   String _clockingReminderTime = '09:00';
   String _clockingMissingAlertTime = '10:00';
   String _clockingOpenAlertTime = '18:00';
+  TeamSectionPermissions _teamPermissions = TeamSectionPermissions.readOnly();
   late final TeamBloc _teamBloc;
   bool _isLoading = true;
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
+
+  bool get _showClockingSection => _teamPermissions.canManageClockingSettings;
 
   @override
   void initState() {
@@ -270,28 +273,29 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
 
                 const SizedBox(height: 24),
 
-                _buildSectionTitle(context, 'Clocking'),
-                const SizedBox(height: 12),
-                TeamClockingRequirementSection(
-                  clockingRequired: _clockingRequired,
-                  onClockingRequiredChanged: (value) {
-                    setState(() => _clockingRequired = value);
-                  },
-                  reminderTime: _clockingReminderTime,
-                  onReminderTimeChanged: (value) {
-                    setState(() => _clockingReminderTime = value);
-                  },
-                  missingAlertTime: _clockingMissingAlertTime,
-                  onMissingAlertTimeChanged: (value) {
-                    setState(() => _clockingMissingAlertTime = value);
-                  },
-                  openAlertTime: _clockingOpenAlertTime,
-                  onOpenAlertTimeChanged: (value) {
-                    setState(() => _clockingOpenAlertTime = value);
-                  },
-                ),
-
-                const SizedBox(height: 24),
+                if (_showClockingSection) ...[
+                  _buildSectionTitle(context, 'Clocking'),
+                  const SizedBox(height: 12),
+                  TeamClockingRequirementSection(
+                    clockingRequired: _clockingRequired,
+                    onClockingRequiredChanged: (value) {
+                      setState(() => _clockingRequired = value);
+                    },
+                    reminderTime: _clockingReminderTime,
+                    onReminderTimeChanged: (value) {
+                      setState(() => _clockingReminderTime = value);
+                    },
+                    missingAlertTime: _clockingMissingAlertTime,
+                    onMissingAlertTimeChanged: (value) {
+                      setState(() => _clockingMissingAlertTime = value);
+                    },
+                    openAlertTime: _clockingOpenAlertTime,
+                    onOpenAlertTimeChanged: (value) {
+                      setState(() => _clockingOpenAlertTime = value);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                ],
 
                 // ── Members Section ──
                 _buildSectionTitle(context, localization.userList),
@@ -306,7 +310,15 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                     ),
                   ),
                   child: widget.teamId != null
-                      ? TeamMembersSection(teamId: widget.teamId!)
+                      ? TeamMembersSection(
+                          teamId: widget.teamId!,
+                          onPermissionsChanged: (permissions) {
+                            if (!mounted) return;
+                            setState(() {
+                              _teamPermissions = permissions;
+                            });
+                          },
+                        )
                       : AddUserWeb(
                           listInviteFormData: listInviteFormData,
                           teamId: widget.teamId,

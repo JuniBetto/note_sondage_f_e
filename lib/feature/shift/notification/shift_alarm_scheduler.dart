@@ -30,9 +30,9 @@ class ShiftAlarmScheduler {
     _started = true;
     _subscription?.cancel();
     _subscription = _shiftBloc.stream.listen((state) {
-      unawaited(_handleState(state));
+      unawaited(_guardedHandleState(state));
     });
-    unawaited(_handleState(_shiftBloc.state));
+    unawaited(_guardedHandleState(_shiftBloc.state));
     debugPrint('[ShiftAlarmScheduler] started');
   }
 
@@ -59,10 +59,26 @@ class ShiftAlarmScheduler {
     }
   }
 
+  Future<void> _guardedHandleState(ShiftState state) async {
+    try {
+      await _handleState(state);
+    } catch (error, stack) {
+      debugPrint(
+        '[ShiftAlarmScheduler] Unhandled scheduling error: $error\n$stack',
+      );
+    }
+  }
+
   /// Schedula allarmi per tutti i turni caricati.
   Future<void> _rescheduleAll(List<ShiftAssignmentEntity> assignments) async {
     for (final a in assignments) {
-      await _scheduleOne(a);
+      try {
+        await _scheduleOne(a);
+      } catch (error, stack) {
+        debugPrint(
+          '[ShiftAlarmScheduler] Failed to schedule assignment ${a.id}: $error\n$stack',
+        );
+      }
     }
   }
 

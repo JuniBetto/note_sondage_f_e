@@ -73,20 +73,8 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
             TabBarComponent(
               tabController: _tabController,
               setToUpdate: setState,
-              childTab1: Text(
-                loc.clockingInOut,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              childTab2: Text(
-                loc.myShifts,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              childTab1: Text(loc.clockingInOut),
+              childTab2: Text(loc.myShifts),
             ),
 
             const SizedBox(height: 8),

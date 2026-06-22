@@ -26,6 +26,7 @@ class TeamSectionPermissions {
     required this.roleCode,
     required this.canEditTeamBasics,
     required this.canEditTeamColor,
+    required this.canManageClockingSettings,
     required this.canInviteMembers,
     required this.canCancelInvitations,
     required this.canRemoveMembers,
@@ -39,6 +40,7 @@ class TeamSectionPermissions {
       roleCode: 'VIEWER',
       canEditTeamBasics: false,
       canEditTeamColor: false,
+      canManageClockingSettings: false,
       canInviteMembers: false,
       canCancelInvitations: false,
       canRemoveMembers: false,
@@ -51,6 +53,7 @@ class TeamSectionPermissions {
   final String roleCode;
   final bool canEditTeamBasics;
   final bool canEditTeamColor;
+  final bool canManageClockingSettings;
   final bool canInviteMembers;
   final bool canCancelInvitations;
   final bool canRemoveMembers;
@@ -207,6 +210,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         roleCode: 'VIEWER',
         canEditTeamBasics: false,
         canEditTeamColor: false,
+        canManageClockingSettings: false,
         canInviteMembers: false,
         canCancelInvitations: false,
         canRemoveMembers: false,
@@ -229,6 +233,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         roleCode: 'OWNER',
         canEditTeamBasics: true,
         canEditTeamColor: true,
+        canManageClockingSettings: true,
         canInviteMembers: true,
         canCancelInvitations: true,
         canRemoveMembers: true,
@@ -276,6 +281,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
           normalizedPermissions.contains('UPDATE') ||
           hasAdminPermission,
       canEditTeamColor: isOwner,
+      canManageClockingSettings: isOwner,
       canInviteMembers: isOwner || hasAdminPermission,
       canCancelInvitations: isOwner || hasAdminPermission,
       canRemoveMembers:
@@ -474,6 +480,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     return current.roleCode == next.roleCode &&
         current.canEditTeamBasics == next.canEditTeamBasics &&
         current.canEditTeamColor == next.canEditTeamColor &&
+        current.canManageClockingSettings == next.canManageClockingSettings &&
         current.canInviteMembers == next.canInviteMembers &&
         current.canCancelInvitations == next.canCancelInvitations &&
         current.canRemoveMembers == next.canRemoveMembers &&

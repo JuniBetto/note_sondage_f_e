@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/notification/inbox/notification_center_item
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 
 class PendingNotificationsCard extends StatefulWidget {
   const PendingNotificationsCard({super.key, this.maxItems = 4});
@@ -45,6 +46,7 @@ class _PendingNotificationsCardState extends State<PendingNotificationsCard> {
             state.notifications.isEmpty;
         final theme = Theme.of(context);
         final colorScheme = theme.colorScheme;
+        final textTheme = theme.textTheme;
 
         return Container(
           width: double.infinity,
@@ -103,6 +105,32 @@ class _PendingNotificationsCardState extends State<PendingNotificationsCard> {
                       ],
                     ),
                   ),
+                  if (pending.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: TextButton.icon(
+                        onPressed: () => context
+                            .read<NotificationCenterCubit>()
+                            .closeNotifications(
+                              pending,
+                              currentUserId: currentUserId,
+                            ),
+                        icon: Icon(
+                          Icons.close,
+                          size: 14,
+                          color: colorScheme.textInvertedColor,
+                        ),
+                        label: Text(
+                          AppLocalizations.of(context)!.close,
+                          style: textTheme.bodySmall!.copyWith(
+                            color: colorScheme.textInvertedColor,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.bgsecondary,
+                        ),
+                      ),
+                    ),
                   if (pending.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(

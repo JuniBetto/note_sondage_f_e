@@ -43,6 +43,11 @@ class TeamMemberLocalDataSource {
     return all.where((m) => m.teamId == teamId).toList();
   }
 
+  Future<void> removeByTeamId(String teamId) async {
+    final all = await getAll();
+    await saveAll(all.where((member) => member.teamId != teamId).toList());
+  }
+
   TeamMemberEntity _fromModel(TeamMemberHiveModel m) {
     return TeamMemberEntity(
       id: m.id,

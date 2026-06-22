@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Questa applicazione richiede l'accesso alla galleria per permetterti di caricare e selezionare le immagini all'interno del sondaggio.</string>
+	<!-- Se l'app potrebbe usare la fotocamera -->
+    <key>NSCameraUsageDescription</key>
+    <string>Questa applicazione richiede l'accesso alla fotocamera per scattare foto da allegare direttamente nel sondaggio.</string>
+    <!-- Se l'app potrebbe usare il microfono -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Questa applicazione richiede l'accesso al microfono per la registrazione di note vocali.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleURLTypes</key>

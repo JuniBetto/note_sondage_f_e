@@ -492,6 +492,12 @@ abstract class AppLocalizations {
   /// **'Sondage'**
   String get sondage;
 
+  /// No description provided for @sondageChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Sondage/Chat'**
+  String get sondageChat;
+
   /// No description provided for @selectedTeam.
   ///
   /// In en, this message translates to:
@@ -2436,6 +2442,12 @@ abstract class AppLocalizations {
   /// **'Request clocking'**
   String get requestClocking;
 
+  /// No description provided for @requestDecommit.
+  ///
+  /// In en, this message translates to:
+  /// **'Request decommit'**
+  String get requestDecommit;
+
   /// No description provided for @requestVacation.
   ///
   /// In en, this message translates to:
@@ -2513,6 +2525,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fill in the clocking for {date} or add more past days.'**
   String manualClockingDescription(String date);
+
+  /// No description provided for @manualClockingSingleDayDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the clocking for {date}.'**
+  String manualClockingSingleDayDescription(String date);
 
   /// No description provided for @manualClockingResolveOpenRecord.
   ///
@@ -2603,6 +2621,52 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t save the manual clocking.'**
   String get manualClockingSaveError;
+
+  /// No description provided for @manualClockingBackToTodayTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to today'**
+  String get manualClockingBackToTodayTooltip;
+
+  /// No description provided for @manualClockingBackToTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to today?'**
+  String get manualClockingBackToTodayTitle;
+
+  /// No description provided for @manualClockingBackToTodayMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You are about to leave manual clocking mode.\n\nIf you want to edit a clocking from a past day, you will need to submit a new manual clocking request for that day.'**
+  String get manualClockingBackToTodayMessage;
+
+  /// No description provided for @manualClockingBackToTodayConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to today'**
+  String get manualClockingBackToTodayConfirm;
+
+  /// No description provided for @manualClockingOverlapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlap detected'**
+  String get manualClockingOverlapTitle;
+
+  /// No description provided for @manualClockingOverlapMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The new clocking ({newRange}) overlaps with an existing clocking ({existingRange}).\n\nDo you want to shorten the existing clocking so it ends at {newEndTime}?'**
+  String manualClockingOverlapMessage(
+    String newRange,
+    String existingRange,
+    String newEndTime,
+  );
+
+  /// No description provided for @manualClockingOverlapConfirmAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, shorten it'**
+  String get manualClockingOverlapConfirmAdjust;
 
   /// No description provided for @noTeamSelected.
   ///
@@ -2715,7 +2779,7 @@ abstract class AppLocalizations {
   /// No description provided for @clockingApprovalRequestHint.
   ///
   /// In en, this message translates to:
-  /// **'You can request clocking, vacation, or permission for the selected team and date.'**
+  /// **'You can request clocking, decommit, vacation, or permission for the selected team and date.'**
   String get clockingApprovalRequestHint;
 
   /// No description provided for @requestClockingForSelectedDate.
@@ -2723,6 +2787,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Request clocking for {date}'**
   String requestClockingForSelectedDate(String date);
+
+  /// No description provided for @requestDecommitForSelectedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Request decommit for {date}'**
+  String requestDecommitForSelectedDate(String date);
 
   /// No description provided for @noMembersAvailableForClockingRequest.
   ///
@@ -2747,6 +2817,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t send the clocking request to the team member.'**
   String get clockingRequestSentError;
+
+  /// No description provided for @decommitRequestSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Decommit request sent successfully.'**
+  String get decommitRequestSentSuccess;
+
+  /// No description provided for @decommitRequestSentError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the decommit request.'**
+  String get decommitRequestSentError;
 
   /// No description provided for @vacationRequestSentSuccess.
   ///
@@ -2795,6 +2877,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clock-out (YYYY-MM-DD HH:MM)'**
   String get clockOutDateTimeLabel;
+
+  /// No description provided for @chatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chatTitle;
+
+  /// No description provided for @chatLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get chatLive;
+
+  /// No description provided for @chatTeamTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team chat'**
+  String get chatTeamTitle;
+
+  /// No description provided for @chatRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get chatRefresh;
+
+  /// No description provided for @chatChooseConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a conversation'**
+  String get chatChooseConversation;
+
+  /// No description provided for @chatListDescriptionWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a team channel or reopen one of your direct chats.'**
+  String get chatListDescriptionWeb;
+
+  /// No description provided for @chatListDescriptionMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a team channel or jump back into one of your direct chats.'**
+  String get chatListDescriptionMobile;
+
+  /// No description provided for @chatTeamChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'Team channels'**
+  String get chatTeamChannels;
+
+  /// No description provided for @chatDirectChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct chats'**
+  String get chatDirectChats;
+
+  /// No description provided for @chatNoDirectContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Your direct chat history will appear here.'**
+  String get chatNoDirectContacts;
+
+  /// No description provided for @chatNoTeamsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No teams available for chat right now.'**
+  String get chatNoTeamsAvailable;
+
+  /// No description provided for @chatChooseTeamHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a team to start chatting.'**
+  String get chatChooseTeamHeader;
+
+  /// No description provided for @chatHeaderDirectDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct chat with {name}'**
+  String chatHeaderDirectDescription(String name);
+
+  /// No description provided for @chatHeaderTeamDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Team chat for {name}'**
+  String chatHeaderTeamDescription(String name);
+
+  /// No description provided for @chatRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat refreshed.'**
+  String get chatRefreshed;
+
+  /// No description provided for @chatLoadTeamsError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your chat teams.'**
+  String get chatLoadTeamsError;
+
+  /// No description provided for @chatLoadConversationError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load this conversation.'**
+  String get chatLoadConversationError;
+
+  /// No description provided for @chatSendMessageError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the message.'**
+  String get chatSendMessageError;
+
+  /// No description provided for @chatReactionUpdateError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t update the reaction.'**
+  String get chatReactionUpdateError;
+
+  /// No description provided for @chatDeleteError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t delete the message.'**
+  String get chatDeleteError;
+
+  /// No description provided for @chatReactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'React to message'**
+  String get chatReactTitle;
+
+  /// No description provided for @chatReactHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an emoji reaction.'**
+  String get chatReactHint;
+
+  /// No description provided for @chatDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete message'**
+  String get chatDeleteTitle;
+
+  /// No description provided for @chatDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to delete this message?'**
+  String get chatDeleteMessage;
+
+  /// No description provided for @chatYouLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get chatYouLabel;
+
+  /// No description provided for @chatTimelineBeginning.
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation starts here'**
+  String get chatTimelineBeginning;
+
+  /// No description provided for @chatTimelineActive.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is active'**
+  String chatTimelineActive(String name);
+
+  /// No description provided for @chatTimelineResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation resumed after {duration}'**
+  String chatTimelineResumed(String duration);
+
+  /// No description provided for @chatDurationMinutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{1 min} other{{minutes} min}}'**
+  String chatDurationMinutesShort(int minutes);
+
+  /// No description provided for @chatDurationHoursShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, =1{1 hr} other{{hours} hrs}}'**
+  String chatDurationHoursShort(int hours);
+
+  /// No description provided for @chatDurationDaysShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day} other{{days} days}}'**
+  String chatDurationDaysShort(int days);
+
+  /// No description provided for @chatReplyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get chatReplyAction;
+
+  /// No description provided for @chatLoadingOlderMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading older messages...'**
+  String get chatLoadingOlderMessages;
+
+  /// No description provided for @chatNoMessagesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get chatNoMessagesYet;
+
+  /// No description provided for @chatEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the first message to start this conversation.'**
+  String get chatEmptyDescription;
+
+  /// No description provided for @chatSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Seen'**
+  String get chatSeen;
+
+  /// No description provided for @chatDeletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message deleted'**
+  String get chatDeletedMessage;
+
+  /// No description provided for @chatAttachmentFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment'**
+  String get chatAttachmentFallback;
+
+  /// No description provided for @chatOpenDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Open document'**
+  String get chatOpenDocument;
+
+  /// No description provided for @chatOpenSharedConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the shared team conversation.'**
+  String get chatOpenSharedConversation;
+
+  /// No description provided for @chatOpenConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open conversation'**
+  String get chatOpenConversation;
+
+  /// No description provided for @chatDirectConversationInTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct conversation in {teamName}'**
+  String chatDirectConversationInTeam(String teamName);
+
+  /// No description provided for @chatDirectActionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a private chat with this team member.'**
+  String get chatDirectActionDescription;
+
+  /// No description provided for @chatOpenDirectAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open direct chat'**
+  String get chatOpenDirectAction;
+
+  /// No description provided for @chatReturnToChatList.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to chat list'**
+  String get chatReturnToChatList;
+
+  /// No description provided for @chatReturnToTeamList.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to team list'**
+  String get chatReturnToTeamList;
+
+  /// No description provided for @chatComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message'**
+  String get chatComposerHint;
+
+  /// No description provided for @chatPickImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add image'**
+  String get chatPickImage;
+
+  /// No description provided for @chatPickDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Add document'**
+  String get chatPickDocument;
+
+  /// No description provided for @chatAddEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Add emoji'**
+  String get chatAddEmoji;
+
+  /// No description provided for @chatReplyingTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Replying to {name}'**
+  String chatReplyingTo(String name);
+
+  /// No description provided for @chatCancelReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel reply'**
+  String get chatCancelReply;
+
+  /// No description provided for @chatImageReadyToSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Image ready to send'**
+  String get chatImageReadyToSend;
+
+  /// No description provided for @chatDocumentReadyToSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Document ready to send'**
+  String get chatDocumentReadyToSend;
+
+  /// No description provided for @chatRemoveAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove attachment'**
+  String get chatRemoveAttachment;
+
+  /// No description provided for @chatJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get chatJustNow;
+
+  /// No description provided for @chatMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{1 min ago} other{{minutes} min ago}}'**
+  String chatMinutesAgo(int minutes);
+
+  /// No description provided for @chatHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, =1{1 hr ago} other{{hours} hrs ago}}'**
+  String chatHoursAgo(int hours);
+
+  /// No description provided for @chatYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'yesterday'**
+  String get chatYesterday;
+
+  /// No description provided for @chatDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day ago} other{{days} days ago}}'**
+  String chatDaysAgo(int days);
 }
 
 class _AppLocalizationsDelegate

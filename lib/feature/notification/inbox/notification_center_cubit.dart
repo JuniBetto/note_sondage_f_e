@@ -190,6 +190,153 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     );
   }
 
+  Future<void> closeNotifications(
+    Iterable<NotificationCenterItem> notifications, {
+    required String currentUserId,
+  }) async {
+    await _ensureHydrated();
+
+    final items = notifications
+        .where((item) => item.notificationId.trim().isNotEmpty)
+        .where(
+          (item) =>
+              !state.dismissedNotificationIds.contains(item.notificationId) &&
+              !state.completedActionNotificationIds.contains(
+                item.notificationId,
+              ),
+        )
+        .toList(growable: false);
+
+    if (items.isEmpty) {
+      return;
+    }
+
+    final notificationIdsToDismiss = <String>{};
+    var shouldRefreshTeamSurfaces = false;
+    String? firstErrorMessage;
+
+    for (final item in items) {
+      final requiresRejectAction =
+          item.supportsInviteDecisionFor(currentUserId) ||
+          item.supportsClockingDecision();
+
+      if (!requiresRejectAction) {
+        notificationIdsToDismiss.add(item.notificationId);
+        continue;
+      }
+
+      final resolved = await _performAction(item.notificationId, () async {
+        if (item.supportsInviteDecisionFor(currentUserId)) {
+          final invitationId = item.invitationId;
+          if (invitationId == null) {
+            return;
+          }
+          await _backendAuth.rejectTeamInvitationById(invitationId);
+          return;
+        }
+
+        final teamId = item.metadata['teamId']?.trim();
+        final requesterUserId = item.requesterUserId;
+        final requestedDate = item.requestedDate;
+        if (requesterUserId == null) {
+          return;
+        }
+
+        switch (item.requestType) {
+          case 'clocking':
+            if (teamId == null || teamId.isEmpty || requestedDate == null) {
+              return;
+            }
+            await _backendAuth.rejectClockingRequest(
+              teamId: teamId,
+              requesterUserId: requesterUserId,
+              requestedDate: requestedDate,
+              note: item.metadata['note']?.trim(),
+            );
+            break;
+          case 'decommit':
+            if (teamId == null || teamId.isEmpty || requestedDate == null) {
+              return;
+            }
+            final recordId = item.recordId;
+            if (recordId == null) {
+              return;
+            }
+            await _backendAuth.rejectDecommitRequest(
+              teamId: teamId,
+              requesterUserId: requesterUserId,
+              requestedDate: requestedDate,
+              recordId: recordId,
+              note: item.metadata['note']?.trim(),
+            );
+            break;
+          case 'vacation':
+            if (teamId == null || teamId.isEmpty || requestedDate == null) {
+              return;
+            }
+            await _backendAuth.rejectVacationRequest(
+              teamId: teamId,
+              requesterUserId: requesterUserId,
+              requestedDate: requestedDate,
+              note: item.metadata['note']?.trim(),
+            );
+            break;
+          case 'permission':
+            if (teamId == null || teamId.isEmpty || requestedDate == null) {
+              return;
+            }
+            await _backendAuth.rejectPermissionRequest(
+              teamId: teamId,
+              requesterUserId: requesterUserId,
+              requestedDate: requestedDate,
+              startTime: item.permissionStartTime ?? '',
+              endTime: item.permissionEndTime ?? '',
+              note: item.metadata['note']?.trim(),
+            );
+            break;
+          case 'shift_change':
+            final assignmentId = item.metadata['assignmentId']?.trim();
+            if (assignmentId == null || assignmentId.isEmpty) {
+              return;
+            }
+            await _backendAuth.rejectShiftChangeRequest(
+              assignmentId: assignmentId,
+              requesterUserId: requesterUserId,
+              profileId: item.metadata['shiftProfileId']?.trim(),
+              startTime: item.metadata['shiftStartTime']?.trim(),
+              endTime: item.metadata['shiftEndTime']?.trim(),
+              overnight: _parseOptionalBool(item.metadata['shiftOvernight']),
+              note: item.metadata['shiftNote']?.trim(),
+              alarmOffsets: _parseAlarmOffsets(
+                item.metadata['shiftAlarmOffsets'],
+              ),
+            );
+            break;
+        }
+      });
+
+      if (resolved) {
+        shouldRefreshTeamSurfaces = true;
+      } else {
+        firstErrorMessage ??= state.errorMessage;
+      }
+    }
+
+    if (notificationIdsToDismiss.isNotEmpty) {
+      markManyAsSeen(notificationIdsToDismiss);
+    }
+
+    if (shouldRefreshTeamSurfaces) {
+      _refreshTeamSurfaces();
+    }
+
+    if (firstErrorMessage != null &&
+        firstErrorMessage.trim().isNotEmpty &&
+        state.errorMessage != firstErrorMessage) {
+      emit(state.copyWith(errorMessage: firstErrorMessage));
+    }
+  }
+
   Future<void> acceptInvitation(NotificationCenterItem item) async {
     final invitationId = item.invitationId;
     if (invitationId == null) {
@@ -236,6 +383,22 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             teamId: teamId,
             requesterUserId: requesterUserId,
             requestedDate: requestedDate,
+            note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'decommit':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
+          final recordId = item.recordId;
+          if (recordId == null) {
+            return;
+          }
+          await _backendAuth.approveDecommitRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            recordId: recordId,
             note: item.metadata['note']?.trim(),
           );
           break;
@@ -303,6 +466,22 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             teamId: teamId,
             requesterUserId: requesterUserId,
             requestedDate: requestedDate,
+            note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'decommit':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
+          final recordId = item.recordId;
+          if (recordId == null) {
+            return;
+          }
+          await _backendAuth.rejectDecommitRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            recordId: recordId,
             note: item.metadata['note']?.trim(),
           );
           break;

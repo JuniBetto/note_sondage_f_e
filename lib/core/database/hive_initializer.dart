@@ -39,6 +39,7 @@ class HiveInitializer {
         Hive.openBox<UserHiveModel>('users_box'),
         Hive.openBox<SondageHiveModel>('sondages_box'),
         Hive.openBox<ClockingHiveModel>('clocking_box'),
+        Hive.openBox<String>('chat_cache_box'),
       ]);
     } catch (e) {
       rethrow;
@@ -57,6 +58,7 @@ class HiveInitializer {
       Hive.box<UserHiveModel>('users_box').close(),
       Hive.box<SondageHiveModel>('sondages_box').close(),
       Hive.box<ClockingHiveModel>('clocking_box').close(),
+      Hive.box<String>('chat_cache_box').close(),
     ]);
   }
 }

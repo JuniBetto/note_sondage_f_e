@@ -11,7 +11,18 @@ class DioClient {
   final Dio dio;
 
   static void debugWarnIfMisconfiguredForPlatform() {
-    if (kIsWeb || !RuntimeConfig.hasCustomApiBaseUrl) {
+    if (kIsWeb) {
+      if (!RuntimeConfig.hasCustomApiBaseUrl) {
+        debugPrint(
+          '[DioClient] Web is using the fallback API base URL $baseUrl. '
+          'If the backend is not reachable from this browser at that address, '
+          'pass --dart-define=API_BASE_URL=http(s)://<reachable-host>[:port].',
+        );
+      }
+      return;
+    }
+
+    if (!RuntimeConfig.hasCustomApiBaseUrl) {
       return;
     }
 
@@ -110,6 +121,14 @@ class DioClient {
   DioClient._(this.dio) {
     debugWarnIfMisconfiguredForPlatform();
 
+    if (kIsWeb) {
+      debugPrint(
+        '[DioClient] Web runtime baseUrl=$baseUrl '
+        'customApiBaseUrl=${RuntimeConfig.hasCustomApiBaseUrl} '
+        'sendTimeoutDisabled=true',
+      );
+    }
+
     // Interceptor per autenticazione: aggiunge il JWT del backend a ogni richiesta
     dio.interceptors.add(AuthInterceptor(tokenService: TokenService()));
 
@@ -134,11 +153,8 @@ class DioClient {
               baseUrl: baseUrl,
               connectTimeout: const Duration(seconds: 30),
               receiveTimeout: const Duration(seconds: 30),
-              sendTimeout: const Duration(seconds: 30),
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              },
+              sendTimeout: kIsWeb ? null : const Duration(seconds: 30),
+              headers: {'Accept': 'application/json'},
             ),
           ),
     );

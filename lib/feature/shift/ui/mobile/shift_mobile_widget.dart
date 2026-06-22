@@ -119,7 +119,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     } else if (teamState is! TeamLoading) {
       _teamBloc.add(LoadTeamsEvent());
     }
-    unawaited(_loadArchivedAssignments());
+    unawaited(_loadArchivedAssignmentsSafely());
     _realtimeSubscription = GetIt.instance<RealtimeNotificationService>().stream
         .listen(_handleRealtimeNotification);
     // Se arrivando sulla pagina c'è già un intent pendente (es. tap su
@@ -127,9 +127,15 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     // al primo frame disponibile dopo che lo stato è già ShiftAssignmentsLoaded.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final shiftState = context.read<ShiftBloc>().state;
-      if (shiftState is ShiftAssignmentsLoaded) {
-        _tryConsumeShiftOpenIntent(context);
+      try {
+        final shiftState = context.read<ShiftBloc>().state;
+        if (shiftState is ShiftAssignmentsLoaded) {
+          _tryConsumeShiftOpenIntent(context);
+        }
+      } catch (error, stack) {
+        debugPrint(
+          '[ShiftMobileWidget] Failed while consuming pending shift intent: $error\n$stack',
+        );
       }
     });
   }
@@ -215,6 +221,16 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     setState(() {
       _archivedAssignmentIds = archived;
     });
+  }
+
+  Future<void> _loadArchivedAssignmentsSafely() async {
+    try {
+      await _loadArchivedAssignments();
+    } catch (error, stack) {
+      debugPrint(
+        '[ShiftMobileWidget] Unable to load archived assignments: $error\n$stack',
+      );
+    }
   }
 
   Future<void> _setAssignmentArchived(
@@ -769,6 +785,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+    final navButtonColor = colorScheme.bgNavbarbutton ?? colorScheme.primary;
     final foregroundAssignments = _filterAssignmentsForSelectedCalendarTeam(
       _assignments
           .where(
@@ -872,18 +889,28 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         BlocListener<TeamMemberBloc, TeamMemberState>(
           bloc: _teamMemberBloc,
           listener: (context, state) {
-            if (state is TeamMembersLoaded && state.members.isNotEmpty) {
-              final teamId = state.members.first.teamId;
-              _loadingTeamMemberIds.remove(teamId);
-              setState(() {
-                _teamMembersByTeamId[teamId] = state.members
-                    .map((member) => TeamMemberforView(teamMember: member))
-                    .toList();
-              });
-              _loadAssignments();
+            if (state is TeamMembersLoaded) {
+              final teamId =
+                  state.teamId ??
+                  (state.members.isNotEmpty
+                      ? state.members.first.teamId
+                      : null);
+              if (teamId != null) {
+                _loadingTeamMemberIds.remove(teamId);
+                setState(() {
+                  _teamMembersByTeamId[teamId] = state.members
+                      .map((member) => TeamMemberforView(teamMember: member))
+                      .toList();
+                });
+                _loadAssignments();
+              }
             }
             if (state is TeamMemberError) {
-              _loadingTeamMemberIds.clear();
+              if (state.teamId != null) {
+                _loadingTeamMemberIds.remove(state.teamId);
+              } else {
+                _loadingTeamMemberIds.clear();
+              }
             }
           },
         ),
@@ -921,8 +948,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                       color: colorScheme.textInvertedColor,
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.bgNavbarbutton,
-                      side: BorderSide(color: colorScheme.bgNavbarbutton!),
+                      backgroundColor: navButtonColor,
+                      side: BorderSide(color: navButtonColor),
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -938,8 +965,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                     size: 18,
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.bgNavbarbutton,
-                    side: BorderSide(color: colorScheme.bgNavbarbutton!),
+                    backgroundColor: navButtonColor,
+                    side: BorderSide(color: navButtonColor),
                   ),
                 ),
                 if (_canManageAnyTeam) ...[
@@ -1046,12 +1073,18 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       if (!mounted) {
         return;
       }
-      await AppTutorialController.showIfNeeded(
-        context: context,
-        tutorialId: 'mobile-shifts',
-        userId: context.read<AuthBloc>().state.user.uid,
-        keys: <GlobalKey>[_archiveToggleKey, _calendarKey],
-      );
+      try {
+        await AppTutorialController.showIfNeeded(
+          context: context,
+          tutorialId: 'mobile-shifts',
+          userId: context.read<AuthBloc>().state.user.uid,
+          keys: <GlobalKey>[_archiveToggleKey, _calendarKey],
+        );
+      } catch (error, stack) {
+        debugPrint(
+          '[ShiftMobileWidget] Tutorial skipped after error: $error\n$stack',
+        );
+      }
     });
   }
 

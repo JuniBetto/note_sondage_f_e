@@ -104,6 +104,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
           final colorScheme = Theme.of(ctx).colorScheme;
+          final borderColor = colorScheme.borderColor ?? colorScheme.outline;
           final canSubmit =
               nameCtrl.text.trim().isNotEmpty && hasValidTimeRange();
           return SubmitOnEnterScope(
@@ -161,9 +162,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                               decoration: BoxDecoration(
                                 color: _colorFromHex(selectedColorHex),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: colorScheme.borderColor!,
-                                ),
+                                border: Border.all(color: borderColor),
                               ),
                             ),
                           ],
@@ -730,7 +729,7 @@ class _ShiftColorPickerSheet extends StatelessWidget {
                       border: Border.all(
                         color: isSelected
                             ? colorScheme.primary
-                            : colorScheme.borderColor!,
+                            : (colorScheme.borderColor ?? colorScheme.outline),
                         width: isSelected ? 3 : 1.2,
                       ),
                       boxShadow: [

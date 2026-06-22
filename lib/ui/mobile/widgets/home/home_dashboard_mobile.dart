@@ -374,7 +374,7 @@ class _MobileQuickActions extends StatelessWidget {
               Expanded(
                 child: _QuickActionButton(
                   icon: Icons.checklist_rounded,
-                  label: l.sondage,
+                  label: l.sondageChat,
                   color: Colors.orange,
                   onTap: () => navBloc.add(NavigationPositionChanged(4)),
                 ),

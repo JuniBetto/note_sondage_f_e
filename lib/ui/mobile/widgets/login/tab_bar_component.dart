@@ -10,10 +10,12 @@ class TabBarComponent extends StatelessWidget {
     required this.setToUpdate,
     this.childTab1,
     this.childTab2,
+    this.childTab3,
   });
   final TabController tabController;
   final Widget? childTab1;
   final Widget? childTab2;
+  final Widget? childTab3;
   final void Function(void Function()) setToUpdate;
 
   @override
@@ -25,7 +27,26 @@ class TabBarComponent extends StatelessWidget {
       builder: (context, _) {
         final animationValue =
             tabController.animation?.value ?? tabController.index.toDouble();
-        final selectedIndex = animationValue >= 0.5 ? 1 : 0;
+        final tabs = <Widget>[
+          childTab1 ??
+              Text(
+                localization.login,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          childTab2 ??
+              Text(
+                localization.register,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          if (childTab3 != null) childTab3!,
+        ];
+        final selectedIndex = animationValue.round().clamp(0, tabs.length - 1);
 
         return Container(
           height: 54,
@@ -36,8 +57,9 @@ class TabBarComponent extends StatelessWidget {
           padding: const EdgeInsets.all(4),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final tabWidth = constraints.maxWidth / 2;
-              final indicatorLeft = animationValue.clamp(0.0, 1.0) * tabWidth;
+              final tabWidth = constraints.maxWidth / tabs.length;
+              final indicatorLeft =
+                  animationValue.clamp(0.0, tabs.length - 1.0) * tabWidth;
 
               return Stack(
                 children: [
@@ -54,46 +76,21 @@ class TabBarComponent extends StatelessWidget {
                     ),
                   ),
                   Row(
-                    children: [
-                      Expanded(
+                    children: List.generate(tabs.length, (index) {
+                      final legacyTabKey = switch (index) {
+                        0 => const Key('login_tab'),
+                        1 => const Key('register_tab'),
+                        _ => Key('tab_bar_item_$index'),
+                      };
+                      return Expanded(
                         child: _TabBarPillItem(
-                          key: const Key('login_tab'),
-                          isSelected: selectedIndex == 0,
-                          label:
-                              childTab1 ??
-                              Text(
-                                localization.login,
-                                style: TextStyle(
-                                  color: selectedIndex == 0
-                                      ? ColorPalette.primary[6]
-                                      : Colors.grey[600],
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                          onTap: () => _animateTo(0),
+                          key: legacyTabKey,
+                          isSelected: selectedIndex == index,
+                          label: tabs[index],
+                          onTap: () => _animateTo(index),
                         ),
-                      ),
-                      Expanded(
-                        child: _TabBarPillItem(
-                          key: const Key('register_tab'),
-                          isSelected: selectedIndex == 1,
-                          label:
-                              childTab2 ??
-                              Text(
-                                localization.register,
-                                style: TextStyle(
-                                  color: selectedIndex == 1
-                                      ? ColorPalette.primary[6]
-                                      : Colors.grey[600],
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                          onTap: () => _animateTo(1),
-                        ),
-                      ),
-                    ],
+                      );
+                    }),
                   ),
                 ],
               );
@@ -133,6 +130,9 @@ class _TabBarPillItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedColor = ColorPalette.primary[6];
     final unselectedColor = Colors.grey[600];
+    final baseTextStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600);
 
     return Material(
       color: Colors.transparent,
@@ -149,10 +149,8 @@ class _TabBarPillItem extends StatelessWidget {
           duration: const Duration(milliseconds: 120),
           opacity: isSelected ? 1 : 0.92,
           child: DefaultTextStyle.merge(
-            style: TextStyle(
+            style: (baseTextStyle ?? const TextStyle()).copyWith(
               color: isSelected ? selectedColor : unselectedColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
             ),
             child: IconTheme.merge(
               data: IconThemeData(

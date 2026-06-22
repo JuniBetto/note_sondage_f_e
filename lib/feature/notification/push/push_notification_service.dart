@@ -7,10 +7,18 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/auth/domain/entities/user_device_entity.dart';
+import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
+import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
+import 'package:note_sondage/feature/notification/preferences/notification_preferences_cubit.dart';
+import 'package:note_sondage/feature/notification/push/push_diagnostics_snapshot.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/firebase_options.dart';
 
@@ -63,6 +71,15 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         DateTime.now(),
     metadata: metadata,
   );
+  if (notificationItem.eventType.trim().toUpperCase().startsWith('SHIFT_')) {
+    debugPrint(
+      '[PushBackground] eventType=${notificationItem.eventType} '
+      'title="${notificationItem.title}" '
+      'body="${notificationItem.body}" '
+      'messageId=${message.messageId} '
+      'dataKeys=${message.data.keys.toList()}',
+    );
+  }
   final canRespondToInvite =
       notificationItem.eventType == 'TEAM_MEMBER_INVITED' &&
       notificationItem.invitationId != null &&
@@ -138,6 +155,11 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     notificationDetails,
     payload: payload,
   );
+  if (notificationItem.eventType.trim().toUpperCase().startsWith('SHIFT_')) {
+    debugPrint(
+      '[PushBackground] local notification shown for ${notificationItem.eventType}',
+    );
+  }
 }
 
 class PushNotificationService {
@@ -148,6 +170,14 @@ class PushNotificationService {
        _localNotifications = localNotifications ?? LocalNotificationService();
 
   static const _deviceFingerprintKey = 'push_device_fingerprint';
+  static const _lastRegisteredPushTokenKey = 'last_registered_push_token';
+  static const _lastRegisteredPushUserIdKey = 'last_registered_push_user_id';
+  static const _lastRegisteredPushAtKey = 'last_registered_push_at';
+  static const Duration _pushRegistrationRefreshInterval = Duration(hours: 6);
+  static const Duration _apnsTokenWaitStep = Duration(milliseconds: 400);
+  static const int _apnsTokenWaitAttempts = 12;
+  static const Duration _iosRegistrationRetryDelay = Duration(seconds: 6);
+  static const int _maxIosRegistrationRetryAttempts = 8;
 
   final BackendAuthDataSource _backendAuth;
   final LocalNotificationService _localNotifications;
@@ -156,8 +186,11 @@ class PushNotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
   StreamSubscription<String>? _tokenRefreshSubscription;
+  Timer? _iosRegistrationRetryTimer;
+  int _iosRegistrationRetryAttempts = 0;
   bool _initialized = false;
   bool _available = true;
+  String? _lastRegistrationErrorMessage;
 
   Stream<RealtimeNotification> get stream => _controller.stream;
 
@@ -175,6 +208,11 @@ class PushNotificationService {
 
     try {
       await _messaging.requestPermission();
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
       FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
@@ -211,8 +249,35 @@ class PushNotificationService {
     if (firebaseUser == null) return;
 
     try {
+      final permissionSettings = await _messaging.getNotificationSettings();
+      if (!_allowsRemoteNotifications(permissionSettings.authorizationStatus)) {
+        debugPrint(
+          '[PushNotificationService] device registration skipped because notifications are not authorized.',
+        );
+        return;
+      }
+
+      final apnsReady = await _waitForPlatformPushToken();
+      if (defaultTargetPlatform == TargetPlatform.iOS && !apnsReady) {
+        debugPrint(
+          '[PushNotificationService] APNS token not ready yet; scheduling iOS registration retry.',
+        );
+        _scheduleIosRegistrationRetry();
+        return;
+      }
+
       final token = forceToken ?? await _messaging.getToken();
-      if (token == null || token.isEmpty) return;
+      if (token == null || token.isEmpty) {
+        debugPrint(
+          '[PushNotificationService] FCM token unavailable; scheduling iOS registration retry.',
+        );
+        _scheduleIosRegistrationRetry();
+        return;
+      }
+      if (!await _shouldRegisterToken(firebaseUser.uid, token)) {
+        _clearIosRegistrationRetry();
+        return;
+      }
 
       final fingerprint = await _getOrCreateDeviceFingerprint();
       await _backendAuth.registerCurrentDevice(
@@ -223,24 +288,100 @@ class PushNotificationService {
         pushProvider: 'FIREBASE',
         pushToken: token,
       );
+      await _markTokenRegistered(firebaseUser.uid, token);
+      _clearIosRegistrationRetry();
+      _lastRegistrationErrorMessage = null;
+      debugPrint(
+        '[PushNotificationService] device registration synced for ${firebaseUser.uid}.',
+      );
     } on MissingPluginException catch (error) {
       _available = false;
+      _lastRegistrationErrorMessage = error.toString();
       debugPrint(
         '[PushNotificationService] device registration skipped because plugin is unavailable: $error',
       );
     } on PlatformException catch (error) {
+      _lastRegistrationErrorMessage = error.message ?? error.code;
       debugPrint(
         '[PushNotificationService] device registration skipped due to platform error: ${error.message ?? error.code}',
       );
     } catch (error) {
+      _lastRegistrationErrorMessage = error.toString();
       debugPrint(
         '[PushNotificationService] device registration failed: $error',
       );
     }
   }
 
+  Future<PushDiagnosticsSnapshot> collectDiagnostics() async {
+    final prefs = await SharedPreferences.getInstance();
+    NotificationSettings? permissionSettings;
+    if (_available && _supportsPushPlatform) {
+      try {
+        permissionSettings = await _messaging.getNotificationSettings();
+      } catch (_) {
+        permissionSettings = null;
+      }
+    }
+    final authorizationStatus =
+        permissionSettings?.authorizationStatus.name ?? 'unsupported';
+    final notificationsAuthorized =
+        permissionSettings != null &&
+        _allowsRemoteNotifications(permissionSettings.authorizationStatus);
+
+    String? apnsToken;
+    String? fcmToken;
+    if (_available && _supportsPushPlatform) {
+      try {
+        apnsToken = defaultTargetPlatform == TargetPlatform.iOS
+            ? await _messaging.getAPNSToken()
+            : null;
+      } catch (_) {
+        apnsToken = null;
+      }
+      try {
+        fcmToken = await _messaging.getToken();
+      } catch (_) {
+        fcmToken = null;
+      }
+    }
+
+    var backendDevices = <UserDeviceEntity>[];
+    String? backendFetchError;
+    try {
+      backendDevices = await _backendAuth.getCurrentDevices();
+    } catch (error) {
+      backendFetchError = error.toString();
+    }
+
+    return PushDiagnosticsSnapshot(
+      supportsPushPlatform: _supportsPushPlatform,
+      serviceAvailable: _available,
+      platformLabel: defaultTargetPlatform.name,
+      apiBaseUrl: DioClient.baseUrl,
+      hasCustomApiBaseUrl: RuntimeConfig.hasCustomApiBaseUrl,
+      authorizationStatus: authorizationStatus,
+      notificationsAuthorized: notificationsAuthorized,
+      userId: FirebaseAuth.instance.currentUser?.uid,
+      apnsToken: apnsToken,
+      fcmToken: fcmToken,
+      deviceFingerprint: prefs.getString(_deviceFingerprintKey),
+      cachedRegisteredUserId: prefs.getString(_lastRegisteredPushUserIdKey),
+      cachedRegisteredToken: prefs.getString(_lastRegisteredPushTokenKey),
+      cachedRegisteredAt: DateTime.tryParse(
+        prefs.getString(_lastRegisteredPushAtKey) ?? '',
+      ),
+      backendDevices: backendDevices,
+      lastRegistrationError: _lastRegistrationErrorMessage,
+      backendFetchError: backendFetchError,
+    );
+  }
+
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     final notification = _emitNotification(message);
+    if (_shouldSuppressForegroundNotification(notification)) {
+      return;
+    }
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (currentUserId.isNotEmpty) {
       await _localNotifications.showRealtimeNotification(
@@ -251,7 +392,10 @@ class PushNotificationService {
   }
 
   void _handleMessage(RemoteMessage message) {
-    _emitNotification(message);
+    final notification = _emitNotification(message);
+    final item = NotificationCenterItem.fromRealtime(notification);
+    getIt<NotificationCenterCubit>().consumeNotification(item.notificationId);
+    unawaited(NotificationNavigation.open(item));
   }
 
   RealtimeNotification _emitNotification(RemoteMessage message) {
@@ -295,9 +439,118 @@ class PushNotificationService {
     return fingerprint;
   }
 
+  Future<bool> _waitForPlatformPushToken() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return true;
+    }
+
+    for (var attempt = 0; attempt < _apnsTokenWaitAttempts; attempt++) {
+      final apnsToken = await _messaging.getAPNSToken();
+      if (apnsToken != null && apnsToken.isNotEmpty) {
+        return true;
+      }
+      await Future<void>.delayed(_apnsTokenWaitStep);
+    }
+    debugPrint(
+      '[PushNotificationService] APNS token still unavailable after waiting; continuing with current FCM state.',
+    );
+    return false;
+  }
+
+  void _scheduleIosRegistrationRetry() {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null || firebaseUser.uid.isEmpty) {
+      return;
+    }
+    if (_iosRegistrationRetryAttempts >= _maxIosRegistrationRetryAttempts) {
+      debugPrint(
+        '[PushNotificationService] iOS push registration retry limit reached.',
+      );
+      return;
+    }
+    if (_iosRegistrationRetryTimer?.isActive ?? false) {
+      return;
+    }
+
+    _iosRegistrationRetryAttempts += 1;
+    _iosRegistrationRetryTimer = Timer(_iosRegistrationRetryDelay, () {
+      _iosRegistrationRetryTimer = null;
+      if (!_available || !_supportsPushPlatform) {
+        return;
+      }
+      if (FirebaseAuth.instance.currentUser == null) {
+        return;
+      }
+      unawaited(syncDeviceRegistration());
+    });
+  }
+
+  void _clearIosRegistrationRetry() {
+    _iosRegistrationRetryTimer?.cancel();
+    _iosRegistrationRetryTimer = null;
+    _iosRegistrationRetryAttempts = 0;
+  }
+
+  bool _allowsRemoteNotifications(AuthorizationStatus status) {
+    return status == AuthorizationStatus.authorized ||
+        status == AuthorizationStatus.provisional;
+  }
+
+  Future<bool> _shouldRegisterToken(String userId, String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedUserId = prefs.getString(_lastRegisteredPushUserIdKey);
+    final cachedToken = prefs.getString(_lastRegisteredPushTokenKey);
+    final cachedAtRaw = prefs.getString(_lastRegisteredPushAtKey);
+    final cachedAt = cachedAtRaw == null
+        ? null
+        : DateTime.tryParse(cachedAtRaw);
+    final isCacheFresh =
+        cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _pushRegistrationRefreshInterval;
+
+    return cachedUserId != userId || cachedToken != token || !isCacheFresh;
+  }
+
+  Future<void> _markTokenRegistered(String userId, String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastRegisteredPushUserIdKey, userId);
+    await prefs.setString(_lastRegisteredPushTokenKey, token);
+    await prefs.setString(
+      _lastRegisteredPushAtKey,
+      DateTime.now().toIso8601String(),
+    );
+  }
+
   Future<void> dispose() async {
+    _clearIosRegistrationRetry();
     await _tokenRefreshSubscription?.cancel();
     await _controller.close();
+  }
+
+  bool _shouldSuppressForegroundNotification(
+    RealtimeNotification notification,
+  ) {
+    final eventType = notification.eventType.trim().toUpperCase();
+    final isChatNotification =
+        eventType.contains('CHAT') ||
+        (notification.metadata['conversationId']?.trim().isNotEmpty ?? false);
+    if (isChatNotification &&
+        !getIt<NotificationPreferencesCubit>()
+            .state
+            .effectivePreferences
+            .chatMessagesEnabled) {
+      return true;
+    }
+    if (!isChatNotification) {
+      return false;
+    }
+
+    // Foreground chat notifications should update the in-app home/notification
+    // surfaces only. System banners are reserved for background/terminated.
+    return true;
   }
 
   bool get _supportsPushPlatform =>

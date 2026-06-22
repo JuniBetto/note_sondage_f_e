@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
@@ -92,12 +93,23 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       await localDataSource.saveAll(deduplicatedMembers);
       return deduplicatedMembers;
     } catch (e) {
+      if (_isTeamNotFoundError(e)) {
+        await localDataSource.removeByTeamId(teamId);
+        return const <TeamMemberEntity>[];
+      }
+      if (!_shouldTryDashboardFallback(e)) {
+        rethrow;
+      }
       try {
         final members = await _fetchMembersFromDashboard(teamId);
         final deduplicatedMembers = _deduplicateMembers(members);
         await localDataSource.saveAll(deduplicatedMembers);
         return deduplicatedMembers;
       } catch (fallbackError) {
+        if (_isTeamNotFoundError(fallbackError)) {
+          await localDataSource.removeByTeamId(teamId);
+          return const <TeamMemberEntity>[];
+        }
         throw Exception(
           'Failed to fetch team members by team ID: $e; fallback failed: $fallbackError',
         );
@@ -240,5 +252,32 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       return '${member.teamId}:${member.id!}';
     }
     return '${member.teamId}:unknown';
+  }
+
+  bool _isTeamNotFoundError(Object error) {
+    return error is DioException && error.response?.statusCode == 404;
+  }
+
+  bool _shouldTryDashboardFallback(Object error) {
+    if (error is! DioException) {
+      return true;
+    }
+
+    if (error.response?.statusCode == 404) {
+      return false;
+    }
+
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.connectionError:
+      case DioExceptionType.cancel:
+        return false;
+      case DioExceptionType.badResponse:
+      case DioExceptionType.badCertificate:
+      case DioExceptionType.unknown:
+        return true;
+    }
   }
 }

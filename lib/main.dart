@@ -18,6 +18,14 @@ import 'package:note_sondage/feature/notification/push/push_notification_service
 import 'package:note_sondage/ui/app_keys.dart';
 import 'package:note_sondage/ui/main_app.dart';
 
+bool _isDisposedEngineFlutterViewError(Object error) {
+  if (!kIsWeb) {
+    return false;
+  }
+  final message = error.toString();
+  return message.contains('Trying to render a disposed EngineFlutterView');
+}
+
 void main() {
   runZonedGuarded<Future<void>>(
     () async {
@@ -75,6 +83,9 @@ void main() {
 
       // 5. Gestore per errori specifici di Flutter (es. build, layout)
       FlutterError.onError = (FlutterErrorDetails details) {
+        if (_isDisposedEngineFlutterViewError(details.exception)) {
+          return;
+        }
         // ── DEBUG: stampa anche lo stack per trovare la riga esatta ──
         debugPrint("━━━ FlutterError ━━━");
         debugPrint("Exception: ${details.exception}");
@@ -105,6 +116,9 @@ void main() {
     // 7. Questa è la callback di runZonedGuarded.
     // Cattura TUTTI gli errori non gestiti dall'app.
     (error, stack) {
+      if (_isDisposedEngineFlutterViewError(error)) {
+        return;
+      }
       ErrorLogger.log(error, stack);
       if (kDebugMode) return;
 

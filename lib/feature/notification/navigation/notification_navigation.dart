@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
@@ -74,6 +75,30 @@ class NotificationNavigation {
     final metadata = item.metadata;
     final eventType = item.eventType.toUpperCase();
     final currentUserId = getIt<AuthBloc>().state.user.uid;
+    final teamId = metadata['teamId']?.trim();
+
+    if (eventType.contains('CHAT') || metadata.containsKey('conversationId')) {
+      final chatType = metadata['chatType']?.trim().toUpperCase() ?? '';
+      final participantAUserId = metadata['participantAUserId']?.trim() ?? '';
+      final participantBUserId = metadata['participantBUserId']?.trim() ?? '';
+      final directMemberUserId = chatType == 'DIRECT'
+          ? (participantAUserId == currentUserId
+                ? participantBUserId
+                : participantAUserId)
+          : '';
+      final basePath = kIsWeb
+          ? RouterPaths.chat
+          : RouterPaths.sondageChatConversation;
+      final queryParameters = <String, String>{
+        if (teamId?.isNotEmpty ?? false) 'teamId': teamId!,
+        if (directMemberUserId.isNotEmpty) 'memberUserId': directMemberUserId,
+        'focus': 'latest',
+      };
+      final path = queryParameters.isEmpty
+          ? basePath
+          : Uri(path: basePath, queryParameters: queryParameters).toString();
+      return _NotificationDestination.path(path: path, label: 'Apri chat');
+    }
 
     final sondageId = metadata['sondageId']?.trim();
     if ((sondageId?.isNotEmpty ?? false) ||
@@ -132,7 +157,6 @@ class NotificationNavigation {
       );
     }
 
-    final teamId = metadata['teamId']?.trim();
     if ((teamId?.isNotEmpty ?? false) || eventType.startsWith('TEAM_')) {
       if (item.hidesTeamDetailFor(currentUserId)) {
         return _NotificationDestination.path(

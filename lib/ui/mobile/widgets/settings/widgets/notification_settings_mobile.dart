@@ -5,6 +5,9 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/notification/preferences/notification_preferences_cubit.dart';
 import 'package:note_sondage/feature/notification/preferences/notification_preferences_entity.dart';
+import 'package:note_sondage/feature/notification/push/push_diagnostics_snapshot.dart';
+import 'package:note_sondage/feature/notification/push/push_notification_service.dart';
+import 'package:note_sondage/feature/notification/push/widgets/push_diagnostics_panel.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -26,6 +29,8 @@ class _NotificationSettingsMobileState
       ? ShiftAlarmFeedback.ringtone
       : ShiftAlarmFeedback.vibrate;
   int _shiftAlarmDurationSeconds = 5;
+  PushDiagnosticsSnapshot? _pushDiagnostics;
+  bool _isLoadingPushDiagnostics = false;
 
   @override
   void initState() {
@@ -35,6 +40,7 @@ class _NotificationSettingsMobileState
       context.read<NotificationPreferencesCubit>().loadPreferences();
       _loadShiftAlarmFeedback();
       _loadShiftAlarmDuration();
+      _loadPushDiagnostics();
     });
   }
 
@@ -54,6 +60,29 @@ class _NotificationSettingsMobileState
     setState(() {
       _shiftAlarmDurationSeconds = duration;
     });
+  }
+
+  Future<void> _loadPushDiagnostics({bool syncFirst = false}) async {
+    setState(() {
+      _isLoadingPushDiagnostics = true;
+    });
+
+    try {
+      final pushService = getIt<PushNotificationService>();
+      if (syncFirst) {
+        await pushService.syncDeviceRegistration();
+      }
+      final snapshot = await pushService.collectDiagnostics();
+      if (!mounted) return;
+      setState(() {
+        _pushDiagnostics = snapshot;
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingPushDiagnostics = false;
+      });
+    }
   }
 
   @override
@@ -164,6 +193,17 @@ class _NotificationSettingsMobileState
                     ),
                   ],
                 ),
+              ),
+
+              const SizedBox(height: 20),
+
+              _buildSectionTitle(context, 'Device push status'),
+              const SizedBox(height: 8),
+              PushDiagnosticsPanel(
+                snapshot: _pushDiagnostics,
+                isLoading: _isLoadingPushDiagnostics,
+                onRefresh: _loadPushDiagnostics,
+                onSyncNow: () => _loadPushDiagnostics(syncFirst: true),
               ),
 
               const SizedBox(height: 20),
@@ -379,6 +419,20 @@ class _NotificationSettingsMobileState
                       onChanged: (v) => _updatePreferences(
                         context,
                         preferences.copyWith(shiftAlertsEnabled: v),
+                      ),
+                      showDivider: true,
+                    ),
+                    _buildSwitchTile(
+                      context,
+                      icon: Icons.chat_bubble_rounded,
+                      iconColor: const Color(0xFF2E7D32),
+                      title: 'Chat notifications',
+                      subtitle:
+                          'Messages, direct chats, and unread chat alerts.',
+                      value: preferences.chatMessagesEnabled,
+                      onChanged: (v) => _updatePreferences(
+                        context,
+                        preferences.copyWith(chatMessagesEnabled: v),
                       ),
                       showDivider: false,
                     ),

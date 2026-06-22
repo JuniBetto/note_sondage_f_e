@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 class AppErrorMessageResolver {
@@ -30,6 +32,10 @@ class AppErrorMessageResolver {
 
     if (_isTimeoutIssue(lowered)) {
       return 'The request took too long. Please try again.';
+    }
+
+    if (_isWebBackendReachabilityIssue(lowered)) {
+      return 'The web app could not reach the backend. Check API_BASE_URL, CORS, and that the API server is running.';
     }
 
     if (_isUnauthorizedIssue(lowered)) {
@@ -123,6 +129,11 @@ class AppErrorMessageResolver {
       case DioExceptionType.receiveTimeout:
         return 'The request took too long. Please try again.';
       case DioExceptionType.connectionError:
+        if (_isWebBackendReachabilityIssue(
+          error.message?.toLowerCase() ?? '',
+        )) {
+          return 'The web app could not reach the backend. Check API_BASE_URL, CORS, and that the API server is running.';
+        }
         return 'Check your connection and try again.';
       case DioExceptionType.cancel:
         return 'The request was cancelled. Please try again.';
@@ -224,6 +235,13 @@ class AppErrorMessageResolver {
     }
     if (data is String) {
       final trimmed = data.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {
+          return _extractResponseMessage(jsonDecode(trimmed));
+        } catch (_) {
+          // Fall back to the raw string below.
+        }
+      }
       return trimmed.isEmpty ? null : trimmed;
     }
     if (data is Map) {
@@ -265,6 +283,12 @@ class AppErrorMessageResolver {
         lowered.contains('receive timeout') ||
         lowered.contains('send timeout') ||
         lowered.contains('connection timeout');
+  }
+
+  static bool _isWebBackendReachabilityIssue(String lowered) {
+    return lowered.contains('xmlhttprequest onerror callback was called') ||
+        lowered.contains('failed to fetch') ||
+        lowered.contains('network layer');
   }
 
   static bool _isUnauthorizedIssue(String lowered) {

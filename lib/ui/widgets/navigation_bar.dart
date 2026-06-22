@@ -49,10 +49,7 @@ class NavigationBarWidget extends StatelessWidget {
       decoration: BoxDecoration(
         //color: colorScheme.bgSurface,
         border: Border(
-          top: BorderSide(
-            color: colorScheme.borderColor!,
-            width: 2,
-          ),
+          top: BorderSide(color: colorScheme.borderColor!, width: 2),
         ),
       ),
       child: Theme(
@@ -96,7 +93,8 @@ class NavigationBarWidget extends StatelessWidget {
             BottomNavigationBarItem(
               icon: _buildSectionTitle(
                 context,
-                Icon(Icons.people_outlined,
+                Icon(
+                  Icons.people_outlined,
                   //color: colorScheme.textInvertedColor,
                 ),
                 Text(l10n.team),
@@ -159,13 +157,13 @@ class NavigationBarWidget extends StatelessWidget {
               icon: _buildSectionTitle(
                 context,
                 const Icon(Icons.list_alt_outlined),
-                Text(l10n.sondage),
+                Text(l10n.sondageChat),
               ),
               activeIcon: _buildSectionTitle(
                 context,
                 const Icon(Icons.list_alt),
                 Text(
-                  l10n.sondage,
+                  l10n.sondageChat,
                   style: textTheme.labelMedium!.copyWith(
                     color: colorScheme.textInvertedColor,
                   ),
@@ -173,7 +171,7 @@ class NavigationBarWidget extends StatelessWidget {
                 isActive: position == 4,
               ),
               label: '', //l10n.settings,
-              tooltip: l10n.sondage,
+              tooltip: l10n.sondageChat,
             ),
           ],
         ),

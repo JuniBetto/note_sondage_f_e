@@ -71,6 +71,9 @@ class SidebarItem extends StatelessWidget {
       case 5:
         context.go(RouterPaths.shifts);
         break;
+      case 6:
+        context.go(RouterPaths.chat);
+        break;
     }
   }
 

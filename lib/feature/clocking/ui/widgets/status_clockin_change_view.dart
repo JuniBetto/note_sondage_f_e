@@ -216,6 +216,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
               selectedTeam?.createdByUserId == authState.user.uid;
           final canManageClocking =
               !showingPersonalHistory && _canManageClocking;
+          final decommitRequestTarget = !showingPersonalHistory
+              ? _resolveCurrentUserDecommitRequestTarget(records)
+              : null;
 
           final col = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,6 +295,28 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                         ),
                       ),
                     ),
+                    if (!canManageClocking)
+                      IntrinsicWidth(
+                        child: CustomAppButton(
+                          onPressed:
+                              widget.selectedTeamId == null ||
+                                  decommitRequestTarget == null
+                              ? null
+                              : () => _requestDecommitForSelf(
+                                  decommitRequestTarget,
+                                ),
+                          type: ButtonType.outlined,
+                          isActive: true,
+                          fullWidth: false,
+                          leadingIcon: const Icon(Icons.lock_open_rounded),
+                          child: Text(
+                            localization.requestDecommit,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ),
                     IntrinsicWidth(
                       child: CustomAppButton(
                         onPressed: widget.selectedTeamId == null
@@ -806,6 +831,39 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     return _isSameDay(left, right);
   }
 
+  ClockingRecordEntity? _resolveCurrentUserDecommitRequestTarget(
+    List<ClockingRecordEntity> records,
+  ) {
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      return null;
+    }
+
+    final selectedDate = DateTime(
+      (widget.selectedDate ?? _selectedDateFilter ?? DateTime.now()).year,
+      (widget.selectedDate ?? _selectedDateFilter ?? DateTime.now()).month,
+      (widget.selectedDate ?? _selectedDateFilter ?? DateTime.now()).day,
+    );
+
+    final candidates =
+        records.where((record) {
+          return record.userId == _currentUserId &&
+              record.teamId == teamId &&
+              record.isCommitted &&
+              _isSameDay(record.date, selectedDate);
+        }).toList()..sort((left, right) {
+          final leftTime = left.clockOutTime ?? left.clockInTime ?? left.date;
+          final rightTime =
+              right.clockOutTime ?? right.clockInTime ?? right.date;
+          return rightTime.compareTo(leftTime);
+        });
+
+    if (candidates.isEmpty) {
+      return null;
+    }
+    return candidates.first;
+  }
+
   void _decommitRecord(ClockingRecordEntity record) {
     context.read<ClockingBloc>().add(DecommitClockingRecordEvent(record.id));
   }
@@ -1176,6 +1234,86 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
         context,
         error,
         fallback: localization.clockingRequestSentError,
+      );
+    }
+  }
+
+  Future<void> _requestDecommitForSelf(ClockingRecordEntity record) async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      _showSnackBar(localization.selectTeamFirst, Colors.orange);
+      return;
+    }
+
+    final noteController = TextEditingController();
+    final selectedDate =
+        widget.selectedDate ?? _selectedDateFilter ?? record.date;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(localization.requestDecommit),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localization.requestDecommitForSelectedDate(
+                    DateFormat('dd/MM/yyyy').format(selectedDate),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: localization.note,
+                    hintText: localization.optionalRequestNoteHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              type: ButtonType.text,
+              isActive: false,
+              child: Text(localization.cancel),
+            ),
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              type: ButtonType.filled,
+              isActive: true,
+              child: Text(localization.sendRequest),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _clockingUseCase.requestDecommit(
+        teamId: teamId,
+        targetUserId: _currentUserId,
+        date: record.date,
+        recordId: record.id,
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
+      );
+      if (!mounted) return;
+      AppSnackBar.showSuccess(context, localization.decommitRequestSentSuccess);
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: localization.decommitRequestSentError,
       );
     }
   }
