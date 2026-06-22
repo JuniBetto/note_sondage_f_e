@@ -47,6 +47,79 @@ Così eviti di inviare una build agli store a ogni push su `main`.
 - `IOS_PROVISIONING_PROFILE_BASE64`
 - `IOS_KEYCHAIN_PASSWORD`
 
+## Prerequisiti iOS da abilitare
+
+Per questa app, prima del publish iOS, devi distinguere bene tra:
+
+- capability da abilitare nel `Portale Apple`
+- capability da aggiungere in `Xcode`
+
+### Portale Apple
+
+In `Certificates, Identifiers & Profiles > Identifiers > App ID` abilita:
+
+- `Push Notifications`
+
+Questa e la capability necessaria lato portale perche l'app usa notifiche push via Firebase / APNs.
+
+### Xcode
+
+In `ios/Runner.xcworkspace`, apri:
+
+- `Runner`
+- `Signing & Capabilities`
+
+e aggiungi:
+
+- `Background Modes`
+
+Dentro `Background Modes` abilita:
+
+- `Remote notifications`
+- `Background fetch`
+
+Nota importante:
+
+- `Background Modes` di solito non compare come capability da attivare nella schermata `Edit your App ID Configuration` del Portale Apple
+- quindi e normale non trovarla li
+- per questa app va gestita in `Xcode`, non nel portale
+
+### Sign in with Apple
+
+Per ora non e obbligatoria per questa pipeline.
+
+Abilitala solo se vuoi davvero offrire login Apple nell'app.
+
+### Verifica rapida nel progetto
+
+Nel progetto iOS risultano gia presenti:
+
+- [ios/Runner/Runner.entitlements](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/ios/Runner/Runner.entitlements)
+  contiene `aps-environment`
+- [ios/Runner/Info.plist](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/ios/Runner/Info.plist)
+  contiene `UIBackgroundModes` con:
+  - `fetch`
+  - `remote-notification`
+
+Quindi il setup coerente per iOS e:
+
+- Portale Apple: `Push Notifications`
+- Xcode: `Background Modes`
+- Xcode > Background Modes:
+  - `Remote notifications`
+  - `Background fetch`
+
+### Nota su TestFlight / release
+
+In [ios/Runner/Runner.entitlements](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/ios/Runner/Runner.entitlements) il valore attuale e `aps-environment = development`.
+
+Per build `TestFlight` / `App Store`, verifica che:
+
+- il provisioning profile di release sia corretto
+- il signing release sia coerente con APNs production
+
+Se il profilo e corretto, Xcode / Apple Signing allineano normalmente il comportamento della build release.
+
 ## Cosa fa la pipeline
 
 ### Android

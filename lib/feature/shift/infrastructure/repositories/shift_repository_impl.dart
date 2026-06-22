@@ -94,9 +94,16 @@ class ShiftRepositoryImpl implements ShiftRepository {
   Future<List<ShiftAssignmentEntity>> getAssignments({
     required DateTime from,
     required DateTime to,
+    List<String>? visibleTeamIds,
+    List<String>? visibleUserIds,
   }) async {
     try {
-      final assignments = await _remote.getAssignments(from: from, to: to);
+      final assignments = await _remote.getAssignments(
+        from: from,
+        to: to,
+        visibleTeamIds: visibleTeamIds,
+        visibleUserIds: visibleUserIds,
+      );
       final cached = await _local.getAssignments();
       final requestedDays = <String>{
         for (
@@ -199,6 +206,27 @@ class ShiftRepositoryImpl implements ShiftRepository {
     final cached = await _local.getAssignments();
     await _local.saveAssignments(
       cached.where((item) => item.id != assignmentId).toList(),
+    );
+  }
+
+  @override
+  Future<void> requestAssignmentChange(
+    String assignmentId, {
+    String? profileId,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    bool? overnight,
+    String? note,
+    List<int>? alarmOffsets,
+  }) {
+    return _remote.requestAssignmentChange(
+      assignmentId,
+      profileId: profileId,
+      startTime: startTime,
+      endTime: endTime,
+      overnight: overnight,
+      note: note,
+      alarmOffsets: alarmOffsets,
     );
   }
 }

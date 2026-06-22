@@ -216,26 +216,28 @@ class _StatusTile extends StatelessWidget {
             child: Icon(item.icon, size: 18, color: item.color),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                item.label,
-                style: textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                  fontSize: 11,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item.label,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
+                  ),maxLines: 2,overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Text(
-                item.time,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.iconLabel,
-                  fontWeight: FontWeight.w700,
+                Text(
+                  item.time,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.iconLabel,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

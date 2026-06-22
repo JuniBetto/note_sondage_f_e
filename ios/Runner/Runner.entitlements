@@ -2,12 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- OBBLIGATORIO per push notifications su device reale.
-	     "development" = debug build (certificate di dev)
-	     "production"  = release build / TestFlight / App Store
-	     Senza questo entitlement APNs rifiuta il token e le notifiche
-	     non arrivano mai sul device fisico. -->
 	<key>aps-environment</key>
 	<string>development</string>
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

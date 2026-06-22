@@ -129,11 +129,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
   }
 
   void markAsSeen(String notificationId) {
-    if (notificationId.isEmpty) return;
-    final seen = Set<String>.from(state.seenNotificationIds)
-      ..add(notificationId);
-    emit(state.copyWith(seenNotificationIds: seen));
-    unawaited(_persistLocalState(seenNotificationIds: seen));
+    consumeNotification(notificationId);
   }
 
   void markManyAsSeen(Iterable<String> notificationIds) {
@@ -142,8 +138,27 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         .toSet();
     if (filtered.isEmpty) return;
     final seen = Set<String>.from(state.seenNotificationIds)..addAll(filtered);
-    emit(state.copyWith(seenNotificationIds: seen));
-    unawaited(_persistLocalState(seenNotificationIds: seen));
+    final dismissed = Set<String>.from(state.dismissedNotificationIds)
+      ..addAll(filtered);
+    final remainingNotifications = state.notifications
+        .where((item) => !filtered.contains(item.notificationId))
+        .toList();
+    emit(
+      state.copyWith(
+        notifications: remainingNotifications,
+        seenNotificationIds: seen,
+        dismissedNotificationIds: dismissed,
+      ),
+    );
+    unawaited(
+      Future.wait([
+        _persistLocalState(
+          seenNotificationIds: seen,
+          dismissedNotificationIds: dismissed,
+        ),
+        _dismissNotificationsRemotely(filtered),
+      ]),
+    );
   }
 
   void consumeNotification(String notificationId) {
@@ -165,10 +180,13 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       ),
     );
     unawaited(
-      _persistLocalState(
-        seenNotificationIds: seen,
-        dismissedNotificationIds: dismissed,
-      ),
+      Future.wait([
+        _persistLocalState(
+          seenNotificationIds: seen,
+          dismissedNotificationIds: dismissed,
+        ),
+        _dismissNotificationsRemotely([notificationId]),
+      ]),
     );
   }
 
@@ -204,16 +222,16 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     final teamId = item.metadata['teamId']?.trim();
     final requesterUserId = item.requesterUserId;
     final requestedDate = item.requestedDate;
-    if (teamId == null ||
-        teamId.isEmpty ||
-        requesterUserId == null ||
-        requestedDate == null) {
+    if (requesterUserId == null) {
       return;
     }
 
     await _performAction(item.notificationId, () async {
       switch (item.requestType) {
         case 'clocking':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.approveClockingRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -222,6 +240,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           );
           break;
         case 'vacation':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.approveVacationRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -230,6 +251,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           );
           break;
         case 'permission':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.approvePermissionRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -237,6 +261,24 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             startTime: item.permissionStartTime ?? '',
             endTime: item.permissionEndTime ?? '',
             note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'shift_change':
+          final assignmentId = item.metadata['assignmentId']?.trim();
+          if (assignmentId == null || assignmentId.isEmpty) {
+            return;
+          }
+          await _backendAuth.approveShiftChangeRequest(
+            assignmentId: assignmentId,
+            requesterUserId: requesterUserId,
+            profileId: item.metadata['shiftProfileId']?.trim(),
+            startTime: item.metadata['shiftStartTime']?.trim(),
+            endTime: item.metadata['shiftEndTime']?.trim(),
+            overnight: _parseOptionalBool(item.metadata['shiftOvernight']),
+            note: item.metadata['shiftNote']?.trim(),
+            alarmOffsets: _parseAlarmOffsets(
+              item.metadata['shiftAlarmOffsets'],
+            ),
           );
           break;
       }
@@ -247,16 +289,16 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     final teamId = item.metadata['teamId']?.trim();
     final requesterUserId = item.requesterUserId;
     final requestedDate = item.requestedDate;
-    if (teamId == null ||
-        teamId.isEmpty ||
-        requesterUserId == null ||
-        requestedDate == null) {
+    if (requesterUserId == null) {
       return;
     }
 
     await _performAction(item.notificationId, () async {
       switch (item.requestType) {
         case 'clocking':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.rejectClockingRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -265,6 +307,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           );
           break;
         case 'vacation':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.rejectVacationRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -273,6 +318,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           );
           break;
         case 'permission':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
           await _backendAuth.rejectPermissionRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
@@ -280,6 +328,24 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             startTime: item.permissionStartTime ?? '',
             endTime: item.permissionEndTime ?? '',
             note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'shift_change':
+          final assignmentId = item.metadata['assignmentId']?.trim();
+          if (assignmentId == null || assignmentId.isEmpty) {
+            return;
+          }
+          await _backendAuth.rejectShiftChangeRequest(
+            assignmentId: assignmentId,
+            requesterUserId: requesterUserId,
+            profileId: item.metadata['shiftProfileId']?.trim(),
+            startTime: item.metadata['shiftStartTime']?.trim(),
+            endTime: item.metadata['shiftEndTime']?.trim(),
+            overnight: _parseOptionalBool(item.metadata['shiftOvernight']),
+            note: item.metadata['shiftNote']?.trim(),
+            alarmOffsets: _parseAlarmOffsets(
+              item.metadata['shiftAlarmOffsets'],
+            ),
           );
           break;
       }
@@ -338,6 +404,33 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     return metadata['realtimeOnly']?.toLowerCase() == 'true';
   }
 
+  bool? _parseOptionalBool(String? value) {
+    final normalized = value?.trim().toLowerCase();
+    if (normalized == 'true') {
+      return true;
+    }
+    if (normalized == 'false') {
+      return false;
+    }
+    return null;
+  }
+
+  List<int>? _parseAlarmOffsets(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    final offsets = normalized
+        .split(',')
+        .map((entry) => int.tryParse(entry.trim()))
+        .whereType<int>()
+        .toList(growable: false);
+    if (offsets.isEmpty) {
+      return null;
+    }
+    return offsets;
+  }
+
   List<NotificationCenterItem> _normalizeNotifications(
     List<NotificationCenterItem> notifications,
   ) {
@@ -377,6 +470,8 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         ..add(notificationId);
       final dismissed = Set<String>.from(state.dismissedNotificationIds)
         ..add(notificationId);
+      final seen = Set<String>.from(state.seenNotificationIds)
+        ..add(notificationId);
       final remainingNotifications = state.notifications
           .where((item) => item.notificationId != notificationId)
           .toList();
@@ -387,16 +482,18 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           processingNotificationIds: processing,
           completedActionNotificationIds: completed,
           dismissedNotificationIds: dismissed,
-          seenNotificationIds: Set<String>.from(state.seenNotificationIds)
-            ..add(notificationId),
+          seenNotificationIds: seen,
           errorMessage: null,
         ),
       );
-      await _persistLocalState(
-        seenNotificationIds: Set<String>.from(state.seenNotificationIds),
-        dismissedNotificationIds: dismissed,
-        completedActionNotificationIds: completed,
-      );
+      await Future.wait([
+        _persistLocalState(
+          seenNotificationIds: seen,
+          dismissedNotificationIds: dismissed,
+          completedActionNotificationIds: completed,
+        ),
+        _dismissNotificationsRemotely([notificationId]),
+      ]);
       return true;
     } catch (e) {
       processing.remove(notificationId);
@@ -404,6 +501,8 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         final completed = Set<String>.from(state.completedActionNotificationIds)
           ..add(notificationId);
         final dismissed = Set<String>.from(state.dismissedNotificationIds)
+          ..add(notificationId);
+        final seen = Set<String>.from(state.seenNotificationIds)
           ..add(notificationId);
         final remainingNotifications = state.notifications
             .where((item) => item.notificationId != notificationId)
@@ -414,16 +513,18 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             processingNotificationIds: processing,
             completedActionNotificationIds: completed,
             dismissedNotificationIds: dismissed,
-            seenNotificationIds: Set<String>.from(state.seenNotificationIds)
-              ..add(notificationId),
+            seenNotificationIds: seen,
             errorMessage: null,
           ),
         );
-        await _persistLocalState(
-          seenNotificationIds: Set<String>.from(state.seenNotificationIds),
-          dismissedNotificationIds: dismissed,
-          completedActionNotificationIds: completed,
-        );
+        await Future.wait([
+          _persistLocalState(
+            seenNotificationIds: seen,
+            dismissedNotificationIds: dismissed,
+            completedActionNotificationIds: completed,
+          ),
+          _dismissNotificationsRemotely([notificationId]),
+        ]);
         return true;
       }
       emit(
@@ -451,6 +552,26 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         raw.contains('already accepted') ||
         raw.contains('has expired') ||
         raw.contains('expired');
+  }
+
+  Future<void> _dismissNotificationsRemotely(
+    Iterable<String> notificationIds,
+  ) async {
+    final ids = notificationIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    if (ids.isEmpty) {
+      return;
+    }
+
+    for (final id in ids) {
+      try {
+        await _backendAuth.dismissNotification(id);
+      } catch (_) {
+        // Keep the local dismissal even if the backend feed cannot be updated.
+      }
+    }
   }
 
   Future<void> _ensureHydrated() {

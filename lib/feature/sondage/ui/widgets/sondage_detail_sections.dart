@@ -430,17 +430,29 @@ class SondageOwnerActionsSection extends StatelessWidget {
     required this.sondage,
     required this.onPublish,
     required this.onClose,
+    this.onReopen,
+    this.onDelete,
+    this.onRemind,
   });
 
   final SondageEntity sondage;
   final VoidCallback onPublish;
   final VoidCallback onClose;
+  final VoidCallback? onReopen;
+  final VoidCallback? onDelete;
+  final VoidCallback? onRemind;
 
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
+    final theme= Theme.of(context);
+    final colorScheme= theme.colorScheme;
 
-    if (!sondage.canPublish && !sondage.canClose) {
+    if (!sondage.canPublish &&
+        !sondage.canClose &&
+        !sondage.canReopen &&
+        !sondage.canDelete &&
+        onRemind == null) {
       return const SizedBox.shrink();
     }
 
@@ -452,7 +464,10 @@ class SondageOwnerActionsSection extends StatelessWidget {
           FilledButton.icon(
             onPressed: onPublish,
             icon: const Icon(Icons.publish_rounded),
-            label: Text(localization.publish),
+            label: Text(localization.publish,
+              ),style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.bgNavbarbutton,
+          )
           ),
         if (sondage.canClose)
           FilledButton.tonalIcon(
@@ -460,7 +475,52 @@ class SondageOwnerActionsSection extends StatelessWidget {
             icon: const Icon(Icons.lock_clock_rounded),
             label: Text(localization.closeSurvey),
           ),
+        if (sondage.canReopen && onReopen != null)
+          FilledButton.tonalIcon(
+            onPressed: onReopen,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(_reopenLabel(context)),
+          ),
+        if (onRemind != null)
+          FilledButton.tonalIcon(
+            onPressed: onRemind,
+            icon: const Icon(Icons.notifications_active_rounded),
+            label: Text(_remindLabel(context)),
+          ),
+        if (sondage.canDelete && onDelete != null)
+          FilledButton.tonalIcon(
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: Text(_deleteLabel(context)),
+          ),
       ],
     );
+  }
+
+  String _remindLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Sollecita voto',
+      'fr' => 'Relancer le vote',
+      'es' => 'Recordar voto',
+      _ => 'Remind to vote',
+    };
+  }
+
+  String _deleteLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Elimina sondaggio',
+      'fr' => 'Supprimer le sondage',
+      'es' => 'Eliminar encuesta',
+      _ => 'Delete survey',
+    };
+  }
+
+  String _reopenLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Riapri sondaggio',
+      'fr' => 'Rouvrir le sondage',
+      'es' => 'Reabrir encuesta',
+      _ => 'Reopen survey',
+    };
   }
 }

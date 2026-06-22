@@ -379,6 +379,42 @@ class BackendAuthDataSource {
     }
   }
 
+  Future<void> dismissNotification(String notificationId) async {
+    try {
+      await _authenticatedDio.post(
+        '/api/aggregate/notifications/me/$notificationId/dismiss',
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Notification dismiss failed: ${e.message}');
+      throw Exception(
+        'Failed to dismiss notification: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<void> linkInvitationsAfterRegistration(String email) async {
+    final normalizedEmail = email.trim();
+    if (normalizedEmail.isEmpty) {
+      return;
+    }
+
+    try {
+      await _authenticatedDio.post(
+        '/api/aggregate/teams/invitations/link',
+        queryParameters: {'email': normalizedEmail},
+      );
+    } on DioException catch (e) {
+      debugPrint(
+        '[BackendAuth] Invitation link-after-registration failed: ${e.message}',
+      );
+      throw Exception(
+        'Failed to link pending invitations: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
   Future<void> approveClockingRequest({
     required String teamId,
     required String requesterUserId,
@@ -495,7 +531,75 @@ class BackendAuthDataSource {
     );
   }
 
+  Future<void> approveShiftChangeRequest({
+    required String assignmentId,
+    required String requesterUserId,
+    String? profileId,
+    String? startTime,
+    String? endTime,
+    bool? overnight,
+    String? note,
+    List<int>? alarmOffsets,
+  }) async {
+    await _postShiftChangeDecision(
+      '/api/aggregate/shift/approve-change-request/$assignmentId',
+      {
+        'requesterFirebaseUid': requesterUserId,
+        if (profileId != null && profileId.isNotEmpty) 'profileId': profileId,
+        if (startTime != null && startTime.isNotEmpty) 'startTime': startTime,
+        if (endTime != null && endTime.isNotEmpty) 'endTime': endTime,
+        if (overnight != null) 'overnight': overnight,
+        if (note != null && note.isNotEmpty) 'note': note,
+        if (alarmOffsets != null && alarmOffsets.isNotEmpty)
+          'alarmOffsets': alarmOffsets,
+      },
+      'approve shift change request',
+    );
+  }
+
+  Future<void> rejectShiftChangeRequest({
+    required String assignmentId,
+    required String requesterUserId,
+    String? profileId,
+    String? startTime,
+    String? endTime,
+    bool? overnight,
+    String? note,
+    List<int>? alarmOffsets,
+  }) async {
+    await _postShiftChangeDecision(
+      '/api/aggregate/shift/reject-change-request/$assignmentId',
+      {
+        'requesterFirebaseUid': requesterUserId,
+        if (profileId != null && profileId.isNotEmpty) 'profileId': profileId,
+        if (startTime != null && startTime.isNotEmpty) 'startTime': startTime,
+        if (endTime != null && endTime.isNotEmpty) 'endTime': endTime,
+        if (overnight != null) 'overnight': overnight,
+        if (note != null && note.isNotEmpty) 'note': note,
+        if (alarmOffsets != null && alarmOffsets.isNotEmpty)
+          'alarmOffsets': alarmOffsets,
+      },
+      'reject shift change request',
+    );
+  }
+
   Future<void> _postClockingDecision(
+    String path,
+    Map<String, dynamic> data,
+    String actionLabel,
+  ) async {
+    try {
+      await _authenticatedDio.post(path, data: data);
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] $actionLabel failed: ${e.message}');
+      throw Exception(
+        'Failed to $actionLabel: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  Future<void> _postShiftChangeDecision(
     String path,
     Map<String, dynamic> data,
     String actionLabel,

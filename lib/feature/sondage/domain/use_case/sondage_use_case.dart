@@ -69,11 +69,33 @@ class SondageUseCase {
     }
   }
 
+  Future<SondageEntity> reopenSondage(String id) async {
+    try {
+      return await repository.reopen(id);
+    } catch (e) {
+      throw Exception('Failed to reopen sondage: $e');
+    }
+  }
+
   Future<SondageEntity> voteSondage(String sondageId, String optionId) async {
     try {
       return await repository.vote(sondageId, optionId);
     } catch (e) {
       throw Exception('Failed to vote sondage: $e');
+    }
+  }
+
+  Future<int> remindPendingVoters(
+    String sondageId, {
+    List<String>? recipientUserIds,
+  }) async {
+    try {
+      return await repository.remindPendingVoters(
+        sondageId,
+        recipientUserIds: recipientUserIds,
+      );
+    } catch (e) {
+      throw Exception('Failed to remind pending voters: $e');
     }
   }
 }

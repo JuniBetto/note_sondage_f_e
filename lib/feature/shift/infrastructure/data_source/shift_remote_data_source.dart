@@ -82,12 +82,26 @@ class ShiftRemoteDataSource {
   Future<List<ShiftAssignmentEntity>> getAssignments({
     required DateTime from,
     required DateTime to,
+    List<String>? visibleTeamIds,
+    List<String>? visibleUserIds,
   }) async {
+    final normalizedTeamIds = visibleTeamIds
+        ?.map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+    final normalizedUserIds = visibleUserIds
+        ?.map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
     final response = await _dio.get(
       '/api/aggregate/shift/assignments',
       queryParameters: {
         'from': from.toIso8601String().split('T').first,
         'to': to.toIso8601String().split('T').first,
+        if (normalizedTeamIds != null && normalizedTeamIds.isNotEmpty)
+          'visibleTeamIds': normalizedTeamIds,
+        if (normalizedUserIds != null && normalizedUserIds.isNotEmpty)
+          'visibleUserIds': normalizedUserIds,
       },
     );
     final data = response.data as List<dynamic>? ?? const [];
@@ -168,5 +182,32 @@ class ShiftRemoteDataSource {
 
   Future<void> deleteAssignment(String assignmentId) async {
     await _dio.delete('/api/aggregate/shift/assignments/$assignmentId');
+  }
+
+  Future<void> requestAssignmentChange(
+    String assignmentId, {
+    String? profileId,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    bool? overnight,
+    String? note,
+    List<int>? alarmOffsets,
+  }) async {
+    await _dio.post(
+      '/api/aggregate/shift/assignments/$assignmentId/request-change',
+      data: {
+        if (profileId != null && profileId.isNotEmpty) 'profileId': profileId,
+        if (startTime != null)
+          'startTime':
+              '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}:00',
+        if (endTime != null)
+          'endTime':
+              '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}:00',
+        if (overnight != null) 'overnight': overnight,
+        if (note != null && note.isNotEmpty) 'note': note,
+        if (alarmOffsets != null && alarmOffsets.isNotEmpty)
+          'alarmOffsets': alarmOffsets,
+      },
+    );
   }
 }

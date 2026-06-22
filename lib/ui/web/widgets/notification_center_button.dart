@@ -71,12 +71,6 @@ class NotificationCenterButton extends StatelessWidget {
   Future<void> _showNotificationCenter(BuildContext context) async {
     final cubit = context.read<NotificationCenterCubit>();
     await cubit.loadNotifications(force: true);
-    final visibleNotifications = _visibleNotifications(
-      cubit.state.notifications,
-    );
-    cubit.markManyAsSeen(
-      visibleNotifications.map((item) => item.notificationId),
-    );
     if (!context.mounted) return;
 
     await showDialog<void>(
@@ -313,6 +307,9 @@ class _NotificationCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     FilledButton(
                       onPressed: isProcessing ? null : onAccept,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.bgNavbarbutton,
+                      ),
                       child: isProcessing
                           ? const SizedBox(
                               width: 16,

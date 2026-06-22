@@ -17,5 +17,12 @@ abstract class SondageRepository {
 
   Future<SondageEntity> close(String id);
 
+  Future<SondageEntity> reopen(String id);
+
   Future<SondageEntity> vote(String sondageId, String optionId);
+
+  Future<int> remindPendingVoters(
+    String sondageId, {
+    List<String>? recipientUserIds,
+  });
 }

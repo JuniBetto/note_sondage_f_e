@@ -87,11 +87,35 @@ class SondageRepositoryImpl implements SondageRepository {
   }
 
   @override
+  Future<SondageEntity> reopen(String id) async {
+    try {
+      return await _remote.reopen(id);
+    } catch (e) {
+      throw Exception('Failed to reopen sondage: $e');
+    }
+  }
+
+  @override
   Future<SondageEntity> vote(String sondageId, String optionId) async {
     try {
       return await _remote.vote(sondageId, optionId);
     } catch (e) {
       throw Exception('Failed to vote sondage: $e');
+    }
+  }
+
+  @override
+  Future<int> remindPendingVoters(
+    String sondageId, {
+    List<String>? recipientUserIds,
+  }) async {
+    try {
+      return await _remote.remindPendingVoters(
+        sondageId,
+        recipientUserIds: recipientUserIds,
+      );
+    } catch (e) {
+      throw Exception('Failed to remind pending voters: $e');
     }
   }
 }

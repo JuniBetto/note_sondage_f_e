@@ -59,6 +59,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   bool _tutorialScheduled = false;
   TimeOfDay _start = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _end = const TimeOfDay(hour: 18, minute: 0);
+  DateTime? _expiryAnchorDate;
   String? _selectedTeamId;
   late Future<List<TeamEntity>> _teamsFuture;
   bool get _isEditing => widget.initialSondage != null;
@@ -67,7 +68,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     if (initial == null) {
       return true;
     }
-    return initial.canEdit && initial.status == SondageStatus.draft;
+    return initial.canEdit;
   }
 
   _SondageCreateStrings get _strings => _SondageCreateStrings.of(context);
@@ -163,6 +164,15 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     _hasExpiry = initial.expiryDate != null;
     if (initial.expiryDate != null) {
       final expiry = initial.expiryDate!;
+      _expiryAnchorDate = DateTime(expiry.year, expiry.month, expiry.day);
+      final suggestedStartMinutes = (expiry.hour * 60 + expiry.minute) - 60;
+      final normalizedStartMinutes = suggestedStartMinutes < 0
+          ? 0
+          : suggestedStartMinutes;
+      _start = TimeOfDay(
+        hour: normalizedStartMinutes ~/ 60,
+        minute: normalizedStartMinutes % 60,
+      );
       _end = TimeOfDay(hour: expiry.hour, minute: expiry.minute);
     }
 
@@ -184,8 +194,15 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     }
 
     final now = DateTime.now();
-    var expiry = DateTime(now.year, now.month, now.day, _end.hour, _end.minute);
-    if (!expiry.isAfter(now)) {
+    final anchor = _expiryAnchorDate ?? DateTime(now.year, now.month, now.day);
+    var expiry = DateTime(
+      anchor.year,
+      anchor.month,
+      anchor.day,
+      _end.hour,
+      _end.minute,
+    );
+    if (!_isEditing && !expiry.isAfter(now)) {
       expiry = expiry.add(const Duration(days: 1));
     }
     return expiry;
@@ -213,6 +230,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       _hasExpiry = false;
       _start = const TimeOfDay(hour: 9, minute: 0);
       _end = const TimeOfDay(hour: 18, minute: 0);
+      _expiryAnchorDate = null;
     });
   }
 
@@ -268,6 +286,10 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         .toList(growable: false);
   }
 
+  int _timeToMinutes(TimeOfDay value) => value.hour * 60 + value.minute;
+
+  bool _isValidTimeRange() => _timeToMinutes(_end) > _timeToMinutes(_start);
+
   void _submit() {
     if (_isSubmitting) {
       return;
@@ -295,6 +317,10 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     }
     if (options.length < 2) {
       _showSnackBar(_strings.addAtLeastTwoOptions);
+      return;
+    }
+    if (_hasExpiry && !_isValidTimeRange()) {
+      _showSnackBar(_strings.endTimeMustBeAfterStartTime);
       return;
     }
 
@@ -858,7 +884,17 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                       CheckboxListTile(
                         value: _hasExpiry,
                         onChanged: (value) {
-                          setState(() => _hasExpiry = value ?? false);
+                          setState(() {
+                            _hasExpiry = value ?? false;
+                            if (_hasExpiry && _expiryAnchorDate == null) {
+                              final now = DateTime.now();
+                              _expiryAnchorDate = DateTime(
+                                now.year,
+                                now.month,
+                                now.day,
+                              );
+                            }
+                          });
                         },
                         activeColor: colorScheme.selectionColor,
                         controlAffinity: ListTileControlAffinity.leading,
@@ -977,6 +1013,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
 class _SondageCreateStrings {
   const _SondageCreateStrings._({
     required this.onlyDraftSurveysCanBeEdited,
+    required this.endTimeMustBeAfterStartTime,
     required this.enterSurveyQuestion,
     required this.selectTeamBeforeCreatingSurvey,
     required this.addAtLeastTwoOptions,
@@ -1010,6 +1047,7 @@ class _SondageCreateStrings {
   });
 
   final String onlyDraftSurveysCanBeEdited;
+  final String endTimeMustBeAfterStartTime;
   final String enterSurveyQuestion;
   final String selectTeamBeforeCreatingSurvey;
   final String addAtLeastTwoOptions;
@@ -1060,7 +1098,9 @@ class _SondageCreateStrings {
   }
 
   static const _SondageCreateStrings _en = _SondageCreateStrings._(
-    onlyDraftSurveysCanBeEdited: 'Only draft surveys can be edited.',
+    onlyDraftSurveysCanBeEdited:
+        'You do not have permission to edit this survey.',
+    endTimeMustBeAfterStartTime: 'End time must be later than start time.',
     enterSurveyQuestion: 'Enter the survey question.',
     selectTeamBeforeCreatingSurvey: 'Select a team before creating the survey.',
     addAtLeastTwoOptions: 'Add at least 2 options.',
@@ -1094,7 +1134,7 @@ class _SondageCreateStrings {
     targetTeamTitle: 'Target team',
     targetTeamDescription: 'Select here which team should receive this survey.',
     surveyNoLongerEditable:
-        'This survey can no longer be edited. Only drafts can be updated.',
+        'This survey cannot be edited with your current permissions.',
     createSurveyTitle: 'Create survey',
     createSurveyDescription:
         'Once the question, options, and team are ready, use this button to create the survey draft.',
@@ -1104,7 +1144,9 @@ class _SondageCreateStrings {
 
   static const _SondageCreateStrings _it = _SondageCreateStrings._(
     onlyDraftSurveysCanBeEdited:
-        'Solo i sondaggi in bozza possono essere modificati.',
+        'Non hai i permessi per modificare questo sondaggio.',
+    endTimeMustBeAfterStartTime:
+        'L\'orario di fine deve essere successivo all\'orario di inizio.',
     enterSurveyQuestion: 'Inserisci la domanda del sondaggio.',
     selectTeamBeforeCreatingSurvey:
         'Seleziona un team prima di creare il sondaggio.',
@@ -1139,7 +1181,7 @@ class _SondageCreateStrings {
     targetTeamDescription:
         'Seleziona qui la squadra che riceverà il sondaggio.',
     surveyNoLongerEditable:
-        'Questo sondaggio non è più modificabile. Solo i draft possono essere aggiornati.',
+        'Questo sondaggio non può essere modificato con i tuoi permessi attuali.',
     createSurveyTitle: 'Crea il sondaggio',
     createSurveyDescription:
         'Quando domanda, opzioni e team sono pronti, usa questo pulsante per creare la bozza del sondaggio.',
@@ -1149,7 +1191,9 @@ class _SondageCreateStrings {
 
   static const _SondageCreateStrings _fr = _SondageCreateStrings._(
     onlyDraftSurveysCanBeEdited:
-        'Seuls les sondages en brouillon peuvent être modifiés.',
+        'Vous n\'avez pas l\'autorisation de modifier ce sondage.',
+    endTimeMustBeAfterStartTime:
+        'L\'heure de fin doit être postérieure à l\'heure de début.',
     enterSurveyQuestion: 'Saisissez la question du sondage.',
     selectTeamBeforeCreatingSurvey:
         'Sélectionnez une équipe avant de créer le sondage.',
@@ -1185,7 +1229,7 @@ class _SondageCreateStrings {
     targetTeamTitle: 'Équipe cible',
     targetTeamDescription: 'Sélectionnez ici l’équipe qui recevra ce sondage.',
     surveyNoLongerEditable:
-        'Ce sondage ne peut plus être modifié. Seuls les brouillons peuvent être mis à jour.',
+        'Ce sondage ne peut pas être modifié avec vos autorisations actuelles.',
     createSurveyTitle: 'Créer le sondage',
     createSurveyDescription:
         'Quand la question, les options et l’équipe sont prêtes, utilisez ce bouton pour créer le brouillon du sondage.',
@@ -1194,8 +1238,9 @@ class _SondageCreateStrings {
   );
 
   static const _SondageCreateStrings _es = _SondageCreateStrings._(
-    onlyDraftSurveysCanBeEdited:
-        'Solo se pueden editar las encuestas en borrador.',
+    onlyDraftSurveysCanBeEdited: 'No tienes permiso para editar esta encuesta.',
+    endTimeMustBeAfterStartTime:
+        'La hora de fin debe ser posterior a la hora de inicio.',
     enterSurveyQuestion: 'Introduce la pregunta de la encuesta.',
     selectTeamBeforeCreatingSurvey:
         'Selecciona un equipo antes de crear la encuesta.',
@@ -1232,7 +1277,7 @@ class _SondageCreateStrings {
     targetTeamDescription:
         'Selecciona aquí el equipo que recibirá esta encuesta.',
     surveyNoLongerEditable:
-        'Esta encuesta ya no se puede editar. Solo se pueden actualizar los borradores.',
+        'Esta encuesta no se puede editar con tus permisos actuales.',
     createSurveyTitle: 'Crear encuesta',
     createSurveyDescription:
         'Cuando la pregunta, las opciones y el equipo estén listos, usa este botón para crear el borrador de la encuesta.',

@@ -7,11 +7,13 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_enti
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/ui/utils/shift_report_pdf_export_service.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class ShiftTeamReportDialog extends StatefulWidget {
@@ -155,6 +157,7 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
     if (teamId == null || teamId.isEmpty) {
       return;
     }
+    final shouldKeepAllSelected = _allUsersSelected;
 
     try {
       final members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
@@ -173,7 +176,7 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
             (member) => (member.teamMember.userId ?? '') == userId,
           ),
         );
-        if (_selectedUserIds.isEmpty) {
+        if (shouldKeepAllSelected || _selectedUserIds.isEmpty) {
           _selectAllUsersForCurrentTeam();
         }
       });
@@ -191,6 +194,12 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
       final assignments = await _shiftRepository.getAssignments(
         from: _rangeStart,
         to: _rangeEnd,
+        visibleTeamIds: _selectedTeamId == null
+            ? null
+            : <String>[_selectedTeamId!],
+        visibleUserIds: _selectedUserIds.isEmpty
+            ? null
+            : _selectedUserIds.toList(),
       );
       if (!mounted) {
         return;
@@ -328,7 +337,9 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
     final filteredAssignments = _filteredAssignments;
     final team = _selectedTeamView;
     final hasAssignments = filteredAssignments.isNotEmpty;
@@ -377,6 +388,9 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                       IconButton(
                         onPressed: () => Navigator.of(context).maybePop(),
                         icon: const Icon(Icons.close_rounded),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.bgNavbarbutton,
+                        ),
                       ),
                   ],
                 ),
@@ -386,8 +400,19 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
                       onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.close_rounded),
-                      label: Text(loc.close),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: colorScheme.textInvertedColor,
+                      ),
+                      label: Text(
+                        loc.close,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.textInvertedColor,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.bgNavbarbutton,
+                      ),
                     ),
                   ),
                 ],
@@ -408,26 +433,13 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                         children: [
                           SizedBox(
                             width: teamFieldWidth,
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _selectedTeamId,
-                              decoration: InputDecoration(
-                                labelText: loc.team,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              items: widget.teams
-                                  .where((team) => team.team.id != null)
-                                  .map(
-                                    (team) => DropdownMenuItem<String>(
-                                      value: team.team.id!,
-                                      child: Text(
-                                        team.team.name,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
+                            child: ShiftCalendarTeamPicker(
+                              teams: widget.teams,
+                              selectedTeamId: _selectedTeamId,
+                              includePersonalOption: false,
+                              unselectedTitle: loc.shiftReportSelectTeam,
+                              triggerSubtitle: loc.changeOrSearchTeam,
+                              teamFallbackSubtitle: loc.shiftReportSelectTeam,
                               onChanged: (value) {
                                 if (value == null || value == _selectedTeamId) {
                                   return;
@@ -470,8 +482,9 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                       FilterChip(
                         label: Text(loc.allUsers),
                         selected: _allUsersSelected,
-                        onSelected: (_) {
+                        onSelected: (_) async {
                           setState(_selectAllUsersForCurrentTeam);
+                          await _loadReport();
                         },
                       ),
                       for (final member in _availableMembers)
@@ -480,12 +493,13 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                           selected: _selectedUserIds.contains(
                             member.teamMember.userId,
                           ),
-                          onSelected: (_) {
+                          onSelected: (_) async {
                             final userId = member.teamMember.userId;
                             if (userId == null || userId.isEmpty) {
                               return;
                             }
                             _toggleUser(userId);
+                            await _loadReport();
                           },
                         ),
                     ],
@@ -498,32 +512,54 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                       FilledButton.icon(
                         onPressed: _loading ? null : _loadReport,
                         icon: _loading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: colorScheme.textInvertedColor,
                                 ),
                               )
-                            : const Icon(Icons.refresh_rounded),
-                        label: Text(loc.shiftReportRefresh),
+                            : Icon(
+                                Icons.refresh_rounded,
+                                color: colorScheme.textInvertedColor,
+                              ),
+                        label: Text(
+                          loc.shiftReportRefresh,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.textInvertedColor,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.bgNavbarbutton,
+                        ),
                       ),
                       FilledButton.icon(
                         onPressed: !hasAssignments || _exporting
                             ? null
                             : _exportPdf,
                         icon: _exporting
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: colorScheme.textInvertedColor,
                                 ),
                               )
-                            : const Icon(Icons.download_rounded),
-                        label: Text(loc.downloadPdf),
+                            : Icon(
+                                Icons.download_rounded,
+                                color: colorScheme.textInvertedColor,
+                              ),
+                        label: Text(
+                          loc.downloadPdf,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.textInvertedColor,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.bgNavbarbutton,
+                        ),
                       ),
                     ],
                   ),
@@ -558,41 +594,12 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(14),
-                        child: _loading
-                            ? const Center(child: CircularProgressIndicator())
-                            : team == null
-                            ? Center(child: Text(loc.shiftReportSelectTeam))
-                            : !hasAssignments
-                            ? Center(child: Text(loc.shiftReportNoResults))
-                            : _showCalendarPreview
-                            ? ShiftCalendarWidget(
-                                assignments: filteredAssignments,
-                                focusedMonth: _focusedMonth,
-                                onMonthChanged: (month) {
-                                  setState(() {
-                                    _focusedMonth = DateTime(
-                                      month.year,
-                                      month.month,
-                                      1,
-                                    );
-                                  });
-                                },
-                                onDayTap: (_, __) {},
-                              )
-                            : _ShiftReportTable(
-                                assignments: filteredAssignments,
-                                dateColumn: loc.shiftReportDateColumn,
-                                userColumn: loc.shiftReportUserColumn,
-                                profileColumn: loc.shiftReportProfileColumn,
-                                startColumn: loc.start,
-                                endColumn: loc.end,
-                                typeColumn: loc.shiftReportTypeColumn,
-                                noteColumn: loc.note,
-                                defaultProfileLabel:
-                                    loc.shiftReportDefaultProfile,
-                                privateTypeLabel: loc.shiftReportPrivateType,
-                                teamLabel: loc.team,
-                              ),
+                        child: _buildPreviewContent(
+                          loc,
+                          team,
+                          filteredAssignments,
+                          hasAssignments,
+                        ),
                       ),
                     ),
                   ),
@@ -635,6 +642,57 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
       return _memberLabel(matchingMember);
     }
     return assignment.userId;
+  }
+
+  Widget _buildPreviewContent(
+    AppLocalizations loc,
+    TeamEntityForView? team,
+    List<ShiftAssignmentEntity> filteredAssignments,
+    bool hasAssignments,
+  ) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (team == null) {
+      return Center(child: Text(loc.shiftReportSelectTeam));
+    }
+    if (!hasAssignments) {
+      return Center(child: Text(loc.shiftReportNoResults));
+    }
+
+    final preview = _showCalendarPreview
+        ? ShiftCalendarWidget(
+            assignments: filteredAssignments,
+            focusedMonth: _focusedMonth,
+            onMonthChanged: (month) {
+              setState(() {
+                _focusedMonth = DateTime(month.year, month.month, 1);
+              });
+            },
+            onDayTap: (_, __) {},
+          )
+        : _ShiftReportTable(
+            assignments: filteredAssignments,
+            dateColumn: loc.shiftReportDateColumn,
+            userColumn: loc.shiftReportUserColumn,
+            profileColumn: loc.shiftReportProfileColumn,
+            startColumn: loc.start,
+            endColumn: loc.end,
+            typeColumn: loc.shiftReportTypeColumn,
+            noteColumn: loc.note,
+            defaultProfileLabel: loc.shiftReportDefaultProfile,
+            privateTypeLabel: loc.shiftReportPrivateType,
+            teamLabel: loc.team,
+          );
+
+    if (!widget.compact) {
+      return preview;
+    }
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: preview,
+    );
   }
 }
 
@@ -701,6 +759,14 @@ class _InfoChip extends StatelessWidget {
 }
 
 class _ShiftReportTable extends StatelessWidget {
+  static const double _dateColumnWidth = 120;
+  static const double _userColumnWidth = 220;
+  static const double _profileColumnWidth = 170;
+  static const double _timeColumnWidth = 92;
+  static const double _typeColumnWidth = 120;
+  static const double _noteColumnWidth = 190;
+  static const double _rowGap = 16;
+
   const _ShiftReportTable({
     required this.assignments,
     required this.dateColumn,
@@ -730,63 +796,642 @@ class _ShiftReportTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final dateFormat = DateFormat('dd/MM/yyyy');
+    final isCompact = MediaQuery.sizeOf(context).width < 760;
+    final minTableWidth =
+        _dateColumnWidth +
+        _userColumnWidth +
+        _profileColumnWidth +
+        (_timeColumnWidth * 2) +
+        _typeColumnWidth +
+        _noteColumnWidth +
+        (_rowGap * 6) +
+        32;
+    final tableWidth = math.max(
+      MediaQuery.sizeOf(context).width * 0.68,
+      minTableWidth,
+    );
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SingleChildScrollView(
-        child: DataTable(
-          headingRowColor: WidgetStatePropertyAll(
-            theme.colorScheme.cursorColor!.withValues(alpha: 0.08),
-          ),
-          columns: [
-            DataColumn(label: Text(dateColumn)),
-            DataColumn(label: Text(userColumn)),
-            DataColumn(label: Text(profileColumn)),
-            DataColumn(label: Text(startColumn)),
-            DataColumn(label: Text(endColumn)),
-            DataColumn(label: Text(typeColumn)),
-            DataColumn(label: Text(noteColumn)),
+    if (isCompact) {
+      return Column(
+        children: [
+          for (final assignment in assignments) ...[
+            _ShiftReportMobileCard(
+              assignment: assignment,
+              dateLabel: dateFormat.format(assignment.shiftDate),
+              userLabel: _displayUserName(assignment),
+              profileLabel: assignment.profileName ?? defaultProfileLabel,
+              timeRangeLabel:
+                  '${_formatTime(assignment.startTime)} - ${_formatTime(assignment.endTime)}',
+              typeLabel: assignment.isPublic ? teamLabel : privateTypeLabel,
+            ),
+            if (assignment != assignments.last) const SizedBox(height: 12),
           ],
-          rows: assignments.map((assignment) {
-            return DataRow(
-              cells: [
-                DataCell(Text(dateFormat.format(assignment.shiftDate))),
-                DataCell(
-                  Text(
-                    assignment.userName?.trim().isNotEmpty ?? false
-                        ? assignment.userName!.trim()
-                        : assignment.userId,
+        ],
+      );
+    }
+
+    return Scrollbar(
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: tableWidth,
+            child: Container(
+              decoration: BoxDecoration(
+                color: colorScheme.bgNavbarSurface?.withValues(alpha: 0.78),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color:
+                      colorScheme.borderColor?.withValues(alpha: 0.55) ??
+                      Colors.black.withValues(alpha: 0.06),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-                DataCell(Text(assignment.profileName ?? defaultProfileLabel)),
-                DataCell(Text(_formatTime(assignment.startTime))),
-                DataCell(Text(_formatTime(assignment.endTime))),
-                DataCell(
-                  Text(assignment.isPublic ? teamLabel : privateTypeLabel),
-                ),
-                DataCell(
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 240),
-                    child: Text(
-                      assignment.note?.trim().isNotEmpty ?? false
-                          ? assignment.note!.trim()
-                          : '—',
-                      overflow: TextOverflow.ellipsis,
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _ShiftReportTableHeader(
+                    dateColumn: dateColumn,
+                    userColumn: userColumn,
+                    profileColumn: profileColumn,
+                    startColumn: startColumn,
+                    endColumn: endColumn,
+                    typeColumn: typeColumn,
+                    noteColumn: noteColumn,
+                    dateColumnWidth: _dateColumnWidth,
+                    userColumnWidth: _userColumnWidth,
+                    profileColumnWidth: _profileColumnWidth,
+                    timeColumnWidth: _timeColumnWidth,
+                    typeColumnWidth: _typeColumnWidth,
+                    noteColumnWidth: _noteColumnWidth,
+                  ),
+                  const SizedBox(height: 12),
+                  for (final assignment in assignments) ...[
+                    _ShiftReportTableRow(
+                      assignment: assignment,
+                      dateLabel: dateFormat.format(assignment.shiftDate),
+                      userLabel: _displayUserName(assignment),
+                      profileLabel:
+                          assignment.profileName ?? defaultProfileLabel,
+                      startLabel: _formatTime(assignment.startTime),
+                      endLabel: _formatTime(assignment.endTime),
+                      typeLabel: assignment.isPublic
+                          ? teamLabel
+                          : privateTypeLabel,
+                      dateColumnWidth: _dateColumnWidth,
+                      userColumnWidth: _userColumnWidth,
+                      profileColumnWidth: _profileColumnWidth,
+                      timeColumnWidth: _timeColumnWidth,
+                      typeColumnWidth: _typeColumnWidth,
+                      noteColumnWidth: _noteColumnWidth,
                     ),
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
+                    if (assignment != assignments.last)
+                      const SizedBox(height: 10),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
+  }
+
+  String _displayUserName(ShiftAssignmentEntity assignment) {
+    final userName = assignment.userName?.trim();
+    if (userName != null && userName.isNotEmpty) {
+      return userName;
+    }
+    return assignment.userId;
   }
 
   static String _formatTime(TimeOfDay time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+}
+
+class _ShiftReportTableHeader extends StatelessWidget {
+  const _ShiftReportTableHeader({
+    required this.dateColumn,
+    required this.userColumn,
+    required this.profileColumn,
+    required this.startColumn,
+    required this.endColumn,
+    required this.typeColumn,
+    required this.noteColumn,
+    required this.dateColumnWidth,
+    required this.userColumnWidth,
+    required this.profileColumnWidth,
+    required this.timeColumnWidth,
+    required this.typeColumnWidth,
+    required this.noteColumnWidth,
+  });
+
+  final String dateColumn;
+  final String userColumn;
+  final String profileColumn;
+  final String startColumn;
+  final String endColumn;
+  final String typeColumn;
+  final String noteColumn;
+  final double dateColumnWidth;
+  final double userColumnWidth;
+  final double profileColumnWidth;
+  final double timeColumnWidth;
+  final double typeColumnWidth;
+  final double noteColumnWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: colorScheme.textInvertedColor?.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color:
+              colorScheme.borderColor?.withValues(alpha: 0.35) ??
+              Colors.black.withValues(alpha: 0.06),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ShiftHeaderCell(label: dateColumn, width: dateColumnWidth),
+          _ShiftHeaderCell(label: userColumn, width: userColumnWidth),
+          _ShiftHeaderCell(label: profileColumn, width: profileColumnWidth),
+          _ShiftHeaderCell(label: startColumn, width: timeColumnWidth),
+          _ShiftHeaderCell(label: endColumn, width: timeColumnWidth),
+          _ShiftHeaderCell(label: typeColumn, width: typeColumnWidth),
+          _ShiftHeaderCell(label: noteColumn, width: noteColumnWidth),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShiftHeaderCell extends StatelessWidget {
+  const _ShiftHeaderCell({required this.label, required this.width});
+
+  final String label;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SizedBox(
+      width: width,
+      child: Text(
+        label.toUpperCase(),
+        style: textTheme.labelLarge?.copyWith(
+          color: colorScheme.textColor,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.45,
+        ),
+      ),
+    );
+  }
+}
+
+class _ShiftReportTableRow extends StatelessWidget {
+  const _ShiftReportTableRow({
+    required this.assignment,
+    required this.dateLabel,
+    required this.userLabel,
+    required this.profileLabel,
+    required this.startLabel,
+    required this.endLabel,
+    required this.typeLabel,
+    required this.dateColumnWidth,
+    required this.userColumnWidth,
+    required this.profileColumnWidth,
+    required this.timeColumnWidth,
+    required this.typeColumnWidth,
+    required this.noteColumnWidth,
+  });
+
+  final ShiftAssignmentEntity assignment;
+  final String dateLabel;
+  final String userLabel;
+  final String profileLabel;
+  final String startLabel;
+  final String endLabel;
+  final String typeLabel;
+  final double dateColumnWidth;
+  final double userColumnWidth;
+  final double profileColumnWidth;
+  final double timeColumnWidth;
+  final double typeColumnWidth;
+  final double noteColumnWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final note = assignment.note?.trim();
+    final hasNote = note != null && note.isNotEmpty;
+    final badgeColor = assignment.isPublic
+        ? colorScheme.bgNavbarbutton ?? colorScheme.primary
+        : Colors.orange.shade700;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: colorScheme.bgNavbarSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color:
+              colorScheme.borderColor?.withValues(alpha: 0.5) ??
+              Colors.black.withValues(alpha: 0.06),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _ShiftValueCell(
+            width: dateColumnWidth,
+            child: Text(
+              dateLabel,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.descriptionColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          _ShiftValueCell(
+            width: userColumnWidth,
+            child: Row(
+              children: [
+                _UserInitialsBadge(label: _initialsFrom(userLabel)),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    userLabel,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.textColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _ShiftValueCell(
+            width: profileColumnWidth,
+            child: _SoftBadge(
+              label: profileLabel,
+              foreground: colorScheme.textColor ?? Colors.black87,
+              background: (colorScheme.textInvertedColor ?? Colors.white)
+                  .withValues(alpha: 0.92),
+            ),
+          ),
+          _ShiftValueCell(
+            width: timeColumnWidth,
+            child: Text(
+              startLabel,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.textColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          _ShiftValueCell(
+            width: timeColumnWidth,
+            child: Text(
+              endLabel,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.textColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          _ShiftValueCell(
+            width: typeColumnWidth,
+            child: _SoftBadge(
+              label: typeLabel,
+              foreground: Colors.white,
+              background: badgeColor,
+            ),
+          ),
+          _ShiftValueCell(
+            width: noteColumnWidth,
+            child: Text(
+              hasNote ? note : '—',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodyMedium?.copyWith(
+                color: hasNote
+                    ? colorScheme.descriptionColor
+                    : colorScheme.descriptionColor?.withValues(alpha: 0.75),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _initialsFrom(String value) {
+    final parts = value
+        .split(RegExp(r'\s+'))
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) {
+      return '--';
+    }
+    if (parts.length == 1) {
+      return parts.first.characters.take(2).toString().toUpperCase();
+    }
+    return '${parts.first.characters.first}${parts.last.characters.first}'
+        .toUpperCase();
+  }
+}
+
+class _ShiftValueCell extends StatelessWidget {
+  const _ShiftValueCell({required this.width, required this.child});
+
+  final double width;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(width: width, child: child);
+  }
+}
+
+class _ShiftReportMobileCard extends StatelessWidget {
+  const _ShiftReportMobileCard({
+    required this.assignment,
+    required this.dateLabel,
+    required this.userLabel,
+    required this.profileLabel,
+    required this.timeRangeLabel,
+    required this.typeLabel,
+  });
+
+  final ShiftAssignmentEntity assignment;
+  final String dateLabel;
+  final String userLabel;
+  final String profileLabel;
+  final String timeRangeLabel;
+  final String typeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final note = assignment.note?.trim();
+    final hasNote = note != null && note.isNotEmpty;
+    final badgeColor = assignment.isPublic
+        ? colorScheme.bgNavbarbutton ?? colorScheme.primary
+        : Colors.orange.shade700;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final ultraCompact = constraints.maxWidth < 380;
+        final gap = ultraCompact ? 4.0 : 6.0;
+        final compactTextStyle =
+            (ultraCompact ? textTheme.labelSmall : textTheme.bodySmall)
+                ?.copyWith(
+                  color: colorScheme.textColor,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                );
+
+        return Container(
+          padding: EdgeInsets.all(ultraCompact ? 10 : 12),
+          decoration: BoxDecoration(
+            color: colorScheme.bgNavbarSurface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color:
+                  colorScheme.borderColor?.withValues(alpha: 0.5) ??
+                  Colors.black.withValues(alpha: 0.06),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.025),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                flex: 12,
+                child: Text(
+                  dateLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: compactTextStyle?.copyWith(
+                    color: colorScheme.descriptionColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                flex: 24,
+                child: Row(
+                  children: [
+                    _UserInitialsBadge(
+                      label: _initialsFrom(userLabel),
+                      size: ultraCompact ? 22 : 24,
+                    ),
+                    SizedBox(width: ultraCompact ? 4 : 6),
+                    Expanded(
+                      child: Text(
+                        userLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: compactTextStyle?.copyWith(
+                          color: colorScheme.textColor,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                flex: 16,
+                child: Text(
+                  profileLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: compactTextStyle,
+                ),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                flex: 14,
+                child: Text(
+                  timeRangeLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: compactTextStyle?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                flex: 12,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ultraCompact ? 4 : 6,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    typeLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style:
+                        (ultraCompact
+                                ? textTheme.labelSmall
+                                : textTheme.bodySmall)
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              height: 1.05,
+                            ),
+                  ),
+                ),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                flex: 16,
+                child: Text(
+                  hasNote ? note : '—',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: compactTextStyle?.copyWith(
+                    color: hasNote
+                        ? colorScheme.descriptionColor
+                        : colorScheme.descriptionColor?.withValues(alpha: 0.75),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _initialsFrom(String value) {
+    final parts = value
+        .split(RegExp(r'\s+'))
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) {
+      return '--';
+    }
+    if (parts.length == 1) {
+      return parts.first.characters.take(2).toString().toUpperCase();
+    }
+    return '${parts.first.characters.first}${parts.last.characters.first}'
+        .toUpperCase();
+  }
+}
+
+class _SoftBadge extends StatelessWidget {
+  const _SoftBadge({
+    required this.label,
+    required this.foreground,
+    required this.background,
+  });
+
+  final String label;
+  final Color foreground;
+  final Color background;
+  //final TextStyle? textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style:
+           // textStyle ??
+            Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
+}
+
+class _UserInitialsBadge extends StatelessWidget {
+  const _UserInitialsBadge({required this.label, this.size = 34});
+
+  final String label;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.bgNavbarbutton ?? colorScheme.primary,
+            (colorScheme.bgNavbarbutton ?? colorScheme.primary).withValues(
+              alpha: 0.78,
+            ),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(size * 0.35),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: colorScheme.textInvertedColor ?? Colors.white,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
+    );
   }
 }

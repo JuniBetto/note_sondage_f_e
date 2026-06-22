@@ -24,8 +24,6 @@ class DashboardRepositoryImpl implements DashboardRepository {
   final SondageRemoteDataSource _sondageRemote;
   final ClockingRemoteDataSource _clockingRemote;
   final ShiftRemoteDataSource _shiftRemote;
-  _DashboardSnapshot? _lastSnapshot;
-  DateTime? _lastSnapshotAt;
   Future<_DashboardSnapshot>? _snapshotFuture;
 
   @override
@@ -148,24 +146,14 @@ class DashboardRepositoryImpl implements DashboardRepository {
   String _padTime(int v) => v.toString().padLeft(2, '0');
 
   Future<_DashboardSnapshot> _getSnapshot() {
-    final now = DateTime.now();
-    if (_lastSnapshot != null &&
-        _lastSnapshotAt != null &&
-        now.difference(_lastSnapshotAt!) < const Duration(seconds: 20)) {
-      return Future<_DashboardSnapshot>.value(_lastSnapshot!);
-    }
     if (_snapshotFuture != null) {
       return _snapshotFuture!;
     }
-    _snapshotFuture = _loadSnapshot()
-        .then((snapshot) {
-          _lastSnapshot = snapshot;
-          _lastSnapshotAt = DateTime.now();
-          return snapshot;
-        })
-        .whenComplete(() {
-          _snapshotFuture = null;
-        });
+    _snapshotFuture = _loadSnapshot().then((snapshot) => snapshot).whenComplete(
+      () {
+        _snapshotFuture = null;
+      },
+    );
     return _snapshotFuture!;
   }
 

@@ -189,8 +189,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
           itemBuilder: (context, index) {
             final item = items[index];
             final sondageId = item.id;
-            final canEditAsCreator =
-                item.createdByUserId == _currentUserId && item.canEdit;
+            final canEditAsCreator = item.canEdit;
             final isArchived = _archivedSondageIds.contains(sondageId);
             return SondageComponentCard(
               key: ValueKey('sondage_card_$sondageId'),
@@ -236,8 +235,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
       itemBuilder: (context, index) {
         final item = items[index];
         final sondageId = item.id;
-        final canEditAsCreator =
-            item.createdByUserId == _currentUserId && item.canEdit;
+        final canEditAsCreator = item.canEdit;
         final isArchived = _archivedSondageIds.contains(sondageId);
         return SondageComponentRow(
           key: ValueKey('sondage_row_$sondageId'),

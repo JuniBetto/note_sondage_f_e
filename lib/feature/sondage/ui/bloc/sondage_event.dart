@@ -72,6 +72,15 @@ class CloseSondageEvent extends SondageEvent {
   List<Object?> get props => [id];
 }
 
+class ReopenSondageEvent extends SondageEvent {
+  final String id;
+
+  const ReopenSondageEvent(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
+
 class VoteSondageEvent extends SondageEvent {
   final String sondageId;
   final String optionId;
@@ -104,6 +113,15 @@ class _SondageUpdateCommittedEvent extends SondageEvent {
 
   @override
   List<Object?> get props => [sondageId, sondage];
+}
+
+class _SondageDeleteCommittedEvent extends SondageEvent {
+  final String sondageId;
+
+  const _SondageDeleteCommittedEvent(this.sondageId);
+
+  @override
+  List<Object?> get props => [sondageId];
 }
 
 class _SondageMutationFailedEvent extends SondageEvent {

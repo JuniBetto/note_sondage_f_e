@@ -24,3 +24,36 @@ extension ThemeExtensions on BuildContext {
   Color sondageStatusColor(String status) =>
       Theme.of(this).colorScheme.sondageStatusColor(status);
 }
+
+
+
+@immutable
+class CustomTextTheme extends ThemeExtension<CustomTextTheme> {
+  const CustomTextTheme(  {
+    required this.largeText,required this.mediumText,required this.smallText,
+
+  });
+
+  final TextStyle largeText;
+  final TextStyle mediumText;
+  final TextStyle smallText;
+
+  @override
+  CustomTextTheme copyWith({TextStyle? largeText,TextStyle? mediumText, TextStyle? smallText}) {
+    return CustomTextTheme(
+      largeText: largeText ?? this.largeText,
+      mediumText: mediumText ?? this.mediumText,
+      smallText: smallText ?? this.smallText,
+    );
+  }
+
+  @override
+  CustomTextTheme lerp(ThemeExtension<CustomTextTheme>? other, double t) {
+    if (other is! CustomTextTheme) return this;
+    return CustomTextTheme(
+      largeText: TextStyle.lerp(largeText, other.largeText, t)!,
+      mediumText: TextStyle.lerp(mediumText, other.mediumText, t)!,
+      smallText: TextStyle.lerp(smallText, other.smallText, t)!,
+    );
+  }
+}

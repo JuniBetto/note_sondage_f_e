@@ -61,6 +61,15 @@ class _SondageMobileState extends State<SondageMobile>
   }
 
   Future<void> _openEditSheet(SondageEntity sondage) async {
+    if (!sondage.canEdit) {
+      AppSnackBar.showWarning(
+        context,
+        Localizations.localeOf(context).languageCode == 'it'
+            ? 'Non hai i permessi per modificare questo sondaggio.'
+            : 'You do not have permission to edit this survey.',
+      );
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -87,9 +96,7 @@ class _SondageMobileState extends State<SondageMobile>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Elimina sondaggio'),
-        content: const Text(
-          'Vuoi davvero eliminare questo draft del sondaggio?',
-        ),
+        content: const Text('Vuoi davvero eliminare questo sondaggio?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

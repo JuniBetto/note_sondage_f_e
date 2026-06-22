@@ -40,6 +40,14 @@ class AppErrorMessageResolver {
       return 'You do not have permission to perform this action.';
     }
 
+    if (lowered.contains('only draft sondage can be modified')) {
+      return 'This survey can no longer be edited. Only drafts can be updated.';
+    }
+
+    if (lowered.contains('expiresat must be in the future')) {
+      return 'Choose a future end date and time.';
+    }
+
     if (_isConflictIssue(lowered)) {
       return 'This action conflicts with existing data. Please review and try again.';
     }
@@ -75,6 +83,13 @@ class AppErrorMessageResolver {
     final responseMessage = _extractResponseMessage(response?.data);
     if (responseMessage != null && !_looksTechnical(responseMessage)) {
       final normalized = _stripTechnicalPrefixes(responseMessage);
+      final lowered = normalized.toLowerCase();
+      if (lowered.contains('only draft sondage can be modified')) {
+        return 'This survey can no longer be edited. Only drafts can be updated.';
+      }
+      if (lowered.contains('expiresat must be in the future')) {
+        return 'Choose a future end date and time.';
+      }
       if (normalized.isNotEmpty && !_looksTechnical(normalized)) {
         return normalized;
       }

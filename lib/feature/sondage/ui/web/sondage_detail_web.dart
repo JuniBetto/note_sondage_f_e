@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
@@ -11,6 +13,9 @@ import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart
 import 'package:note_sondage/feature/sondage/domain/use_case/sondage_use_case.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_detail_sections.dart';
+import 'package:note_sondage/feature/sondage/ui/widgets/sondage_pending_reminder_dialog.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -26,6 +31,7 @@ class SondageDetailWeb extends StatefulWidget {
 
 class _SondageDetailWebState extends State<SondageDetailWeb> {
   late final SondageBloc _bloc;
+  late final SondageUseCase _sondageUseCase;
   late final TeamMemberUseCase _teamMemberUseCase;
   StreamSubscription<RealtimeNotification>? _subscription;
   String? _loadedTeamId;
@@ -34,6 +40,8 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
   final ValueNotifier<SondageEntity?> _sondageNotifier = ValueNotifier(null);
   final ValueNotifier<bool> _isRefreshingNotifier = ValueNotifier(true);
   final ValueNotifier<int?> _teamMemberCountNotifier = ValueNotifier(null);
+  final ValueNotifier<List<TeamMemberEntity>> _teamMembersNotifier =
+      ValueNotifier(const <TeamMemberEntity>[]);
   final ValueNotifier<String?> _loadErrorNotifier = ValueNotifier(null);
   final ValueNotifier<Set<String>> _pendingVoteOptionIdsNotifier =
       ValueNotifier(<String>{});
@@ -42,6 +50,7 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
   @override
   void initState() {
     super.initState();
+    _sondageUseCase = getIt<SondageUseCase>();
     _teamMemberUseCase = getIt<TeamMemberUseCase>();
     _bloc = SondageBloc(
       sondageUseCase: getIt<SondageUseCase>(),
@@ -63,6 +72,7 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     _sondageNotifier.dispose();
     _isRefreshingNotifier.dispose();
     _teamMemberCountNotifier.dispose();
+    _teamMembersNotifier.dispose();
     _loadErrorNotifier.dispose();
     _pendingVoteOptionIdsNotifier.dispose();
     _bloc.close();
@@ -79,9 +89,14 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     try {
       final members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
       if (!mounted) return;
-      _teamMemberCountNotifier.value = members.length;
+      final activeMembers = members
+          .where((member) => member.status == UserStatus.active)
+          .toList(growable: false);
+      _teamMembersNotifier.value = activeMembers;
+      _teamMemberCountNotifier.value = activeMembers.length;
     } catch (_) {
       if (!mounted) return;
+      _teamMembersNotifier.value = const <TeamMemberEntity>[];
       _teamMemberCountNotifier.value = null;
     }
   }
@@ -233,6 +248,127 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     _bloc.add(CloseSondageEvent(sondageId));
   }
 
+  void _reopenSondage(String sondageId) {
+    _markLocalMutation();
+    _bloc.add(ReopenSondageEvent(sondageId));
+  }
+
+  List<TeamMemberEntity> _pendingReminderMembers(SondageEntity sondage) {
+    final voterUserIds = sondage.voterUserIds.toSet();
+    return _teamMembersNotifier.value
+        .where((member) {
+          final userId = member.userId ?? '';
+          return userId.isNotEmpty && !voterUserIds.contains(userId);
+        })
+        .toList(growable: false);
+  }
+
+  Future<void> _openReminderDialog(SondageEntity sondage) async {
+    final pendingMembers = _pendingReminderMembers(sondage);
+    if (pendingMembers.isEmpty) {
+      AppSnackBar.showWarning(
+        context,
+        _allEligibleMembersAlreadyVotedMessage(),
+      );
+      return;
+    }
+
+    final selectedUserIds = await SondagePendingReminderDialog.show(
+      context,
+      sondageName: sondage.name,
+      pendingMembers: pendingMembers,
+    );
+    if (!mounted || selectedUserIds == null || selectedUserIds.isEmpty) {
+      return;
+    }
+
+    try {
+      final notifiedCount = await _sondageUseCase.remindPendingVoters(
+        sondage.id,
+        recipientUserIds: selectedUserIds,
+      );
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showSuccess(context, _reminderSentMessage(notifiedCount));
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showResolvedError(context, error);
+    }
+  }
+
+  Future<void> _confirmDeleteSondage(SondageEntity sondage) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(_deleteSurveyTitle()),
+        content: Text(_deleteSurveyMessage()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(_deleteSurveyAction()),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      _markLocalMutation();
+      _bloc.add(DeleteSondageEvent(sondage.id));
+    }
+  }
+
+  String _reminderSentMessage(int count) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Promemoria inviato a $count membro/i.',
+      'fr' => 'Rappel envoye a $count membre(s).',
+      'es' => 'Recordatorio enviado a $count miembro(s).',
+      _ => 'Reminder sent to $count member(s).',
+    };
+  }
+
+  String _allEligibleMembersAlreadyVotedMessage() {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Tutti i membri idonei hanno gia votato.',
+      'fr' => 'Tous les membres eligibles ont deja vote.',
+      'es' => 'Todos los miembros elegibles ya han votado.',
+      _ => 'All eligible members have already voted.',
+    };
+  }
+
+  String _deleteSurveyTitle() {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Elimina sondaggio',
+      'fr' => 'Supprimer le sondage',
+      'es' => 'Eliminar encuesta',
+      _ => 'Delete survey',
+    };
+  }
+
+  String _deleteSurveyMessage() {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Vuoi davvero eliminare questo sondaggio?',
+      'fr' => 'Voulez-vous vraiment supprimer ce sondage ?',
+      'es' => '¿Seguro que quieres eliminar esta encuesta?',
+      _ => 'Do you really want to delete this survey?',
+    };
+  }
+
+  String _deleteSurveyAction() {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Elimina',
+      'fr' => 'Supprimer',
+      'es' => 'Eliminar',
+      _ => 'Delete',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -248,6 +384,16 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
             return;
           }
           _handleBlocState(state);
+          if (state is SondageDeleted && context.mounted) {
+            AppSnackBar.showSuccess(
+              context,
+              Localizations.localeOf(context).languageCode == 'it'
+                  ? 'Sondaggio eliminato.'
+                  : 'Survey deleted.',
+            );
+            context.go(RouterPaths.sondage);
+            return;
+          }
           if (state is SondageError && context.mounted) {
             AppSnackBar.showError(context, state.message);
           }
@@ -435,6 +581,16 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
                                             _publishSondage(sondage.id),
                                         onClose: () =>
                                             _closeSondage(sondage.id),
+                                        onReopen: sondage.canReopen
+                                            ? () => _reopenSondage(sondage.id)
+                                            : null,
+                                        onDelete: sondage.canDelete
+                                            ? () =>
+                                                  _confirmDeleteSondage(sondage)
+                                            : null,
+                                        onRemind: _canRemindForSurvey(sondage)
+                                            ? () => _openReminderDialog(sondage)
+                                            : null,
                                       );
                                     },
                                   );
@@ -484,6 +640,17 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
   }
 
   String _formatDate(DateTime value) {
-    return '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+    return DateFormat(
+      'dd/MM/yyyy HH:mm',
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(value);
+  }
+
+  bool _canRemindForSurvey(SondageEntity sondage) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isCreator =
+        currentUserId != null && sondage.createdByUserId == currentUserId;
+    return sondage.status == SondageStatus.active &&
+        (isCreator || sondage.canEdit || sondage.canDelete || sondage.canClose);
   }
 }

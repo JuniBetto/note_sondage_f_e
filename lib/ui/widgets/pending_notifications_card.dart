@@ -247,6 +247,7 @@ class _PendingNotificationTile extends StatelessWidget {
     final teamName = item.teamName;
     final roleCode = item.roleCode;
     final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
     final localization = AppLocalizations.of(context)!;
 
@@ -393,6 +394,9 @@ class _PendingNotificationTile extends StatelessWidget {
                                 : context
                                       .read<NotificationCenterCubit>()
                                       .acceptInvitation(item),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.bgNavbarbutton,
+                      ),
                       child: isProcessing
                           ? const SizedBox(
                               width: 16,
@@ -411,7 +415,12 @@ class _PendingNotificationTile extends StatelessWidget {
                     onPressed: () => context
                         .read<NotificationCenterCubit>()
                         .markAsSeen(item.notificationId),
-                    child: const Text('Segna come vista'),
+                    child: Text(
+                      _markAsSeenLabel(context),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.textInvertedColor,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -443,6 +452,15 @@ class _PendingNotificationTile extends StatelessWidget {
 
   static String? _navigationLabelFor(NotificationCenterItem item) {
     return NotificationNavigation.labelFor(item);
+  }
+
+  static String _markAsSeenLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Segna come vista',
+      'fr' => 'Marquer comme vue',
+      'es' => 'Marcar como vista',
+      _ => 'Mark as seen',
+    };
   }
 
   static String _formatDate(BuildContext context, DateTime value) {

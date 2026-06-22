@@ -1,5 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
+import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/ui/app_keys.dart';
+import 'package:note_sondage/ui/mobile/widgets/login/login_mobile.dart';
+import 'package:note_sondage/ui/web/login/login_web.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 /// La pagina "Oops!" mostrata all'utente per un errore fatale
@@ -8,6 +15,40 @@ class ErrorPage extends StatelessWidget {
   final String? error;
 
   const ErrorPage({super.key, this.error});
+
+  Future<void> _handleGoBack(BuildContext context) async {
+    final localNavigator = Navigator.of(context);
+    if (localNavigator.canPop()) {
+      await localNavigator.maybePop();
+      return;
+    }
+
+    final rootNavigator = navigatorKey.currentState;
+    if (rootNavigator != null && rootNavigator.canPop()) {
+      await rootNavigator.maybePop();
+      return;
+    }
+
+    final authBloc = GetIt.instance<AuthBloc>();
+    authBloc.add(const AuthLogoutRequested());
+
+    if (!context.mounted) {
+      return;
+    }
+
+    final router = GoRouter.maybeOf(context);
+    if (router != null) {
+      router.go(RouterPaths.login);
+      return;
+    }
+
+    rootNavigator?.pushAndRemoveUntil(
+      MaterialPageRoute<void>(
+        builder: (_) => kIsWeb ? const LoginWeb() : const LoginMobile(),
+      ),
+      (_) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,13 +81,7 @@ class ErrorPage extends StatelessWidget {
               ),
               const SizedBox(height: 30),
               ElevatedButton(
-                onPressed: () {
-                  // TODO: Aggiungere logica per riavviare l'app o
-                  // tornare alla home. Per ora, chiudiamo la pagina.
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  }
-                },
+                onPressed: () => _handleGoBack(context),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: Text(localization.goBack),
               ),

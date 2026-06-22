@@ -294,7 +294,9 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     Emitter<ShiftState> emit,
   ) async {
     final requestKey =
-        '${event.from.year}-${event.from.month}-${event.from.day}:${event.to.year}-${event.to.month}-${event.to.day}';
+        '${event.from.year}-${event.from.month}-${event.from.day}:${event.to.year}-${event.to.month}-${event.to.day}:'
+        '${(event.visibleTeamIds ?? const <String>[]).join(",")}:'
+        '${(event.visibleUserIds ?? const <String>[]).join(",")}';
     if (_cachedAssignments.isNotEmpty) {
       emit(ShiftAssignmentsLoaded(_cachedAssignments));
     } else {
@@ -317,6 +319,8 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       final assignments = await _repository.getAssignments(
         from: event.from,
         to: event.to,
+        visibleTeamIds: event.visibleTeamIds,
+        visibleUserIds: event.visibleUserIds,
       );
       _cachedAssignments = assignments;
       await _localDataSource.saveAssignments(_cachedAssignments);

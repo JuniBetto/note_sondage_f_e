@@ -232,6 +232,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Remove old Gemfile.lock
+        run: rm -f Gemfile.lock
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -290,6 +293,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Remove old Gemfile.lock
+        run: rm -f Gemfile.lock
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -302,7 +308,7 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
 
-      - name: Install CocoaPods
+      - name: Force Ruby 3.2 CocoaPods
         run: |
           brew uninstall cocoapods || true
           gem install cocoapods
@@ -318,9 +324,11 @@ jobs:
           PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
 
+          
           echo -n "$IOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
           echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
 
+          
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
@@ -328,8 +336,21 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
           security default-keychain -s "$KEYCHAIN_PATH"
 
+          
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
+          
+          
+          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
+          
+       
+          UUID=$(plutil -extract UUID raw "$RUNNER_TEMP/profile.plist")
+          
+          echo "=== INFO PIPELINE ==="
+          echo "UUID estratto con successo: $UUID"
+          echo "====================="
+          
+       
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
 
       - name: Extract Version from pubspec.yaml
         run: |

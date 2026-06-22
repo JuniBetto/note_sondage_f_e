@@ -71,11 +71,13 @@ class SondageEntity {
   final List<SondageOptionEntity> options;
   final String? currentUserOptionId;
   final List<String> currentUserOptionIds;
+  final List<String> voterUserIds;
   final bool canEdit;
   final bool canDelete;
   final bool canPublish;
   final bool canVote;
   final bool canClose;
+  final bool canReopen;
 
   const SondageEntity({
     required this.id,
@@ -96,11 +98,13 @@ class SondageEntity {
     this.options = const [],
     this.currentUserOptionId,
     this.currentUserOptionIds = const [],
+    this.voterUserIds = const [],
     this.canEdit = false,
     this.canDelete = false,
     this.canPublish = false,
     this.canVote = false,
     this.canClose = false,
+    this.canReopen = false,
   });
 
   SondageEntity copyWith({
@@ -122,11 +126,13 @@ class SondageEntity {
     List<SondageOptionEntity>? options,
     String? currentUserOptionId,
     List<String>? currentUserOptionIds,
+    List<String>? voterUserIds,
     bool? canEdit,
     bool? canDelete,
     bool? canPublish,
     bool? canVote,
     bool? canClose,
+    bool? canReopen,
   }) {
     return SondageEntity(
       id: id ?? this.id,
@@ -148,11 +154,13 @@ class SondageEntity {
       options: options ?? this.options,
       currentUserOptionId: currentUserOptionId ?? this.currentUserOptionId,
       currentUserOptionIds: currentUserOptionIds ?? this.currentUserOptionIds,
+      voterUserIds: voterUserIds ?? this.voterUserIds,
       canEdit: canEdit ?? this.canEdit,
       canDelete: canDelete ?? this.canDelete,
       canPublish: canPublish ?? this.canPublish,
       canVote: canVote ?? this.canVote,
       canClose: canClose ?? this.canClose,
+      canReopen: canReopen ?? this.canReopen,
     );
   }
 

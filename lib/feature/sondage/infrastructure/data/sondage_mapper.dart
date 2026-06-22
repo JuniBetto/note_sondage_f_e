@@ -91,6 +91,11 @@ class SondageMapper {
         .map((value) => value.trim())
         .where((value) => value.isNotEmpty && value.toLowerCase() != 'null')
         .toList();
+    final voterUserIds = ((json['voterUserIds'] as List?) ?? [])
+        .map((value) => value?.toString() ?? '')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty && value.toLowerCase() != 'null')
+        .toList();
     final currentUserOptionId = _normalizeOptionalString(
       json['currentUserOptionId'],
     );
@@ -121,11 +126,13 @@ class SondageMapper {
       options: options,
       currentUserOptionId: currentUserOptionId,
       currentUserOptionIds: currentUserOptionIds,
+      voterUserIds: voterUserIds,
       canEdit: json['canEdit'] == true,
       canDelete: json['canDelete'] == true,
       canPublish: json['canPublish'] == true,
       canVote: json['canVote'] == true,
       canClose: json['canClose'] == true,
+      canReopen: json['canReopen'] == true,
     );
   }
 
