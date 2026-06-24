@@ -5,7 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
@@ -78,20 +80,37 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
     _realtimeSubscription?.cancel();
     nameTeamController.dispose();
     focusTeamController.dispose();
+    for (final data in listUserFormData) {
+      data.dispose();
+    }
+    for (final data in listInviteFormData) {
+      data.dispose();
+    }
     super.dispose();
   }
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
-    if (notification.sourceService != 'team-service') return;
-    if (notification.metadata['teamId'] != widget.teamId) return;
+    final decision = getIt<TeamRealtimeCoordinator>().resolveScreenDecision(
+      notification,
+      teamId: widget.teamId ?? '',
+      currentUserId: getIt<AuthBloc>().state.user.uid,
+    );
 
-    if (notification.eventType == 'TEAM_UPDATED' ||
-        notification.eventType == 'TEAM_MEMBER_JOINED' ||
-        notification.eventType == 'TEAM_MEMBER_REMOVED' ||
-        notification.eventType == 'TEAM_MEMBER_ROLE_UPDATED' ||
-        notification.eventType == 'TEAM_MEMBER_INVITED' ||
-        notification.eventType == 'TEAM_INVITATION_CANCELLED' ||
-        notification.eventType == 'TEAM_INVITATION_REJECTED') {
+    if (decision.shouldLeaveCurrentTeam) {
+      final teamId = widget.teamId?.trim();
+      if (teamId != null && teamId.isNotEmpty) {
+        _teamBloc.add(RemoveTeamFromCacheEvent(teamId));
+      }
+      if (!mounted) return;
+      final message = notification.eventType == 'TEAM_MEMBER_REMOVED'
+          ? 'Non fai piu parte di questo team.'
+          : 'Questo team non e piu disponibile.';
+      AppSnackBar.showWarning(context, message, title: 'Team aggiornato');
+      context.go(RouterPaths.team);
+      return;
+    }
+
+    if (decision.refreshTeam) {
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
     }
   }

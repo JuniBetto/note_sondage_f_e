@@ -114,6 +114,10 @@ class _MainAppState extends State<MainApp> {
       notification,
       currentUserId: currentUserId,
     );
+    final removedTeamId = teamDecision.teamIdToRemoveFromCache?.trim();
+    if (removedTeamId != null && removedTeamId.isNotEmpty) {
+      getIt<TeamBloc>().add(RemoveTeamFromCacheEvent(removedTeamId));
+    }
     final selectedClockingTeamId = _selectedClockingTeamId(
       getIt<ClockingBloc>().state,
     );

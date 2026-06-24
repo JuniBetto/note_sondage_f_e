@@ -36,9 +36,8 @@ class _AddUserWebState extends State<AddUserWeb> {
 
   @override
   void dispose() {
-    for (final data in widget.listInviteFormData) {
-      data.dispose();
-    }
+    // I controller sono posseduti dal widget padre e possono essere riusati
+    // durante il teardown della pagina; non vanno disposti qui.
     super.dispose();
   }
 

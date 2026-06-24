@@ -37,6 +37,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     on<UpdateTeamEvent>(_onUpdateTeam);
     on<DeleteTeamEvent>(_onDeleteTeam);
     on<ResetTeamCacheEvent>(_onResetCache);
+    on<RemoveTeamFromCacheEvent>(_onRemoveTeamFromCache);
   }
 
   Future<void> _onLoadTeams(
@@ -353,6 +354,27 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     _cachedTeams = [];
     await teamLocalDataSource.clearAll();
     emit(TeamInitial());
+  }
+
+  Future<void> _onRemoveTeamFromCache(
+    RemoveTeamFromCacheEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    final teamId = event.teamId.trim();
+    if (teamId.isEmpty) {
+      return;
+    }
+
+    final previousLength = _cachedTeams.length;
+    _cachedTeams = _cachedTeams.where((team) => team.id != teamId).toList();
+    _syncingTeamIds.remove(teamId);
+
+    if (_cachedTeams.length == previousLength) {
+      return;
+    }
+
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamsLoaded(_cachedTeams));
   }
 
   Future<void> _onTeamCreateCommitted(

@@ -727,6 +727,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
   bool _isTerminalInvitationConflict(Object error) {
     final raw = error.toString().toLowerCase();
     return raw.contains('409') ||
+        raw.contains('failed to accept invitation: 404') ||
+        raw.contains('failed to reject invitation: 404') ||
+        raw.contains('invitation not found') ||
         raw.contains('not pending') ||
         raw.contains('already accepted') ||
         raw.contains('has expired') ||
