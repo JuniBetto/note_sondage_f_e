@@ -19,6 +19,7 @@ import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
@@ -309,22 +310,12 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
   }
 
   Future<void> _confirmDeleteSondage(SondageEntity sondage) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(_deleteSurveyTitle()),
-        content: Text(_deleteSurveyMessage()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(_deleteSurveyAction()),
-          ),
-        ],
-      ),
+    final shouldDelete = await showAppConfirmationDialog(
+      context,
+      title: _deleteSurveyTitle(),
+      message: _deleteSurveyMessage(),
+      confirmLabel: _deleteSurveyAction(),
+      destructive: true,
     );
 
     if (shouldDelete == true) {
@@ -352,30 +343,15 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
   }
 
   String _deleteSurveyTitle() {
-    return switch (Localizations.localeOf(context).languageCode) {
-      'it' => 'Elimina sondaggio',
-      'fr' => 'Supprimer le sondage',
-      'es' => 'Eliminar encuesta',
-      _ => 'Delete survey',
-    };
+    return AppLocalizations.of(context)!.deleteSurveyTitle;
   }
 
   String _deleteSurveyMessage() {
-    return switch (Localizations.localeOf(context).languageCode) {
-      'it' => 'Vuoi davvero eliminare questo sondaggio?',
-      'fr' => 'Voulez-vous vraiment supprimer ce sondage ?',
-      'es' => '¿Seguro que quieres eliminar esta encuesta?',
-      _ => 'Do you really want to delete this survey?',
-    };
+    return AppLocalizations.of(context)!.deleteSurveyMessage;
   }
 
   String _deleteSurveyAction() {
-    return switch (Localizations.localeOf(context).languageCode) {
-      'it' => 'Elimina',
-      'fr' => 'Supprimer',
-      'es' => 'Eliminar',
-      _ => 'Delete',
-    };
+    return AppLocalizations.of(context)!.deleteAction;
   }
 
   bool _canRemindForSurvey(SondageEntity sondage) {
@@ -402,12 +378,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
           }
           _handleBlocState(state);
           if (state is SondageDeleted && context.mounted) {
-            AppSnackBar.showSuccess(
-              context,
-              Localizations.localeOf(context).languageCode == 'it'
-                  ? 'Sondaggio eliminato.'
-                  : 'Survey deleted.',
-            );
+            AppSnackBar.showSuccess(context, localization.surveyDeleted);
             context.go(RouterPaths.sondage);
             return;
           }

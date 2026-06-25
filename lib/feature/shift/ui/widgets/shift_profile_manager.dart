@@ -4,6 +4,7 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/theme_extensions.dart';
+import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 
@@ -103,6 +104,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
           final colorScheme = Theme.of(ctx).colorScheme;
+          final borderColor = colorScheme.borderColor ?? colorScheme.outline;
           final canSubmit =
               nameCtrl.text.trim().isNotEmpty && hasValidTimeRange();
           return SubmitOnEnterScope(
@@ -160,9 +162,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                               decoration: BoxDecoration(
                                 color: _colorFromHex(selectedColorHex),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: colorScheme.borderColor!,
-                                ),
+                                border: Border.all(color: borderColor),
                               ),
                             ),
                           ],
@@ -233,13 +233,13 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                             color: isPublic ? Colors.blue : Colors.grey,
                           ),
                           title: Text(
-                            isPublic ? 'Pubblico' : 'Privato',
+                            isPublic ? loc.publicProfile : loc.privateProfile,
                             style: const TextStyle(fontSize: 13),
                           ),
                           subtitle: Text(
                             isPublic
-                                ? 'Visibile a tutti i membri del team'
-                                : 'Visibile solo a te',
+                                ? loc.visibleToTeamMembers
+                                : loc.visibleOnlyToYou,
                             style: const TextStyle(fontSize: 11),
                           ),
                         ),
@@ -353,29 +353,14 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
 
   Future<void> _confirmDelete(ShiftProfileEntity profile) async {
     final loc = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.deleteShiftProfileConfirm),
-        actions: [
-          CustomAppButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            type: ButtonType.text,
-            isActive: false,
-            child: Text(loc.cancel),
-          ),
-          CustomAppButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            type: ButtonType.filled,
-            backgroundColor: Theme.of(ctx).colorScheme.error,
-            isActive: true,
-            child: Text(loc.removeAction),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: loc.deleteShiftProfileConfirm,
+      confirmLabel: loc.deleteAction,
+      destructive: true,
     );
     if (!mounted) return;
-    if (confirmed == true) {
+    if (confirmed) {
       context.read<ShiftBloc>().add(DeleteShiftProfileEvent(profile.id));
     }
   }
@@ -531,7 +516,7 @@ class _ProfileTile extends StatelessWidget {
                     Icon(Icons.public, size: 9, color: Colors.blue.shade700),
                     const SizedBox(width: 2),
                     Text(
-                      'Pubblico',
+                      loc.publicProfile,
                       style: TextStyle(
                         fontSize: 9,
                         color: Colors.blue.shade700,
@@ -554,7 +539,7 @@ class _ProfileTile extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'Syncing',
+                  loc.syncing,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: Colors.amber.shade900,
                     fontWeight: FontWeight.w700,
@@ -744,7 +729,7 @@ class _ShiftColorPickerSheet extends StatelessWidget {
                       border: Border.all(
                         color: isSelected
                             ? colorScheme.primary
-                            : colorScheme.borderColor!,
+                            : (colorScheme.borderColor ?? colorScheme.outline),
                         width: isSelected ? 3 : 1.2,
                       ),
                       boxShadow: [

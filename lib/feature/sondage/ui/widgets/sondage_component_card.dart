@@ -130,7 +130,7 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                                   Icons.edit_outlined,
                                   color: colorScheme.selectionColor,
                                 ),
-                                tooltip: 'Modifica sondaggio',
+                                tooltip: localization.editSurvey,
                                 onPressed: widget.onEditTap,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
@@ -143,8 +143,8 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                                 color: Colors.blueGrey,
                               ),
                               tooltip: widget.isArchived
-                                  ? 'Ripristina sondaggio'
-                                  : 'Archivia sondaggio',
+                                  ? localization.restoreSurvey
+                                  : localization.archiveSurvey,
                               onPressed: widget.onArchiveTap,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -155,6 +155,7 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                                   Icons.delete_outline,
                                   color: Colors.red,
                                 ),
+                                tooltip: localization.deleteSurvey,
                                 onPressed: () =>
                                     widget.onDeleteTap(widget.sondageId),
                                 padding: EdgeInsets.zero,
@@ -165,7 +166,7 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: 4),
 
                   // Focus/descrizione
                   Text(

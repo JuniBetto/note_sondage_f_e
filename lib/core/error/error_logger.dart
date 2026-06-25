@@ -11,6 +11,9 @@ class ErrorLogger {
 
   /// Registra un errore Flutter arricchito con contesto widget/layout.
   static Future<void> logFlutterError(FlutterErrorDetails details) async {
+    if (_shouldIgnore(details.exception)) {
+      return;
+    }
     final context = _buildFlutterErrorContext(details);
     await log(details.exception, details.stack, context: context);
   }
@@ -58,6 +61,9 @@ class ErrorLogger {
     StackTrace? stackTrace, {
     ErrorLogContext? context,
   }) async {
+    if (_shouldIgnore(error)) {
+      return;
+    }
     // In release/profile stampa anche in console locale per facilitare il debug.
     if (!kDebugMode) {
       debugPrint("--- ERRORE CATTURATO ---");
@@ -211,6 +217,15 @@ class ErrorLogger {
     _lastDebugMessageAt = now;
     _suppressedDebugDuplicates = 0;
     debugPrint('----error debug :  $normalizedMessage');
+  }
+
+  static bool _shouldIgnore(Object error) {
+    if (!kIsWeb) {
+      return false;
+    }
+    return error.toString().contains(
+      'Trying to render a disposed EngineFlutterView',
+    );
   }
 }
 

@@ -34,8 +34,12 @@ Il frontend supporta:
 
 ```bash
 flutter pub get
-flutter run
 ```
+
+Poi:
+
+- per Web/Desktop puoi usare `flutter run`
+- per Android/iOS usa i comandi documentati in [MOBILE_BUILD_MODES.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/MOBILE_BUILD_MODES.md), passando sempre `--dart-define=API_BASE_URL=...`
 
 ## Configurazione runtime
 

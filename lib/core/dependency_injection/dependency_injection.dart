@@ -13,6 +13,11 @@ import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
 import 'package:note_sondage/feature/auth/infrastructure/repositories/firebase_auth_repository_impl.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/app_lifecycle_bloc.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/chat/domain/repositories/chat_repository.dart';
+import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
+import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_local_data_source.dart';
+import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
+import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
 import 'package:note_sondage/feature/clocking/domain/repositories/clocking_repository.dart';
 import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_local/clocking_local_data_source.dart';
@@ -132,6 +137,7 @@ void _registerDataSources() {
   getIt.registerLazySingleton<ShiftLocalDataSource>(
     () => ShiftLocalDataSource(),
   );
+  getIt.registerLazySingleton<ChatLocalDataSource>(() => ChatLocalDataSource());
 
   // Realtime notifications
   getIt.registerLazySingleton<RealtimeNotificationService>(
@@ -163,6 +169,9 @@ void _registerDataSources() {
   // Clocking remote data source
   getIt.registerLazySingleton<ClockingRemoteDataSource>(
     () => ClockingRemoteDataSource(getIt<ClockingLocalDataSource>()),
+  );
+  getIt.registerLazySingleton<ChatRemoteDataSource>(
+    () => ChatRemoteDataSource(),
   );
 }
 
@@ -225,6 +234,14 @@ void _registerRepositories() {
     ),
   );
 
+  // Chat
+  getIt.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(
+      getIt<ChatLocalDataSource>(),
+      getIt<ChatRemoteDataSource>(),
+    ),
+  );
+
   // Dashboard
   getIt.registerLazySingleton<DashboardRepository>(
     () => DashboardRepositoryImpl(
@@ -275,6 +292,11 @@ void _registerUseCases() {
   // Clocking
   getIt.registerLazySingleton<ClockingUseCase>(
     () => ClockingUseCase(getIt<ClockingRepository>()),
+  );
+
+  // Chat
+  getIt.registerLazySingleton<ChatUseCase>(
+    () => ChatUseCase(getIt<ChatRepository>()),
   );
 
   // Dashboard

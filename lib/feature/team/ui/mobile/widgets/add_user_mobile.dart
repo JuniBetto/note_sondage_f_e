@@ -154,22 +154,38 @@ Widget buildNewInviteForm(
           controller: formData.emailController,
           validator: emailValidator,
         ),
-        GenericDropdownFormField<RoleEntity>(
-          label: '',
-          style: theme.textTheme.bodyMedium,
-          items: roles,
-          value: formData.roleController.text.isEmpty
-              ? null
-              : roles
-                    .where((r) => r.id == formData.roleController.text)
-                    .firstOrNull,
-          displayText: (role) => role.name,
-          valueGetter: (role) => role,
-          onChanged: (role) => formData.roleController.text = role?.id ?? '',
-          hintText: localization.role,
-          validator: (value) {
-            if (value == null) return 'Please select role';
-            return null;
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final roleFieldWidth = constraints.maxWidth < 420
+                ? constraints.maxWidth
+                : 320.0;
+            return SizedBox(
+              width: roleFieldWidth,
+              child: GenericDropdownFormField<RoleEntity>(
+                label: '',
+                style: theme.textTheme.bodyMedium,
+                prefixIcon: Icon(
+                  Icons.admin_panel_settings_outlined,
+                  size: 18,
+                  color: theme.colorScheme.cursorColor,
+                ),
+                items: roles,
+                value: formData.roleController.text.isEmpty
+                    ? null
+                    : roles
+                          .where((r) => r.id == formData.roleController.text)
+                          .firstOrNull,
+                displayText: (role) => role.name,
+                valueGetter: (role) => role,
+                onChanged: (role) =>
+                    formData.roleController.text = role?.id ?? '',
+                hintText: localization.role,
+                validator: (value) {
+                  if (value == null) return localization.selectRole;
+                  return null;
+                },
+              ),
+            );
           },
         ),
         SizedBox(
@@ -195,6 +211,7 @@ Widget buildInviteList(BuildContext context, List<InviteFormData> list) {
   final theme = Theme.of(context);
   final colorScheme = theme.colorScheme;
   final themeText = theme.textTheme;
+  final localization = AppLocalizations.of(context)!;
 
   Text headerText(String label) => Text(
     label,
@@ -218,7 +235,7 @@ Widget buildInviteList(BuildContext context, List<InviteFormData> list) {
           child: Row(
             children: [
               Expanded(flex: 3, child: headerText('Email')),
-              Expanded(flex: 2, child: headerText('Role')),
+              Expanded(flex: 2, child: headerText(localization.role)),
               Expanded(
                 flex: 2,
                 child: Row(

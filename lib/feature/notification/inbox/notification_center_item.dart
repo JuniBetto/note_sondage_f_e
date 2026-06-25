@@ -134,6 +134,14 @@ class NotificationCenterItem extends Equatable {
     return value;
   }
 
+  String? get recordId {
+    final value = metadata['recordId']?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
   bool get isPendingTeamInvitation => eventType == 'TEAM_MEMBER_INVITED';
 
   bool get isTerminalTeamInvitationEvent =>
@@ -160,6 +168,7 @@ class NotificationCenterItem extends Equatable {
 
   bool get isPendingClockingManagerDecision =>
       eventType == 'CLOCKING_CLOCKING_REQUESTED' ||
+      eventType == 'CLOCKING_DECOMMIT_REQUESTED' ||
       eventType == 'CLOCKING_VACATION_REQUESTED' ||
       eventType == 'CLOCKING_PERMISSION_REQUESTED' ||
       eventType == 'SHIFT_CHANGE_REQUESTED';

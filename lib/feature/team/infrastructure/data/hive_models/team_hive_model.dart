@@ -22,6 +22,18 @@ class TeamHiveModel extends HiveObject {
   @HiveField(5)
   final String? color;
 
+  @HiveField(6)
+  final bool clockingRequired;
+
+  @HiveField(7)
+  final String? clockingReminderTime;
+
+  @HiveField(8)
+  final String? clockingMissingAlertTime;
+
+  @HiveField(9)
+  final String? clockingOpenAlertTime;
+
   TeamHiveModel({
     required this.id,
     required this.name,
@@ -29,5 +41,9 @@ class TeamHiveModel extends HiveObject {
     required this.createdByUserId,
     required this.createdAt,
     this.color,
+    this.clockingRequired = false,
+    this.clockingReminderTime,
+    this.clockingMissingAlertTime,
+    this.clockingOpenAlertTime,
   });
 }

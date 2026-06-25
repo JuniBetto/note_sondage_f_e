@@ -70,6 +70,10 @@ class TeamRealtimeCoordinator {
     return TeamRealtimeGlobalDecision(
       refreshTeams: true,
       refreshDashboard: true,
+      teamIdToRemoveFromCache:
+          _shouldLeaveCurrentTeam(notification, currentUserId: currentUserId)
+          ? teamId
+          : null,
       showSnackBar: !isTeamCurrentlyOpen,
       snackBarMessage: !isTeamCurrentlyOpen
           ? _buildSnackBarMessage(notification, currentUserId: currentUserId)
@@ -156,12 +160,14 @@ class TeamRealtimeCoordinator {
 class TeamRealtimeGlobalDecision {
   final bool refreshTeams;
   final bool refreshDashboard;
+  final String? teamIdToRemoveFromCache;
   final bool showSnackBar;
   final String? snackBarMessage;
 
   const TeamRealtimeGlobalDecision({
     this.refreshTeams = false,
     this.refreshDashboard = false,
+    this.teamIdToRemoveFromCache,
     this.showSnackBar = false,
     this.snackBarMessage,
   });

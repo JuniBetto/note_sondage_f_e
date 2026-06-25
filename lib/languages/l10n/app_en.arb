@@ -64,6 +64,7 @@
     "clockingInOut": "Clock in/out",
     "explorer": "Explorer",
     "sondage": "Sondage",
+    "sondageChat": "Sondage/Chat",
     "selectedTeam": "Select Team",
     "createTeam": "Create Team",
     "teamMember": "Team Member",
@@ -209,6 +210,16 @@
     "memberAddedSuccessfully": "Member added successfully!",
     "memberErrorPrefix": "Member error:",
     "noTeamsFound": "No teams found",
+    "deleteTeamTitle": "Delete team",
+    "deleteTeamMessage": "Are you sure you want to delete this team? This action cannot be undone.",
+    "deleteRoleTitle": "Delete role",
+    "deleteRoleMessage": "Are you sure you want to delete this role?",
+    "defaultRole": "Default role",
+    "swipeToCreateRole": "Swipe to create a new role",
+    "searchTeamsByNameOrDescription": "Search teams by name or description",
+    "noTeamsMatchingSearch": "No teams found for this search.",
+    "noArchivedTeams": "No archived teams.",
+    "noVisibleTeams": "No visible teams.",
     "roleCreatedSuccessfully": "Role created successfully!",
     "noRolesAvailable": "No roles available",
     "userList": "User List",
@@ -274,6 +285,7 @@
     "noActiveMembersYet": "No active members yet",
     "editRoleTooltip": "Edit Role",
     "removeAction": "Remove",
+    "deleteAction": "Delete",
     "selectRole": "Select a role",
     "pendingInvitations": "Pending Invitations",
     "cancelInvitation": "Cancel Invitation",
@@ -286,6 +298,18 @@
     "memberStatusSuspended": "Suspended",
     "exportPdfError": "Error exporting PDF: {error}",
     "surveyNotFound": "Survey not found",
+    "noPermissionToEditSurvey": "You do not have permission to edit this survey.",
+    "editSurvey": "Edit survey",
+    "deleteSurvey": "Delete survey",
+    "deleteSurveyTitle": "Delete survey",
+    "deleteSurveyMessage": "Do you really want to delete this survey?",
+    "surveyDeleted": "Survey deleted.",
+    "archiveSurvey": "Archive survey",
+    "restoreSurvey": "Restore survey",
+    "noDraftOrActiveSurveysAvailable": "No draft or active surveys available",
+    "noSurveysMatchingSearch": "No surveys found for this search.",
+    "noArchivedSurveys": "No archived surveys.",
+    "noVisibleSurveys": "No visible surveys.",
     "focus": "Focus",
     "noOptionsAvailable": "No options available",
     "alreadyVoted": "You have already voted",
@@ -361,6 +385,13 @@
     "shiftProfileName": "Profile Name",
     "shiftColor": "Color",
     "deleteShiftProfileConfirm": "Are you sure you want to delete this profile?",
+    "deleteShiftTitle": "Delete shift",
+    "deleteShiftMessage": "Are you sure you want to delete this shift?",
+    "publicProfile": "Public",
+    "privateProfile": "Private",
+    "visibleToTeamMembers": "Visible to all team members",
+    "visibleOnlyToYou": "Visible only to you",
+    "syncing": "Syncing",
     "customProfile": "Custom Profiles",
     "noShiftsThisMonth": "No shifts this month",
     "systemProfile": "System Profiles",
@@ -376,6 +407,7 @@
     "markVacation": "Mark vacation",
     "markPermission": "Mark permission",
     "requestClocking": "Request clocking",
+    "requestDecommit": "Request decommit",
     "requestVacation": "Request vacation",
     "requestPermission": "Request permission",
     "vacationStatus": "Vacation",
@@ -413,6 +445,15 @@
             }
         }
     },
+    "manualClockingSingleDayDescription": "Fill in the clocking for {date}.",
+    "@manualClockingSingleDayDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
     "manualClockingResolveOpenRecord": "You have an open clocking on another day. Close it or select that day before saving a manual clocking.",
     "selectedDays": "Selected days",
     "addDay": "Add day",
@@ -436,6 +477,29 @@
         }
     },
     "manualClockingSaveError": "We couldn't save the manual clocking.",
+    "manualClockingBackToTodayTooltip": "Back to today",
+    "manualClockingBackToTodayTitle": "Back to today?",
+    "manualClockingBackToTodayMessage": "You are about to leave manual clocking mode.\n\nIf you want to edit a clocking from a past day, you will need to submit a new manual clocking request for that day.",
+    "manualClockingBackToTodayConfirm": "Back to today",
+    "manualClockingOverlapTitle": "Overlap detected",
+    "manualClockingOverlapMessage": "The new clocking ({newRange}) overlaps with an existing clocking ({existingRange}).\n\nDo you want to shorten the existing clocking so it ends at {newEndTime}?",
+    "@manualClockingOverlapMessage": {
+        "placeholders": {
+            "newRange": {
+                "type": "String",
+                "example": "09:00 - 12:00"
+            },
+            "existingRange": {
+                "type": "String",
+                "example": "08:00 - 13:00"
+            },
+            "newEndTime": {
+                "type": "String",
+                "example": "09:00"
+            }
+        }
+    },
+    "manualClockingOverlapConfirmAdjust": "Yes, shorten it",
     "noTeamSelected": "No team selected",
     "changeOrSearchTeam": "Open to change team or search for one",
     "teamAvailableForClocking": "Team available for clocking",
@@ -478,9 +542,18 @@
         }
     },
     "optionalRequestNoteHint": "Optional note for the request",
-    "clockingApprovalRequestHint": "You can request clocking, vacation, or permission for the selected team and date.",
+    "clockingApprovalRequestHint": "You can request clocking, decommit, vacation, or permission for the selected team and date.",
     "requestClockingForSelectedDate": "Request clocking for {date}",
     "@requestClockingForSelectedDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "requestDecommitForSelectedDate": "Request decommit for {date}",
+    "@requestDecommitForSelectedDate": {
         "placeholders": {
             "date": {
                 "type": "String",
@@ -492,6 +565,8 @@
     "sendRequest": "Send request",
     "clockingRequestSentSuccess": "Clocking request sent successfully.",
     "clockingRequestSentError": "We couldn't send the clocking request to the team member.",
+    "decommitRequestSentSuccess": "Decommit request sent successfully.",
+    "decommitRequestSentError": "We couldn't send the decommit request.",
     "vacationRequestSentSuccess": "Vacation request sent successfully.",
     "vacationRequestSentError": "We couldn't send the vacation request.",
     "permissionRequestSentSuccess": "Permission request sent successfully.",
@@ -499,5 +574,161 @@
     "approveRequest": "Approve",
     "rejectRequest": "Reject",
     "clockInDateTimeLabel": "Clock-in (YYYY-MM-DD HH:MM)",
-    "clockOutDateTimeLabel": "Clock-out (YYYY-MM-DD HH:MM)"
+    "clockOutDateTimeLabel": "Clock-out (YYYY-MM-DD HH:MM)",
+    "chatTitle": "Chat",
+    "chatLive": "Live",
+    "chatTeamTitle": "Team chat",
+    "chatRefresh": "Refresh",
+    "chatChooseConversation": "Choose a conversation",
+    "chatListDescriptionWeb": "Pick a team channel or reopen one of your direct chats.",
+    "chatListDescriptionMobile": "Open a team channel or jump back into one of your direct chats.",
+    "chatTeamChannels": "Team channels",
+    "chatDirectChats": "Direct chats",
+    "chatNoDirectContacts": "Your direct chat history will appear here.",
+    "chatNoTeamsAvailable": "No teams available for chat right now.",
+    "chatChooseTeamHeader": "Choose a team to start chatting.",
+    "chatHeaderDirectDescription": "Direct chat with {name}",
+    "@chatHeaderDirectDescription": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "John"
+            }
+        }
+    },
+    "chatHeaderTeamDescription": "Team chat for {name}",
+    "@chatHeaderTeamDescription": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Operations"
+            }
+        }
+    },
+    "chatRefreshed": "Chat refreshed.",
+    "chatLoadTeamsError": "We couldn't load your chat teams.",
+    "chatLoadConversationError": "We couldn't load this conversation.",
+    "chatSendMessageError": "We couldn't send the message.",
+    "chatReactionUpdateError": "We couldn't update the reaction.",
+    "chatDeleteError": "We couldn't delete the message.",
+    "chatReactTitle": "React to message",
+    "chatReactHint": "Choose an emoji reaction.",
+    "chatDeleteTitle": "Delete message",
+    "chatDeleteMessage": "Do you want to delete this message?",
+    "chatYouLabel": "You",
+    "chatTimelineBeginning": "The conversation starts here",
+    "chatTimelineActive": "{name} is active",
+    "@chatTimelineActive": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Team"
+            }
+        }
+    },
+    "chatTimelineResumed": "Conversation resumed after {duration}",
+    "@chatTimelineResumed": {
+        "placeholders": {
+            "duration": {
+                "type": "String",
+                "example": "15 min"
+            }
+        }
+    },
+    "chatDurationMinutesShort": "{minutes, plural, =1{1 min} other{{minutes} min}}",
+    "@chatDurationMinutesShort": {
+        "placeholders": {
+            "minutes": {
+                "type": "int",
+                "example": "15"
+            }
+        }
+    },
+    "chatDurationHoursShort": "{hours, plural, =1{1 hr} other{{hours} hrs}}",
+    "@chatDurationHoursShort": {
+        "placeholders": {
+            "hours": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "chatDurationDaysShort": "{days, plural, =1{1 day} other{{days} days}}",
+    "@chatDurationDaysShort": {
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "chatReplyAction": "Reply",
+    "chatLoadingOlderMessages": "Loading older messages...",
+    "chatNoMessagesYet": "No messages yet",
+    "chatEmptyDescription": "Write the first message to start this conversation.",
+    "chatSeen": "Seen",
+    "chatDeletedMessage": "Message deleted",
+    "chatAttachmentFallback": "Attachment",
+    "chatOpenDocument": "Open document",
+    "chatOpenSharedConversation": "Open the shared team conversation.",
+    "chatOpenConversation": "Open conversation",
+    "chatDirectConversationInTeam": "Direct conversation in {teamName}",
+    "@chatDirectConversationInTeam": {
+        "placeholders": {
+            "teamName": {
+                "type": "String",
+                "example": "Operations"
+            }
+        }
+    },
+    "chatDirectActionDescription": "Open a private chat with this team member.",
+    "chatOpenDirectAction": "Open direct chat",
+    "chatReturnToChatList": "Back to chat list",
+    "chatReturnToTeamList": "Back to team list",
+    "chatComposerHint": "Write a message",
+    "chatPickImage": "Add image",
+    "chatPickDocument": "Add document",
+    "chatAddEmoji": "Add emoji",
+    "chatReplyingTo": "Replying to {name}",
+    "@chatReplyingTo": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "John"
+            }
+        }
+    },
+    "chatCancelReply": "Cancel reply",
+    "chatImageReadyToSend": "Image ready to send",
+    "chatDocumentReadyToSend": "Document ready to send",
+    "chatRemoveAttachment": "Remove attachment",
+    "chatJustNow": "just now",
+    "chatMinutesAgo": "{minutes, plural, =1{1 min ago} other{{minutes} min ago}}",
+    "@chatMinutesAgo": {
+        "placeholders": {
+            "minutes": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "chatHoursAgo": "{hours, plural, =1{1 hr ago} other{{hours} hrs ago}}",
+    "@chatHoursAgo": {
+        "placeholders": {
+            "hours": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "chatYesterday": "yesterday",
+    "chatDaysAgo": "{days, plural, =1{1 day ago} other{{days} days ago}}",
+    "@chatDaysAgo": {
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "4"
+            }
+        }
+    }
 }

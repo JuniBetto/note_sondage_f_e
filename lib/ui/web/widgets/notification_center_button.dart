@@ -120,6 +120,19 @@ class _NotificationCenterDialog extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
+                      TextButton.icon(
+                        onPressed: state.notifications.isEmpty
+                            ? null
+                            : () => context
+                                  .read<NotificationCenterCubit>()
+                                  .closeNotifications(
+                                    state.notifications,
+                                    currentUserId: currentUserId,
+                                  ),
+                        icon: const Icon(Icons.done_all_rounded, size: 18),
+                        label: Text(AppLocalizations.of(context)!.close),
+                      ),
+                      const SizedBox(width: 8),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.close_rounded),

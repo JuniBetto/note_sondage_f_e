@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get_it/get_it.dart';
+import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_conversation_page.dart';
+import 'package:note_sondage/feature/chat/ui/web/chat_web_page.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/mobile/shift_mobile_page.dart';
@@ -57,6 +59,8 @@ int _pathToNavIndex(String path) {
       return 4;
     case RouterPaths.shifts:
       return 5;
+    case RouterPaths.chat:
+      return 6;
     default:
       return 0;
   }
@@ -92,7 +96,7 @@ GoRouter createRouter(BuildContext context) {
             // Fondamentale per i pulsanti back/forward del browser:
             // GoRouter aggiorna il path, ma senza questo l'IndexedStack
             // resterebbe fermo sull'indice precedente.
-            if (isMainPage) {
+            if (isMainPage || path == RouterPaths.chat) {
               final targetIndex = _pathToNavIndex(path);
               final navBloc = context.read<NavigationBloc>();
               if (navBloc.state != targetIndex) {
@@ -138,6 +142,20 @@ GoRouter createRouter(BuildContext context) {
               pageBuilder: (context, state) =>
                   const NoTransitionPage<void>(child: SizedBox.shrink()),
             ),
+            GoRoute(
+              path: RouterPaths.chat,
+              name: RouterPaths.chat,
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                child: ChatWebPage(
+                  initialTeamId: state.uri.queryParameters['teamId'],
+                  initialMemberUserId:
+                      state.uri.queryParameters['memberUserId'],
+                  initialMemberName: state.uri.queryParameters['memberName'],
+                  focusLatestOnOpen:
+                      state.uri.queryParameters['focus'] == 'latest',
+                ),
+              ),
+            ),
             // Route secondarie — queste passano il child a MainWeb
             GoRoute(
               path: RouterPaths.rolePage,
@@ -163,8 +181,10 @@ GoRouter createRouter(BuildContext context) {
               path: RouterPaths.updateTeam,
               name: RouterPaths.updateTeam,
               pageBuilder: (context, state) => NoTransitionPage<void>(
-                child: UpdateTeamWeb(teamId: state.extra as String?,
-                readOnly: true,),
+                child: UpdateTeamWeb(
+                  teamId: state.extra as String?,
+                  readOnly: true,
+                ),
               ),
             ),
             GoRoute(
@@ -252,6 +272,37 @@ GoRouter createRouter(BuildContext context) {
           name: RouterPaths.sondage,
           pageBuilder: (context, state) =>
               const NoTransitionPage<void>(child: SondageMobile()),
+        ),
+        GoRoute(
+          path: RouterPaths.sondageChat,
+          name: RouterPaths.sondageChat,
+          pageBuilder: (context, state) => NoTransitionPage<void>(
+            child: SondageMobile(
+              initialTabIndex: 2,
+              initialChatTeamId: state.uri.queryParameters['teamId'],
+            ),
+          ),
+        ),
+        GoRoute(
+          path: RouterPaths.sondageChatConversation,
+          name: RouterPaths.sondageChatConversation,
+          pageBuilder: (context, state) {
+            final teamId = state.uri.queryParameters['teamId']?.trim();
+            if (teamId == null || teamId.isEmpty) {
+              return const NoTransitionPage<void>(
+                child: SondageMobile(initialTabIndex: 2),
+              );
+            }
+            return NoTransitionPage<void>(
+              child: ChatMobileConversationPage(
+                teamId: teamId,
+                memberUserId: state.uri.queryParameters['memberUserId'],
+                memberName: state.uri.queryParameters['memberName'],
+                focusLatestOnOpen:
+                    state.uri.queryParameters['focus'] == 'latest',
+              ),
+            );
+          },
         ),
         GoRoute(
           path: RouterPaths.shifts,
@@ -492,7 +543,10 @@ abstract class RouterPaths {
   static const settingsContactUs = '/settings/contact_us';
   static const clocking = '/clocking';
   static const sondage = '/sondage';
+  static const sondageChat = '/sondage/chat';
+  static const sondageChatConversation = '/sondage/chat/conversation';
   static const shifts = '/shifts';
+  static const chat = '/chat';
   static const createTeam = '/create_team';
   static const updateTeam = '/update_team';
   static const teamDetail = '/team_detail';

@@ -61,7 +61,7 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
       final members = await teamMemberUseCase.getAllMembersByTeamId(
         event.teamId,
       );
-      emit(TeamMembersLoaded(members));
+      emit(TeamMembersLoaded(members, teamId: event.teamId));
     } catch (e) {
       emit(
         TeamMemberError(
@@ -69,6 +69,7 @@ class TeamMemberBloc extends Bloc<TeamMemberEvent, TeamMemberState> {
             e,
             fallback: 'We could not load the team members right now.',
           ),
+          teamId: event.teamId,
         ),
       );
     }

@@ -228,6 +228,26 @@ class ClockingUseCase {
     }
   }
 
+  Future<void> requestDecommit({
+    required String teamId,
+    required String targetUserId,
+    required DateTime date,
+    required String recordId,
+    String? note,
+  }) async {
+    try {
+      await repository.requestDecommit(
+        teamId: teamId,
+        targetUserId: targetUserId,
+        date: date,
+        recordId: recordId,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to request decommit: $e');
+    }
+  }
+
   Future<void> requestVacation({
     required String teamId,
     required DateTime date,

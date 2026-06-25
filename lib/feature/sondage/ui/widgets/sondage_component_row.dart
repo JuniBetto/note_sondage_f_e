@@ -224,7 +224,7 @@ class _SondageComponentRowState extends State<SondageComponentRow> {
                               Icons.edit_outlined,
                               color: colorScheme.selectionColor,
                             ),
-                            tooltip: 'Modifica sondaggio',
+                            tooltip: localization.editSurvey,
                             onPressed: widget.onEditTap,
                           ),
                         IconButton(
@@ -235,8 +235,8 @@ class _SondageComponentRowState extends State<SondageComponentRow> {
                             color: Colors.blueGrey,
                           ),
                           tooltip: widget.isArchived
-                              ? 'Ripristina sondaggio'
-                              : 'Archivia sondaggio',
+                              ? localization.restoreSurvey
+                              : localization.archiveSurvey,
                           onPressed: widget.onArchiveTap,
                         ),
                         if (widget.canDelete)
@@ -245,6 +245,7 @@ class _SondageComponentRowState extends State<SondageComponentRow> {
                               Icons.delete_outline,
                               color: Colors.red,
                             ),
+                            tooltip: localization.deleteSurvey,
                             onPressed: () =>
                                 widget.onDeleteTap(widget.sondageId),
                           ),

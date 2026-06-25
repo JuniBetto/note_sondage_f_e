@@ -5,6 +5,7 @@ class NotificationPreferencesEntity {
   final bool teamUpdatesEnabled;
   final bool clockingAlertsEnabled;
   final bool shiftAlertsEnabled;
+  final bool chatMessagesEnabled;
 
   const NotificationPreferencesEntity({
     required this.emailEnabled,
@@ -13,6 +14,7 @@ class NotificationPreferencesEntity {
     required this.teamUpdatesEnabled,
     required this.clockingAlertsEnabled,
     required this.shiftAlertsEnabled,
+    required this.chatMessagesEnabled,
   });
 
   static const defaults = NotificationPreferencesEntity(
@@ -22,6 +24,7 @@ class NotificationPreferencesEntity {
     teamUpdatesEnabled: true,
     clockingAlertsEnabled: true,
     shiftAlertsEnabled: true,
+    chatMessagesEnabled: true,
   );
 
   factory NotificationPreferencesEntity.fromJson(Map<String, dynamic> json) {
@@ -39,6 +42,7 @@ class NotificationPreferencesEntity {
       teamUpdatesEnabled: readBool('teamUpdatesEnabled', true),
       clockingAlertsEnabled: readBool('clockingAlertsEnabled', true),
       shiftAlertsEnabled: readBool('shiftAlertsEnabled', true),
+      chatMessagesEnabled: readBool('chatMessagesEnabled', true),
     );
   }
 
@@ -50,6 +54,7 @@ class NotificationPreferencesEntity {
       'teamUpdatesEnabled': teamUpdatesEnabled,
       'clockingAlertsEnabled': clockingAlertsEnabled,
       'shiftAlertsEnabled': shiftAlertsEnabled,
+      'chatMessagesEnabled': chatMessagesEnabled,
     };
   }
 
@@ -60,6 +65,7 @@ class NotificationPreferencesEntity {
     bool? teamUpdatesEnabled,
     bool? clockingAlertsEnabled,
     bool? shiftAlertsEnabled,
+    bool? chatMessagesEnabled,
   }) {
     return NotificationPreferencesEntity(
       emailEnabled: emailEnabled ?? this.emailEnabled,
@@ -67,8 +73,10 @@ class NotificationPreferencesEntity {
       surveyRemindersEnabled:
           surveyRemindersEnabled ?? this.surveyRemindersEnabled,
       teamUpdatesEnabled: teamUpdatesEnabled ?? this.teamUpdatesEnabled,
-      clockingAlertsEnabled: clockingAlertsEnabled ?? this.clockingAlertsEnabled,
+      clockingAlertsEnabled:
+          clockingAlertsEnabled ?? this.clockingAlertsEnabled,
       shiftAlertsEnabled: shiftAlertsEnabled ?? this.shiftAlertsEnabled,
+      chatMessagesEnabled: chatMessagesEnabled ?? this.chatMessagesEnabled,
     );
   }
 }

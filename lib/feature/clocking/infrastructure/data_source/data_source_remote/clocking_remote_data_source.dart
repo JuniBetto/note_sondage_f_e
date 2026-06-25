@@ -298,6 +298,34 @@ class ClockingRemoteDataSource {
     }
   }
 
+  Future<void> requestDecommit({
+    required String teamId,
+    required String targetUserId,
+    required DateTime date,
+    required String recordId,
+    String? note,
+  }) async {
+    try {
+      final formattedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).toIso8601String().split('T').first;
+      await _dio.post(
+        '/api/aggregate/clocking/request-decommit',
+        data: {
+          'teamId': teamId,
+          'targetUserId': targetUserId,
+          'date': formattedDate,
+          'recordId': recordId,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to request decommit: $e');
+    }
+  }
+
   Future<void> requestVacation({
     required String teamId,
     required DateTime date,

@@ -5,7 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
@@ -13,6 +15,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/add_user_web.dart';
+import 'package:note_sondage/feature/team/ui/widgets/team_clocking_requirement_section.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_members_section.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -51,9 +54,16 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   ];
 
   List<String> selectedColor = [];
+  bool _clockingRequired = false;
+  String _clockingReminderTime = '09:00';
+  String _clockingMissingAlertTime = '10:00';
+  String _clockingOpenAlertTime = '18:00';
+  TeamSectionPermissions _teamPermissions = TeamSectionPermissions.readOnly();
   late final TeamBloc _teamBloc;
   bool _isLoading = true;
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
+
+  bool get _showClockingSection => _teamPermissions.canManageClockingSettings;
 
   @override
   void initState() {
@@ -70,20 +80,37 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
     _realtimeSubscription?.cancel();
     nameTeamController.dispose();
     focusTeamController.dispose();
+    for (final data in listUserFormData) {
+      data.dispose();
+    }
+    for (final data in listInviteFormData) {
+      data.dispose();
+    }
     super.dispose();
   }
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
-    if (notification.sourceService != 'team-service') return;
-    if (notification.metadata['teamId'] != widget.teamId) return;
+    final decision = getIt<TeamRealtimeCoordinator>().resolveScreenDecision(
+      notification,
+      teamId: widget.teamId ?? '',
+      currentUserId: getIt<AuthBloc>().state.user.uid,
+    );
 
-    if (notification.eventType == 'TEAM_UPDATED' ||
-        notification.eventType == 'TEAM_MEMBER_JOINED' ||
-        notification.eventType == 'TEAM_MEMBER_REMOVED' ||
-        notification.eventType == 'TEAM_MEMBER_ROLE_UPDATED' ||
-        notification.eventType == 'TEAM_MEMBER_INVITED' ||
-        notification.eventType == 'TEAM_INVITATION_CANCELLED' ||
-        notification.eventType == 'TEAM_INVITATION_REJECTED') {
+    if (decision.shouldLeaveCurrentTeam) {
+      final teamId = widget.teamId?.trim();
+      if (teamId != null && teamId.isNotEmpty) {
+        _teamBloc.add(RemoveTeamFromCacheEvent(teamId));
+      }
+      if (!mounted) return;
+      final message = notification.eventType == 'TEAM_MEMBER_REMOVED'
+          ? 'Non fai piu parte di questo team.'
+          : 'Questo team non e piu disponibile.';
+      AppSnackBar.showWarning(context, message, title: 'Team aggiornato');
+      context.go(RouterPaths.team);
+      return;
+    }
+
+    if (decision.refreshTeam) {
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
     }
   }
@@ -104,6 +131,11 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
           focusTeamController.text = team.description;
           setState(() {
             selectedColor = team.color != null ? [team.color!] : [];
+            _clockingRequired = team.clockingRequired;
+            _clockingReminderTime = team.clockingReminderTime ?? '09:00';
+            _clockingMissingAlertTime =
+                team.clockingMissingAlertTime ?? '10:00';
+            _clockingOpenAlertTime = team.clockingOpenAlertTime ?? '18:00';
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated) {
@@ -260,6 +292,30 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
 
                 const SizedBox(height: 24),
 
+                if (_showClockingSection) ...[
+                  _buildSectionTitle(context, 'Clocking'),
+                  const SizedBox(height: 12),
+                  TeamClockingRequirementSection(
+                    clockingRequired: _clockingRequired,
+                    onClockingRequiredChanged: (value) {
+                      setState(() => _clockingRequired = value);
+                    },
+                    reminderTime: _clockingReminderTime,
+                    onReminderTimeChanged: (value) {
+                      setState(() => _clockingReminderTime = value);
+                    },
+                    missingAlertTime: _clockingMissingAlertTime,
+                    onMissingAlertTimeChanged: (value) {
+                      setState(() => _clockingMissingAlertTime = value);
+                    },
+                    openAlertTime: _clockingOpenAlertTime,
+                    onOpenAlertTimeChanged: (value) {
+                      setState(() => _clockingOpenAlertTime = value);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
                 // ── Members Section ──
                 _buildSectionTitle(context, localization.userList),
                 const SizedBox(height: 12),
@@ -273,7 +329,15 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                     ),
                   ),
                   child: widget.teamId != null
-                      ? TeamMembersSection(teamId: widget.teamId!)
+                      ? TeamMembersSection(
+                          teamId: widget.teamId!,
+                          onPermissionsChanged: (permissions) {
+                            if (!mounted) return;
+                            setState(() {
+                              _teamPermissions = permissions;
+                            });
+                          },
+                        )
                       : AddUserWeb(
                           listInviteFormData: listInviteFormData,
                           teamId: widget.teamId,
@@ -364,6 +428,10 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
         name: nameTeamController.text,
         description: focusTeamController.text,
         createdByUserId: null,
+        clockingRequired: _clockingRequired,
+        clockingReminderTime: _clockingReminderTime,
+        clockingMissingAlertTime: _clockingMissingAlertTime,
+        clockingOpenAlertTime: _clockingOpenAlertTime,
         listMember: listteamMember,
       );
 

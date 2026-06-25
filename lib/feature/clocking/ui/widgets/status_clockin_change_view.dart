@@ -210,11 +210,15 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           final teamState = context.watch<TeamBloc>().state;
           final selectedTeam = _selectedTeam(teamState, widget.selectedTeamId);
           final authState = context.watch<AuthBloc>().state;
+          final currentUserId = authState.user.uid;
           final isOwner =
               authState.user.isNotEmpty &&
               selectedTeam?.createdByUserId == authState.user.uid;
           final canManageClocking =
               !showingPersonalHistory && _canManageClocking;
+          final decommitRequestTarget = !showingPersonalHistory
+              ? _resolveCurrentUserDecommitRequestTarget(records)
+              : null;
 
           final col = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,6 +295,28 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                         ),
                       ),
                     ),
+                    if (!canManageClocking)
+                      IntrinsicWidth(
+                        child: CustomAppButton(
+                          onPressed:
+                              widget.selectedTeamId == null ||
+                                  decommitRequestTarget == null
+                              ? null
+                              : () => _requestDecommitForSelf(
+                                  decommitRequestTarget,
+                                ),
+                          type: ButtonType.outlined,
+                          isActive: true,
+                          fullWidth: false,
+                          leadingIcon: const Icon(Icons.lock_open_rounded),
+                          child: Text(
+                            localization.requestDecommit,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ),
                     IntrinsicWidth(
                       child: CustomAppButton(
                         onPressed: widget.selectedTeamId == null
@@ -446,6 +472,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _MobileRecordCard(
                             record: record,
+                            currentUserId: currentUserId,
                             isSyncing: context
                                 .read<ClockingBloc>()
                                 .syncingRecordIds
@@ -469,6 +496,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _WebRecordRow(
                             record: record,
+                            currentUserId: currentUserId,
                             isSyncing: context
                                 .read<ClockingBloc>()
                                 .syncingRecordIds
@@ -803,6 +831,39 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     return _isSameDay(left, right);
   }
 
+  ClockingRecordEntity? _resolveCurrentUserDecommitRequestTarget(
+    List<ClockingRecordEntity> records,
+  ) {
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      return null;
+    }
+
+    final selectedDate = DateTime(
+      (widget.selectedDate ?? _selectedDateFilter ?? DateTime.now()).year,
+      (widget.selectedDate ?? _selectedDateFilter ?? DateTime.now()).month,
+      (widget.selectedDate ?? _selectedDateFilter ?? DateTime.now()).day,
+    );
+
+    final candidates =
+        records.where((record) {
+          return record.userId == _currentUserId &&
+              record.teamId == teamId &&
+              record.isCommitted &&
+              _isSameDay(record.date, selectedDate);
+        }).toList()..sort((left, right) {
+          final leftTime = left.clockOutTime ?? left.clockInTime ?? left.date;
+          final rightTime =
+              right.clockOutTime ?? right.clockInTime ?? right.date;
+          return rightTime.compareTo(leftTime);
+        });
+
+    if (candidates.isEmpty) {
+      return null;
+    }
+    return candidates.first;
+  }
+
   void _decommitRecord(ClockingRecordEntity record) {
     context.read<ClockingBloc>().add(DecommitClockingRecordEvent(record.id));
   }
@@ -828,11 +889,29 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       builder: (dialogContext) {
         final loc = AppLocalizations.of(dialogContext)!;
         return AlertDialog(
-          title: Text(loc.editClocking),
+          title: Text(
+            record.userName.trim().isEmpty
+                ? loc.editClocking
+                : '${loc.editClocking} • ${record.userName}',
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (record.userName.trim().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        record.teamName.trim().isNotEmpty
+                            ? 'Team: ${record.teamName}'
+                            : record.userName,
+                        style: Theme.of(dialogContext).textTheme.bodySmall
+                            ?.copyWith(color: Colors.grey[600]),
+                      ),
+                    ),
+                  ),
                 TextField(
                   controller: clockInController,
                   decoration: InputDecoration(
@@ -1155,6 +1234,86 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
         context,
         error,
         fallback: localization.clockingRequestSentError,
+      );
+    }
+  }
+
+  Future<void> _requestDecommitForSelf(ClockingRecordEntity record) async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      _showSnackBar(localization.selectTeamFirst, Colors.orange);
+      return;
+    }
+
+    final noteController = TextEditingController();
+    final selectedDate =
+        widget.selectedDate ?? _selectedDateFilter ?? record.date;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(localization.requestDecommit),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localization.requestDecommitForSelectedDate(
+                    DateFormat('dd/MM/yyyy').format(selectedDate),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: localization.note,
+                    hintText: localization.optionalRequestNoteHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              type: ButtonType.text,
+              isActive: false,
+              child: Text(localization.cancel),
+            ),
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              type: ButtonType.filled,
+              isActive: true,
+              child: Text(localization.sendRequest),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _clockingUseCase.requestDecommit(
+        teamId: teamId,
+        targetUserId: _currentUserId,
+        date: record.date,
+        recordId: record.id,
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
+      );
+      if (!mounted) return;
+      AppSnackBar.showSuccess(context, localization.decommitRequestSentSuccess);
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: localization.decommitRequestSentError,
       );
     }
   }
@@ -1536,6 +1695,7 @@ class _InfoState extends StatelessWidget {
 class _WebRecordRow extends StatelessWidget {
   const _WebRecordRow({
     required this.record,
+    required this.currentUserId,
     this.isSyncing = false,
     required this.isOwner,
     required this.isArchived,
@@ -1546,6 +1706,7 @@ class _WebRecordRow extends StatelessWidget {
   });
 
   final ClockingRecordEntity record;
+  final String currentUserId;
   final bool isSyncing;
   final bool isOwner;
   final bool isArchived;
@@ -1567,6 +1728,7 @@ class _WebRecordRow extends StatelessWidget {
         if (useStackedLayout) {
           return _MobileRecordCard(
             record: record,
+            currentUserId: currentUserId,
             isSyncing: isSyncing,
             isOwner: isOwner,
             isArchived: isArchived,
@@ -1591,7 +1753,11 @@ class _WebRecordRow extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 2,
-                  child: _RecordSummary(record: record, isSyncing: isSyncing),
+                  child: _RecordSummary(
+                    record: record,
+                    currentUserId: currentUserId,
+                    isSyncing: isSyncing,
+                  ),
                 ),
                 Expanded(
                   child: _RecordTimeColumn(
@@ -1634,6 +1800,7 @@ class _WebRecordRow extends StatelessWidget {
                   width: 210,
                   child: _OwnerActions(
                     record: record,
+                    currentUserId: currentUserId,
                     isSyncing: isSyncing,
                     isOwner: isOwner,
                     onDecommit: onDecommit,
@@ -1664,6 +1831,7 @@ class _WebRecordRow extends StatelessWidget {
 class _MobileRecordCard extends StatelessWidget {
   const _MobileRecordCard({
     required this.record,
+    required this.currentUserId,
     this.isSyncing = false,
     required this.isOwner,
     required this.isArchived,
@@ -1674,6 +1842,7 @@ class _MobileRecordCard extends StatelessWidget {
   });
 
   final ClockingRecordEntity record;
+  final String currentUserId;
   final bool isSyncing;
   final bool isOwner;
   final bool isArchived;
@@ -1702,7 +1871,11 @@ class _MobileRecordCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: _RecordSummary(record: record, isSyncing: isSyncing),
+                  child: _RecordSummary(
+                    record: record,
+                    currentUserId: currentUserId,
+                    isSyncing: isSyncing,
+                  ),
                 ),
                 IconButton(
                   tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
@@ -1739,6 +1912,7 @@ class _MobileRecordCard extends StatelessWidget {
             const SizedBox(height: 12),
             _OwnerActions(
               record: record,
+              currentUserId: currentUserId,
               isSyncing: isSyncing,
               isOwner: isOwner,
               onDecommit: onDecommit,
@@ -1754,14 +1928,21 @@ class _MobileRecordCard extends StatelessWidget {
 }
 
 class _RecordSummary extends StatelessWidget {
-  const _RecordSummary({required this.record, this.isSyncing = false});
+  const _RecordSummary({
+    required this.record,
+    required this.currentUserId,
+    this.isSyncing = false,
+  });
 
   final ClockingRecordEntity record;
+  final String currentUserId;
   final bool isSyncing;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isCurrentUserRecord =
+        currentUserId.trim().isNotEmpty && currentUserId == record.userId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1817,6 +1998,12 @@ class _RecordSummary extends StatelessWidget {
               color: _statusColor(record.status),
             ),
             if (isSyncing) _StatusBadge(label: 'Syncing', color: Colors.amber),
+            _StatusBadge(
+              label: isCurrentUserRecord
+                  ? 'La tua timbratura'
+                  : 'Timbratura membro',
+              color: isCurrentUserRecord ? Colors.indigo : Colors.deepOrange,
+            ),
             if (record.note != null && record.note!.trim().isNotEmpty)
               _StatusBadge(
                 label: AppLocalizations.of(context)!.note,
@@ -1832,6 +2019,7 @@ class _RecordSummary extends StatelessWidget {
 class _OwnerActions extends StatelessWidget {
   const _OwnerActions({
     required this.record,
+    required this.currentUserId,
     this.isSyncing = false,
     required this.isOwner,
     required this.onDecommit,
@@ -1841,6 +2029,7 @@ class _OwnerActions extends StatelessWidget {
   });
 
   final ClockingRecordEntity record;
+  final String currentUserId;
   final bool isSyncing;
   final bool isOwner;
   final VoidCallback onDecommit;
@@ -1860,6 +2049,8 @@ class _OwnerActions extends StatelessWidget {
     }
 
     final loc = AppLocalizations.of(context)!;
+    final isCurrentUserRecord =
+        currentUserId.trim().isNotEmpty && currentUserId == record.userId;
     final buttons = <Widget>[
       if (record.canDecommit)
         CustomAppButton(
@@ -1880,7 +2071,11 @@ class _OwnerActions extends StatelessWidget {
           onPressed: isSyncing ? null : onEdit,
           type: ButtonType.filled,
           isActive: !isSyncing,
-          child: Text(loc.editAction),
+          child: Text(
+            record.isActive && !isCurrentUserRecord
+                ? 'Chiudi timbratura'
+                : loc.editAction,
+          ),
         ),
     ];
 

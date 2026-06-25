@@ -33,24 +33,10 @@ class RealtimeNotificationService {
         'This host works for the Android emulator, not for iOS.',
       );
     }
-    final wsScheme = apiUri.scheme == 'https' ? 'wss' : 'ws';
-    final wsUrl = RuntimeConfig.hasCustomApiBaseUrl
-        ? apiUri
-              .replace(
-                scheme: wsScheme,
-                path: '/ws',
-                queryParameters: {'userId': userId},
-              )
-              .toString()
-        : apiUri
-              .replace(
-                scheme: wsScheme,
-                port: 8085,
-                path: '/ws',
-                queryParameters: {'userId': userId},
-              )
-              .toString();
+    final wsUrl = _resolveWebSocketUrl(apiUri, userId);
     final webSocketHeaders = kIsWeb ? null : {'X-User-Id': userId};
+
+    debugPrint('[RealtimeNotificationService] Connecting to $wsUrl');
 
     _client = StompClient(
       config: StompConfig(
@@ -105,7 +91,88 @@ class RealtimeNotificationService {
     }
   }
 
+  String _resolveWebSocketUrl(Uri apiUri, String userId) {
+    final wsScheme = apiUri.scheme == 'https' ? 'wss' : 'ws';
+
+    if (RuntimeConfig.hasCustomNotificationWsUrl) {
+      final directUri = Uri.parse(RuntimeConfig.resolvedNotificationWsUrl);
+      return directUri
+          .replace(
+            scheme: directUri.scheme.isEmpty ? wsScheme : directUri.scheme,
+            path: '/ws',
+            queryParameters: {'userId': userId},
+          )
+          .toString();
+    }
+
+    if (!RuntimeConfig.hasCustomApiBaseUrl) {
+      return apiUri
+          .replace(
+            scheme: wsScheme,
+            port: 8085,
+            path: '/ws',
+            queryParameters: {'userId': userId},
+          )
+          .toString();
+    }
+
+    final configuredPort = apiUri.hasPort
+        ? apiUri.port
+        : (apiUri.scheme == 'https' ? 443 : 80);
+    final targetPort =
+        _isPrivateOrLanHost(apiUri.host) && configuredPort == 8080
+        ? 8085
+        : configuredPort;
+
+    return apiUri
+        .replace(
+          scheme: wsScheme,
+          port: targetPort,
+          path: '/ws',
+          queryParameters: {'userId': userId},
+        )
+        .toString();
+  }
+
+  bool _isPrivateOrLanHost(String host) {
+    final normalizedHost = host.trim().toLowerCase();
+    if (normalizedHost.isEmpty) {
+      return false;
+    }
+
+    if (normalizedHost == 'localhost' ||
+        normalizedHost == '127.0.0.1' ||
+        normalizedHost == '::1') {
+      return true;
+    }
+
+    if (normalizedHost.endsWith('.lan') || normalizedHost.endsWith('.local')) {
+      return true;
+    }
+
+    if (normalizedHost.startsWith('10.') ||
+        normalizedHost.startsWith('192.168.')) {
+      return true;
+    }
+
+    final octets = normalizedHost.split('.');
+    if (octets.length != 4) {
+      return false;
+    }
+
+    final firstOctet = int.tryParse(octets[0]);
+    final secondOctet = int.tryParse(octets[1]);
+    if (firstOctet == null || secondOctet == null) {
+      return false;
+    }
+
+    return firstOctet == 172 && secondOctet >= 16 && secondOctet <= 31;
+  }
+
   void _onConnect(StompFrame frame) {
+    debugPrint(
+      '[RealtimeNotificationService] Connected for user $_connectedUserId',
+    );
     _controller.add(
       RealtimeNotification(
         notificationId: 'system-connected',

@@ -64,6 +64,7 @@
     "clockingInOut": "Pointage",
     "explorer": "explorateur",
     "sondage": "Sondage",
+    "sondageChat": "Sondage/Chat",
     "selectedTeam": "Selection equipe",
     "createTeam": "Cree equipe",
     "teamMember": "effectif del l'equipe",
@@ -209,6 +210,16 @@
     "memberAddedSuccessfully": "Membre ajouté avec succès!",
     "memberErrorPrefix": "Erreur membre:",
     "noTeamsFound": "Aucune équipe trouvée",
+    "deleteTeamTitle": "Supprimer l'équipe",
+    "deleteTeamMessage": "Voulez-vous vraiment supprimer cette équipe ? Cette action est irréversible.",
+    "deleteRoleTitle": "Supprimer le rôle",
+    "deleteRoleMessage": "Voulez-vous vraiment supprimer ce rôle ?",
+    "defaultRole": "Rôle par défaut",
+    "swipeToCreateRole": "Glissez pour créer un nouveau rôle",
+    "searchTeamsByNameOrDescription": "Rechercher des équipes par nom ou description",
+    "noTeamsMatchingSearch": "Aucune équipe trouvée pour cette recherche.",
+    "noArchivedTeams": "Aucune équipe archivée.",
+    "noVisibleTeams": "Aucune équipe visible.",
     "roleCreatedSuccessfully": "Rôle créé avec succès!",
     "noRolesAvailable": "Aucun rôle disponible",
     "userList": "Liste des utilisateurs",
@@ -274,6 +285,7 @@
     "noActiveMembersYet": "Aucun membre actif pour le moment",
     "editRoleTooltip": "Modifier le rôle",
     "removeAction": "Supprimer",
+    "deleteAction": "Supprimer",
     "selectRole": "Sélectionner un rôle",
     "pendingInvitations": "Invitations en attente",
     "cancelInvitation": "Annuler l'invitation",
@@ -286,6 +298,18 @@
     "memberStatusSuspended": "Suspendu",
     "exportPdfError": "Erreur lors de l'exportation du PDF: {error}",
     "surveyNotFound": "Sondage non trouvé",
+    "noPermissionToEditSurvey": "Vous n'avez pas l'autorisation de modifier ce sondage.",
+    "editSurvey": "Modifier le sondage",
+    "deleteSurvey": "Supprimer le sondage",
+    "deleteSurveyTitle": "Supprimer le sondage",
+    "deleteSurveyMessage": "Voulez-vous vraiment supprimer ce sondage ?",
+    "surveyDeleted": "Sondage supprimé.",
+    "archiveSurvey": "Archiver le sondage",
+    "restoreSurvey": "Restaurer le sondage",
+    "noDraftOrActiveSurveysAvailable": "Aucun brouillon ou sondage actif disponible",
+    "noSurveysMatchingSearch": "Aucun sondage trouvé pour cette recherche.",
+    "noArchivedSurveys": "Aucun sondage archivé.",
+    "noVisibleSurveys": "Aucun sondage visible.",
     "focus": "Focus",
     "noOptionsAvailable": "Aucune option disponible",
     "votes": "{count} votes",
@@ -361,6 +385,13 @@
     "shiftProfileName": "Nom du profil",
     "shiftColor": "Couleur",
     "deleteShiftProfileConfirm": "Voulez-vous vraiment supprimer ce profil ?",
+    "deleteShiftTitle": "Supprimer le quart",
+    "deleteShiftMessage": "Voulez-vous vraiment supprimer ce quart ?",
+    "publicProfile": "Public",
+    "privateProfile": "Privé",
+    "visibleToTeamMembers": "Visible par tous les membres de l'équipe",
+    "visibleOnlyToYou": "Visible uniquement par vous",
+    "syncing": "Synchronisation",
     "customProfile": "Profils personnalisés",
     "noShiftsThisMonth": "Aucun quart ce mois-ci",
     "systemProfile": "Profils système",
@@ -376,6 +407,7 @@
     "markVacation": "Marquer des congés",
     "markPermission": "Marquer une permission",
     "requestClocking": "Demander un pointage",
+    "requestDecommit": "Demander un décommit",
     "requestVacation": "Demander des congés",
     "requestPermission": "Demander une permission",
     "vacationStatus": "Congés",
@@ -413,6 +445,15 @@
             }
         }
     },
+    "manualClockingSingleDayDescription": "Complétez le pointage pour {date}.",
+    "@manualClockingSingleDayDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
     "manualClockingResolveOpenRecord": "Vous avez un pointage ouvert sur un autre jour. Fermez-le ou sélectionnez ce jour avant d'enregistrer un pointage manuel.",
     "selectedDays": "Jours sélectionnés",
     "addDay": "Ajouter un jour",
@@ -436,6 +477,29 @@
         }
     },
     "manualClockingSaveError": "Nous n'avons pas pu enregistrer le pointage manuel.",
+    "manualClockingBackToTodayTooltip": "Revenir à aujourd'hui",
+    "manualClockingBackToTodayTitle": "Revenir à aujourd'hui ?",
+    "manualClockingBackToTodayMessage": "Vous êtes sur le point de quitter le mode de pointage manuel.\n\nSi vous souhaitez modifier un pointage d'un jour passé, vous devrez envoyer une nouvelle demande de pointage manuel pour ce jour.",
+    "manualClockingBackToTodayConfirm": "Revenir à aujourd'hui",
+    "manualClockingOverlapTitle": "Chevauchement détecté",
+    "manualClockingOverlapMessage": "Le nouveau pointage ({newRange}) chevauche un pointage existant ({existingRange}).\n\nVoulez-vous raccourcir le pointage existant pour qu'il se termine à {newEndTime} ?",
+    "@manualClockingOverlapMessage": {
+        "placeholders": {
+            "newRange": {
+                "type": "String",
+                "example": "09:00 - 12:00"
+            },
+            "existingRange": {
+                "type": "String",
+                "example": "08:00 - 13:00"
+            },
+            "newEndTime": {
+                "type": "String",
+                "example": "09:00"
+            }
+        }
+    },
+    "manualClockingOverlapConfirmAdjust": "Oui, raccourcir",
     "noTeamSelected": "Aucune équipe sélectionnée",
     "changeOrSearchTeam": "Ouvrez pour changer d'équipe ou en rechercher une",
     "teamAvailableForClocking": "Équipe disponible pour le pointage",
@@ -478,9 +542,18 @@
         }
     },
     "optionalRequestNoteHint": "Note facultative pour la demande",
-    "clockingApprovalRequestHint": "Vous pouvez demander un pointage, des congés ou une permission pour l'équipe et la date sélectionnées.",
+    "clockingApprovalRequestHint": "Vous pouvez demander un pointage, un décommit, des congés ou une permission pour l'équipe et la date sélectionnées.",
     "requestClockingForSelectedDate": "Demander un pointage pour {date}",
     "@requestClockingForSelectedDate": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "requestDecommitForSelectedDate": "Demander un décommit pour {date}",
+    "@requestDecommitForSelectedDate": {
         "placeholders": {
             "date": {
                 "type": "String",
@@ -492,6 +565,8 @@
     "sendRequest": "Envoyer la demande",
     "clockingRequestSentSuccess": "Demande de pointage envoyée avec succès.",
     "clockingRequestSentError": "Nous n'avons pas pu envoyer la demande de pointage au membre de l'équipe.",
+    "decommitRequestSentSuccess": "Demande de décommit envoyée avec succès.",
+    "decommitRequestSentError": "Nous n'avons pas pu envoyer la demande de décommit.",
     "vacationRequestSentSuccess": "Demande de congé envoyée avec succès.",
     "vacationRequestSentError": "Nous n'avons pas pu envoyer la demande de congé.",
     "permissionRequestSentSuccess": "Demande de permission envoyée avec succès.",
@@ -499,5 +574,161 @@
     "approveRequest": "Approuver",
     "rejectRequest": "Refuser",
     "clockInDateTimeLabel": "Pointage d'entrée (AAAA-MM-JJ HH:MM)",
-    "clockOutDateTimeLabel": "Pointage de sortie (AAAA-MM-JJ HH:MM)"
+    "clockOutDateTimeLabel": "Pointage de sortie (AAAA-MM-JJ HH:MM)",
+    "chatTitle": "Chat",
+    "chatLive": "En direct",
+    "chatTeamTitle": "Chat d'équipe",
+    "chatRefresh": "Actualiser",
+    "chatChooseConversation": "Choisissez une conversation",
+    "chatListDescriptionWeb": "Sélectionnez un canal d'équipe ou rouvrez l'une de vos conversations directes.",
+    "chatListDescriptionMobile": "Ouvrez un canal d'équipe ou revenez dans l'une de vos conversations directes.",
+    "chatTeamChannels": "Canaux d'équipe",
+    "chatDirectChats": "Chats directs",
+    "chatNoDirectContacts": "L'historique de vos conversations directes apparaîtra ici.",
+    "chatNoTeamsAvailable": "Aucune équipe disponible pour le chat pour le moment.",
+    "chatChooseTeamHeader": "Choisissez une équipe pour commencer à discuter.",
+    "chatHeaderDirectDescription": "Conversation directe avec {name}",
+    "@chatHeaderDirectDescription": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Jean"
+            }
+        }
+    },
+    "chatHeaderTeamDescription": "Chat de l'équipe {name}",
+    "@chatHeaderTeamDescription": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Opérations"
+            }
+        }
+    },
+    "chatRefreshed": "Chat actualisé.",
+    "chatLoadTeamsError": "Nous n'avons pas pu charger vos équipes de chat.",
+    "chatLoadConversationError": "Nous n'avons pas pu charger cette conversation.",
+    "chatSendMessageError": "Nous n'avons pas pu envoyer le message.",
+    "chatReactionUpdateError": "Nous n'avons pas pu mettre à jour la réaction.",
+    "chatDeleteError": "Nous n'avons pas pu supprimer le message.",
+    "chatReactTitle": "Réagir au message",
+    "chatReactHint": "Choisissez une réaction emoji.",
+    "chatDeleteTitle": "Supprimer le message",
+    "chatDeleteMessage": "Voulez-vous supprimer ce message ?",
+    "chatYouLabel": "Vous",
+    "chatTimelineBeginning": "La conversation commence ici",
+    "chatTimelineActive": "{name} est actif",
+    "@chatTimelineActive": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Équipe"
+            }
+        }
+    },
+    "chatTimelineResumed": "Conversation reprise après {duration}",
+    "@chatTimelineResumed": {
+        "placeholders": {
+            "duration": {
+                "type": "String",
+                "example": "15 min"
+            }
+        }
+    },
+    "chatDurationMinutesShort": "{minutes, plural, =1{1 min} other{{minutes} min}}",
+    "@chatDurationMinutesShort": {
+        "placeholders": {
+            "minutes": {
+                "type": "int",
+                "example": "15"
+            }
+        }
+    },
+    "chatDurationHoursShort": "{hours, plural, =1{1 h} other{{hours} h}}",
+    "@chatDurationHoursShort": {
+        "placeholders": {
+            "hours": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "chatDurationDaysShort": "{days, plural, =1{1 jour} other{{days} jours}}",
+    "@chatDurationDaysShort": {
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "chatReplyAction": "Répondre",
+    "chatLoadingOlderMessages": "Chargement des anciens messages...",
+    "chatNoMessagesYet": "Aucun message pour le moment",
+    "chatEmptyDescription": "Écrivez le premier message pour démarrer cette conversation.",
+    "chatSeen": "Vu",
+    "chatDeletedMessage": "Message supprimé",
+    "chatAttachmentFallback": "Pièce jointe",
+    "chatOpenDocument": "Ouvrir le document",
+    "chatOpenSharedConversation": "Ouvrir la conversation partagée de l'équipe.",
+    "chatOpenConversation": "Ouvrir la conversation",
+    "chatDirectConversationInTeam": "Conversation directe dans {teamName}",
+    "@chatDirectConversationInTeam": {
+        "placeholders": {
+            "teamName": {
+                "type": "String",
+                "example": "Opérations"
+            }
+        }
+    },
+    "chatDirectActionDescription": "Ouvrez un chat privé avec ce membre de l'équipe.",
+    "chatOpenDirectAction": "Ouvrir le chat direct",
+    "chatReturnToChatList": "Retour à la liste des chats",
+    "chatReturnToTeamList": "Retour à la liste des équipes",
+    "chatComposerHint": "Écris un message",
+    "chatPickImage": "Ajouter une image",
+    "chatPickDocument": "Ajouter un document",
+    "chatAddEmoji": "Ajouter un emoji",
+    "chatReplyingTo": "Réponse à {name}",
+    "@chatReplyingTo": {
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Jean"
+            }
+        }
+    },
+    "chatCancelReply": "Annuler la réponse",
+    "chatImageReadyToSend": "Image prête à être envoyée",
+    "chatDocumentReadyToSend": "Document prêt à être envoyé",
+    "chatRemoveAttachment": "Retirer la pièce jointe",
+    "chatJustNow": "à l'instant",
+    "chatMinutesAgo": "{minutes, plural, =1{il y a 1 min} other{il y a {minutes} min}}",
+    "@chatMinutesAgo": {
+        "placeholders": {
+            "minutes": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "chatHoursAgo": "{hours, plural, =1{il y a 1 h} other{il y a {hours} h}}",
+    "@chatHoursAgo": {
+        "placeholders": {
+            "hours": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "chatYesterday": "hier",
+    "chatDaysAgo": "{days, plural, =1{il y a 1 jour} other{il y a {days} jours}}",
+    "@chatDaysAgo": {
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "4"
+            }
+        }
+    }
 }

@@ -6,6 +6,7 @@ import 'package:note_sondage/feature/team/ui/mobile/widgets/action_on_user.dart'
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/avatar_app.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 
 class TeamComponentRow extends StatefulWidget {
   const TeamComponentRow({
@@ -51,30 +52,18 @@ class TeamComponentRow extends StatefulWidget {
 class _TeamComponentRowState extends State<TeamComponentRow> {
   bool _isHovered = false;
 
-  void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Elimina team'),
-        content: const Text(
-          'Sei sicuro di voler eliminare questo team? L\'azione è irreversibile.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annulla'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              Navigator.pop(context);
-              widget.onDeleteTap?.call(widget.teamId);
-            },
-            child: const Text('Elimina'),
-          ),
-        ],
-      ),
+  Future<void> _confirmDelete(BuildContext context) async {
+    final localization = AppLocalizations.of(context)!;
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: localization.deleteTeamTitle,
+      message: localization.deleteTeamMessage,
+      confirmLabel: localization.deleteAction,
+      destructive: true,
     );
+    if (confirmed) {
+      widget.onDeleteTap?.call(widget.teamId);
+    }
   }
 
   @override

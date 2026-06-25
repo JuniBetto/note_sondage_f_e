@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/action_on_user.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/edit_role.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 
@@ -44,6 +45,7 @@ class RolePermissionComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
@@ -72,7 +74,7 @@ class RolePermissionComponent extends StatelessWidget {
                           SizedBox(
                             width: constraints.maxWidth * 0.6,
                             child: Text(
-                              "Code: $code",
+                              code,
                               style: textTheme.bodyMedium!.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -85,7 +87,7 @@ class RolePermissionComponent extends StatelessWidget {
                           SizedBox(
                             width: constraints.maxWidth * 0.9,
                             child: Text(
-                              "Description: $description",
+                              description,
                               style: textTheme.bodySmall,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 2,
@@ -104,7 +106,7 @@ class RolePermissionComponent extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
-                                'Ruolo predefinito',
+                                localization.defaultRole,
                                 style: textTheme.labelSmall?.copyWith(
                                   fontWeight: FontWeight.w700,
                                 ),

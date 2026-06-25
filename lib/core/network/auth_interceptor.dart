@@ -157,11 +157,8 @@ class AuthInterceptor extends Interceptor {
           baseUrl: baseUrl,
           connectTimeout: _exchangeConnectTimeout,
           receiveTimeout: _exchangeReceiveTimeout,
-          sendTimeout: _exchangeSendTimeout,
-          headers: const {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
+          sendTimeout: kIsWeb ? null : _exchangeSendTimeout,
+          headers: const {'Accept': 'application/json'},
         ),
       );
 
@@ -220,6 +217,13 @@ class AuthInterceptor extends Interceptor {
         'type=${error.type} '
         'response=${response?.data}',
       );
+      if (kIsWeb && error.type == DioExceptionType.connectionError) {
+        debugPrint(
+          '[AuthInterceptor][$phase] Web could not reach '
+          '${requestOptions.baseUrl}. Verify that the backend is running, '
+          'the browser can reach that host, and API_BASE_URL is correct.',
+        );
+      }
       return;
     }
 

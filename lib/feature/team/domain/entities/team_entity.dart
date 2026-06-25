@@ -9,6 +9,10 @@ class TeamEntity {
   final String createdByUserId;
   final DateTime createdAt;
   final String? color; // New field for team color
+  final bool clockingRequired;
+  final String? clockingReminderTime;
+  final String? clockingMissingAlertTime;
+  final String? clockingOpenAlertTime;
   final int memberCount;
   final List<InviteTeamMemberRequestEntity>?
   pendingInvitations; // New field for pending invitations
@@ -20,6 +24,10 @@ class TeamEntity {
     required this.name,
     required this.description,
     required this.createdByUserId,
+    this.clockingRequired = false,
+    this.clockingReminderTime,
+    this.clockingMissingAlertTime,
+    this.clockingOpenAlertTime,
     this.memberCount = 0,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
@@ -72,6 +80,10 @@ class TeamUpdate extends TeamEntity {
     required String description,
     required String? createdByUserId,
     String? color,
+    bool clockingRequired = false,
+    String? clockingReminderTime,
+    String? clockingMissingAlertTime,
+    String? clockingOpenAlertTime,
     DateTime? createdAt,
     required this.listMember,
   }) : super(
@@ -81,6 +93,10 @@ class TeamUpdate extends TeamEntity {
          name: name,
          description: description,
          createdByUserId: createdByUserId ?? '',
+         clockingRequired: clockingRequired,
+         clockingReminderTime: clockingReminderTime,
+         clockingMissingAlertTime: clockingMissingAlertTime,
+         clockingOpenAlertTime: clockingOpenAlertTime,
          memberCount: 0,
          createdAt: createdAt ?? DateTime.now(),
        );
@@ -93,6 +109,10 @@ class TeamUpdate extends TeamEntity {
     bool? isDeleted,
     String? createdAt,
     String? createdByUserId,
+    bool? clockingRequired,
+    String? clockingReminderTime,
+    String? clockingMissingAlertTime,
+    String? clockingOpenAlertTime,
     List<TeamMemberUpdateTeam>? listMember,
   }) {
     return TeamUpdate(
@@ -101,6 +121,12 @@ class TeamUpdate extends TeamEntity {
       name: name ?? this.name,
       description: description ?? this.description,
       color: color ?? this.color,
+      clockingRequired: clockingRequired ?? this.clockingRequired,
+      clockingReminderTime: clockingReminderTime ?? this.clockingReminderTime,
+      clockingMissingAlertTime:
+          clockingMissingAlertTime ?? this.clockingMissingAlertTime,
+      clockingOpenAlertTime:
+          clockingOpenAlertTime ?? this.clockingOpenAlertTime,
       createdAt: createdAt != null ? DateTime.parse(createdAt) : this.createdAt,
       createdByUserId: createdByUserId ?? this.createdByUserId,
       listMember: listMember ?? this.listMember,

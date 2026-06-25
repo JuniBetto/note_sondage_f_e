@@ -26,6 +26,11 @@ class RuntimeConfig {
     defaultValue: '',
   );
 
+  static const String notificationWsUrl = String.fromEnvironment(
+    'NOTIFICATION_WS_URL',
+    defaultValue: '',
+  );
+
   static const String googleServerClientId = String.fromEnvironment(
     'GOOGLE_SIGN_IN_SERVER_CLIENT_ID',
     defaultValue: defaultGoogleServerClientId,
@@ -102,6 +107,8 @@ class RuntimeConfig {
   }
 
   static String get resolvedApiBaseUrl => normalizeBaseUrl(apiBaseUrl.trim());
+  static String get resolvedNotificationWsUrl =>
+      normalizeBaseUrl(notificationWsUrl.trim());
   static String get resolvedEmailConfirmationUrl => emailConfirmationUrl.trim();
   static String get resolvedPasswordResetUrl => passwordResetUrl.trim();
   static String get resolvedAppleStoreUrl => appleStoreUrl.trim();
@@ -109,6 +116,8 @@ class RuntimeConfig {
   static String get sentryEnvironment => currentEnvironment.sentryName;
 
   static bool get hasCustomApiBaseUrl => resolvedApiBaseUrl.isNotEmpty;
+  static bool get hasCustomNotificationWsUrl =>
+      resolvedNotificationWsUrl.isNotEmpty;
   static bool get hasCustomEmailConfirmationUrl =>
       resolvedEmailConfirmationUrl.isNotEmpty;
   static bool get hasCustomPasswordResetUrl =>

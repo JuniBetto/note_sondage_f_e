@@ -869,55 +869,58 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                   context: context,
                   title: strings.settingsSectionTitle,
                   icon: Icons.tune_rounded,
-                  child: Column(
-                    children: [
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(localization.allowMultipleResponses),
-                        value: _allowMultipleResponses,
-                        activeThumbColor: colorScheme.selectionColor,
-                        onChanged: (value) {
-                          setState(() => _allowMultipleResponses = value);
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CheckboxListTile(
-                        value: _hasExpiry,
-                        onChanged: (value) {
-                          setState(() {
-                            _hasExpiry = value ?? false;
-                            if (_hasExpiry && _expiryAnchorDate == null) {
-                              final now = DateTime.now();
-                              _expiryAnchorDate = DateTime(
-                                now.year,
-                                now.month,
-                                now.day,
-                              );
-                            }
-                          });
-                        },
-                        activeColor: colorScheme.selectionColor,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(localization.setExpiry),
-                      ),
-                      IgnorePointer(
-                        ignoring: !_hasExpiry,
-                        child: Opacity(
-                          opacity: _hasExpiry ? 1 : 0.4,
-                          child: TimeRangePicker(
-                            start: _start,
-                            end: _end,
-                            onStartChanged: (value) {
-                              setState(() => _start = value);
-                            },
-                            onEndChanged: (value) {
-                              setState(() => _end = value);
-                            },
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Column(
+                      children: [
+                        SwitchListTile.adaptive(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(localization.allowMultipleResponses),
+                          value: _allowMultipleResponses,
+                          activeThumbColor: colorScheme.selectionColor,
+                          onChanged: (value) {
+                            setState(() => _allowMultipleResponses = value);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CheckboxListTile(
+                          value: _hasExpiry,
+                          onChanged: (value) {
+                            setState(() {
+                              _hasExpiry = value ?? false;
+                              if (_hasExpiry && _expiryAnchorDate == null) {
+                                final now = DateTime.now();
+                                _expiryAnchorDate = DateTime(
+                                  now.year,
+                                  now.month,
+                                  now.day,
+                                );
+                              }
+                            });
+                          },
+                          activeColor: colorScheme.selectionColor,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(localization.setExpiry),
+                        ),
+                        IgnorePointer(
+                          ignoring: !_hasExpiry,
+                          child: Opacity(
+                            opacity: _hasExpiry ? 1 : 0.4,
+                            child: TimeRangePicker(
+                              start: _start,
+                              end: _end,
+                              onStartChanged: (value) {
+                                setState(() => _start = value);
+                              },
+                              onEndChanged: (value) {
+                                setState(() => _end = value);
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

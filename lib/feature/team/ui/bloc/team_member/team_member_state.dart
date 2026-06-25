@@ -13,12 +13,13 @@ class TeamMemberLoading extends TeamMemberState {}
 
 class TeamMembersLoaded extends TeamMemberState {
   final List<TeamMemberEntity> members;
+  final String? teamId;
   final DateTime _timestamp;
 
-  TeamMembersLoaded(this.members) : _timestamp = DateTime.now();
+  TeamMembersLoaded(this.members, {this.teamId}) : _timestamp = DateTime.now();
 
   @override
-  List<Object?> get props => [members, _timestamp];
+  List<Object?> get props => [members, teamId, _timestamp];
 }
 
 class TeamMemberLoaded extends TeamMemberState {
@@ -64,9 +65,10 @@ class TeamInvitationsLoaded extends TeamMemberState {
 
 class TeamMemberError extends TeamMemberState {
   final String message;
+  final String? teamId;
 
-  const TeamMemberError(this.message);
+  const TeamMemberError(this.message, {this.teamId});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, teamId];
 }

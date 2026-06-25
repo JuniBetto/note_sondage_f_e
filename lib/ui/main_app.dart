@@ -44,6 +44,7 @@ import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 import '../feature/auth/domain/entities/auth_user_entity.dart';
+import '../feature/notification/inbox/notification_center_item.dart';
 
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
@@ -101,11 +102,22 @@ class _MainAppState extends State<MainApp> {
       return;
     }
 
+    final suppressChatNotification =
+        _isChatNotification(notification) && _isChatRouteOpen();
+    final chatNotificationsEnabled = getIt<NotificationPreferencesCubit>()
+        .state
+        .effectivePreferences
+        .chatMessagesEnabled;
+
     final currentUserId = getIt<AuthBloc>().state.user.uid;
     final teamDecision = getIt<TeamRealtimeCoordinator>().resolveGlobalDecision(
       notification,
       currentUserId: currentUserId,
     );
+    final removedTeamId = teamDecision.teamIdToRemoveFromCache?.trim();
+    if (removedTeamId != null && removedTeamId.isNotEmpty) {
+      getIt<TeamBloc>().add(RemoveTeamFromCacheEvent(removedTeamId));
+    }
     final selectedClockingTeamId = _selectedClockingTeamId(
       getIt<ClockingBloc>().state,
     );
@@ -122,7 +134,10 @@ class _MainAppState extends State<MainApp> {
       notification,
       currentUserId: currentUserId,
     );
-    getIt<NotificationCenterCubit>().ingestRealtimeNotification(notification);
+    if (!suppressChatNotification &&
+        (!_isChatNotification(notification) || chatNotificationsEnabled)) {
+      getIt<NotificationCenterCubit>().ingestRealtimeNotification(notification);
+    }
 
     if (!teamDecision.hasWork &&
         !clockingDecision.refreshClocking &&
@@ -323,10 +338,37 @@ class _MainAppState extends State<MainApp> {
       return;
     }
 
+    final item = NotificationCenterItem(
+      notificationId: action.notificationId,
+      eventType: action.metadata['eventType'] ?? '',
+      sourceService: action.metadata['sourceService'] ?? 'push',
+      title: action.metadata['title'] ?? '',
+      body: action.metadata['body'] ?? '',
+      occurredAt:
+          DateTime.tryParse(action.metadata['occurredAt'] ?? '') ??
+          DateTime.now(),
+      metadata: action.metadata,
+    );
+
+    final actionId = action.actionId.trim();
+    final isDecisionAction =
+        actionId == 'accept_team_invite' ||
+        actionId == 'reject_team_invite' ||
+        actionId == 'approve_clocking_request' ||
+        actionId == 'reject_clocking_request';
+
+    if (!isDecisionAction) {
+      getIt<NotificationCenterCubit>().consumeNotification(
+        action.notificationId,
+      );
+      await NotificationNavigation.open(item, context: context);
+      return;
+    }
+
     // ── Team invite / altri ───────────────────────────────────────────────────
     await getIt<NotificationCenterCubit>().handleActionIntent(
       notificationId: action.notificationId,
-      actionId: action.actionId,
+      actionId: actionId,
       metadata: action.metadata,
     );
     if (!mounted) return;
@@ -380,6 +422,21 @@ class _MainAppState extends State<MainApp> {
     }
   }
 
+  void _handleLifecycleState(AppLifecycleBlocState state) {
+    if (state.status != AppLifecycleStatusEnum.active) {
+      return;
+    }
+
+    final authState = getIt<AuthBloc>().state;
+    if (authState.status != AuthStatus.authenticated ||
+        authState.user.uid.isEmpty) {
+      return;
+    }
+
+    getIt<RealtimeNotificationService>().connect(authState.user.uid);
+    unawaited(getIt<PushNotificationService>().syncDeviceRegistration());
+  }
+
   String? _selectedClockingTeamId(ClockingState state) {
     final blocSelectedTeamId = getIt<ClockingBloc>().selectedTeamId;
     if (state is ClockingRecordsLoaded) return state.selectedTeamId;
@@ -400,6 +457,23 @@ class _MainAppState extends State<MainApp> {
       _processedNotificationIds.removeAt(0);
     }
     return false;
+  }
+
+  bool _isChatNotification(RealtimeNotification notification) {
+    final eventType = notification.eventType.trim().toUpperCase();
+    if (eventType.contains('CHAT')) {
+      return true;
+    }
+    return notification.metadata['conversationId']?.trim().isNotEmpty == true;
+  }
+
+  bool _isChatRouteOpen() {
+    final routeInformation = _router?.routeInformationProvider.value;
+    final uri = routeInformation?.uri;
+    final path = uri?.path.trim();
+    return path == RouterPaths.chat ||
+        path == RouterPaths.sondageChat ||
+        path == RouterPaths.sondageChatConversation;
   }
 
   @override
@@ -434,13 +508,24 @@ class _MainAppState extends State<MainApp> {
             builder: (context, languageState) {
               _router ??= createRouter(context);
 
-              return BlocListener<AuthBloc, AuthState>(
-                listenWhen: (previous, current) =>
-                    previous.status != current.status ||
-                    previous.user.uid != current.user.uid,
-                listener: (context, state) {
-                  _syncServicesForAuthState(state, resetCaches: true);
-                },
+              return MultiBlocListener(
+                listeners: [
+                  BlocListener<AuthBloc, AuthState>(
+                    listenWhen: (previous, current) =>
+                        previous.status != current.status ||
+                        previous.user.uid != current.user.uid,
+                    listener: (context, state) {
+                      _syncServicesForAuthState(state, resetCaches: true);
+                    },
+                  ),
+                  BlocListener<AppLifecycleBloc, AppLifecycleBlocState>(
+                    listenWhen: (previous, current) =>
+                        previous.status != current.status,
+                    listener: (context, state) {
+                      _handleLifecycleState(state);
+                    },
+                  ),
+                ],
                 child: MaterialApp.router(
                   title: 'TeamManagement',
                   debugShowCheckedModeBanner: false,

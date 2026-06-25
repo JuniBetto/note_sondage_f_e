@@ -69,7 +69,7 @@ class _MainMobileState extends State<MainMobile> {
             1 => loc.team,
             2 => loc.settings,
             3 => loc.clockingInOut,
-            4 => loc.sondage,
+            4 => loc.sondageChat,
             int() => loc.home,
           },
           closeAction: _supportsTutorial(navBarItem)
@@ -170,7 +170,7 @@ class _MainMobileState extends State<MainMobile> {
     return switch (navIndex) {
       1 => localizations.team,
       3 => localizations.clockingInOut,
-      4 => localizations.sondage,
+      4 => localizations.sondageChat,
       _ => localizations.home,
     };
   }

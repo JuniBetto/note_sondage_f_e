@@ -115,7 +115,7 @@ class _TeamsWebState extends State<TeamsWeb> {
                             child: FilledButton.icon(
                               onPressed: () {
                                 CustomDialog(
-                                  title: widget.title,
+                                  title: localization.createTeam,
                                   width: 700,
                                   child: CreateTeamWeb(
                                     onTeamCreated: _handleTeamCreated,
@@ -153,9 +153,7 @@ class _TeamsWebState extends State<TeamsWeb> {
                         constraints: const BoxConstraints(maxWidth: 420),
                         child: AppSearchField(
                           controller: _searchController,
-                          hintText: _isItalian(context)
-                              ? 'Cerca team per nome o descrizione'
-                              : 'Search teams by name or description',
+                          hintText: localization.searchTeamsByNameOrDescription,
                           onChanged: (value) {
                             setState(() {
                               _searchQuery = value;

@@ -36,9 +36,8 @@ class _AddUserWebState extends State<AddUserWeb> {
 
   @override
   void dispose() {
-    for (final data in widget.listInviteFormData) {
-      data.dispose();
-    }
+    // I controller sono posseduti dal widget padre e possono essere riusati
+    // durante il teardown della pagina; non vanno disposti qui.
     super.dispose();
   }
 
@@ -153,22 +152,38 @@ Widget _buildNewInviteFormWeb(
           controller: formData.emailController,
           validator: emailValidator,
         ),
-        GenericDropdownFormField<RoleEntity>(
-          label: '',
-          style: theme.textTheme.bodyMedium,
-          items: roles,
-          value: formData.roleController.text.isEmpty
-              ? null
-              : roles
-                    .where((r) => r.id == formData.roleController.text)
-                    .firstOrNull,
-          displayText: (role) => role.name,
-          valueGetter: (role) => role,
-          onChanged: (role) => formData.roleController.text = role?.id ?? '',
-          hintText: localization.role,
-          validator: (value) {
-            if (value == null) return 'Please select role';
-            return null;
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final roleFieldWidth = constraints.maxWidth < 420
+                ? constraints.maxWidth
+                : 320.0;
+            return SizedBox(
+              width: roleFieldWidth,
+              child: GenericDropdownFormField<RoleEntity>(
+                label: '',
+                style: theme.textTheme.bodyMedium,
+                prefixIcon: Icon(
+                  Icons.admin_panel_settings_outlined,
+                  size: 18,
+                  color: theme.colorScheme.cursorColor,
+                ),
+                items: roles,
+                value: formData.roleController.text.isEmpty
+                    ? null
+                    : roles
+                          .where((r) => r.id == formData.roleController.text)
+                          .firstOrNull,
+                displayText: (role) => role.name,
+                valueGetter: (role) => role,
+                onChanged: (role) =>
+                    formData.roleController.text = role?.id ?? '',
+                hintText: localization.role,
+                validator: (value) {
+                  if (value == null) return localization.selectRole;
+                  return null;
+                },
+              ),
+            );
           },
         ),
         CustomAppButton(

@@ -53,7 +53,7 @@ class VisualType extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isActive1 == true
-                        ? color?.withValues(alpha: 0.3) ?? Colors.transparent
+                        ? color?.withValues(alpha: 0.8) ?? Colors.transparent
                         : Colors.grey[600]!,
                     width: 2,
                   ),
@@ -78,7 +78,7 @@ class VisualType extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isActive2 == true
-                        ? color?.withValues(alpha: 0.3) ?? Colors.transparent
+                        ? color?.withValues(alpha: 0.8) ?? Colors.transparent
                         : Colors.grey[600]!,
                     width: 2,
                   ),

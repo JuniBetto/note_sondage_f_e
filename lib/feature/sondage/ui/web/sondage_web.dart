@@ -9,7 +9,9 @@ import 'package:note_sondage/feature/sondage/ui/widgets/responsive_grid_sondages
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/app_search_field.dart';
 import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
@@ -54,22 +56,13 @@ class _SondageWebState extends State<SondageWeb> {
   }
 
   Future<void> _confirmDelete(String sondageId) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Elimina sondaggio'),
-        content: const Text('Vuoi davvero eliminare questo sondaggio?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annulla'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Elimina'),
-          ),
-        ],
-      ),
+    final localization = AppLocalizations.of(context)!;
+    final shouldDelete = await showAppConfirmationDialog(
+      context,
+      title: localization.deleteSurveyTitle,
+      message: localization.deleteSurveyMessage,
+      confirmLabel: localization.deleteAction,
+      destructive: true,
     );
     if (shouldDelete == true && mounted) {
       context.read<SondageBloc>().add(DeleteSondageEvent(sondageId));
@@ -85,17 +78,13 @@ class _SondageWebState extends State<SondageWeb> {
   }
 
   void _openEditDialog(SondageEntity sondage) {
+    final localization = AppLocalizations.of(context)!;
     if (!sondage.canEdit) {
-      AppSnackBar.showWarning(
-        context,
-        Localizations.localeOf(context).languageCode == 'it'
-            ? 'Non hai i permessi per modificare questo sondaggio.'
-            : 'You do not have permission to edit this survey.',
-      );
+      AppSnackBar.showWarning(context, localization.noPermissionToEditSurvey);
       return;
     }
     CustomDialog(
-      title: 'Modifica sondaggio',
+      title: localization.editSurvey,
       width: 760,
       child: CreateSondageWeb(initialSondage: sondage),
     ).show(context);

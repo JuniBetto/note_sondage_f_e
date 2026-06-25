@@ -8,6 +8,7 @@ import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_component_card.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_component_row.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 
 class ResponsiveGridSondages extends StatefulWidget {
@@ -71,10 +72,9 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
 
   @override
   Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
     if (widget.items.isEmpty) {
-      return const Center(
-        child: Text('Nessun draft o sondaggio attivo disponibile'),
-      );
+      return Center(child: Text(localization.noDraftOrActiveSurveysAvailable));
     }
 
     final normalizedSearch = widget.searchQuery.trim().toLowerCase();
@@ -103,10 +103,10 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
         ? Center(
             child: Text(
               normalizedSearch.isNotEmpty
-                  ? 'Nessun sondaggio trovato per la ricerca.'
+                  ? localization.noSurveysMatchingSearch
                   : _showArchivedOnly
-                  ? 'Nessun sondaggio archiviato.'
-                  : 'Nessun sondaggio in primo piano.',
+                  ? localization.noArchivedSurveys
+                  : localization.noVisibleSurveys,
             ),
           )
         : (widget.isRow
@@ -163,7 +163,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final mainAxisExtent = width < 430 ? 230.0 : 210.0;
+        final mainAxisExtent = width < 430 ? 180.0 : 160.0;
         final SliverGridDelegate gridDelegate = width < 520
             ? SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -172,10 +172,10 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
                 mainAxisExtent: mainAxisExtent,
               )
             : SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 320,
+                maxCrossAxisExtent: 220,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
-                mainAxisExtent: 210,
+                mainAxisExtent: 160,
               );
 
         return GridView.builder(

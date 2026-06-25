@@ -61,6 +61,86 @@ class GenericDropdownFormField<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final selectedValue = value != null ? valueGetter(value as T) : null;
+    final borderRadius = BorderRadius.circular(18);
+    final effectiveFillColor =
+        fillColor ?? colorScheme.textfieldFillColor ?? theme.cardColor;
+    final effectiveStyle =
+        style ??
+        theme.textTheme.bodyLarge?.copyWith(
+          color: colorScheme.textColor,
+          fontWeight: FontWeight.w600,
+        ) ??
+        const TextStyle(fontSize: 16);
+    final effectiveHintStyle =
+        hintStyle ??
+        theme.textTheme.bodyMedium?.copyWith(
+          color: colorScheme.descriptionColor,
+          fontWeight: FontWeight.w500,
+        ) ??
+        TextStyle(color: Colors.grey[600]);
+    final compact = isDense;
+    final menuItems = items.map((T item) {
+      final itemValue = valueGetter(item);
+      final isSelected = selectedValue != null && itemValue == selectedValue;
+      return DropdownMenuItem<dynamic>(
+        alignment: Alignment.centerLeft,
+        value: itemValue,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 10 : 12,
+            vertical: compact ? 8 : 10,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colorScheme.selectionColor?.withValues(alpha: 0.14)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: isSelected
+                ? Border.all(
+                    color: colorScheme.selectionColor!.withValues(alpha: 0.32),
+                  )
+                : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: compact ? 28 : 32,
+                height: compact ? 28 : 32,
+                decoration: BoxDecoration(
+                  color: colorScheme.selectionColor?.withValues(
+                    alpha: isSelected ? 0.18 : 0.1,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.verified_user_rounded,
+                  size: compact ? 15 : 16,
+                  color: colorScheme.cursorColor,
+                ),
+              ),
+              SizedBox(width: compact ? 10 : 12),
+              Expanded(
+                child: Text(
+                  displayText(item),
+                  style: effectiveStyle.copyWith(
+                    fontSize: compact ? 13.5 : effectiveStyle.fontSize,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: compact ? 18 : 20,
+                  color: colorScheme.cursorColor,
+                ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -77,73 +157,158 @@ class GenericDropdownFormField<T> extends StatelessWidget {
             ),
           ),
         DropdownButtonFormField<dynamic>(
-          initialValue: value != null ? valueGetter(value as T) : null,
-          items: items.map((T item) {
-            return DropdownMenuItem<dynamic>(
-              alignment: AlignmentGeometry.centerLeft,
-              value: valueGetter(item),
-              child: Text(
-                displayText(item),
-                style: style ?? TextStyle(fontSize: 16),
-                overflow: TextOverflow.ellipsis,
+          initialValue: selectedValue,
+          items: menuItems,
+          selectedItemBuilder: (context) => items.map((T item) {
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  Container(
+                    width: compact ? 28 : 32,
+                    height: compact ? 28 : 32,
+                    decoration: BoxDecoration(
+                      color: colorScheme.selectionColor?.withValues(
+                        alpha: 0.12,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.verified_user_rounded,
+                      size: compact ? 15 : 16,
+                      color: colorScheme.cursorColor,
+                    ),
+                  ),
+                  SizedBox(width: compact ? 10 : 12),
+                  Expanded(
+                    child: Text(
+                      displayText(item),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: effectiveStyle.copyWith(
+                        fontSize: compact ? 13.5 : effectiveStyle.fontSize,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }).toList(),
           onChanged: onChanged,
           validator: validator,
           isExpanded: isExpanded,
+          menuMaxHeight: 320,
+          borderRadius: BorderRadius.circular(22),
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: hintStyle ?? TextStyle(color: Colors.grey[600]),
-            prefixIcon: prefixIcon,
+            hintStyle: effectiveHintStyle,
+            prefixIcon: prefixIcon == null
+                ? null
+                : Padding(
+                    padding: EdgeInsets.only(
+                      left: compact ? 10 : 12,
+                      right: compact ? 8 : 10,
+                    ),
+                    child: _DropdownAffixShell(
+                      compact: compact,
+                      child: prefixIcon!,
+                    ),
+                  ),
+            prefixIconConstraints: BoxConstraints(
+              minWidth: compact ? 40 : 52,
+              minHeight: compact ? 40 : 52,
+            ),
             suffixIcon: suffixIcon,
             contentPadding:
                 contentPadding ??
-                EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                EdgeInsets.symmetric(
+                  horizontal: compact ? 12 : 16,
+                  vertical: compact ? 12 : 16,
+                ),
             border:
                 border ??
                 OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
+                  borderRadius: borderRadius,
                   borderSide: BorderSide(color: colorScheme.bottomOutline!),
                 ),
             enabledBorder:
                 border ??
                 OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
-                  borderSide: BorderSide(color: colorScheme.bottomOutline!),
+                  borderRadius: borderRadius,
+                  borderSide: BorderSide(
+                    color: colorScheme.bottomOutline!,
+                    width: 1.2,
+                  ),
                 ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
+              borderRadius: borderRadius,
               borderSide: BorderSide(
                 color: colorScheme.selectionColor!,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.red),
+              borderRadius: borderRadius,
+              borderSide: BorderSide(color: colorScheme.error, width: 1.4),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.red, width: 2),
+              borderRadius: borderRadius,
+              borderSide: BorderSide(color: colorScheme.error, width: 2),
             ),
-            filled: filled,
-            fillColor: fillColor ?? Theme.of(context).cardColor,
+            filled: true,
+            fillColor: effectiveFillColor,
             isDense: isDense,
           ),
-          dropdownColor: dropdownColor,
-          elevation: elevation ?? 8,
-          iconSize: iconSize ?? 24,
-          icon: Icon(
-            Icons.arrow_drop_down_rounded,
-            color: iconColor ?? Colors.grey[600],
+          dropdownColor:
+              dropdownColor ?? colorScheme.bgNavbarSurface ?? theme.cardColor,
+          elevation: elevation ?? 12,
+          iconSize: iconSize ?? (compact ? 20 : 24),
+          icon: Container(
+            margin: const EdgeInsets.only(right: 10),
+            padding: EdgeInsets.all(compact ? 4 : 6),
+            decoration: BoxDecoration(
+              color: colorScheme.selectionColor?.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: colorScheme.selectionColor!.withValues(alpha: 0.18),
+              ),
+            ),
+            child: Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: compact ? 16 : 18,
+              color: iconColor ?? colorScheme.cursorColor ?? Colors.grey[600],
+            ),
           ),
-          iconEnabledColor: iconColor ?? Colors.grey[600],
+          iconEnabledColor: Colors.transparent,
           iconDisabledColor: Colors.grey[400],
-          style: style ?? TextStyle(fontSize: 16, color: Colors.black87),
+          style: effectiveStyle,
           enableFeedback: enableFeedback,
         ),
       ],
+    );
+  }
+}
+
+class _DropdownAffixShell extends StatelessWidget {
+  const _DropdownAffixShell({required this.child, required this.compact});
+
+  final Widget child;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: compact ? 30 : 36,
+      height: compact ? 30 : 36,
+      decoration: BoxDecoration(
+        color: colorScheme.selectionColor?.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(compact ? 10 : 12),
+        border: Border.all(
+          color: colorScheme.selectionColor!.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Center(child: child),
     );
   }
 }

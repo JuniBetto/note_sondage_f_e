@@ -88,20 +88,8 @@ class _TeamsMobileState extends State<TeamsMobile>
           child: Column(
             children: [
               TabBarComponent(
-                childTab1: Text(
-                  localization.selectedTeam,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                childTab2: Text(
-                  localization.createTeam,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                childTab1: Text(localization.selectedTeam),
+                childTab2: Text(localization.createTeam),
                 tabController: tabController,
                 setToUpdate: setState,
               ),

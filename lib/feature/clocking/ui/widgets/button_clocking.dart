@@ -13,6 +13,7 @@ import 'package:note_sondage/feature/team/domain/use_case/team_member/team_membe
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/theme/theme.dart';
 import 'package:note_sondage/ui/widgets/anchored_dropdown_overlay.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
@@ -65,6 +66,13 @@ class _ButtonClockingState extends State<ButtonClocking> {
   void initState() {
     super.initState();
     _syncManualDatesFromSelectedDate();
+    final teamState = context.read<TeamBloc>().state;
+    if (teamState is! TeamsLoaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<TeamBloc>().add(LoadTeamsEvent());
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncClockingAccess());
   }
 
@@ -153,6 +161,12 @@ class _ButtonClockingState extends State<ButtonClocking> {
           final teams = teamState is TeamsLoaded
               ? teamState.teams
               : <TeamEntity>[];
+          if (teams.isEmpty && teamState is! TeamLoading) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              context.read<TeamBloc>().add(LoadTeamsEvent());
+            });
+          }
           _ensureSelectedTeam(teams);
           if (widget.selectedTeamId != _resolvedTeamId) {
             WidgetsBinding.instance.addPostFrameCallback(
@@ -868,6 +882,12 @@ class _ButtonClockingState extends State<ButtonClocking> {
     return !_canManageClocking && !_hasApprovedManualClockingRequest(context);
   }
 
+  bool _canAddManualPastDays() {
+    final hasSelectedTeam =
+        widget.selectedTeamId != null && widget.selectedTeamId!.isNotEmpty;
+    return !hasSelectedTeam || _canManageClocking;
+  }
+
   String _primaryActionSubtitle({
     required AppLocalizations localization,
     required ClockingRecordEntity? activeRecordForSelectedDate,
@@ -931,6 +951,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
     final hasConflict =
         hasVacationOnSelectedDate || hasOpenRecordOutsideSelectedDate;
     final useWideLayout = !widget.isCompact;
+    final canAddManualPastDays = _canAddManualPastDays();
 
     final dateSelector = Row(
       children: [
@@ -950,14 +971,17 @@ class _ButtonClockingState extends State<ButtonClocking> {
                 .toList(),
           ),
         ),
-        const SizedBox(width: 12),
-        IconButton.filledTonal(
-          onPressed: hasConflict || !isClockingReady || _manualActionInProgress
-              ? null
-              : () => _addManualDate(records),
-          icon: const Icon(Icons.add_rounded),
-          tooltip: localization.addDay,
-        ),
+        if (canAddManualPastDays) ...[
+          const SizedBox(width: 12),
+          IconButton.filledTonal(
+            onPressed:
+                hasConflict || !isClockingReady || _manualActionInProgress
+                ? null
+                : () => _addManualDate(records),
+            icon: const Icon(Icons.add_rounded),
+            tooltip: localization.addDay,
+          ),
+        ],
       ],
     );
 
@@ -1113,9 +1137,13 @@ class _ButtonClockingState extends State<ButtonClocking> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          localization.manualClockingDescription(
-                            _formatDateLabel(_effectiveSelectedDate),
-                          ),
+                          canAddManualPastDays
+                              ? localization.manualClockingDescription(
+                                  _formatDateLabel(_effectiveSelectedDate),
+                                )
+                              : localization.manualClockingSingleDayDescription(
+                                  _formatDateLabel(_effectiveSelectedDate),
+                                ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.descriptionColor,
                           ),
@@ -1127,7 +1155,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
                     IconButton(
                       onPressed: () => _confirmCloseManualEntry(),
                       icon: const Icon(Icons.close_rounded),
-                      tooltip: 'Torna ad oggi',
+                      tooltip: localization.manualClockingBackToTodayTooltip,
                       iconSize: 20,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -1274,23 +1302,26 @@ class _ButtonClockingState extends State<ButtonClocking> {
         final recInLabel = _formatTimeLabel(conflicting.clockInTime!);
         final recOutLabel = _formatTimeLabel(conflicting.clockOutTime!);
         final newInLabel = _formatTimeLabel(newClockIn);
+        final localization = AppLocalizations.of(context)!;
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Sovrapposizione rilevata'),
+            title: Text(localization.manualClockingOverlapTitle),
             content: Text(
-              'La nuova timbratura (${_formatTimeLabel(newClockIn)} – ${_formatTimeLabel(newClockOut)}) '
-              'si sovrappone con una timbratura esistente ($recInLabel – $recOutLabel).\n\n'
-              'Vuoi ridurre la timbratura esistente facendola terminare alle $newInLabel?',
+              localization.manualClockingOverlapMessage(
+                '${_formatTimeLabel(newClockIn)} - ${_formatTimeLabel(newClockOut)}',
+                '$recInLabel - $recOutLabel',
+                newInLabel,
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Annulla'),
+                child: Text(localization.cancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Sì, riduci'),
+                child: Text(localization.manualClockingOverlapConfirmAdjust),
               ),
             ],
           ),
@@ -1393,23 +1424,45 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }
 
   Future<void> _confirmCloseManualEntry() async {
+    final theme = context.theme;
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final localization = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Torna ad oggi?'),
-        content: const Text(
-          'Stai per uscire dalla modalità di timbratura manuale.\n\n'
-          'Se vuoi modificare una timbratura di un giorno passato, '
-          'dovrai fare una nuova richiesta di timbratura manuale per quel giorno.',
+        title: Text(
+          localization.manualClockingBackToTodayTitle,
+          style: textTheme.bodyLarge!.copyWith(color: colorScheme.textColor),
+        ),
+        content: Text(
+          localization.manualClockingBackToTodayMessage,
+          style: textTheme.bodySmall!.copyWith(color: colorScheme.textColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annulla'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.bgsecondary,
+            ),
+            child: Text(
+              localization.cancel,
+              style: textTheme.bodyMedium!.copyWith(
+                color: colorScheme.textInvertedColor,
+              ),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Torna ad oggi'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.bgsecondary,
+            ),
+            child: Text(
+              localization.manualClockingBackToTodayConfirm,
+              style: textTheme.bodyMedium!.copyWith(
+                color: colorScheme.textInvertedColor,
+              ),
+            ),
           ),
         ],
       ),
@@ -1640,9 +1693,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }
 
   String _resolveSelectedTeamName() {
+    final localization = AppLocalizations.of(context)!;
     final selectedTeamId = widget.selectedTeamId;
     if (selectedTeamId == null || selectedTeamId.isEmpty) {
-      return 'Personal';
+      return localization.personal;
     }
     final teamState = context.read<TeamBloc>().state;
     if (teamState is TeamsLoaded) {
@@ -1705,7 +1759,7 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
     if (query.isEmpty) {
       return true;
     }
-    return 'team'.contains(query);
+    return AppLocalizations.of(context)!.team.toLowerCase().contains(query);
   }
 
   TeamEntity? get _selectedTeam {
@@ -1719,12 +1773,6 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
     }
     return null;
   }
-
-  String get _title => _selectedTeam?.name ?? 'Team';
-
-  String get _subtitle => _selectedTeam == null
-      ? 'Nessun team selezionato'
-      : 'Apri per cambiare team o cercarne uno';
 
   @override
   void dispose() {
@@ -1751,6 +1799,11 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final localization = AppLocalizations.of(context)!;
+    final title = _selectedTeam?.name ?? localization.team;
+    final subtitle = _selectedTeam == null
+        ? localization.noTeamSelected
+        : localization.changeOrSearchTeam;
 
     return Container(
       constraints: BoxConstraints(maxWidth: widget.isCompact ? 320 : 380),
@@ -1763,8 +1816,8 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: AnchoredDropdownOverlay(
           triggerBuilder: (context, isOpen, toggle) => _ClockingDropdownTrigger(
-            title: _title,
-            subtitle: _subtitle,
+            title: title,
+            subtitle: subtitle,
             isOpen: isOpen,
             onTap: toggle,
           ),
@@ -1792,7 +1845,7 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
                     controller: _searchController,
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
-                      hintText: 'Cerca team...',
+                      hintText: localization.searchTeam,
                       prefixIcon: const Icon(Icons.search_rounded),
                       isDense: true,
                       border: OutlineInputBorder(
@@ -1821,8 +1874,8 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
                           itemBuilder: (context, index) {
                             if (_showNoTeamOption && index == 0) {
                               return _ClockingTeamOptionTile(
-                                label: 'Team',
-                                subtitle: 'Nessun team selezionato',
+                                label: localization.team,
+                                subtitle: localization.noTeamSelected,
                                 isSelected: widget.selectedTeamId == null,
                                 onTap: () => _selectTeam(null, close),
                               );
@@ -1852,7 +1905,7 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
-                                        'Nessun team trovato',
+                                        localization.noTeamFound,
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
                                               color:
@@ -1869,7 +1922,7 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
                               label: team.name,
                               subtitle: team.description.trim().isNotEmpty
                                   ? team.description
-                                  : 'Team disponibile per la timbratura',
+                                  : localization.teamAvailableForClocking,
                               isSelected: widget.selectedTeamId == team.id,
                               onTap: () => _selectTeam(team.id, close),
                             );

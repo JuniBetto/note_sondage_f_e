@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_team_list_page.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
@@ -9,11 +10,19 @@ import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_display.d
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/app_search_field.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class SondageMobile extends StatefulWidget {
-  const SondageMobile({super.key});
+  const SondageMobile({
+    super.key,
+    this.initialTabIndex = 0,
+    this.initialChatTeamId,
+  });
+
+  final int initialTabIndex;
+  final String? initialChatTeamId;
 
   @override
   State<SondageMobile> createState() => _SondageMobileState();
@@ -35,7 +44,12 @@ class _SondageMobileState extends State<SondageMobile>
   @override
   void initState() {
     super.initState();
-    tabController = TabController(length: 2, vsync: this);
+    final safeInitialTab = widget.initialTabIndex.clamp(0, 2);
+    tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: safeInitialTab,
+    );
     tabController.addListener(_handleTabChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
@@ -61,13 +75,9 @@ class _SondageMobileState extends State<SondageMobile>
   }
 
   Future<void> _openEditSheet(SondageEntity sondage) async {
+    final localization = AppLocalizations.of(context)!;
     if (!sondage.canEdit) {
-      AppSnackBar.showWarning(
-        context,
-        Localizations.localeOf(context).languageCode == 'it'
-            ? 'Non hai i permessi per modificare questo sondaggio.'
-            : 'You do not have permission to edit this survey.',
-      );
+      AppSnackBar.showWarning(context, localization.noPermissionToEditSurvey);
       return;
     }
     await showModalBottomSheet<void>(
@@ -92,22 +102,13 @@ class _SondageMobileState extends State<SondageMobile>
   }
 
   Future<void> _confirmDelete(String sondageId) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Elimina sondaggio'),
-        content: const Text('Vuoi davvero eliminare questo sondaggio?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annulla'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Elimina'),
-          ),
-        ],
-      ),
+    final localization = AppLocalizations.of(context)!;
+    final shouldDelete = await showAppConfirmationDialog(
+      context,
+      title: localization.deleteSurveyTitle,
+      message: localization.deleteSurveyMessage,
+      confirmLabel: localization.deleteAction,
+      destructive: true,
     );
     if (shouldDelete == true && mounted) {
       context.read<SondageBloc>().add(DeleteSondageEvent(sondageId));
@@ -190,9 +191,9 @@ class _SondageMobileState extends State<SondageMobile>
       tutorialId: 'mobile-main-4',
       action: () => AppTutorialController.replayRegistered(
         context: context,
-        tutorialId: tabController.index == 0
-            ? 'mobile-sondage-list'
-            : 'mobile-sondage-create',
+        tutorialId: tabController.index == 1
+            ? 'mobile-sondage-create'
+            : 'mobile-sondage-list',
       ),
     );
     AppTutorialController.registerTargets(
@@ -238,21 +239,11 @@ class _SondageMobileState extends State<SondageMobile>
                       buildWhen: (_, current) =>
                           current is SondagesLoaded ||
                           current is SondageLoading,
-                      builder: (context, _) => Text(
-                        'Lista ${localization.sondage}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      builder: (context, _) =>
+                          Text('Lista ${localization.sondage}'),
                     ),
-                    childTab2: Text(
-                      'Create ${localization.sondage}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    childTab2: Text('Create ${localization.sondage}'),
+                    childTab3: const Text('Chat'),
                     tabController: tabController,
                     setToUpdate: setState,
                   ),
@@ -446,6 +437,9 @@ class _SondageMobileState extends State<SondageMobile>
                         ),
                         CreateSondageMobile(
                           onsondageCreated: _handleSondageCreated,
+                        ),
+                        ChatMobileTeamListPage(
+                          initialTeamId: widget.initialChatTeamId,
                         ),
                       ],
                     ),

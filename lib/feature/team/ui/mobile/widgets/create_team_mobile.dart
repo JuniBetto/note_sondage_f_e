@@ -9,12 +9,14 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/add_user_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
+import 'package:note_sondage/feature/team/ui/widgets/team_clocking_requirement_section.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_members_section.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -65,11 +67,18 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   late final TeamBloc _teamBloc;
   bool _isLoading = false;
   String? _ownerUserId;
+  bool _clockingRequired = false;
+  String _clockingReminderTime = '09:00';
+  String _clockingMissingAlertTime = '10:00';
+  String _clockingOpenAlertTime = '18:00';
+  TeamSectionPermissions _teamPermissions = TeamSectionPermissions.readOnly();
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
   bool _tutorialScheduled = false;
 
   bool get _isEditMode => widget.teamId != null;
   bool get _supportsCreateTutorial => !_isEditMode && !widget.readOnly;
+  bool get _showClockingSection =>
+      !_isEditMode || _teamPermissions.canManageClockingSettings;
 
   @override
   void initState() {
@@ -96,16 +105,28 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
     if (!_isEditMode) return;
-    if (notification.sourceService != 'team-service') return;
-    if (notification.metadata['teamId'] != widget.teamId) return;
+    final decision = getIt<TeamRealtimeCoordinator>().resolveScreenDecision(
+      notification,
+      teamId: widget.teamId ?? '',
+      currentUserId: getIt<AuthBloc>().state.user.uid,
+    );
 
-    if (notification.eventType == 'TEAM_UPDATED' ||
-        notification.eventType == 'TEAM_MEMBER_JOINED' ||
-        notification.eventType == 'TEAM_MEMBER_REMOVED' ||
-        notification.eventType == 'TEAM_MEMBER_ROLE_UPDATED' ||
-        notification.eventType == 'TEAM_MEMBER_INVITED' ||
-        notification.eventType == 'TEAM_INVITATION_CANCELLED' ||
-        notification.eventType == 'TEAM_INVITATION_REJECTED') {
+    if (decision.shouldLeaveCurrentTeam) {
+      final teamId = widget.teamId?.trim();
+      if (teamId != null && teamId.isNotEmpty) {
+        _teamBloc.add(RemoveTeamFromCacheEvent(teamId));
+      }
+      if (!mounted) return;
+      final message = notification.eventType == 'TEAM_MEMBER_REMOVED'
+          ? 'Non fai piu parte di questo team.'
+          : 'Questo team non e piu disponibile.';
+      AppSnackBar.showWarning(context, message, title: 'Team aggiornato');
+      context.read<NavigationBloc>().add(NavigationPositionChanged(1));
+      context.go(RouterPaths.home);
+      return;
+    }
+
+    if (decision.refreshTeam) {
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
     }
   }
@@ -152,6 +173,11 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
           setState(() {
             selectedColor = team.color != null ? [team.color!] : [];
             _ownerUserId = team.createdByUserId;
+            _clockingRequired = team.clockingRequired;
+            _clockingReminderTime = team.clockingReminderTime ?? '09:00';
+            _clockingMissingAlertTime =
+                team.clockingMissingAlertTime ?? '10:00';
+            _clockingOpenAlertTime = team.clockingOpenAlertTime ?? '18:00';
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated && _isEditMode) {
@@ -178,6 +204,11 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             );
             nameTeamController.clear();
             descriptionTeamController.clear();
+            selectedColor = [];
+            _clockingRequired = false;
+            _clockingReminderTime = '09:00';
+            _clockingMissingAlertTime = '10:00';
+            _clockingOpenAlertTime = '18:00';
           });
           if (widget.onTeamCreated != null) {
             widget.onTeamCreated!();
@@ -288,6 +319,35 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
 
                       const SizedBox(height: 24),
 
+                      if (_showClockingSection) ...[
+                        _buildSectionHeader(
+                          context,
+                          'Clocking',
+                          Icons.alarm_on_rounded,
+                        ),
+                        const SizedBox(height: 10),
+                        TeamClockingRequirementSection(
+                          clockingRequired: _clockingRequired,
+                          onClockingRequiredChanged: (value) {
+                            setState(() => _clockingRequired = value);
+                          },
+                          reminderTime: _clockingReminderTime,
+                          onReminderTimeChanged: (value) {
+                            setState(() => _clockingReminderTime = value);
+                          },
+                          missingAlertTime: _clockingMissingAlertTime,
+                          onMissingAlertTimeChanged: (value) {
+                            setState(() => _clockingMissingAlertTime = value);
+                          },
+                          openAlertTime: _clockingOpenAlertTime,
+                          onOpenAlertTimeChanged: (value) {
+                            setState(() => _clockingOpenAlertTime = value);
+                          },
+                          readOnly: widget.readOnly,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+
                       // ── Members Section ──
                       _buildSectionHeader(
                         context,
@@ -319,8 +379,15 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                                   teamId: widget.teamId!,
                                   ownerUserId: _ownerUserId,
                                   forceReadOnly: widget.readOnly,
-                                  onPermissionsChanged:
-                                      widget.onPermissionsChanged,
+                                  onPermissionsChanged: (permissions) {
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _teamPermissions = permissions;
+                                    });
+                                    widget.onPermissionsChanged?.call(
+                                      permissions,
+                                    );
+                                  },
                                 )
                               : AddUserMobile(
                                   listInviteFormData: listInviteFormData,
@@ -408,6 +475,10 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         name: nameTeamController.text.trim(),
         description: descriptionTeamController.text.trim(),
         createdByUserId: null,
+        clockingRequired: _clockingRequired,
+        clockingReminderTime: _clockingReminderTime,
+        clockingMissingAlertTime: _clockingMissingAlertTime,
+        clockingOpenAlertTime: _clockingOpenAlertTime,
         listMember: [],
       );
       _teamBloc.add(UpdateTeamEvent(team));
@@ -420,6 +491,10 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         name: nameTeamController.text.trim(),
         description: descriptionTeamController.text.trim(),
         createdByUserId: currentUserId,
+        clockingRequired: _clockingRequired,
+        clockingReminderTime: _clockingReminderTime,
+        clockingMissingAlertTime: _clockingMissingAlertTime,
+        clockingOpenAlertTime: _clockingOpenAlertTime,
       );
       _teamBloc.add(CreateTeamEvent(team, userId: currentUserId));
     }

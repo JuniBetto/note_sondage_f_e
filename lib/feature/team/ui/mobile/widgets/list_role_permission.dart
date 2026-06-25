@@ -8,6 +8,7 @@ import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/widgets/role_permission_component.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'dart:async';
@@ -69,8 +70,17 @@ class _ListRolePermissionState extends State<ListRolePermission> {
     });
   }
 
-  void _deleteRole(String? id) {
+  Future<void> _deleteRole(String? id) async {
     if (id != null) {
+      final localization = AppLocalizations.of(context)!;
+      final confirmed = await showAppConfirmationDialog(
+        context,
+        title: localization.deleteRoleTitle,
+        message: localization.deleteRoleMessage,
+        confirmLabel: localization.deleteAction,
+        destructive: true,
+      );
+      if (!mounted || !confirmed) return;
       _roleBloc.add(DeleteRoleEvent(id, teamId: widget.teamId));
     }
   }
@@ -156,7 +166,7 @@ class _ListRolePermissionState extends State<ListRolePermission> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Swipe to create a new role',
+                    localization.swipeToCreateRole,
                     style: textTheme.bodySmall?.copyWith(
                       color: colorScheme.descriptionColor,
                     ),

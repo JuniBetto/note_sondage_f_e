@@ -37,6 +37,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     on<UpdateTeamEvent>(_onUpdateTeam);
     on<DeleteTeamEvent>(_onDeleteTeam);
     on<ResetTeamCacheEvent>(_onResetCache);
+    on<RemoveTeamFromCacheEvent>(_onRemoveTeamFromCache);
   }
 
   Future<void> _onLoadTeams(
@@ -206,15 +207,19 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       name: event.team.name,
       description: event.team.description,
       createdByUserId: event.team.createdByUserId,
+      clockingRequired: event.team.clockingRequired,
+      clockingReminderTime: event.team.clockingReminderTime,
+      clockingMissingAlertTime: event.team.clockingMissingAlertTime,
+      clockingOpenAlertTime: event.team.clockingOpenAlertTime,
       memberCount: event.team.memberCount,
       createdAt: event.team.createdAt,
     );
 
     _syncingTeamIds.add(optimisticTeam.id ?? '');
     _cachedTeams = [..._cachedTeams, optimisticTeam];
-    await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamCreated(optimisticTeam));
     emit(TeamsLoaded(_cachedTeams));
+    unawaited(teamLocalDataSource.saveAll(_cachedTeams));
 
     unawaited(() async {
       try {
@@ -271,9 +276,9 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
         ..[existingIndex] = optimisticTeam;
     }
 
-    await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamUpdated(optimisticTeam));
     emit(TeamsLoaded(_cachedTeams));
+    unawaited(teamLocalDataSource.saveAll(_cachedTeams));
 
     unawaited(() async {
       try {
@@ -305,9 +310,9 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     final rollbackTeams = List<TeamEntity>.from(_cachedTeams);
     _syncingTeamIds.add(event.id);
     _cachedTeams = _cachedTeams.where((team) => team.id != event.id).toList();
-    await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamDeleted());
     emit(TeamsLoaded(_cachedTeams));
+    unawaited(teamLocalDataSource.saveAll(_cachedTeams));
 
     unawaited(() async {
       try {
@@ -349,6 +354,27 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     _cachedTeams = [];
     await teamLocalDataSource.clearAll();
     emit(TeamInitial());
+  }
+
+  Future<void> _onRemoveTeamFromCache(
+    RemoveTeamFromCacheEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    final teamId = event.teamId.trim();
+    if (teamId.isEmpty) {
+      return;
+    }
+
+    final previousLength = _cachedTeams.length;
+    _cachedTeams = _cachedTeams.where((team) => team.id != teamId).toList();
+    _syncingTeamIds.remove(teamId);
+
+    if (_cachedTeams.length == previousLength) {
+      return;
+    }
+
+    await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamsLoaded(_cachedTeams));
   }
 
   Future<void> _onTeamCreateCommitted(
@@ -576,6 +602,10 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       createdByUserId: update.createdByUserId.isNotEmpty
           ? update.createdByUserId
           : (previous?.createdByUserId ?? ''),
+      clockingRequired: update.clockingRequired,
+      clockingReminderTime: update.clockingReminderTime,
+      clockingMissingAlertTime: update.clockingMissingAlertTime,
+      clockingOpenAlertTime: update.clockingOpenAlertTime,
       memberCount: previous?.memberCount ?? 0,
       createdAt: previous?.createdAt ?? update.createdAt,
     );

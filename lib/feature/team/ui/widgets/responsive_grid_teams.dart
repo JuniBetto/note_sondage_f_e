@@ -11,6 +11,7 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_card.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_row.dart';
@@ -83,6 +84,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
 
   @override
   Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
     final authUser = context.watch<AuthBloc>().state.user;
     final currentUserEmail = authUser.email.trim();
     final currentUserPhotoUrl = authUser.photoUrl?.trim();
@@ -126,7 +128,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
               children: [
                 const Icon(Icons.error_outline, size: 48, color: Colors.red),
                 const SizedBox(height: 16),
-                Text('Error: ${teamState.message}'),
+                Text('${localization.errorPrefix} ${teamState.message}'),
               ],
             ),
           );
@@ -196,13 +198,16 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
             : foregroundItems;
 
         if (items.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.group_outlined, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text('No teams found', style: TextStyle(fontSize: 18)),
+                const Icon(Icons.group_outlined, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  localization.noTeamsFound,
+                  style: const TextStyle(fontSize: 18),
+                ),
               ],
             ),
           );
@@ -212,10 +217,10 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
             ? Center(
                 child: Text(
                   normalizedSearch.isNotEmpty
-                      ? 'Nessun team trovato per la ricerca.'
+                      ? localization.noTeamsMatchingSearch
                       : _showArchivedOnly
-                      ? 'Nessun team archiviato.'
-                      : 'Nessun team in primo piano.',
+                      ? localization.noArchivedTeams
+                      : localization.noVisibleTeams,
                 ),
               )
             : viewScrollWebMobile(
