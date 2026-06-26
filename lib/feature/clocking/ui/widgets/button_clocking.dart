@@ -12,7 +12,6 @@ import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dar
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
-import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/theme/theme.dart';
 import 'package:note_sondage/ui/widgets/anchored_dropdown_overlay.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
