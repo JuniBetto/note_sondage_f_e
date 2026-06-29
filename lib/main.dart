@@ -41,9 +41,13 @@ void main() {
       //    Su Android il plugin nativo può già aver inizializzato l'app,
       //    quindi ignoriamo l'errore "duplicate-app".
       try {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
+        if (kIsWeb) {
+          await Firebase.initializeApp(
+            options: DefaultFirebaseOptions.currentPlatform,
+          );
+        } else {
+          await Firebase.initializeApp();
+        }
       } on FirebaseException catch (e) {
         if (e.code != 'duplicate-app') rethrow;
         debugPrint('[Firebase] Already initialized, skipping.');

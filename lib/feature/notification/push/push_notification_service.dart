@@ -17,7 +17,6 @@ import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
-import 'package:note_sondage/feature/notification/preferences/notification_preferences_cubit.dart';
 import 'package:note_sondage/feature/notification/push/push_diagnostics_snapshot.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/firebase_options.dart';
@@ -41,7 +40,13 @@ const String _backgroundTeamInviteCategoryId = 'team_invite_actions';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // 1. Firebase deve essere inizializzato anche in questo isolate separato.
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else {
+    await Firebase.initializeApp();
+  }
 
   // 2. Legge title/body dal payload data o dal blocco notification (fallback).
   final data = message.data;
@@ -88,6 +93,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   // Nessun testo = niente da mostrare (es. silent sync messages).
   if (title.isEmpty && body.isEmpty) return;
+  if (message.notification != null) return;
 
   // 3. Inizializza flutter_local_notifications standalone.
   final plugin = FlutterLocalNotificationsPlugin();
@@ -165,9 +171,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class PushNotificationService {
   PushNotificationService({
     BackendAuthDataSource? backendAuth,
-    LocalNotificationService? localNotifications,
-  }) : _backendAuth = backendAuth ?? BackendAuthDataSource(),
-       _localNotifications = localNotifications ?? LocalNotificationService();
+    required LocalNotificationService localNotifications,
+  }) : _backendAuth = backendAuth ?? BackendAuthDataSource();
 
   static const _deviceFingerprintKey = 'push_device_fingerprint';
   static const _lastRegisteredPushTokenKey = 'last_registered_push_token';
@@ -180,7 +185,6 @@ class PushNotificationService {
   static const int _maxIosRegistrationRetryAttempts = 8;
 
   final BackendAuthDataSource _backendAuth;
-  final LocalNotificationService _localNotifications;
   final StreamController<RealtimeNotification> _controller =
       StreamController<RealtimeNotification>.broadcast();
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -209,9 +213,9 @@ class PushNotificationService {
     try {
       await _messaging.requestPermission();
       await _messaging.setForegroundNotificationPresentationOptions(
-        alert: true,
-        badge: true,
-        sound: true,
+        alert: false,
+        badge: false,
+        sound: false,
       );
 
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
@@ -354,7 +358,7 @@ class PushNotificationService {
       backendFetchError = error.toString();
     }
 
-    return PushDiagnosticsSnapshot(
+    final snapshot = PushDiagnosticsSnapshot(
       supportsPushPlatform: _supportsPushPlatform,
       serviceAvailable: _available,
       platformLabel: defaultTargetPlatform.name,
@@ -375,26 +379,34 @@ class PushNotificationService {
       lastRegistrationError: _lastRegistrationErrorMessage,
       backendFetchError: backendFetchError,
     );
+    _logFullPushTokens(snapshot);
+    return snapshot;
   }
 
-  Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    final notification = _emitNotification(message);
-    if (_shouldSuppressForegroundNotification(notification)) {
-      return;
-    }
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    if (currentUserId.isNotEmpty) {
-      await _localNotifications.showRealtimeNotification(
-        NotificationCenterItem.fromRealtime(notification),
-        currentUserId: currentUserId,
-      );
-    }
+  void _handleForegroundMessage(RemoteMessage message) {
+    _emitNotification(message);
+  }
+
+  void _logFullPushTokens(PushDiagnosticsSnapshot snapshot) {
+    debugPrint(
+      '[PushDiagnosticTokens] user=${snapshot.userId ?? 'missing'} '
+      'platform=${snapshot.platformLabel} '
+      'fingerprint=${snapshot.deviceFingerprint ?? 'missing'}',
+    );
+    debugPrint(
+      '[PushDiagnosticTokens] APNS_FULL=${snapshot.apnsToken ?? 'missing'}',
+    );
+    debugPrint(
+      '[PushDiagnosticTokens] FCM_FULL=${snapshot.fcmToken ?? 'missing'}',
+    );
   }
 
   void _handleMessage(RemoteMessage message) {
     final notification = _emitNotification(message);
+    final notificationCenterCubit = getIt<NotificationCenterCubit>();
+    notificationCenterCubit.ingestRealtimeNotification(notification);
+    unawaited(notificationCenterCubit.loadNotifications(force: true));
     final item = NotificationCenterItem.fromRealtime(notification);
-    getIt<NotificationCenterCubit>().consumeNotification(item.notificationId);
     unawaited(NotificationNavigation.open(item));
   }
 
@@ -528,29 +540,6 @@ class PushNotificationService {
     _clearIosRegistrationRetry();
     await _tokenRefreshSubscription?.cancel();
     await _controller.close();
-  }
-
-  bool _shouldSuppressForegroundNotification(
-    RealtimeNotification notification,
-  ) {
-    final eventType = notification.eventType.trim().toUpperCase();
-    final isChatNotification =
-        eventType.contains('CHAT') ||
-        (notification.metadata['conversationId']?.trim().isNotEmpty ?? false);
-    if (isChatNotification &&
-        !getIt<NotificationPreferencesCubit>()
-            .state
-            .effectivePreferences
-            .chatMessagesEnabled) {
-      return true;
-    }
-    if (!isChatNotification) {
-      return false;
-    }
-
-    // Foreground chat notifications should update the in-app home/notification
-    // surfaces only. System banners are reserved for background/terminated.
-    return true;
   }
 
   bool get _supportsPushPlatform =>

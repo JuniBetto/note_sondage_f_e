@@ -7,6 +7,8 @@ import 'package:note_sondage/core/dependency_injection/dependency_injection.dart
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
+import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
+import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/app_keys.dart';
 
 class NotificationNavigation {
@@ -40,6 +42,9 @@ class NotificationNavigation {
       return;
     }
     final router = GoRouter.of(navigationContext);
+    if (_openInsideMobileMainShell(destination, router)) {
+      return;
+    }
 
     switch (destination.kind) {
       case _NotificationDestinationKind.path:
@@ -54,6 +59,30 @@ class NotificationNavigation {
   static String? labelFor(NotificationCenterItem item) {
     final destination = _resolve(item);
     return destination?.label;
+  }
+
+  static bool _openInsideMobileMainShell(
+    _NotificationDestination destination,
+    GoRouter router,
+  ) {
+    if (kIsWeb || destination.kind != _NotificationDestinationKind.path) {
+      return false;
+    }
+
+    final navIndex = switch (destination.path) {
+      RouterPaths.home => 0,
+      RouterPaths.team => 1,
+      RouterPaths.clocking => 3,
+      RouterPaths.sondage => 4,
+      _ => null,
+    };
+    if (navIndex == null) {
+      return false;
+    }
+
+    getIt<NavigationBloc>().add(NavigationPositionChanged(navIndex));
+    router.go(RouterPaths.home);
+    return true;
   }
 
   /// Naviga direttamente alla pagina dei turni (usato per allarmi locali).

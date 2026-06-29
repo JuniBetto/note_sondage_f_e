@@ -358,9 +358,19 @@ class _MainAppState extends State<MainApp> {
         actionId == 'reject_clocking_request';
 
     if (!isDecisionAction) {
-      getIt<NotificationCenterCubit>().consumeNotification(
-        action.notificationId,
+      final notificationCenterCubit = getIt<NotificationCenterCubit>();
+      notificationCenterCubit.ingestRealtimeNotification(
+        RealtimeNotification(
+          notificationId: item.notificationId,
+          eventType: item.eventType,
+          sourceService: item.sourceService,
+          title: item.title,
+          body: item.body,
+          occurredAt: item.occurredAt,
+          metadata: item.metadata,
+        ),
       );
+      await notificationCenterCubit.loadNotifications(force: true);
       await NotificationNavigation.open(item, context: context);
       return;
     }
