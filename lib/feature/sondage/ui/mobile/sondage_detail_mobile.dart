@@ -33,10 +33,12 @@ class SondageDetailMobile extends StatefulWidget {
 }
 
 class _SondageDetailMobileState extends State<SondageDetailMobile> {
+  static const Duration _expiryRefreshGrace = Duration(seconds: 1);
   late final SondageBloc _bloc;
   late final SondageUseCase _sondageUseCase;
   late final TeamMemberUseCase _teamMemberUseCase;
   StreamSubscription<RealtimeNotification>? _subscription;
+  Timer? _expiryRefreshTimer;
   String? _loadedTeamId;
   DateTime? _ignoreRealtimeUntil;
   SondageEntity? _pendingVoteRollback;
@@ -49,6 +51,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
   final ValueNotifier<Set<String>> _pendingVoteOptionIdsNotifier =
       ValueNotifier(<String>{});
   bool _hasInitialContent = false;
+  bool _refreshRootListAfterMutation = false;
 
   @override
   void initState() {
@@ -69,8 +72,29 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
     });
   }
 
+  void _scheduleExpiryRefreshFor(SondageEntity sondage) {
+    _expiryRefreshTimer?.cancel();
+    final expiry = sondage.expiryDate;
+    if (sondage.status != SondageStatus.active || expiry == null) {
+      return;
+    }
+
+    final delay = expiry.difference(DateTime.now()) + _expiryRefreshGrace;
+    final effectiveDelay = delay.isNegative
+        ? const Duration(milliseconds: 500)
+        : delay;
+
+    _expiryRefreshTimer = Timer(effectiveDelay, () {
+      if (!mounted || _bloc.isClosed || _shouldIgnoreRealtimeRefresh) {
+        return;
+      }
+      _bloc.add(LoadSondageByIdEvent(widget.sondageId));
+    });
+  }
+
   @override
   void dispose() {
+    _expiryRefreshTimer?.cancel();
     _subscription?.cancel();
     _sondageNotifier.dispose();
     _isRefreshingNotifier.dispose();
@@ -129,6 +153,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
       _loadErrorNotifier.value = null;
       _isRefreshingNotifier.value = false;
       _ensureTeamMemberCountLoaded(sondage);
+      _scheduleExpiryRefreshFor(sondage);
       if (!_hasInitialContent && mounted) {
         setState(() {
           _hasInitialContent = true;
@@ -145,6 +170,10 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
       }
       _isRefreshingNotifier.value = false;
       _loadErrorNotifier.value = state.message;
+      final sondageForRefresh = _sondageNotifier.value ?? _pendingVoteRollback;
+      if (sondageForRefresh != null) {
+        _scheduleExpiryRefreshFor(sondageForRefresh);
+      }
     }
   }
 
@@ -250,16 +279,19 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
 
   void _publishSondage(String sondageId) {
     _markLocalMutation();
+    _refreshRootListAfterMutation = true;
     _bloc.add(PublishSondageEvent(sondageId));
   }
 
   void _closeSondage(String sondageId) {
     _markLocalMutation();
+    _refreshRootListAfterMutation = true;
     _bloc.add(CloseSondageEvent(sondageId));
   }
 
   void _reopenSondage(String sondageId) {
     _markLocalMutation();
+    _refreshRootListAfterMutation = true;
     _bloc.add(ReopenSondageEvent(sondageId));
   }
 
@@ -377,6 +409,8 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
           if (!mounted) {
             return;
           }
+          final shouldRefreshRootList =
+              state is SondageActionSuccess && _refreshRootListAfterMutation;
           _handleBlocState(state);
           if (state is SondageLoaded || state is SondageActionSuccess) {
             final sondage = state is SondageLoaded
@@ -384,6 +418,12 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                 : (state as SondageActionSuccess).sondage;
             if (!rootSondageBloc.isClosed) {
               rootSondageBloc.add(SyncCachedSondageEvent(sondage));
+              if (shouldRefreshRootList) {
+                rootSondageBloc.add(LoadSondagesEvent());
+              }
+            }
+            if (state is SondageActionSuccess) {
+              _refreshRootListAfterMutation = false;
             }
           }
           if (state is SondageDeleted && context.mounted) {
@@ -395,6 +435,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
             return;
           }
           if (state is SondageError && context.mounted) {
+            _refreshRootListAfterMutation = false;
             AppSnackBar.showError(context, state.message);
           }
         },

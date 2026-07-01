@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
@@ -30,10 +32,12 @@ class SondageMobile extends StatefulWidget {
 
 class _SondageMobileState extends State<SondageMobile>
     with SingleTickerProviderStateMixin {
+  static const Duration _expiryRefreshGrace = Duration(seconds: 1);
   final GlobalKey _summaryKey = GlobalKey();
   final GlobalKey _statsKey = GlobalKey();
   final GlobalKey _listKey = GlobalKey();
   late TabController tabController;
+  Timer? _expiryRefreshTimer;
   final TextEditingController _searchController = TextEditingController();
   int currentViewType = 1;
   List<SondageEntity> _lastSondages = const <SondageEntity>[];
@@ -63,6 +67,39 @@ class _SondageMobileState extends State<SondageMobile>
   }
 
   void _handleTabChange() => setState(() {});
+
+  void _scheduleNextExpiryRefresh(List<SondageEntity> sondages) {
+    _expiryRefreshTimer?.cancel();
+
+    final now = DateTime.now();
+    DateTime? nextExpiry;
+    for (final sondage in sondages) {
+      if (sondage.status != SondageStatus.active ||
+          sondage.expiryDate == null) {
+        continue;
+      }
+      final expiry = sondage.expiryDate!;
+      if (nextExpiry == null || expiry.isBefore(nextExpiry)) {
+        nextExpiry = expiry;
+      }
+    }
+
+    if (nextExpiry == null) {
+      return;
+    }
+
+    final delay = nextExpiry.difference(now) + _expiryRefreshGrace;
+    final effectiveDelay = delay.isNegative
+        ? const Duration(milliseconds: 500)
+        : delay;
+
+    _expiryRefreshTimer = Timer(effectiveDelay, () {
+      if (!mounted || tabController.index != 0) {
+        return;
+      }
+      context.read<SondageBloc>().add(LoadSondagesEvent());
+    });
+  }
 
   void _handleViewTypeChanged(int viewType) {
     setState(() {
@@ -176,6 +213,7 @@ class _SondageMobileState extends State<SondageMobile>
 
   @override
   void dispose() {
+    _expiryRefreshTimer?.cancel();
     tabController.removeListener(_handleTabChange);
     tabController.dispose();
     _searchController.dispose();
@@ -217,6 +255,9 @@ class _SondageMobileState extends State<SondageMobile>
         listener: (context, state) {
           if (state is SondageError) {
             AppSnackBar.showError(context, state.message);
+          }
+          if (state is SondagesLoaded) {
+            _scheduleNextExpiryRefresh(state.sondages);
           }
         },
         child: LayoutBuilder(

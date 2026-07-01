@@ -14,6 +14,10 @@ class RealtimeNotificationService {
 
   StompClient? _client;
   String? _connectedUserId;
+  List<String> _candidateWsUrls = const <String>[];
+  int _currentWsUrlIndex = 0;
+  bool _connectedForCurrentSession = false;
+  bool _switchingWsUrl = false;
 
   Stream<RealtimeNotification> get stream => _controller.stream;
 
@@ -33,7 +37,28 @@ class RealtimeNotificationService {
         'This host works for the Android emulator, not for iOS.',
       );
     }
-    final wsUrl = _resolveWebSocketUrl(apiUri, userId);
+    _candidateWsUrls = _resolveWebSocketUrls(apiUri, userId);
+    _currentWsUrlIndex = 0;
+    _connectedForCurrentSession = false;
+
+    debugPrint(
+      '[RealtimeNotificationService] Candidate websocket URLs: '
+      '${_candidateWsUrls.join(' | ')}',
+    );
+
+    _activateCurrentClient(userId);
+  }
+
+  void _activateCurrentClient(String userId) {
+    if (_candidateWsUrls.isEmpty ||
+        _currentWsUrlIndex >= _candidateWsUrls.length) {
+      debugPrint(
+        '[RealtimeNotificationService] No websocket URL candidates available',
+      );
+      return;
+    }
+
+    final wsUrl = _candidateWsUrls[_currentWsUrlIndex];
     final webSocketHeaders = kIsWeb ? null : {'X-User-Id': userId};
 
     debugPrint('[RealtimeNotificationService] Connecting to $wsUrl');
@@ -73,11 +98,13 @@ class RealtimeNotificationService {
           debugPrint(
             '[RealtimeNotificationService] WS error on $wsUrl: $error',
           );
+          _tryFallbackUrl(userId, failedUrl: wsUrl, reason: '$error');
         },
         onWebSocketDone: () {
           debugPrint(
             '[RealtimeNotificationService] WS closed for user $_connectedUserId',
           );
+          _tryFallbackUrl(userId, failedUrl: wsUrl, reason: 'socket closed');
         },
       ),
     );
@@ -91,85 +118,122 @@ class RealtimeNotificationService {
     }
   }
 
-  String _resolveWebSocketUrl(Uri apiUri, String userId) {
+  void _tryFallbackUrl(
+    String userId, {
+    required String failedUrl,
+    required String reason,
+  }) {
+    if (_connectedForCurrentSession || _switchingWsUrl) {
+      return;
+    }
+    if (_candidateWsUrls.isEmpty ||
+        _currentWsUrlIndex >= _candidateWsUrls.length ||
+        _candidateWsUrls[_currentWsUrlIndex] != failedUrl) {
+      return;
+    }
+    if (_currentWsUrlIndex >= _candidateWsUrls.length - 1) {
+      return;
+    }
+
+    _switchingWsUrl = true;
+    _currentWsUrlIndex += 1;
+    final nextUrl = _candidateWsUrls[_currentWsUrlIndex];
+    debugPrint(
+      '[RealtimeNotificationService] Falling back to $nextUrl after $reason',
+    );
+    _client?.deactivate();
+    _client = null;
+    Future<void>.microtask(() {
+      _switchingWsUrl = false;
+      if (_connectedUserId == userId) {
+        _activateCurrentClient(userId);
+      }
+    });
+  }
+
+  List<String> _resolveWebSocketUrls(Uri apiUri, String userId) {
     final wsScheme = apiUri.scheme == 'https' ? 'wss' : 'ws';
 
     if (RuntimeConfig.hasCustomNotificationWsUrl) {
       final directUri = Uri.parse(RuntimeConfig.resolvedNotificationWsUrl);
-      return directUri
-          .replace(
-            scheme: directUri.scheme.isEmpty ? wsScheme : directUri.scheme,
-            path: '/ws',
-            queryParameters: {'userId': userId},
-          )
-          .toString();
+      return <String>[
+        directUri
+            .replace(
+              scheme: directUri.scheme.isEmpty ? wsScheme : directUri.scheme,
+              path: '/ws',
+              queryParameters: {'userId': userId},
+            )
+            .toString(),
+      ];
     }
 
     if (!RuntimeConfig.hasCustomApiBaseUrl) {
-      return apiUri
-          .replace(
-            scheme: wsScheme,
-            port: 8085,
-            path: '/ws',
-            queryParameters: {'userId': userId},
-          )
-          .toString();
+      return <String>[
+        apiUri
+            .replace(
+              scheme: wsScheme,
+              port: 8085,
+              path: '/ws',
+              queryParameters: {'userId': userId},
+            )
+            .toString(),
+      ];
     }
 
     final configuredPort = apiUri.hasPort
         ? apiUri.port
         : (apiUri.scheme == 'https' ? 443 : 80);
-    final targetPort =
-        _isPrivateOrLanHost(apiUri.host) && configuredPort == 8080
-        ? 8085
-        : configuredPort;
 
-    return apiUri
+    final sameOriginUrl = apiUri
         .replace(
           scheme: wsScheme,
-          port: targetPort,
+          port: configuredPort,
           path: '/ws',
           queryParameters: {'userId': userId},
         )
         .toString();
+    final directNotificationUrl = apiUri
+        .replace(
+          scheme: wsScheme,
+          port: 8085,
+          path: '/ws',
+          queryParameters: {'userId': userId},
+        )
+        .toString();
+
+    final urls = <String>[];
+    final preferDirect =
+        _shouldUseDirectNotificationPort(apiUri.host) && configuredPort != 8085;
+
+    if (preferDirect) {
+      urls.add(directNotificationUrl);
+      if (sameOriginUrl != directNotificationUrl) {
+        urls.add(sameOriginUrl);
+      }
+    } else {
+      urls.add(sameOriginUrl);
+      if (directNotificationUrl != sameOriginUrl) {
+        urls.add(directNotificationUrl);
+      }
+    }
+
+    return urls;
   }
 
-  bool _isPrivateOrLanHost(String host) {
+  bool _shouldUseDirectNotificationPort(String host) {
     final normalizedHost = host.trim().toLowerCase();
     if (normalizedHost.isEmpty) {
       return false;
     }
 
-    if (normalizedHost == 'localhost' ||
+    return normalizedHost == 'localhost' ||
         normalizedHost == '127.0.0.1' ||
-        normalizedHost == '::1') {
-      return true;
-    }
-
-    if (normalizedHost.endsWith('.lan') || normalizedHost.endsWith('.local')) {
-      return true;
-    }
-
-    if (normalizedHost.startsWith('10.') ||
-        normalizedHost.startsWith('192.168.')) {
-      return true;
-    }
-
-    final octets = normalizedHost.split('.');
-    if (octets.length != 4) {
-      return false;
-    }
-
-    final firstOctet = int.tryParse(octets[0]);
-    final secondOctet = int.tryParse(octets[1]);
-    if (firstOctet == null || secondOctet == null) {
-      return false;
-    }
-
-    return firstOctet == 172 && secondOctet >= 16 && secondOctet <= 31;
+        normalizedHost == '::1' ||
+        normalizedHost == '10.0.2.2';
   }
 
   void _onConnect(StompFrame frame) {
+    _connectedForCurrentSession = true;
     debugPrint(
       '[RealtimeNotificationService] Connected for user $_connectedUserId',
     );
@@ -204,6 +268,10 @@ class RealtimeNotificationService {
     _client?.deactivate();
     _client = null;
     _connectedUserId = null;
+    _candidateWsUrls = const <String>[];
+    _currentWsUrlIndex = 0;
+    _connectedForCurrentSession = false;
+    _switchingWsUrl = false;
   }
 
   Future<void> dispose() async {

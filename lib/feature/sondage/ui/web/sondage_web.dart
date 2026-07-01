@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
@@ -25,10 +27,12 @@ class SondageWeb extends StatefulWidget {
 }
 
 class _SondageWebState extends State<SondageWeb> {
+  static const Duration _expiryRefreshGrace = Duration(seconds: 1);
   final GlobalKey _headerKey = GlobalKey();
   final GlobalKey _statsKey = GlobalKey();
   final GlobalKey _listKey = GlobalKey();
   final TextEditingController _searchController = TextEditingController();
+  Timer? _expiryRefreshTimer;
   int isGridView = 1;
   List<SondageEntity> _lastSondages = const <SondageEntity>[];
   bool _tutorialScheduled = false;
@@ -49,8 +53,42 @@ class _SondageWebState extends State<SondageWeb> {
     });
   }
 
+  void _scheduleNextExpiryRefresh(List<SondageEntity> sondages) {
+    _expiryRefreshTimer?.cancel();
+
+    final now = DateTime.now();
+    DateTime? nextExpiry;
+    for (final sondage in sondages) {
+      if (sondage.status != SondageStatus.active ||
+          sondage.expiryDate == null) {
+        continue;
+      }
+      final expiry = sondage.expiryDate!;
+      if (nextExpiry == null || expiry.isBefore(nextExpiry)) {
+        nextExpiry = expiry;
+      }
+    }
+
+    if (nextExpiry == null) {
+      return;
+    }
+
+    final delay = nextExpiry.difference(now) + _expiryRefreshGrace;
+    final effectiveDelay = delay.isNegative
+        ? const Duration(milliseconds: 500)
+        : delay;
+
+    _expiryRefreshTimer = Timer(effectiveDelay, () {
+      if (!mounted) {
+        return;
+      }
+      context.read<SondageBloc>().add(LoadSondagesEvent());
+    });
+  }
+
   @override
   void dispose() {
+    _expiryRefreshTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -178,6 +216,9 @@ class _SondageWebState extends State<SondageWeb> {
       listener: (context, state) {
         if (state is SondageError) {
           AppSnackBar.showError(context, state.message);
+        }
+        if (state is SondagesLoaded) {
+          _scheduleNextExpiryRefresh(state.sondages);
         }
       },
       builder: (context, state) {
