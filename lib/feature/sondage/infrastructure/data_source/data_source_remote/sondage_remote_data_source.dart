@@ -10,25 +10,14 @@ class SondageRemoteDataSource {
   SondageRemoteDataSource(this.localDataSource);
 
   Future<List<SondageEntity>> getAll() async {
-    final responses = await Future.wait<dynamic>([
-      DioClient().dio.get('$_endpoint/my'),
-      DioClient().dio.get('$_endpoint/active'),
-    ]);
-    final myResponse = responses[0];
-    final activeResponse = responses[1];
-
-    final merged = <String, SondageEntity>{};
-    for (final raw in _extractList(myResponse.data)) {
-      final entity = SondageMapper.fromJson(raw);
-      merged[entity.id] = entity;
-    }
-    for (final raw in _extractList(activeResponse.data)) {
-      final entity = SondageMapper.fromJson(raw);
-      merged[entity.id] = entity;
-    }
-
-    final sondages = merged.values.toList()
-      ..sort((a, b) => b.createdDate.compareTo(a.createdDate));
+    // `/my` is already the authoritative unified feed for the current user:
+    // own surveys, visible team drafts, active surveys, and closed surveys.
+    // Fetching `/active` in parallel can reintroduce a stale "active" copy of
+    // the same sondage right after an expiry/reopen transition.
+    final response = await DioClient().dio.get('$_endpoint/my');
+    final sondages =
+        _extractList(response.data).map(SondageMapper.fromJson).toList()
+          ..sort((a, b) => b.createdDate.compareTo(a.createdDate));
     await localDataSource.saveAll(sondages);
     return sondages;
   }

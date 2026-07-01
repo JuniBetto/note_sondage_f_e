@@ -17,6 +17,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
   /// Cache dei sondaggi caricati per evitare flickering
   List<SondageEntity> _cachedSondages = [];
   final Set<String> _syncingSondageIds = <String>{};
+  final Set<String> _queuedRefreshKeys = <String>{};
   String? _refreshKey;
 
   Set<String> get syncingSondageIds => Set.unmodifiable(_syncingSondageIds);
@@ -61,6 +62,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       }
     }
     if (_refreshKey == requestKey) {
+      _queuedRefreshKeys.add(requestKey);
       return;
     }
     _refreshKey = requestKey;
@@ -84,6 +86,9 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       if (_refreshKey == requestKey) {
         _refreshKey = null;
       }
+      if (_queuedRefreshKeys.remove(requestKey) && !isClosed) {
+        add(LoadSondagesEvent());
+      }
     }
   }
 
@@ -104,6 +109,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       }
     }
     if (_refreshKey == requestKey) {
+      _queuedRefreshKeys.add(requestKey);
       return;
     }
     _refreshKey = requestKey;
@@ -128,6 +134,9 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     } finally {
       if (_refreshKey == requestKey) {
         _refreshKey = null;
+      }
+      if (_queuedRefreshKeys.remove(requestKey) && !isClosed) {
+        add(LoadSondagesByUserIdEvent(event.userId));
       }
     }
   }
