@@ -103,7 +103,9 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
-          final colorScheme = Theme.of(ctx).colorScheme;
+          final theme = context.theme;
+          final colorScheme = theme.colorScheme;
+          final textTheme = theme.textTheme;
           final borderColor = colorScheme.borderColor ?? colorScheme.outline;
           final canSubmit =
               nameCtrl.text.trim().isNotEmpty && hasValidTimeRange();
@@ -252,13 +254,16 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                   onPressed: () => Navigator.pop(ctx),
                   type: ButtonType.text,
                   isActive: false,
-                  child: Text(loc.cancel),
+                  backgroundColor: colorScheme.bgsecondary,
+                  child: Text(loc.cancel,style: textTheme.bodySmall!.copyWith(color: colorScheme.textInvertedColor),),
                 ),
                 CustomAppButton(
                   onPressed: !canSubmit ? null : () => submitProfile(ctx),
                   type: ButtonType.filled,
                   isActive: false,
-                  child: Text(loc.save),
+                  backgroundColor: colorScheme.bgsecondary,
+                  child: Text(loc.save,
+                    style: textTheme.bodySmall!.copyWith(color: colorScheme.textInvertedColor),),
                 ),
               ],
             ),

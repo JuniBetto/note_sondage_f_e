@@ -260,6 +260,10 @@ class _ChatComposerState extends State<ChatComposer> {
                           fillColor: Colors.white,
                           border: InputBorder.none,
                           isCollapsed: true,
+                          focusColor: Colors.white,
+                          hoverColor: Colors.white,
+
+
                         ),
                       ),
                     ),

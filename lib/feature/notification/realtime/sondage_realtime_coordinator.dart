@@ -5,8 +5,11 @@ class SondageRealtimeCoordinator {
     'SONDAGE_DRAFT_CREATED',
     'SONDAGE_DRAFT_UPDATED',
     'SONDAGE_DRAFT_DELETED',
+    'SONDAGE_UPDATED',
+    'SONDAGE_DELETED',
     'SONDAGE_PUBLISHED',
     'SONDAGE_CLOSED',
+    'SONDAGE_REOPENED',
     'SONDAGE_EXPIRED',
     'SONDAGE_VOTED',
   };
@@ -22,8 +25,11 @@ class SondageRealtimeCoordinator {
     }
 
     final eventType = notification.eventType;
-    final refreshDashboard = eventType == 'SONDAGE_PUBLISHED' ||
+    final refreshDashboard =
+        eventType == 'SONDAGE_PUBLISHED' ||
         eventType == 'SONDAGE_CLOSED' ||
+        eventType == 'SONDAGE_REOPENED' ||
+        eventType == 'SONDAGE_DELETED' ||
         eventType == 'SONDAGE_EXPIRED' ||
         eventType == 'SONDAGE_VOTED';
 

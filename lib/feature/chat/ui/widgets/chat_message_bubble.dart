@@ -5,6 +5,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.da
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reaction_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/aspect_ratio.dart' as app_ratio;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -37,10 +38,10 @@ class ChatMessageBubble extends StatelessWidget {
     final bubbleColor = message.mine
         ? accentColor.withValues(alpha: 0.96)
         : accentColor.withValues(alpha: 0.14);
-    final textColor = message.mine
+    final textColor = Colors.white; /*message.mine
         ? Colors.white
-        : _incomingTextColor(accentColor);
-    final metaColor = theme.colorScheme.onSurfaceVariant;
+        : Colors.white.withAlpha(90);*/
+    final metaColor = theme.colorScheme.calendarTextBg;
     final maxBubbleWidth = MediaQuery.sizeOf(context).width * 0.68;
     final nameUser = message.senderName.split('@')[0];
     final borderRadius = BorderRadius.only(
@@ -62,7 +63,7 @@ class ChatMessageBubble extends StatelessWidget {
           isDelivered: message.isDeliveredToOthers,
           isSeen: message.isReadByOthers,
           accentColor: accentColor,
-          metaColor: metaColor,
+          metaColor: metaColor!,
           onSenderPressed: onSenderPressed,
         ),
         const SizedBox(height: 3),
@@ -120,14 +121,6 @@ class ChatMessageBubble extends StatelessWidget {
       ],
     );
   }
-
-  Color _incomingTextColor(Color accentColor) {
-    final brightness = ThemeData.estimateBrightnessForColor(accentColor);
-    if (brightness == Brightness.dark) {
-      return accentColor.withValues(alpha: 0.96);
-    }
-    return Colors.black.withValues(alpha: 0.8);
-  }
 }
 
 class _MessageHeaderRow extends StatelessWidget {
@@ -158,9 +151,11 @@ class _MessageHeaderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
+    // final senderColor = mine ? Colors.white : colorScheme.onSurface;
     final nameStyle = theme.textTheme.titleSmall?.copyWith(
-      color: theme.colorScheme.onSurface,
+      color: colorScheme.calendarTextBg,
       fontWeight: FontWeight.w800,
     );
     final metaStyle = theme.textTheme.bodySmall?.copyWith(

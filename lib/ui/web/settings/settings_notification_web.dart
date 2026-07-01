@@ -79,10 +79,11 @@ class _SettingsNotificationWebState extends State<SettingsNotificationWeb> {
         _pushDiagnostics = snapshot;
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingPushDiagnostics = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingPushDiagnostics = false;
+        });
+      }
     }
   }
 

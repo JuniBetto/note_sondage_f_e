@@ -351,6 +351,7 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final localization = AppLocalizations.of(context)!;
+    final rootSondageBloc = context.read<SondageBloc>();
 
     return BlocProvider.value(
       value: _bloc,
@@ -360,7 +361,18 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
             return;
           }
           _handleBlocState(state);
+          if (state is SondageLoaded || state is SondageActionSuccess) {
+            final sondage = state is SondageLoaded
+                ? state.sondage
+                : (state as SondageActionSuccess).sondage;
+            if (!rootSondageBloc.isClosed) {
+              rootSondageBloc.add(SyncCachedSondageEvent(sondage));
+            }
+          }
           if (state is SondageDeleted && context.mounted) {
+            if (!rootSondageBloc.isClosed) {
+              rootSondageBloc.add(RemoveCachedSondageEvent(widget.sondageId));
+            }
             AppSnackBar.showSuccess(context, localization.surveyDeleted);
             context.go(RouterPaths.sondage);
             return;

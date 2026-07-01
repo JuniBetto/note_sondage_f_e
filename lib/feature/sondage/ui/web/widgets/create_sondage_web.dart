@@ -28,7 +28,10 @@ class CreateSondageWeb extends StatelessWidget {
               if (!context.mounted) {
                 return;
               }
-              Navigator.of(context).maybePop();
+              final navigator = Navigator.of(context);
+              if (navigator.canPop()) {
+                navigator.pop();
+              }
             },
             initialSondage: initialSondage,
           ),

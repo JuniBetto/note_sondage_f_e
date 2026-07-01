@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/notification/push/push_diagnostics_snapshot.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -18,6 +19,9 @@ class PushDiagnosticsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!kDebugMode) {
+      return const SizedBox.shrink();
+    }
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;

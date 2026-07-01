@@ -35,6 +35,8 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     on<CloseSondageEvent>(_onCloseSondage);
     on<ReopenSondageEvent>(_onReopenSondage);
     on<VoteSondageEvent>(_onVoteSondage);
+    on<SyncCachedSondageEvent>(_onSyncCachedSondage);
+    on<RemoveCachedSondageEvent>(_onRemoveCachedSondage);
     on<_SondageCreateCommittedEvent>(_onSondageCreateCommitted);
     on<_SondageUpdateCommittedEvent>(_onSondageUpdateCommitted);
     on<_SondageDeleteCommittedEvent>(_onSondageDeleteCommitted);
@@ -217,6 +219,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     unawaited(() async {
       try {
         final updated = await sondageUseCase.updateSondage(event.sondage);
+
         if (!isClosed) {
           add(_SondageUpdateCommittedEvent(event.sondage.id, updated));
         }
@@ -369,6 +372,38 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
       );
       if (_cachedSondages.isNotEmpty) emit(SondagesLoaded(_cachedSondages));
     }
+  }
+
+  Future<void> _onSyncCachedSondage(
+    SyncCachedSondageEvent event,
+    Emitter<SondageState> emit,
+  ) async {
+    final existingIndex = _cachedSondages.indexWhere(
+      (item) => item.id == event.sondage.id,
+    );
+    if (existingIndex == -1) {
+      return;
+    }
+    _cachedSondages = List<SondageEntity>.from(_cachedSondages)
+      ..[existingIndex] = event.sondage;
+    await _persistCache();
+    emit(SondagesLoaded(_cachedSondages));
+  }
+
+  Future<void> _onRemoveCachedSondage(
+    RemoveCachedSondageEvent event,
+    Emitter<SondageState> emit,
+  ) async {
+    final updated = _cachedSondages
+        .where((item) => item.id != event.id)
+        .toList();
+    if (updated.length == _cachedSondages.length) {
+      return;
+    }
+    _cachedSondages = updated;
+    _syncingSondageIds.remove(event.id);
+    await _persistCache();
+    emit(SondagesLoaded(_cachedSondages));
   }
 
   void _upsertCache(SondageEntity sondage) {

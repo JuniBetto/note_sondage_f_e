@@ -371,6 +371,7 @@ class _MainAppState extends State<MainApp> {
         ),
       );
       await notificationCenterCubit.loadNotifications(force: true);
+      if (!mounted) return;
       await NotificationNavigation.open(item, context: context);
       return;
     }

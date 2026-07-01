@@ -57,6 +57,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   bool _hasExpiry = false;
   bool _isSubmitting = false;
   bool _tutorialScheduled = false;
+  bool _expiryEdited = false;
   TimeOfDay _start = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _end = const TimeOfDay(hour: 18, minute: 0);
   DateTime? _expiryAnchorDate;
@@ -79,6 +80,16 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     _optionControllers = <TextEditingController>[];
     _hydrateForm();
     _teamsFuture = _loadCreatableTeams();
+  }
+
+  @override
+  void didUpdateWidget(covariant SondageCreateForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final previousId = oldWidget.initialSondage?.id;
+    final currentId = widget.initialSondage?.id;
+    if (previousId != currentId) {
+      _replaceFormWithInitialData();
+    }
   }
 
   @override
@@ -188,9 +199,31 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     }
   }
 
+  void _replaceFormWithInitialData() {
+    _questionController.clear();
+    _descriptionController.clear();
+    _teamSearchController.clear();
+    _clearOptionControllers();
+    setState(() {
+      _selectedTeamId = null;
+      _allowMultipleResponses = false;
+      _hasExpiry = false;
+      _start = const TimeOfDay(hour: 9, minute: 0);
+      _end = const TimeOfDay(hour: 18, minute: 0);
+      _expiryAnchorDate = null;
+      _expiryEdited = false;
+      _isSubmitting = false;
+    });
+    _hydrateForm();
+  }
+
   DateTime? _resolveExpiryDate() {
     if (!_hasExpiry) {
       return null;
+    }
+
+    if (_isEditing && !_expiryEdited) {
+      return widget.initialSondage?.expiryDate;
     }
 
     final now = DateTime.now();
@@ -220,6 +253,14 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       ..add(_buildOptionController());
   }
 
+  void _clearOptionControllers() {
+    for (final controller in _optionControllers) {
+      controller.removeListener(_syncOptionControllers);
+      controller.dispose();
+    }
+    _optionControllers.clear();
+  }
+
   void _resetForm() {
     _questionController.clear();
     _descriptionController.clear();
@@ -231,6 +272,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       _start = const TimeOfDay(hour: 9, minute: 0);
       _end = const TimeOfDay(hour: 18, minute: 0);
       _expiryAnchorDate = null;
+      _expiryEdited = false;
     });
   }
 
@@ -324,6 +366,19 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       return;
     }
 
+    final resolvedExpiry = _resolveExpiryDate();
+    final initialExpiry = widget.initialSondage?.expiryDate;
+    final isChangedPastExpiry =
+        _isEditing &&
+        resolvedExpiry != null &&
+        resolvedExpiry.isBefore(DateTime.now()) &&
+        (initialExpiry == null ||
+            !resolvedExpiry.isAtSameMomentAs(initialExpiry));
+    if (isChangedPastExpiry) {
+      _showSnackBar('La nuova scadenza deve essere nel futuro.');
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     final initial = widget.initialSondage;
     final payload = SondageEntity(
@@ -335,7 +390,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       totalVotes: initial?.totalVotes ?? 0,
       totalQuestions: options.length,
       createdDate: initial?.createdDate ?? DateTime.now(),
-      expiryDate: _resolveExpiryDate(),
+      expiryDate: resolvedExpiry,
       color: initial?.color ?? Colors.blue,
       createdByUserId: initial?.createdByUserId,
       teamId: teamId,
@@ -364,6 +419,17 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     context.read<SondageBloc>().add(
       _isEditing ? UpdateSondageEvent(payload) : CreateSondageEvent(payload),
     );
+
+    if (_isEditing && widget.onCloseRequested != null) {
+      final onCreated = widget.onCreated;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        widget.onCloseRequested!.call();
+        onCreated?.call();
+      });
+    }
   }
 
   Widget _buildSection({
@@ -888,6 +954,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                           onChanged: (value) {
                             setState(() {
                               _hasExpiry = value ?? false;
+                              _expiryEdited = true;
                               if (_hasExpiry && _expiryAnchorDate == null) {
                                 final now = DateTime.now();
                                 _expiryAnchorDate = DateTime(
@@ -908,13 +975,36 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                           child: Opacity(
                             opacity: _hasExpiry ? 1 : 0.4,
                             child: TimeRangePicker(
+                              date:
+                                  _expiryAnchorDate ??
+                                  DateTime(
+                                    DateTime.now().year,
+                                    DateTime.now().month,
+                                    DateTime.now().day,
+                                  ),
                               start: _start,
                               end: _end,
+                              onDateChanged: (value) {
+                                setState(() {
+                                  _expiryAnchorDate = DateTime(
+                                    value.year,
+                                    value.month,
+                                    value.day,
+                                  );
+                                  _expiryEdited = true;
+                                });
+                              },
                               onStartChanged: (value) {
-                                setState(() => _start = value);
+                                setState(() {
+                                  _start = value;
+                                  _expiryEdited = true;
+                                });
                               },
                               onEndChanged: (value) {
-                                setState(() => _end = value);
+                                setState(() {
+                                  _end = value;
+                                  _expiryEdited = true;
+                                });
                               },
                             ),
                           ),

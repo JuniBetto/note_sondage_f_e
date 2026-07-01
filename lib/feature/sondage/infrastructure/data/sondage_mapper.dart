@@ -36,7 +36,7 @@ class SondageMapper {
     final createdAtRaw = json['createdDate'] ?? json['createdAt'];
     if (createdAtRaw != null) {
       try {
-        createdDate = DateTime.parse(createdAtRaw.toString());
+        createdDate = DateTime.parse(createdAtRaw.toString()).toLocal();
       } catch (_) {
         createdDate = DateTime.now();
       }
@@ -46,7 +46,7 @@ class SondageMapper {
     final expiresAtRaw = json['expiryDate'] ?? json['expiresAt'];
     if (expiresAtRaw != null) {
       try {
-        expiryDate = DateTime.parse(expiresAtRaw.toString());
+        expiryDate = DateTime.parse(expiresAtRaw.toString()).toLocal();
       } catch (_) {
         expiryDate = null;
       }
@@ -145,7 +145,7 @@ class SondageMapper {
         'description': entity.description!.trim(),
       'allowMultipleResponses': entity.allowMultipleResponses,
       if (entity.expiryDate != null)
-        'expiresAt': entity.expiryDate!.toIso8601String(),
+        'expiresAt': entity.expiryDate!.toUtc().toIso8601String(),
       'options': entity.options.map((option) => option.label).toList(),
     };
   }

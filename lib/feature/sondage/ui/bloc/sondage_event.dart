@@ -91,6 +91,24 @@ class VoteSondageEvent extends SondageEvent {
   List<Object?> get props => [sondageId, optionId];
 }
 
+class SyncCachedSondageEvent extends SondageEvent {
+  final SondageEntity sondage;
+
+  const SyncCachedSondageEvent(this.sondage);
+
+  @override
+  List<Object?> get props => [sondage];
+}
+
+class RemoveCachedSondageEvent extends SondageEvent {
+  final String id;
+
+  const RemoveCachedSondageEvent(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
+
 class ResetSondageCacheEvent extends SondageEvent {
   const ResetSondageCacheEvent();
 }

@@ -56,9 +56,10 @@ class SondageLocalDataSource {
             responses: m.responses,
             totalVotes: m.responses,
             totalQuestions: m.totalQuestions,
-            createdDate: DateTime.tryParse(m.createdDate) ?? DateTime.now(),
+            createdDate:
+                DateTime.tryParse(m.createdDate)?.toLocal() ?? DateTime.now(),
             expiryDate: m.expiryDate != null
-                ? DateTime.tryParse(m.expiryDate!)
+                ? DateTime.tryParse(m.expiryDate!)?.toLocal()
                 : null,
             color: Color(m.color),
             createdByUserId: m.createdByUserId,

@@ -99,7 +99,10 @@ class ChatConversationPanel extends StatelessWidget {
                     onDeleteRequested: onDeleteRequested,
                   ),
           ),
-          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2.0),
+            child: const Divider(height: 1),
+          ),
           ChatComposer(
             messageController: messageController,
             compact: compact,

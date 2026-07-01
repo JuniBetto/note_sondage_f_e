@@ -40,7 +40,9 @@ class _NotificationSettingsMobileState
       context.read<NotificationPreferencesCubit>().loadPreferences();
       _loadShiftAlarmFeedback();
       _loadShiftAlarmDuration();
-      _loadPushDiagnostics();
+      if (kDebugMode) {
+        _loadPushDiagnostics();
+      }
     });
   }
 
@@ -63,6 +65,9 @@ class _NotificationSettingsMobileState
   }
 
   Future<void> _loadPushDiagnostics({bool syncFirst = false}) async {
+    if (!kDebugMode) {
+      return;
+    }
     setState(() {
       _isLoadingPushDiagnostics = true;
     });
@@ -78,10 +83,11 @@ class _NotificationSettingsMobileState
         _pushDiagnostics = snapshot;
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingPushDiagnostics = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingPushDiagnostics = false;
+        });
+      }
     }
   }
 
@@ -195,16 +201,17 @@ class _NotificationSettingsMobileState
                 ),
               ),
 
-              const SizedBox(height: 20),
-
-              _buildSectionTitle(context, 'Device push status'),
-              const SizedBox(height: 8),
-              PushDiagnosticsPanel(
-                snapshot: _pushDiagnostics,
-                isLoading: _isLoadingPushDiagnostics,
-                onRefresh: _loadPushDiagnostics,
-                onSyncNow: () => _loadPushDiagnostics(syncFirst: true),
-              ),
+              if (kDebugMode) ...[
+                const SizedBox(height: 20),
+                _buildSectionTitle(context, 'Device push status'),
+                const SizedBox(height: 8),
+                PushDiagnosticsPanel(
+                  snapshot: _pushDiagnostics,
+                  isLoading: _isLoadingPushDiagnostics,
+                  onRefresh: _loadPushDiagnostics,
+                  onSyncNow: () => _loadPushDiagnostics(syncFirst: true),
+                ),
+              ],
 
               const SizedBox(height: 20),
 
