@@ -158,7 +158,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
   Future<_DashboardSnapshot> _loadSnapshot() async {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    //final today = DateTime(now.year, now.month, now.day);
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 0);
     final currentUserId = _currentUserIdProvider().trim();
