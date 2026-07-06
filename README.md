@@ -2,6 +2,16 @@
 
 Frontend Flutter dell'ecosistema `Note Sondage`.
 
+## Architettura web aggiornata
+
+Per il canale pubblico ora la parte browser e' separata in due servizi:
+
+- landing SEO Next.js su `teammanagement.it`
+- web app Flutter su `app.teammanagement.it`
+
+La separazione evita il conflitto tra home marketing e home autenticata, e rende
+piu' semplice indicizzazione, social preview e funnel verso store/login.
+
 L'app copre le aree principali del prodotto:
 
 - autenticazione
@@ -59,6 +69,7 @@ Per build, deploy e flussi specifici usa le note dedicate:
 - [WEB_DEPLOYMENT.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/WEB_DEPLOYMENT.md)
 - [WEB_DEPLOYMENT_MODES.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/WEB_DEPLOYMENT_MODES.md)
 - [SHIFT_CREATE_MODAL.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/SHIFT_CREATE_MODAL.md)
+- [note_sondage_vitrine/README.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_vitrine/README.md)
 
 Per il comportamento funzionale dell'app:
 

@@ -1405,6 +1405,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get manualClockingOverlapConfirmAdjust => 'Si, riduci';
 
   @override
+  String get clockingEditOpenRecordConflict =>
+      'Esiste una timbratura aperta in questo giorno. Chiudila prima di salvare questa modifica.';
+
+  @override
+  String get clockingEditOverlapConflict =>
+      'Questa timbratura si sovrappone a una timbratura o a un permesso gia esistente.';
+
+  @override
   String get noTeamSelected => 'Nessun team selezionato';
 
   @override

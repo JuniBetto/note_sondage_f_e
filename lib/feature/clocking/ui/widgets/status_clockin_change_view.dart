@@ -44,6 +44,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   final RoleUseCase _roleUseCase = getIt<RoleUseCase>();
   final ClockingUseCase _clockingUseCase = getIt<ClockingUseCase>();
   late final TextEditingController _searchController;
+  late final TextEditingController _inlineClockInController;
+  late final TextEditingController _inlineClockOutController;
+  late final TextEditingController _inlineBreakController;
   DateTime? _selectedDateFilter;
   String? _selectedUserIdFilter;
   final Set<ClockingStatus> _selectedStatusFilters = <ClockingStatus>{};
@@ -51,6 +54,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   bool _showArchivedOnly = false;
   bool _canManageClocking = false;
   String? _resolvedTeamId;
+  String? _editingRecordId;
 
   @override
   void initState() {
@@ -63,6 +67,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
             widget.selectedDate!.day,
           );
     _searchController = TextEditingController();
+    _inlineClockInController = TextEditingController();
+    _inlineClockOutController = TextEditingController();
+    _inlineBreakController = TextEditingController();
     _searchController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -73,6 +80,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   @override
   void dispose() {
     _searchController.dispose();
+    _inlineClockInController.dispose();
+    _inlineClockOutController.dispose();
+    _inlineBreakController.dispose();
     super.dispose();
   }
 
@@ -211,9 +221,6 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           final selectedTeam = _selectedTeam(teamState, widget.selectedTeamId);
           final authState = context.watch<AuthBloc>().state;
           final currentUserId = authState.user.uid;
-          final isOwner =
-              authState.user.isNotEmpty &&
-              selectedTeam?.createdByUserId == authState.user.uid;
           final canManageClocking =
               !showingPersonalHistory && _canManageClocking;
           final decommitRequestTarget = !showingPersonalHistory
@@ -477,12 +484,19 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                                 .read<ClockingBloc>()
                                 .syncingRecordIds
                                 .contains(record.id),
-                            isOwner: isOwner,
+                            isOwner: canManageClocking,
                             isArchived: _archivedRecordIds.contains(record.id),
+                            isInlineEditing: _editingRecordId == record.id,
                             onDecommit: () => _decommitRecord(record),
                             onCommit: () => _commitRecord(record),
                             onEdit: () => _editRecord(record),
+                            onStartInlineEdit: () => _startInlineEdit(record),
+                            onCancelInlineEdit: _cancelInlineEdit,
+                            onSaveInlineEdit: () => _saveInlineEdit(record),
                             onArchive: () => _toggleArchiveRecord(record.id),
+                            inlineClockInController: _inlineClockInController,
+                            inlineClockOutController: _inlineClockOutController,
+                            inlineBreakController: _inlineBreakController,
                           ),
                         ),
                       )
@@ -501,12 +515,19 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                                 .read<ClockingBloc>()
                                 .syncingRecordIds
                                 .contains(record.id),
-                            isOwner: isOwner,
+                            isOwner: canManageClocking,
                             isArchived: _archivedRecordIds.contains(record.id),
+                            isInlineEditing: _editingRecordId == record.id,
                             onDecommit: () => _decommitRecord(record),
                             onCommit: () => _commitRecord(record),
                             onEdit: () => _editRecord(record),
+                            onStartInlineEdit: () => _startInlineEdit(record),
+                            onCancelInlineEdit: _cancelInlineEdit,
+                            onSaveInlineEdit: () => _saveInlineEdit(record),
                             onArchive: () => _toggleArchiveRecord(record.id),
+                            inlineClockInController: _inlineClockInController,
+                            inlineClockOutController: _inlineClockOutController,
+                            inlineBreakController: _inlineBreakController,
                           ),
                         ),
                       )
@@ -872,6 +893,78 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     context.read<ClockingBloc>().add(CommitClockingRecordEvent(record.id));
   }
 
+  void _startInlineEdit(ClockingRecordEntity record) {
+    _inlineClockInController.text = _formatEditableTime(record.clockInTime);
+    _inlineClockOutController.text = _formatEditableTime(record.clockOutTime);
+    _inlineBreakController.text = (record.totalBreakMinutes ?? 0).toString();
+    setState(() {
+      _editingRecordId = record.id;
+    });
+  }
+
+  void _cancelInlineEdit() {
+    if (!mounted) {
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _editingRecordId = null;
+    });
+  }
+
+  void _saveInlineEdit(ClockingRecordEntity record) {
+    final loc = AppLocalizations.of(context)!;
+    final parsedClockIn = _mergeDateAndTime(
+      record.date,
+      _inlineClockInController.text,
+    );
+    final parsedClockOut = _mergeDateAndTime(
+      record.date,
+      _inlineClockOutController.text,
+    );
+    final parsedBreakMinutes = int.tryParse(_inlineBreakController.text.trim());
+
+    if (parsedClockIn == null || parsedClockOut == null) {
+      _showSnackBar(loc.invalidDateFormat, Colors.orange);
+      return;
+    }
+    if (!parsedClockOut.isAfter(parsedClockIn)) {
+      _showSnackBar(loc.clockOutMustBeAfterClockIn, Colors.orange);
+      return;
+    }
+    if (parsedBreakMinutes == null || parsedBreakMinutes < 0) {
+      _showSnackBar(loc.invalidBreakMinutes, Colors.orange);
+      return;
+    }
+    final shiftMinutes = parsedClockOut.difference(parsedClockIn).inMinutes;
+    if (parsedBreakMinutes >= shiftMinutes) {
+      _showSnackBar(loc.breakMustBeShorterThanShift, Colors.orange);
+      return;
+    }
+    final overlapValidationMessage = _validateRecordUpdateAgainstKnownRecords(
+      record: record,
+      clockInAt: parsedClockIn,
+      clockOutAt: parsedClockOut,
+    );
+    if (overlapValidationMessage != null) {
+      _showSnackBar(overlapValidationMessage, Colors.orange);
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    context.read<ClockingBloc>().add(
+      UpdateClockingRecordEvent(
+        id: record.id,
+        clockInAt: parsedClockIn,
+        clockOutAt: parsedClockOut,
+        totalBreakMinutes: parsedBreakMinutes,
+      ),
+    );
+    setState(() {
+      _editingRecordId = null;
+    });
+  }
+
   Future<void> _editRecord(ClockingRecordEntity record) async {
     final clockInController = TextEditingController(
       text: _formatDateTime(record.clockInTime),
@@ -971,6 +1064,37 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       );
       return;
     }
+    if (!parsedClockOut.isAfter(parsedClockIn)) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.clockOutMustBeAfterClockIn,
+        Colors.orange,
+      );
+      return;
+    }
+    if (parsedBreakMinutes == null || parsedBreakMinutes < 0) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.invalidBreakMinutes,
+        Colors.orange,
+      );
+      return;
+    }
+    final shiftMinutes = parsedClockOut.difference(parsedClockIn).inMinutes;
+    if (parsedBreakMinutes >= shiftMinutes) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.breakMustBeShorterThanShift,
+        Colors.orange,
+      );
+      return;
+    }
+    final overlapValidationMessage = _validateRecordUpdateAgainstKnownRecords(
+      record: record,
+      clockInAt: parsedClockIn,
+      clockOutAt: parsedClockOut,
+    );
+    if (overlapValidationMessage != null) {
+      _showSnackBar(overlapValidationMessage, Colors.orange);
+      return;
+    }
 
     context.read<ClockingBloc>().add(
       UpdateClockingRecordEvent(
@@ -997,6 +1121,105 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     final hh = value.hour.toString().padLeft(2, '0');
     final min = value.minute.toString().padLeft(2, '0');
     return '$yyyy-$mm-$dd $hh:$min';
+  }
+
+  String _formatEditableTime(DateTime? value) {
+    if (value == null) {
+      return '';
+    }
+    final hh = value.hour.toString().padLeft(2, '0');
+    final mm = value.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
+  }
+
+  DateTime? _mergeDateAndTime(DateTime date, String raw) {
+    final trimmed = raw.trim();
+    final parts = trimmed.split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
+      return null;
+    }
+    return DateTime(date.year, date.month, date.day, hour, minute);
+  }
+
+  String? _validateRecordUpdateAgainstKnownRecords({
+    required ClockingRecordEntity record,
+    required DateTime clockInAt,
+    required DateTime clockOutAt,
+  }) {
+    final knownRecords = _knownRecordsFromState(
+      context.read<ClockingBloc>().state,
+    );
+    for (final existing in knownRecords) {
+      if (existing.id == record.id) {
+        continue;
+      }
+      if (existing.userId != record.userId) {
+        continue;
+      }
+      if (!_isSameDay(existing.date, clockInAt)) {
+        continue;
+      }
+      if (existing.isVacation) {
+        return AppLocalizations.of(context)!.selectedDayMarkedAsVacation;
+      }
+
+      final existingClockIn = existing.clockInTime;
+      if (existingClockIn == null) {
+        continue;
+      }
+      final existingClockOut = existing.clockOutTime;
+      if (existingClockOut == null) {
+        return AppLocalizations.of(context)!.clockingEditOpenRecordConflict;
+      }
+      if (_intervalsOverlap(
+        startA: clockInAt,
+        endA: clockOutAt,
+        startB: existingClockIn,
+        endB: existingClockOut,
+      )) {
+        return AppLocalizations.of(context)!.clockingEditOverlapConflict;
+      }
+    }
+    return null;
+  }
+
+  List<ClockingRecordEntity> _knownRecordsFromState(ClockingState state) {
+    final records = <ClockingRecordEntity>[];
+    if (state is ClockingRecordsLoaded) {
+      records.addAll(state.myRecords);
+      records.addAll(state.teamRecords);
+    } else if (state is ClockingActionInProgress) {
+      records.addAll(state.myRecords);
+      records.addAll(state.teamRecords);
+    } else if (state is ClockingActionSuccess) {
+      records.addAll(state.myRecords);
+      records.addAll(state.teamRecords);
+    }
+
+    final uniqueById = <String, ClockingRecordEntity>{};
+    for (final record in records) {
+      uniqueById[record.id] = record;
+    }
+    return uniqueById.values.toList();
+  }
+
+  bool _intervalsOverlap({
+    required DateTime startA,
+    required DateTime endA,
+    required DateTime startB,
+    required DateTime endB,
+  }) {
+    return startA.isBefore(endB) && endA.isAfter(startB);
   }
 
   void _showSnackBar(String message, Color color) {
@@ -1699,10 +1922,17 @@ class _WebRecordRow extends StatelessWidget {
     this.isSyncing = false,
     required this.isOwner,
     required this.isArchived,
+    required this.isInlineEditing,
     required this.onDecommit,
     required this.onCommit,
     required this.onEdit,
+    required this.onStartInlineEdit,
+    required this.onCancelInlineEdit,
+    required this.onSaveInlineEdit,
     required this.onArchive,
+    required this.inlineClockInController,
+    required this.inlineClockOutController,
+    required this.inlineBreakController,
   });
 
   final ClockingRecordEntity record;
@@ -1710,15 +1940,24 @@ class _WebRecordRow extends StatelessWidget {
   final bool isSyncing;
   final bool isOwner;
   final bool isArchived;
+  final bool isInlineEditing;
   final VoidCallback onDecommit;
   final VoidCallback onCommit;
   final VoidCallback onEdit;
+  final VoidCallback onStartInlineEdit;
+  final VoidCallback onCancelInlineEdit;
+  final VoidCallback onSaveInlineEdit;
   final VoidCallback onArchive;
+  final TextEditingController inlineClockInController;
+  final TextEditingController inlineClockOutController;
+  final TextEditingController inlineBreakController;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isCurrentUserRecord =
+        currentUserId.trim().isNotEmpty && currentUserId == record.userId;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1735,7 +1974,14 @@ class _WebRecordRow extends StatelessWidget {
             onDecommit: onDecommit,
             onCommit: onCommit,
             onEdit: onEdit,
+            onStartInlineEdit: onStartInlineEdit,
+            onCancelInlineEdit: onCancelInlineEdit,
+            onSaveInlineEdit: onSaveInlineEdit,
             onArchive: onArchive,
+            isInlineEditing: isInlineEditing,
+            inlineClockInController: inlineClockInController,
+            inlineClockOutController: inlineClockOutController,
+            inlineBreakController: inlineBreakController,
           );
         }
 
@@ -1757,6 +2003,36 @@ class _WebRecordRow extends StatelessWidget {
                     record: record,
                     currentUserId: currentUserId,
                     isSyncing: isSyncing,
+                    headerActions: [
+                      if (record.isDecommitted &&
+                          isCurrentUserRecord &&
+                          isInlineEditing)
+                        IconButton(
+                          tooltip: 'Salva modifiche',
+                          onPressed: isSyncing ? null : onSaveInlineEdit,
+                          icon: Icon(
+                            Icons.check_rounded,
+                            color: Theme.of(context).colorScheme.selectItem,
+                          ),
+                        ),
+                      if (record.isDecommitted && isCurrentUserRecord)
+                        IconButton(
+                          tooltip: isInlineEditing
+                              ? 'Annulla modifica'
+                              : 'Modifica',
+                          onPressed: isSyncing
+                              ? null
+                              : (isInlineEditing
+                                    ? onCancelInlineEdit
+                                    : onStartInlineEdit),
+                          icon: Icon(
+                            isInlineEditing
+                                ? Icons.close_rounded
+                                : Icons.edit_rounded,
+                            color: Theme.of(context).colorScheme.selectItem,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 Expanded(
@@ -1769,12 +2045,26 @@ class _WebRecordRow extends StatelessWidget {
                   child: _RecordTimeColumn(
                     label: 'Clock-in',
                     value: record.clockInFormatted,
+                    editor: isInlineEditing
+                        ? _InlineRecordField(
+                            controller: inlineClockInController,
+                            hintText: 'HH:mm',
+                            keyboardType: TextInputType.datetime,
+                          )
+                        : null,
                   ),
                 ),
                 Expanded(
                   child: _RecordTimeColumn(
                     label: 'Clock-out',
                     value: record.clockOutFormatted,
+                    editor: isInlineEditing
+                        ? _InlineRecordField(
+                            controller: inlineClockOutController,
+                            hintText: 'HH:mm',
+                            keyboardType: TextInputType.datetime,
+                          )
+                        : null,
                   ),
                 ),
                 Expanded(
@@ -1794,6 +2084,13 @@ class _WebRecordRow extends StatelessWidget {
                   child: _RecordTimeColumn(
                     label: 'Break',
                     value: record.breakWorkedFormatted,
+                    editor: isInlineEditing
+                        ? _InlineRecordField(
+                            controller: inlineBreakController,
+                            hintText: '0',
+                            keyboardType: TextInputType.number,
+                          )
+                        : null,
                   ),
                 ),
                 SizedBox(
@@ -1803,9 +2100,12 @@ class _WebRecordRow extends StatelessWidget {
                     currentUserId: currentUserId,
                     isSyncing: isSyncing,
                     isOwner: isOwner,
+                    isInlineEditing: isInlineEditing,
                     onDecommit: onDecommit,
                     onCommit: onCommit,
                     onEdit: onEdit,
+                    onCancelInlineEdit: onCancelInlineEdit,
+                    onSaveInlineEdit: onSaveInlineEdit,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1835,10 +2135,17 @@ class _MobileRecordCard extends StatelessWidget {
     this.isSyncing = false,
     required this.isOwner,
     required this.isArchived,
+    required this.isInlineEditing,
     required this.onDecommit,
     required this.onCommit,
     required this.onEdit,
+    required this.onStartInlineEdit,
+    required this.onCancelInlineEdit,
+    required this.onSaveInlineEdit,
     required this.onArchive,
+    required this.inlineClockInController,
+    required this.inlineClockOutController,
+    required this.inlineBreakController,
   });
 
   final ClockingRecordEntity record;
@@ -1846,14 +2153,23 @@ class _MobileRecordCard extends StatelessWidget {
   final bool isSyncing;
   final bool isOwner;
   final bool isArchived;
+  final bool isInlineEditing;
   final VoidCallback onDecommit;
   final VoidCallback onCommit;
   final VoidCallback onEdit;
+  final VoidCallback onStartInlineEdit;
+  final VoidCallback onCancelInlineEdit;
+  final VoidCallback onSaveInlineEdit;
   final VoidCallback onArchive;
+  final TextEditingController inlineClockInController;
+  final TextEditingController inlineClockOutController;
+  final TextEditingController inlineBreakController;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isCurrentUserRecord =
+        currentUserId.trim().isNotEmpty && currentUserId == record.userId;
     return Opacity(
       opacity: isSyncing ? 0.78 : 1,
       child: Container(
@@ -1875,16 +2191,48 @@ class _MobileRecordCard extends StatelessWidget {
                     record: record,
                     currentUserId: currentUserId,
                     isSyncing: isSyncing,
-                  ),
-                ),
-                IconButton(
-                  tooltip: isArchived ? 'Ripristina record' : 'Archivia record',
-                  onPressed: onArchive,
-                  icon: Icon(
-                    isArchived
-                        ? Icons.unarchive_outlined
-                        : Icons.archive_outlined,
-                    color: Colors.blueGrey,
+                    headerActions: [
+                      if (record.isDecommitted &&
+                          isCurrentUserRecord &&
+                          isInlineEditing)
+                        IconButton(
+                          tooltip: 'Salva modifiche',
+                          onPressed: isSyncing ? null : onSaveInlineEdit,
+                          icon: Icon(
+                            Icons.check_rounded,
+                            color: Theme.of(context).colorScheme.selectItem,
+                          ),
+                        ),
+                      if (record.isDecommitted && isCurrentUserRecord)
+                        IconButton(
+                          tooltip: isInlineEditing
+                              ? 'Annulla modifica'
+                              : 'Modifica',
+                          onPressed: isSyncing
+                              ? null
+                              : (isInlineEditing
+                                    ? onCancelInlineEdit
+                                    : onStartInlineEdit),
+                          icon: Icon(
+                            isInlineEditing
+                                ? Icons.close_rounded
+                                : Icons.edit_rounded,
+                            color: Theme.of(context).colorScheme.selectItem,
+                          ),
+                        ),
+                      IconButton(
+                        tooltip: isArchived
+                            ? 'Ripristina record'
+                            : 'Archivia record',
+                        onPressed: onArchive,
+                        icon: Icon(
+                          isArchived
+                              ? Icons.unarchive_outlined
+                              : Icons.archive_outlined,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1898,15 +2246,45 @@ class _MobileRecordCard extends StatelessWidget {
                   label: 'Date',
                   value: DateFormat('dd/MM/yyyy').format(record.date),
                 ),
-                _MiniInfo(label: 'Clock-in', value: record.clockInFormatted),
-                _MiniInfo(label: 'Clock-out', value: record.clockOutFormatted),
+                _MiniInfo(
+                  label: 'Clock-in',
+                  value: record.clockInFormatted,
+                  editor: isInlineEditing
+                      ? _InlineRecordField(
+                          controller: inlineClockInController,
+                          hintText: 'HH:mm',
+                          keyboardType: TextInputType.datetime,
+                        )
+                      : null,
+                ),
+                _MiniInfo(
+                  label: 'Clock-out',
+                  value: record.clockOutFormatted,
+                  editor: isInlineEditing
+                      ? _InlineRecordField(
+                          controller: inlineClockOutController,
+                          hintText: 'HH:mm',
+                          keyboardType: TextInputType.datetime,
+                        )
+                      : null,
+                ),
                 _MiniInfo(label: 'Worked', value: record.timeWorkedFormatted),
                 if (record.note != null && record.note!.trim().isNotEmpty)
                   _MiniInfo(
                     label: AppLocalizations.of(context)!.note,
                     value: record.note!.trim(),
                   ),
-                _MiniInfo(label: 'Break', value: record.breakWorkedFormatted),
+                _MiniInfo(
+                  label: 'Break',
+                  value: record.breakWorkedFormatted,
+                  editor: isInlineEditing
+                      ? _InlineRecordField(
+                          controller: inlineBreakController,
+                          hintText: '0',
+                          keyboardType: TextInputType.number,
+                        )
+                      : null,
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -1915,9 +2293,12 @@ class _MobileRecordCard extends StatelessWidget {
               currentUserId: currentUserId,
               isSyncing: isSyncing,
               isOwner: isOwner,
+              isInlineEditing: isInlineEditing,
               onDecommit: onDecommit,
               onCommit: onCommit,
               onEdit: onEdit,
+              onCancelInlineEdit: onCancelInlineEdit,
+              onSaveInlineEdit: onSaveInlineEdit,
               compact: true,
             ),
           ],
@@ -1932,11 +2313,13 @@ class _RecordSummary extends StatelessWidget {
     required this.record,
     required this.currentUserId,
     this.isSyncing = false,
+    this.headerActions = const <Widget>[],
   });
 
   final ClockingRecordEntity record;
   final String currentUserId;
   final bool isSyncing;
+  final List<Widget> headerActions;
 
   @override
   Widget build(BuildContext context) {
@@ -1982,6 +2365,7 @@ class _RecordSummary extends StatelessWidget {
                 ],
               ),
             ),
+            if (headerActions.isNotEmpty) ...headerActions,
           ],
         ),
         const SizedBox(height: 10),
@@ -2022,9 +2406,12 @@ class _OwnerActions extends StatelessWidget {
     required this.currentUserId,
     this.isSyncing = false,
     required this.isOwner,
+    this.isInlineEditing = false,
     required this.onDecommit,
     required this.onCommit,
     required this.onEdit,
+    this.onCancelInlineEdit,
+    this.onSaveInlineEdit,
     this.compact = false,
   });
 
@@ -2032,9 +2419,12 @@ class _OwnerActions extends StatelessWidget {
   final String currentUserId;
   final bool isSyncing;
   final bool isOwner;
+  final bool isInlineEditing;
   final VoidCallback onDecommit;
   final VoidCallback onCommit;
   final VoidCallback onEdit;
+  final VoidCallback? onCancelInlineEdit;
+  final VoidCallback? onSaveInlineEdit;
   final bool compact;
 
   @override
@@ -2051,6 +2441,31 @@ class _OwnerActions extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final isCurrentUserRecord =
         currentUserId.trim().isNotEmpty && currentUserId == record.userId;
+    if (isInlineEditing) {
+      final editButtons = <Widget>[
+        CustomAppButton(
+          onPressed: isSyncing ? null : onCancelInlineEdit,
+          type: ButtonType.outlined,
+          isActive: !isSyncing,
+          child: Text(loc.cancel),
+        ),
+        CustomAppButton(
+          onPressed: isSyncing ? null : onSaveInlineEdit,
+          type: ButtonType.filled,
+          isActive: !isSyncing,
+          child: Text(loc.save),
+        ),
+      ];
+      if (compact) {
+        return Wrap(spacing: 8, runSpacing: 8, children: editButtons);
+      }
+      return Wrap(
+        alignment: WrapAlignment.end,
+        spacing: 8,
+        runSpacing: 8,
+        children: editButtons,
+      );
+    }
     final buttons = <Widget>[
       if (record.canDecommit)
         CustomAppButton(
@@ -2066,7 +2481,7 @@ class _OwnerActions extends StatelessWidget {
           isActive: !isSyncing,
           child: Text(loc.commit),
         ),
-      if (record.ownerEditable)
+      if (record.ownerEditable && !record.isDecommitted)
         CustomAppButton(
           onPressed: isSyncing ? null : onEdit,
           type: ButtonType.filled,
@@ -2101,10 +2516,15 @@ class _OwnerActions extends StatelessWidget {
 }
 
 class _RecordTimeColumn extends StatelessWidget {
-  const _RecordTimeColumn({required this.label, required this.value});
+  const _RecordTimeColumn({
+    required this.label,
+    required this.value,
+    this.editor,
+  });
 
   final String label;
   final String value;
+  final Widget? editor;
 
   @override
   Widget build(BuildContext context) {
@@ -2117,22 +2537,26 @@ class _RecordTimeColumn extends StatelessWidget {
           style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+        if (editor != null)
+          editor!
+        else
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
       ],
     );
   }
 }
 
 class _MiniInfo extends StatelessWidget {
-  const _MiniInfo({required this.label, required this.value});
+  const _MiniInfo({required this.label, required this.value, this.editor});
 
   final String label;
   final String value;
+  final Widget? editor;
 
   @override
   Widget build(BuildContext context) {
@@ -2153,13 +2577,46 @@ class _MiniInfo extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+          if (editor != null)
+            SizedBox(width: 110, child: editor!)
+          else
+            Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _InlineRecordField extends StatelessWidget {
+  const _InlineRecordField({
+    required this.controller,
+    required this.hintText,
+    required this.keyboardType,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final TextInputType keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      textAlign: TextAlign.center,
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: hintText,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 10,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }

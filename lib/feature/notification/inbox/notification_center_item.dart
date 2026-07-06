@@ -142,6 +142,17 @@ class NotificationCenterItem extends Equatable {
     return value;
   }
 
+  String? get actionRequestNote {
+    final noteKeys = <String>['note', 'shiftNote'];
+    for (final key in noteKeys) {
+      final value = metadata[key]?.trim();
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
+    }
+    return null;
+  }
+
   bool get isPendingTeamInvitation => eventType == 'TEAM_MEMBER_INVITED';
 
   bool get isTerminalTeamInvitationEvent =>

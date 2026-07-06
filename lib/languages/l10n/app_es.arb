@@ -500,6 +500,8 @@
         }
     },
     "manualClockingOverlapConfirmAdjust": "Sí, acortarlo",
+    "clockingEditOpenRecordConflict": "Hay un fichaje abierto en este día. Ciérralo antes de guardar este cambio.",
+    "clockingEditOverlapConflict": "Este fichaje se solapa con un fichaje o permiso existente.",
     "noTeamSelected": "Ningún equipo seleccionado",
     "changeOrSearchTeam": "Abre para cambiar de equipo o buscar uno",
     "teamAvailableForClocking": "Equipo disponible para el fichaje",

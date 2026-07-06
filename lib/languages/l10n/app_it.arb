@@ -500,6 +500,8 @@
         }
     },
     "manualClockingOverlapConfirmAdjust": "Si, riduci",
+    "clockingEditOpenRecordConflict": "Esiste una timbratura aperta in questo giorno. Chiudila prima di salvare questa modifica.",
+    "clockingEditOverlapConflict": "Questa timbratura si sovrappone a una timbratura o a un permesso gia esistente.",
     "noTeamSelected": "Nessun team selezionato",
     "changeOrSearchTeam": "Apri per cambiare team o cercarne uno",
     "teamAvailableForClocking": "Team disponibile per la timbratura",

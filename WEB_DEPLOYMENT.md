@@ -22,12 +22,20 @@ Before going live, also verify:
 
 Current public production values:
 
-- web app:
+- marketing:
   - `https://teammanagement.it`
+- web app:
+  - `https://app.teammanagement.it`
 - API:
   - `https://api.teammanagement.it`
 - email confirmation:
-  - `https://teammanagement.it/confirm-registration`
+  - `https://app.teammanagement.it/confirm-registration`
+
+Public architecture note:
+
+- `teammanagement.it` is the Next.js SEO landing
+- `app.teammanagement.it` is the Flutter web app
+- both hostnames are exposed by the shared edge proxy
 
 ## Start a mode
 
@@ -140,6 +148,7 @@ For the Contabo-style public setup, prefer the root runbook and shared edge stac
 
 This keeps:
 
+- landing public domain
 - frontend public domain
 - API public domain
 - edge TLS

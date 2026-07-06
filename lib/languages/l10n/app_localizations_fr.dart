@@ -1410,6 +1410,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get manualClockingOverlapConfirmAdjust => 'Oui, raccourcir';
 
   @override
+  String get clockingEditOpenRecordConflict =>
+      'Il existe un pointage ouvert ce jour-là. Fermez-le avant d\'enregistrer cette modification.';
+
+  @override
+  String get clockingEditOverlapConflict =>
+      'Ce pointage chevauche un pointage ou une autorisation existante.';
+
+  @override
   String get noTeamSelected => 'Aucune équipe sélectionnée';
 
   @override

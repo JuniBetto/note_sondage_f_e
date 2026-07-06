@@ -254,18 +254,16 @@ class ClockingRemoteDataSource {
     for (final date in normalizedDates) {
       final clockInAt = date.add(Duration(minutes: clockInMinutes));
       final clockOutAt = date.add(Duration(minutes: clockOutMinutes));
-
-      await clockIn(teamId: teamId, clockInAt: clockInAt);
-
-      if (breakMinutes > 0) {
-        final breakStartAt = clockOutAt.subtract(
-          Duration(minutes: breakMinutes),
-        );
-        await startBreak(teamId: teamId, actionAt: breakStartAt);
-        await stopBreak(teamId: teamId, actionAt: clockOutAt);
-      }
-
-      await clockOut(teamId: teamId, note: note, clockOutAt: clockOutAt);
+      await _dio.post(
+        '/api/aggregate/clocking/manual-record',
+        data: {
+          if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
+          'clockInAt': clockInAt.toIso8601String(),
+          'clockOutAt': clockOutAt.toIso8601String(),
+          'totalBreakMinutes': breakMinutes,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
       createdCount += 1;
     }
 

@@ -154,6 +154,11 @@ class _MainAppState extends State<MainApp> {
     if (teamDecision.refreshDashboard) {
       getIt<DashboardBloc>().add(RefreshDashboardEvent());
     }
+    if (removedTeamId != null && removedTeamId.isNotEmpty) {
+      getIt<ClockingBloc>().add(
+        LoadClockingRecordsEvent(teamId: selectedClockingTeamId),
+      );
+    }
     if (clockingDecision.refreshClocking) {
       getIt<ClockingBloc>().add(
         LoadClockingRecordsEvent(teamId: selectedClockingTeamId),

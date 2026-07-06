@@ -263,6 +263,7 @@ class _NotificationCard extends StatelessWidget {
     final navigationLabel = canRespond
         ? null
         : NotificationNavigation.labelFor(item);
+    final actionRequestNote = item.actionRequestNote;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -287,6 +288,34 @@ class _NotificationCard extends StatelessWidget {
               if (item.body.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(item.body, style: theme.textTheme.bodyMedium),
+              ],
+              if (actionRequestNote != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.selectItem!.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        localization.note,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.selectItem,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        actionRequestNote,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
               ],
               const SizedBox(height: 10),
               Row(

@@ -14,10 +14,17 @@ When to use:
 
 Current public production values:
 
-- web:
+- marketing:
   - `teammanagement.it`
+- web app:
+  - `app.teammanagement.it`
 - API:
   - `api.teammanagement.it`
+
+Architecture note:
+- `teammanagement.it` is now intended for the Next.js SEO landing
+- `app.teammanagement.it` serves the authenticated Flutter web app
+- the edge proxy routes both hostnames on the same shared Podman network
 
 ## 1b. DuckDNS HTTPS
 
@@ -32,6 +39,7 @@ When to use:
 - backend is already exposed on a DuckDNS API hostname
 
 Requirements:
+- a DuckDNS hostname for the landing
 - a DuckDNS hostname for the web app
 - router port forwarding for 80 and 443
 - the hostname resolves to your public IP
@@ -55,6 +63,7 @@ When to use:
 - your app is behind CGNAT
 
 Requirements:
+- a Cloudflare-managed hostname for the landing
 - a Cloudflare-managed hostname for the web app
 - the shared `note-sondage-public` Podman network
 - the same `cloudflared` tunnel used by the backend, or another named tunnel
