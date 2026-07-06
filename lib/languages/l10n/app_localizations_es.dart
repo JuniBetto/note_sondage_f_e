@@ -1410,6 +1410,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get manualClockingOverlapConfirmAdjust => 'Sí, acortarlo';
 
   @override
+  String get clockingEditOpenRecordConflict =>
+      'Hay un fichaje abierto en este día. Ciérralo antes de guardar este cambio.';
+
+  @override
+  String get clockingEditOverlapConflict =>
+      'Este fichaje se solapa con un fichaje o permiso existente.';
+
+  @override
   String get noTeamSelected => 'Ningún equipo seleccionado';
 
   @override

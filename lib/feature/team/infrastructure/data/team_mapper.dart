@@ -23,6 +23,9 @@ class TeamMapper {
     final rawColor = json['color']?.toString();
     final color = (rawColor != null && rawColor.isNotEmpty) ? rawColor : null;
     final clockingRequired = json['clockingRequired'] == true;
+    final explicitMemberCount = (json['memberCount'] as num?)?.toInt();
+    final members = json['members'];
+    final derivedMemberCount = members is List ? members.length : 0;
 
     return TeamEntity(
       json['id']?.toString(),
@@ -44,7 +47,7 @@ class TeamMapper {
         json['clockingOpenAlertTime'],
         fallback: _defaultOpenAlertTime,
       ),
-      memberCount: (json['memberCount'] as num?)?.toInt() ?? 0,
+      memberCount: explicitMemberCount ?? derivedMemberCount,
       createdAt: createdAt,
     );
   }

@@ -1395,6 +1395,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get manualClockingOverlapConfirmAdjust => 'Yes, shorten it';
 
   @override
+  String get clockingEditOpenRecordConflict =>
+      'There is an open clocking on this day. Close it before saving this change.';
+
+  @override
+  String get clockingEditOverlapConflict =>
+      'This clocking overlaps an existing clocking or permission.';
+
+  @override
   String get noTeamSelected => 'No team selected';
 
   @override

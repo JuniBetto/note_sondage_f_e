@@ -500,6 +500,8 @@
         }
     },
     "manualClockingOverlapConfirmAdjust": "Oui, raccourcir",
+    "clockingEditOpenRecordConflict": "Il existe un pointage ouvert ce jour-là. Fermez-le avant d'enregistrer cette modification.",
+    "clockingEditOverlapConflict": "Ce pointage chevauche un pointage ou une autorisation existante.",
     "noTeamSelected": "Aucune équipe sélectionnée",
     "changeOrSearchTeam": "Ouvrez pour changer d'équipe ou en rechercher une",
     "teamAvailableForClocking": "Équipe disponible pour le pointage",

@@ -9,13 +9,23 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 class RealtimeNotificationService {
+  static const List<Duration> _webReconnectDelays = <Duration>[
+    Duration(seconds: 5),
+    Duration(seconds: 10),
+    Duration(seconds: 20),
+    Duration(seconds: 30),
+    Duration(seconds: 60),
+  ];
+
   final StreamController<RealtimeNotification> _controller =
       StreamController<RealtimeNotification>.broadcast();
 
   StompClient? _client;
+  Timer? _webReconnectTimer;
   String? _connectedUserId;
   List<String> _candidateWsUrls = const <String>[];
   int _currentWsUrlIndex = 0;
+  int _webReconnectAttempts = 0;
   bool _connectedForCurrentSession = false;
   bool _switchingWsUrl = false;
 
@@ -40,6 +50,7 @@ class RealtimeNotificationService {
     _candidateWsUrls = _resolveWebSocketUrls(apiUri, userId);
     _currentWsUrlIndex = 0;
     _connectedForCurrentSession = false;
+    _clearWebReconnectSchedule(resetAttempts: true);
 
     debugPrint(
       '[RealtimeNotificationService] Candidate websocket URLs: '
@@ -71,7 +82,7 @@ class RealtimeNotificationService {
         webSocketConnectHeaders: webSocketHeaders,
         // Keep STOMP CONNECT headers aligned with the same identity.
         stompConnectHeaders: {'X-User-Id': userId},
-        reconnectDelay: const Duration(seconds: 5),
+        reconnectDelay: kIsWeb ? Duration.zero : const Duration(seconds: 5),
         connectionTimeout: const Duration(seconds: 15),
         heartbeatOutgoing: const Duration(seconds: 10),
         heartbeatIncoming: const Duration(seconds: 10),
@@ -98,13 +109,17 @@ class RealtimeNotificationService {
           debugPrint(
             '[RealtimeNotificationService] WS error on $wsUrl: $error',
           );
-          _tryFallbackUrl(userId, failedUrl: wsUrl, reason: '$error');
+          _handleConnectionFailure(userId, failedUrl: wsUrl, reason: '$error');
         },
         onWebSocketDone: () {
           debugPrint(
             '[RealtimeNotificationService] WS closed for user $_connectedUserId',
           );
-          _tryFallbackUrl(userId, failedUrl: wsUrl, reason: 'socket closed');
+          _handleConnectionFailure(
+            userId,
+            failedUrl: wsUrl,
+            reason: 'socket closed',
+          );
         },
       ),
     );
@@ -118,21 +133,38 @@ class RealtimeNotificationService {
     }
   }
 
-  void _tryFallbackUrl(
+  void _handleConnectionFailure(
+    String userId, {
+    required String failedUrl,
+    required String reason,
+  }) {
+    if (_connectedUserId != userId) {
+      return;
+    }
+
+    if (!_connectedForCurrentSession &&
+        _tryFallbackUrl(userId, failedUrl: failedUrl, reason: reason)) {
+      return;
+    }
+
+    _scheduleWebReconnect(userId, reason: reason);
+  }
+
+  bool _tryFallbackUrl(
     String userId, {
     required String failedUrl,
     required String reason,
   }) {
     if (_connectedForCurrentSession || _switchingWsUrl) {
-      return;
+      return false;
     }
     if (_candidateWsUrls.isEmpty ||
         _currentWsUrlIndex >= _candidateWsUrls.length ||
         _candidateWsUrls[_currentWsUrlIndex] != failedUrl) {
-      return;
+      return false;
     }
     if (_currentWsUrlIndex >= _candidateWsUrls.length - 1) {
-      return;
+      return false;
     }
 
     _switchingWsUrl = true;
@@ -149,6 +181,54 @@ class RealtimeNotificationService {
         _activateCurrentClient(userId);
       }
     });
+    return true;
+  }
+
+  void _scheduleWebReconnect(String userId, {required String reason}) {
+    if (!kIsWeb || _connectedUserId != userId) {
+      return;
+    }
+    if (_webReconnectTimer?.isActive ?? false) {
+      return;
+    }
+    if (_webReconnectAttempts >= _webReconnectDelays.length) {
+      debugPrint(
+        '[RealtimeNotificationService] Web reconnect paused after '
+        '$_webReconnectAttempts failed attempts. '
+        'A new app lifecycle/auth reconnect will retry.',
+      );
+      return;
+    }
+
+    final delay = _webReconnectDelays[_webReconnectAttempts];
+    _webReconnectAttempts += 1;
+    debugPrint(
+      '[RealtimeNotificationService] Scheduling web reconnect attempt '
+      '$_webReconnectAttempts/${_webReconnectDelays.length} in '
+      '${delay.inSeconds}s after $reason',
+    );
+
+    _webReconnectTimer = Timer(delay, () {
+      _webReconnectTimer = null;
+      if (_connectedUserId != userId || isConnected) {
+        return;
+      }
+
+      // Before the first successful connection, retry the full candidate list
+      // from the preferred URL instead of hammering only the last fallback.
+      if (!_connectedForCurrentSession) {
+        _currentWsUrlIndex = 0;
+      }
+      _activateCurrentClient(userId);
+    });
+  }
+
+  void _clearWebReconnectSchedule({bool resetAttempts = false}) {
+    _webReconnectTimer?.cancel();
+    _webReconnectTimer = null;
+    if (resetAttempts) {
+      _webReconnectAttempts = 0;
+    }
   }
 
   List<String> _resolveWebSocketUrls(Uri apiUri, String userId) {
@@ -234,6 +314,7 @@ class RealtimeNotificationService {
 
   void _onConnect(StompFrame frame) {
     _connectedForCurrentSession = true;
+    _clearWebReconnectSchedule(resetAttempts: true);
     debugPrint(
       '[RealtimeNotificationService] Connected for user $_connectedUserId',
     );
@@ -265,6 +346,7 @@ class RealtimeNotificationService {
   }
 
   void disconnect() {
+    _clearWebReconnectSchedule(resetAttempts: true);
     _client?.deactivate();
     _client = null;
     _connectedUserId = null;

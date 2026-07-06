@@ -500,6 +500,8 @@
         }
     },
     "manualClockingOverlapConfirmAdjust": "Yes, shorten it",
+    "clockingEditOpenRecordConflict": "There is an open clocking on this day. Close it before saving this change.",
+    "clockingEditOverlapConflict": "This clocking overlaps an existing clocking or permission.",
     "noTeamSelected": "No team selected",
     "changeOrSearchTeam": "Open to change team or search for one",
     "teamAvailableForClocking": "Team available for clocking",

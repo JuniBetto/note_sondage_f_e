@@ -249,6 +249,7 @@ void _registerRepositories() {
       sondageRemote: getIt<SondageRemoteDataSource>(),
       clockingRemote: getIt<ClockingRemoteDataSource>(),
       shiftRemote: getIt<ShiftRemoteDataSource>(),
+      currentUserIdProvider: () => getIt<AuthBloc>().state.user.uid,
     ),
   );
 }

@@ -2668,6 +2668,18 @@ abstract class AppLocalizations {
   /// **'Yes, shorten it'**
   String get manualClockingOverlapConfirmAdjust;
 
+  /// No description provided for @clockingEditOpenRecordConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'There is an open clocking on this day. Close it before saving this change.'**
+  String get clockingEditOpenRecordConflict;
+
+  /// No description provided for @clockingEditOverlapConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'This clocking overlaps an existing clocking or permission.'**
+  String get clockingEditOverlapConflict;
+
   /// No description provided for @noTeamSelected.
   ///
   /// In en, this message translates to:

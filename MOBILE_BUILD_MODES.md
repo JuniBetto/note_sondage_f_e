@@ -14,7 +14,7 @@ Important:
 Current public production targets:
 
 - `API_BASE_URL=https://api.teammanagement.it`
-- `EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration`
+- `EMAIL_CONFIRMATION_URL=https://app.teammanagement.it/confirm-registration`
 
 ## 1. Local debug on Android emulator
 
@@ -104,7 +104,7 @@ Example APK:
 cd /Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e
 flutter build apk --release \
   --dart-define=API_BASE_URL=https://api.teammanagement.it \
-  --dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration
+  --dart-define=EMAIL_CONFIRMATION_URL=https://app.teammanagement.it/confirm-registration
 ```
 
 Example App Bundle:
@@ -115,7 +115,7 @@ flutter build appbundle --release \
   --obfuscate \
   --split-debug-info=build/symbols/android \
   --dart-define=API_BASE_URL=https://api.teammanagement.it \
-  --dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration
+  --dart-define=EMAIL_CONFIRMATION_URL=https://app.teammanagement.it/confirm-registration
 ```
 
 ## 6. iOS IPA for public HTTPS
@@ -130,7 +130,7 @@ flutter build ipa --release \
   --obfuscate \
   --split-debug-info=build/symbols/ios \
   --dart-define=API_BASE_URL=https://api.teammanagement.it \
-  --dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration
+  --dart-define=EMAIL_CONFIRMATION_URL=https://app.teammanagement.it/confirm-registration
 ```
 
 ## 7. Optional define file
@@ -184,7 +184,7 @@ flutter build ipa --release \
 ```bash
 flutter build ipa --release \
 --dart-define=API_BASE_URL=https://api.teammanagement.it \
---dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration \
+--dart-define=EMAIL_CONFIRMATION_URL=https://app.teammanagement.it/confirm-registration \
 --dart-define=SENTRY_DSN=IL_TUO_DSN_REALE \
 --dart-define=APP_ENV=Test
 ```
@@ -198,7 +198,7 @@ flutter build appbundle --release \
 ```bash
 flutter build ipa --release \
 --dart-define=API_BASE_URL=https://api.teammanagement.it \
---dart-define=EMAIL_CONFIRMATION_URL=https://teammanagement.it/confirm-registration \
+--dart-define=EMAIL_CONFIRMATION_URL=https://app.teammanagement.it/confirm-registration \
 --dart-define=SENTRY_DSN=IL_TUO_DSN_REALE \
 --dart-define=APP_ENV=Prod
 ```

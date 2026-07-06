@@ -43,11 +43,9 @@ class TeamRemoteDataSource extends CrudService<TeamEntity> {
   @override
   Future<List<TeamEntity>> getAll() async {
     try {
-      final response = await DioClient().dio.get('$endpoint/my/dashboard');
-      if (response.data == null) return [];
-      final data = response.data as List;
+      final data = await getDashboardSummaries();
       final teams = data
-          .where((e) => e != null && e['team'] != null)
+          .where((e) => e['team'] != null)
           .map((e) => TeamMapper.fromJson(e['team'] as Map<String, dynamic>))
           .toList();
       await localDataSource.saveAll(teams);
@@ -55,6 +53,19 @@ class TeamRemoteDataSource extends CrudService<TeamEntity> {
     } catch (e) {
       throw Exception('Failed to fetch teams: $e');
     }
+  }
+
+  Future<List<Map<String, dynamic>>> getDashboardSummaries() async {
+    final response = await DioClient().dio.get('$endpoint/my/dashboard');
+    if (response.data == null || response.data is! List) {
+      return const [];
+    }
+    return (response.data as List)
+        .whereType<Map>()
+        .map(
+          (item) => item.map((key, value) => MapEntry(key.toString(), value)),
+        )
+        .toList();
   }
 
   /// Spring filters by JWT — userId param ignored.

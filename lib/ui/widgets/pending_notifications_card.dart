@@ -274,6 +274,7 @@ class _PendingNotificationTile extends StatelessWidget {
     final navigationLabel = canRespond ? null : _navigationLabelFor(item);
     final teamName = item.teamName;
     final roleCode = item.roleCode;
+    final actionRequestNote = item.actionRequestNote;
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
@@ -339,6 +340,39 @@ class _PendingNotificationTile extends StatelessWidget {
                                   color: const Color(0xFF1B8C4A),
                                 ),
                             ],
+                          ),
+                        ],
+                        if (actionRequestNote != null) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: colorScheme.selectItem!.withValues(
+                                alpha: 0.08,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  localization.note,
+                                  style: textTheme.labelMedium?.copyWith(
+                                    color: colorScheme.selectItem,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  actionRequestNote,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.textColor,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ],

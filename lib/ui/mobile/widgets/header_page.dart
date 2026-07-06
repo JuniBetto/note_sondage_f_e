@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/theme/theme.dart';
 
 class HeaderPage extends StatelessWidget implements PreferredSizeWidget {
   const HeaderPage({
@@ -19,9 +20,13 @@ class HeaderPage extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor =
+        Theme.of(context).colorScheme.homePrimary ??
+        Theme.of(context).scaffoldBackgroundColor;
+
     return AppBar(
       backgroundColor: Colors.transparent,
-
+      systemOverlayStyle: AppTheme.overlayStyleForBackground(backgroundColor),
       elevation: 0,
       leading: showBackButton
           ? IconButton(

@@ -181,30 +181,14 @@ class ClockingUseCase {
         );
       }
 
-      var createdCount = 0;
-      for (final date in normalizedDates) {
-        final clockInAt = date.add(Duration(minutes: clockInMinutes));
-        final clockOutAt = date.add(Duration(minutes: clockOutMinutes));
-
-        await repository.clockIn(teamId: teamId, clockInAt: clockInAt);
-
-        if (breakMinutes > 0) {
-          final breakStartAt = clockOutAt.subtract(
-            Duration(minutes: breakMinutes),
-          );
-          await repository.startBreak(teamId: teamId, actionAt: breakStartAt);
-          await repository.stopBreak(teamId: teamId, actionAt: clockOutAt);
-        }
-
-        await repository.clockOut(
-          teamId: teamId,
-          note: note,
-          clockOutAt: clockOutAt,
-        );
-        createdCount += 1;
-      }
-
-      return createdCount;
+      return await repository.createManualClockingEntries(
+        teamId: teamId,
+        dates: normalizedDates,
+        clockInMinutes: clockInMinutes,
+        clockOutMinutes: clockOutMinutes,
+        breakMinutes: breakMinutes,
+        note: note,
+      );
     } catch (e) {
       throw Exception('Failed to create manual clocking entries: $e');
     }

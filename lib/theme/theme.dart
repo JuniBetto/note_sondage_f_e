@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:note_sondage/infrastructure/model/theme_entitie.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'text_theme.dart';
@@ -9,6 +10,28 @@ export 'text_theme.dart';
 
 /// Main theme configuration class
 class AppTheme {
+  static SystemUiOverlayStyle overlayStyleForBackground(Color backgroundColor) {
+    final isLightBackground =
+        ThemeData.estimateBrightnessForColor(backgroundColor) ==
+        Brightness.light;
+
+    return SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isLightBackground
+          ? Brightness.dark
+          : Brightness.light,
+      // On iOS this represents the background brightness so the system can
+      // choose the opposite content color for the status bar.
+      statusBarBrightness: isLightBackground
+          ? Brightness.light
+          : Brightness.dark,
+      systemNavigationBarColor: backgroundColor,
+      systemNavigationBarIconBrightness: isLightBackground
+          ? Brightness.dark
+          : Brightness.light,
+    );
+  }
+
   static ThemeData getThemeMode(ThemeModeType mode) {
     switch (mode) {
       case ThemeModeType.light:
@@ -52,6 +75,9 @@ class AppTheme {
       scaffoldBackgroundColor: colorScheme.bgSurface!,
       appBarTheme: AppBarTheme(
         //backgroundColor: colorScheme.error,
+        systemOverlayStyle: overlayStyleForBackground(
+          colorScheme.bgSurface ?? colorScheme.surface,
+        ),
         elevation: 2,
         titleTextStyle: AppTypography.textTheme(isDark).displayLarge,
         leadingWidth: 100,
@@ -90,9 +116,9 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: colorScheme.textfieldFillColor,
-        hintStyle: AppTypography.textTheme(!isDark).bodyMedium?.copyWith(
-          color: colorScheme.descriptionColor,
-        ),
+        hintStyle: AppTypography.textTheme(
+          !isDark,
+        ).bodyMedium?.copyWith(color: colorScheme.descriptionColor),
       ),
       fontFamily: AppTypography.fontFamily,
       textTheme: AppTypography.textTheme(!isDark),

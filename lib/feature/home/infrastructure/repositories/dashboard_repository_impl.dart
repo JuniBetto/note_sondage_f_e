@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remo
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/infrastructure/data_source/data_source_remote/sondage_remote_data_source.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/feature/team/infrastructure/data/team_mapper.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_remote_data_source.dart';
 
 class DashboardRepositoryImpl implements DashboardRepository {
@@ -15,39 +16,37 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required SondageRemoteDataSource sondageRemote,
     required ClockingRemoteDataSource clockingRemote,
     required ShiftRemoteDataSource shiftRemote,
+    required String Function() currentUserIdProvider,
   }) : _teamRemote = teamRemote,
        _sondageRemote = sondageRemote,
        _clockingRemote = clockingRemote,
-       _shiftRemote = shiftRemote;
+       _shiftRemote = shiftRemote,
+       _currentUserIdProvider = currentUserIdProvider;
 
   final TeamRemoteDataSource _teamRemote;
   final SondageRemoteDataSource _sondageRemote;
   final ClockingRemoteDataSource _clockingRemote;
   final ShiftRemoteDataSource _shiftRemote;
+  final String Function() _currentUserIdProvider;
   Future<_DashboardSnapshot>? _snapshotFuture;
 
   @override
   Future<DashboardStats> getStats() async {
     final snapshot = await _getSnapshot();
     final teams = snapshot.teams;
-    final sondages = snapshot.sondages;
     final todayClocking = snapshot.todayClocking;
-    final todayShifts = snapshot.todayShifts;
+    final myShifts = snapshot.myShifts;
     final totalMembers = teams.fold<int>(
       0,
       (sum, team) => sum + team.memberCount,
     );
 
-    final activeSurveys = sondages
-        .where((s) => s.status == SondageStatus.active)
-        .length;
-
     return DashboardStats(
       activeTeams: teams.length,
       totalMembers: totalMembers,
-      activeSurveys: activeSurveys,
+      activeSurveys: snapshot.activeSurveyCount,
       todayClocking: todayClocking.length,
-      todayShifts: todayShifts.length,
+      todayShifts: myShifts.length,
     );
   }
 
@@ -57,7 +56,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     final snapshot = await _getSnapshot();
     final teams = snapshot.teams;
     final clockings = snapshot.todayClocking;
-    final shifts = snapshot.todayShifts;
+    final shifts = snapshot.myShifts;
     final sondages = snapshot.sondages;
 
     final activities = <RecentActivity>[];
@@ -160,25 +159,50 @@ class DashboardRepositoryImpl implements DashboardRepository {
   Future<_DashboardSnapshot> _loadSnapshot() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthEnd = DateTime(now.year, now.month + 1, 0);
+    final currentUserId = _currentUserIdProvider().trim();
     final results = await Future.wait([
-      _teamRemote.getAll().catchError((_) => <TeamEntity>[]),
+      _teamRemote.getDashboardSummaries().catchError(
+        (_) => <Map<String, dynamic>>[],
+      ),
       _sondageRemote.getAll().catchError((_) => <SondageEntity>[]),
       _clockingRemote
           .getByDate(now)
           .catchError((_) => <ClockingRecordEntity>[]),
       _shiftRemote
           .getAssignments(
-            from: today,
-            to: DateTime(today.year, today.month, today.day, 23, 59, 59),
+            from: monthStart,
+            to: monthEnd,
+            visibleUserIds: currentUserId.isEmpty ? null : [currentUserId],
           )
           .catchError((_) => <ShiftAssignmentEntity>[]),
     ]);
 
+    final dashboardSummaries = results[0] as List<Map<String, dynamic>>;
+    final teams = dashboardSummaries
+        .map((entry) => entry['team'])
+        .whereType<Map>()
+        .map(
+          (entry) => TeamMapper.fromJson(
+            entry.map((key, value) => MapEntry(key.toString(), value)),
+          ),
+        )
+        .toList();
+    final activeSurveyCount = dashboardSummaries.fold<int>(0, (sum, entry) {
+      final activeSondaggi = entry['activeSondaggi'];
+      if (activeSondaggi is List) {
+        return sum + activeSondaggi.length;
+      }
+      return sum;
+    });
+
     return _DashboardSnapshot(
-      teams: results[0] as List<TeamEntity>,
+      teams: teams,
       sondages: results[1] as List<SondageEntity>,
       todayClocking: results[2] as List<ClockingRecordEntity>,
-      todayShifts: results[3] as List<ShiftAssignmentEntity>,
+      myShifts: results[3] as List<ShiftAssignmentEntity>,
+      activeSurveyCount: activeSurveyCount,
     );
   }
 }
@@ -188,11 +212,13 @@ class _DashboardSnapshot {
     required this.teams,
     required this.sondages,
     required this.todayClocking,
-    required this.todayShifts,
+    required this.myShifts,
+    required this.activeSurveyCount,
   });
 
   final List<TeamEntity> teams;
   final List<SondageEntity> sondages;
   final List<ClockingRecordEntity> todayClocking;
-  final List<ShiftAssignmentEntity> todayShifts;
+  final List<ShiftAssignmentEntity> myShifts;
+  final int activeSurveyCount;
 }

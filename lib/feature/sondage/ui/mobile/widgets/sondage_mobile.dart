@@ -264,7 +264,7 @@ class _SondageMobileState extends State<SondageMobile>
           builder: (context, constraints) {
             final useLandscapeCompactLayout =
                 orientation == Orientation.landscape &&
-                constraints.maxHeight < 560;
+                    constraints.maxHeight < 560;
             final pagePadding = EdgeInsets.symmetric(
               horizontal: useLandscapeCompactLayout ? 12 : 16,
               vertical: useLandscapeCompactLayout ? 10 : 16,
@@ -278,7 +278,7 @@ class _SondageMobileState extends State<SondageMobile>
                   TabBarComponent(
                     childTab1: BlocBuilder<SondageBloc, SondageState>(
                       buildWhen: (_, current) =>
-                          current is SondagesLoaded ||
+                      current is SondagesLoaded ||
                           current is SondageLoading,
                       builder: (context, _) =>
                           Text('Lista ${localization.sondage}'),
@@ -298,12 +298,12 @@ class _SondageMobileState extends State<SondageMobile>
                         // Tab 0 — lista sondaggi
                         BlocBuilder<SondageBloc, SondageState>(
                           buildWhen: (_, current) =>
-                              current is SondageLoading ||
+                          current is SondageLoading ||
                               current is SondagesLoaded ||
                               current is SondageError,
                           builder: (context, state) {
                             if ((state is SondageLoading ||
-                                    state is SondageInitial) &&
+                                state is SondageInitial) &&
                                 _lastSondages.isEmpty) {
                               return const Center(
                                 child: CircularProgressIndicator(),
@@ -344,7 +344,7 @@ class _SondageMobileState extends State<SondageMobile>
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Bozze e sondaggi attivi dei tuoi team',
@@ -352,9 +352,9 @@ class _SondageMobileState extends State<SondageMobile>
                                               .textTheme
                                               .bodyMedium
                                               ?.copyWith(
-                                                color: Colors.grey[700],
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                            color: Colors.grey[700],
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                         const SizedBox(height: 12),
                                         AppSearchField(
@@ -457,7 +457,7 @@ class _SondageMobileState extends State<SondageMobile>
                                 ),
                                 child: Column(
                                   crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
+                                  CrossAxisAlignment.stretch,
                                   children: [
                                     summaryHeader,
                                     if (isRefreshing)
@@ -521,7 +521,7 @@ class _SondageMobileState extends State<SondageMobile>
     return sondages.where((sondage) {
       final matchesStatus =
           _selectedStatusFilter == null ||
-          sondage.status == _selectedStatusFilter;
+              sondage.status == _selectedStatusFilter;
       if (!matchesStatus) {
         return false;
       }
