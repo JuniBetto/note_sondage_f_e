@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data/shift_mapper.dart';
@@ -208,6 +209,18 @@ class ShiftRemoteDataSource {
         if (alarmOffsets != null && alarmOffsets.isNotEmpty)
           'alarmOffsets': alarmOffsets,
       },
+    );
+  }
+
+  Future<ShiftAutoPlanResultEntity> autoPlan(
+    ShiftAutoPlanRequestEntity request,
+  ) async {
+    final response = await _dio.post(
+      '/api/aggregate/shift/auto-plan',
+      data: ShiftMapper.autoPlanRequestToJson(request),
+    );
+    return ShiftMapper.autoPlanResultFromJson(
+      Map<String, dynamic>.from(response.data),
     );
   }
 }

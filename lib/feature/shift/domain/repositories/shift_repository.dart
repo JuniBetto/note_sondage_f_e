@@ -1,5 +1,6 @@
 import '../entities/shift_profile_entity.dart';
 import '../entities/shift_assignment_entity.dart';
+import '../entities/shift_auto_plan_entity.dart';
 import 'package:flutter/material.dart';
 
 abstract class ShiftRepository {
@@ -74,4 +75,8 @@ abstract class ShiftRepository {
     String? note,
     List<int>? alarmOffsets,
   });
+
+  Future<ShiftAutoPlanResultEntity> autoPlan(
+    ShiftAutoPlanRequestEntity request,
+  );
 }
