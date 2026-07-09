@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/crud_service.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/team_member_mapper.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_member_local_data_source.dart';
@@ -55,6 +56,26 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       return TeamMemberMapper.fromJson(memberJson);
     } catch (e) {
       throw Exception('Failed to update member role: $e');
+    }
+  }
+
+  Future<TeamMemberEntity> updatePlanningConstraints({
+    required String teamId,
+    required String memberId,
+    required TeamMemberPlanningConstraintsEntity constraints,
+  }) async {
+    try {
+      final response = await DioClient().dio.put(
+        '$endpoint/$teamId/members/$memberId/planning-constraints',
+        data: TeamMemberMapper.planningConstraintsToJson(constraints),
+      );
+      final memberJson = Map<String, dynamic>.from(
+        response.data as Map<String, dynamic>,
+      );
+      memberJson['team_id'] ??= teamId;
+      return TeamMemberMapper.fromJson(memberJson);
+    } catch (e) {
+      throw Exception('Failed to update planning constraints: $e');
     }
   }
 

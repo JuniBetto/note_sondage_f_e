@@ -173,10 +173,17 @@ class UpdateShiftAssignmentEvent extends ShiftEvent {
 
 class DeleteShiftAssignmentEvent extends ShiftEvent {
   final String assignmentId;
-  DeleteShiftAssignmentEvent(this.assignmentId);
+  final Set<String> relatedAssignmentIds;
+
+  DeleteShiftAssignmentEvent(
+    this.assignmentId, {
+    Set<String> relatedAssignmentIds = const <String>{},
+  }) : relatedAssignmentIds = relatedAssignmentIds.isEmpty
+           ? <String>{assignmentId}
+           : {...relatedAssignmentIds, assignmentId};
 
   @override
-  List<Object?> get props => [assignmentId];
+  List<Object?> get props => [assignmentId, relatedAssignmentIds];
 }
 
 class ShiftProfileCreateCommittedEvent extends ShiftEvent {
@@ -229,12 +236,13 @@ class ShiftAssignmentUpdateCommittedEvent extends ShiftEvent {
 }
 
 class ShiftAssignmentDeleteCommittedEvent extends ShiftEvent {
-  final String assignmentId;
+  final Set<String> assignmentIds;
 
-  ShiftAssignmentDeleteCommittedEvent(this.assignmentId);
+  ShiftAssignmentDeleteCommittedEvent(Set<String> assignmentIds)
+    : assignmentIds = Set.unmodifiable(assignmentIds);
 
   @override
-  List<Object?> get props => [assignmentId];
+  List<Object?> get props => [assignmentIds];
 }
 
 class ShiftMutationFailedEvent extends ShiftEvent {
@@ -330,11 +338,13 @@ class ShiftAssignmentUpdated extends ShiftState {
 }
 
 class ShiftAssignmentDeleted extends ShiftState {
-  final String assignmentId;
-  ShiftAssignmentDeleted(this.assignmentId);
+  final Set<String> assignmentIds;
+
+  ShiftAssignmentDeleted(Set<String> assignmentIds)
+    : assignmentIds = Set.unmodifiable(assignmentIds);
 
   @override
-  List<Object?> get props => [assignmentId];
+  List<Object?> get props => [assignmentIds];
 }
 
 class ShiftError extends ShiftState {

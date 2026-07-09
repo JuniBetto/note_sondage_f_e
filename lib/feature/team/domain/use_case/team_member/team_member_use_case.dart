@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_member_repository.dart';
 import 'package:note_sondage/feature/team/domain/use_case/user/user_use_case.dart';
@@ -115,6 +116,22 @@ class TeamMemberUseCase {
       await repository.cancelInvitation(teamId, invitationId);
     } catch (e) {
       throw Exception('Failed to cancel invitation: $e');
+    }
+  }
+
+  Future<TeamMemberEntity> updatePlanningConstraints({
+    required String teamId,
+    required String memberId,
+    required TeamMemberPlanningConstraintsEntity constraints,
+  }) async {
+    try {
+      return await repository.updatePlanningConstraints(
+        teamId: teamId,
+        memberId: memberId,
+        constraints: constraints,
+      );
+    } catch (e) {
+      throw Exception('Failed to update planning constraints: $e');
     }
   }
 

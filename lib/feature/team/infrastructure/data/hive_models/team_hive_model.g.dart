@@ -27,13 +27,14 @@ class TeamHiveModelAdapter extends TypeAdapter<TeamHiveModel> {
       clockingReminderTime: fields[7] as String?,
       clockingMissingAlertTime: fields[8] as String?,
       clockingOpenAlertTime: fields[9] as String?,
+      planningWorkerTypesJson: fields[10] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TeamHiveModel obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class TeamHiveModelAdapter extends TypeAdapter<TeamHiveModel> {
       ..writeByte(8)
       ..write(obj.clockingMissingAlertTime)
       ..writeByte(9)
-      ..write(obj.clockingOpenAlertTime);
+      ..write(obj.clockingOpenAlertTime)
+      ..writeByte(10)
+      ..write(obj.planningWorkerTypesJson);
   }
 
   @override

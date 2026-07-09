@@ -1,3 +1,4 @@
+import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_repository.dart';
 
@@ -50,6 +51,17 @@ class TeamUseCase {
       return await repository.update(team);
     } catch (e) {
       throw Exception('Failed to update team: $e');
+    }
+  }
+
+  Future<List<PlanningWorkerTypeEntity>> updatePlanningWorkerTypes(
+    String teamId,
+    List<PlanningWorkerTypeEntity> workerTypes,
+  ) async {
+    try {
+      return await repository.updatePlanningWorkerTypes(teamId, workerTypes);
+    } catch (e) {
+      throw Exception('Failed to update planning worker types: $e');
     }
   }
 

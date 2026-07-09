@@ -195,6 +195,18 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     });
   }
 
+  void _removeAssignments(Iterable<String> assignmentIds) {
+    final ids = assignmentIds.toSet();
+    setState(() {
+      _assignments = _assignments
+          .where((assignment) => !ids.contains(assignment.id))
+          .toList();
+      _archivedAssignmentIds = _archivedAssignmentIds
+          .where((id) => !ids.contains(id))
+          .toSet();
+    });
+  }
+
   void _upsertProfile(ShiftProfileEntity profile) {
     final next = <ShiftProfileEntity>[
       ..._profiles.where((item) => item.id != profile.id),
@@ -477,13 +489,17 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       );
       if (!context.mounted || !confirmed) return;
 
-      if (existing.teamShiftGroupId != null && existing.isPublic) {
-        shiftBloc.add(DeleteShiftAssignmentEvent(existing.id));
+      if (existing.isPublic) {
+        shiftBloc.add(
+          DeleteShiftAssignmentEvent(
+            existing.id,
+            relatedAssignmentIds: _relatedPublicAssignments(
+              existing,
+            ).map((assignment) => assignment.id).toSet(),
+          ),
+        );
       } else {
-        final assignmentsToDelete = _relatedPublicAssignments(existing);
-        for (final assignment in assignmentsToDelete) {
-          shiftBloc.add(DeleteShiftAssignmentEvent(assignment.id));
-        }
+        shiftBloc.add(DeleteShiftAssignmentEvent(existing.id));
       }
       return;
     }
@@ -861,7 +877,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
               }
             }
             if (state is ShiftAssignmentDeleted) {
-              _removeAssignment(state.assignmentId);
+              _removeAssignments(state.assignmentIds);
             }
             if (state is ShiftError) {
               AppSnackBar.showError(context, state.message);
@@ -1142,17 +1158,32 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       });
       _loadAssignments();
 
-      AppSnackBar.showSuccess(
-        context,
-        _isItalian(context)
-            ? 'Creati ${result.createdAssignmentsCount} turni automatici.'
-            : 'Created ${result.createdAssignmentsCount} automatic shifts.',
-      );
+      if (result.createdAssignmentsCount > 0) {
+        AppSnackBar.showSuccess(
+          context,
+          _isItalian(context)
+              ? 'Creati ${result.createdAssignmentsCount} turni automatici.'
+              : 'Created ${result.createdAssignmentsCount} automatic shifts.',
+        );
+      } else if (result.uncoveredSlotsCount == 0) {
+        final alreadyCoveredMessage = _isItalian(context)
+            ? result.preservedAssignmentsCount > 0
+                  ? 'Nessun nuovo turno creato: i turni esistenti coprono gia l\'intervallo selezionato.'
+                  : 'Nessun nuovo turno da creare per l\'intervallo selezionato.'
+            : result.preservedAssignmentsCount > 0
+            ? 'No new shifts were created: existing assignments already cover the selected range.'
+            : 'No new shifts were needed for the selected range.';
+        AppSnackBar.showSuccess(context, alreadyCoveredMessage);
+      }
 
       if (result.uncoveredSlotsCount > 0) {
         AppSnackBar.showWarning(
           context,
-          _isItalian(context)
+          result.createdAssignmentsCount == 0
+              ? _isItalian(context)
+                    ? 'Nessun turno creato. Restano ${result.uncoveredSlotsCount} coperture mancanti. Controlla i vincoli o amplia il team.'
+                    : 'No shifts were created. ${result.uncoveredSlotsCount} slots are still uncovered. Review the constraints or expand the team.'
+              : _isItalian(context)
               ? 'Restano ${result.uncoveredSlotsCount} coperture mancanti. Controlla i vincoli o amplia il team.'
               : '${result.uncoveredSlotsCount} slots are still uncovered. Review the constraints or expand the team.',
         );

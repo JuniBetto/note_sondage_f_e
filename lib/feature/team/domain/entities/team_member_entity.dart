@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 
 class TeamMemberEntity {
@@ -21,6 +22,7 @@ class TeamMemberEntity {
   /// File name (used with imageBytes)
   final String? fileName;
   final String? initialName;
+  final TeamMemberPlanningConstraintsEntity? planningConstraints;
 
   TeamMemberEntity({
     this.id,
@@ -34,6 +36,7 @@ class TeamMemberEntity {
     this.imageBytes,
     this.fileName,
     this.initialName,
+    this.planningConstraints,
   });
 
   /// Returns true if there's an image to upload
@@ -51,6 +54,7 @@ class TeamMemberEntity {
     Uint8List? imageBytes,
     String? fileName,
     String? initialName,
+    TeamMemberPlanningConstraintsEntity? planningConstraints,
   }) {
     return TeamMemberEntity(
       id: id ?? this.id,
@@ -64,6 +68,7 @@ class TeamMemberEntity {
       imageBytes: imageBytes,
       fileName: fileName ?? this.fileName,
       initialName: initialName ?? this.initialName,
+      planningConstraints: planningConstraints ?? this.planningConstraints,
     );
   }
 }

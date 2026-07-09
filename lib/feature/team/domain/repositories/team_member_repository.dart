@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 
 abstract class TeamMemberRepository {
   Future<List<TeamMemberEntity>> getAll();
@@ -22,6 +23,12 @@ abstract class TeamMemberRepository {
   Future<List<TeamInvitationEntity>> getPendingInvitations(String teamId);
 
   Future<void> cancelInvitation(String teamId, String invitationId);
+
+  Future<TeamMemberEntity> updatePlanningConstraints({
+    required String teamId,
+    required String memberId,
+    required TeamMemberPlanningConstraintsEntity constraints,
+  });
 
   Future<TeamMemberEntity> uploadProfileImage({
     required String memberId,

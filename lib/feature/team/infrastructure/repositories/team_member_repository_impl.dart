@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_member_repository.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_member_local_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_member_remote_data_source.dart';
@@ -103,6 +104,34 @@ class TeamMemberRepositoryImpl implements TeamMemberRepository {
       await _remote.cancelInvitation(teamId, invitationId);
     } catch (e) {
       throw Exception('Failed to cancel invitation: $e');
+    }
+  }
+
+  @override
+  Future<TeamMemberEntity> updatePlanningConstraints({
+    required String teamId,
+    required String memberId,
+    required TeamMemberPlanningConstraintsEntity constraints,
+  }) async {
+    try {
+      final updatedMember = await _remote.updatePlanningConstraints(
+        teamId: teamId,
+        memberId: memberId,
+        constraints: constraints,
+      );
+      final cachedMembers = await _local.getAll();
+      final existingIndex = cachedMembers.indexWhere(
+        (member) => member.id == updatedMember.id,
+      );
+      if (existingIndex >= 0) {
+        cachedMembers[existingIndex] = updatedMember;
+      } else {
+        cachedMembers.add(updatedMember);
+      }
+      await _local.saveAll(cachedMembers);
+      return updatedMember;
+    } catch (e) {
+      throw Exception('Failed to update planning constraints: $e');
     }
   }
 

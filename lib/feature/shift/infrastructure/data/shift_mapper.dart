@@ -115,12 +115,18 @@ class ShiftMapper {
       'teamId': request.teamId,
       'from': request.from.toIso8601String().split('T').first,
       'to': request.to.toIso8601String().split('T').first,
+      'plannerMode': switch (request.plannerMode) {
+        ShiftAutoPlannerMode.coverage => 'COVERAGE',
+        ShiftAutoPlannerMode.rotation => 'ROTATION',
+      },
       'replaceExistingAssignments': request.replaceExistingAssignments,
       'templates': request.templates
           .map(
             (template) => {
               'profileId': template.profileId,
               'requiredMemberCount': template.requiredMemberCount,
+              if (template.simultaneousMemberCount != null)
+                'simultaneousMemberCount': template.simultaneousMemberCount,
             },
           )
           .toList(),

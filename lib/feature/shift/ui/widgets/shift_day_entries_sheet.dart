@@ -26,6 +26,7 @@ Future<ShiftDayEntriesAction?> showShiftDayEntriesSheet({
   final dateLabel = '${date.day}/${date.month}/${date.year}';
   return showModalBottomSheet<ShiftDayEntriesAction>(
     context: context,
+    isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _ShiftDayEntriesSheet(
       dateLabel: dateLabel,
@@ -56,48 +57,64 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
     final dialogBackground =
         colorScheme.dialogBackgroundColor ?? colorScheme.surface;
     final borderColor = colorScheme.borderColor ?? colorScheme.outlineVariant;
-    return Container(
-      margin: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: dialogBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor.withValues(alpha: 0.7)),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Turni del $dateLabel',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...assignments.map(
-            (assignment) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _AssignmentTile(
-                assignment: assignment,
-                isSyncing: syncingAssignmentIds.contains(assignment.id),
+    final mediaQuery = MediaQuery.of(context);
+    final maxHeight = mediaQuery.size.height * 0.8;
+    return SafeArea(
+      child: Container(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: dialogBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor.withValues(alpha: 0.7)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Turni del $dateLabel',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ),
-          if (canCreate) ...[
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pop(const ShiftDayEntriesAction.create()),
-                icon: const Icon(Icons.add),
-                label: const Text('Nuovo turno'),
+            const SizedBox(height: 12),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: assignments
+                      .map(
+                        (assignment) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _AssignmentTile(
+                            assignment: assignment,
+                            isSyncing: syncingAssignmentIds.contains(
+                              assignment.id,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
             ),
+            if (canCreate) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop(const ShiftDayEntriesAction.create()),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nuovo turno'),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
