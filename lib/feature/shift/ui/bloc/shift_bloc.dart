@@ -51,6 +51,13 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         .toList();
   }
 
+  void _removeAssignmentsCache(Iterable<String> assignmentIds) {
+    final ids = assignmentIds.toSet();
+    _cachedAssignments = _cachedAssignments
+        .where((assignment) => !ids.contains(assignment.id))
+        .toList();
+  }
+
   ShiftBloc(this._repository, this._localDataSource) : super(ShiftInitial()) {
     on<LoadShiftProfilesEvent>(_onLoadProfiles);
     on<ShiftProfileCreateCommittedEvent>(_onProfileCreateCommitted);
@@ -486,19 +493,20 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     Emitter<ShiftState> emit,
   ) async {
     try {
+      final assignmentIdsToDelete = event.relatedAssignmentIds;
       final rollbackAssignments = List<ShiftAssignmentEntity>.from(
         _cachedAssignments,
       );
-      _syncingAssignmentIds.add(event.assignmentId);
-      _removeAssignmentCache(event.assignmentId);
+      _syncingAssignmentIds.addAll(assignmentIdsToDelete);
+      _removeAssignmentsCache(assignmentIdsToDelete);
       await _localDataSource.saveAssignments(_cachedAssignments);
-      emit(ShiftAssignmentDeleted(event.assignmentId));
+      emit(ShiftAssignmentDeleted(assignmentIdsToDelete));
 
       unawaited(() async {
         try {
           await _repository.deleteAssignment(event.assignmentId);
           if (!isClosed) {
-            add(ShiftAssignmentDeleteCommittedEvent(event.assignmentId));
+            add(ShiftAssignmentDeleteCommittedEvent(assignmentIdsToDelete));
           }
         } catch (e) {
           if (!isClosed) {
@@ -509,7 +517,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
                   fallback: 'We could not delete the shift right now.',
                 ),
                 rollbackAssignments: rollbackAssignments,
-                syncingAssignmentIdsToClear: {event.assignmentId},
+                syncingAssignmentIdsToClear: assignmentIdsToDelete,
               ),
             );
           }
@@ -604,7 +612,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     ShiftAssignmentDeleteCommittedEvent event,
     Emitter<ShiftState> emit,
   ) async {
-    _syncingAssignmentIds.remove(event.assignmentId);
+    _syncingAssignmentIds.removeAll(event.assignmentIds);
     await _localDataSource.saveAssignments(_cachedAssignments);
     emit(
       ShiftAssignmentsLoaded(

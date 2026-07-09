@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
@@ -228,5 +229,12 @@ class ShiftRepositoryImpl implements ShiftRepository {
       note: note,
       alarmOffsets: alarmOffsets,
     );
+  }
+
+  @override
+  Future<ShiftAutoPlanResultEntity> autoPlan(
+    ShiftAutoPlanRequestEntity request,
+  ) {
+    return _remote.autoPlan(request);
   }
 }

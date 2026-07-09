@@ -1,5 +1,6 @@
 import 'package:note_sondage/domain/entities/user_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/invite_team_member_request_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 
 class TeamEntity {
@@ -14,6 +15,7 @@ class TeamEntity {
   final String? clockingMissingAlertTime;
   final String? clockingOpenAlertTime;
   final int memberCount;
+  final List<PlanningWorkerTypeEntity> planningWorkerTypes;
   final List<InviteTeamMemberRequestEntity>?
   pendingInvitations; // New field for pending invitations
 
@@ -29,6 +31,7 @@ class TeamEntity {
     this.clockingMissingAlertTime,
     this.clockingOpenAlertTime,
     this.memberCount = 0,
+    this.planningWorkerTypes = PlanningWorkerTypeEntity.builtIns,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -85,6 +88,8 @@ class TeamUpdate extends TeamEntity {
     String? clockingMissingAlertTime,
     String? clockingOpenAlertTime,
     DateTime? createdAt,
+    List<PlanningWorkerTypeEntity> planningWorkerTypes =
+        PlanningWorkerTypeEntity.builtIns,
     required this.listMember,
   }) : super(
          id,
@@ -98,6 +103,7 @@ class TeamUpdate extends TeamEntity {
          clockingMissingAlertTime: clockingMissingAlertTime,
          clockingOpenAlertTime: clockingOpenAlertTime,
          memberCount: 0,
+         planningWorkerTypes: planningWorkerTypes,
          createdAt: createdAt ?? DateTime.now(),
        );
   @override
@@ -113,6 +119,7 @@ class TeamUpdate extends TeamEntity {
     String? clockingReminderTime,
     String? clockingMissingAlertTime,
     String? clockingOpenAlertTime,
+    List<PlanningWorkerTypeEntity>? planningWorkerTypes,
     List<TeamMemberUpdateTeam>? listMember,
   }) {
     return TeamUpdate(
@@ -127,6 +134,7 @@ class TeamUpdate extends TeamEntity {
           clockingMissingAlertTime ?? this.clockingMissingAlertTime,
       clockingOpenAlertTime:
           clockingOpenAlertTime ?? this.clockingOpenAlertTime,
+      planningWorkerTypes: planningWorkerTypes ?? this.planningWorkerTypes,
       createdAt: createdAt != null ? DateTime.parse(createdAt) : this.createdAt,
       createdByUserId: createdByUserId ?? this.createdByUserId,
       listMember: listMember ?? this.listMember,

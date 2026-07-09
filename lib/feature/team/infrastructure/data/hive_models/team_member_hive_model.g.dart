@@ -26,13 +26,14 @@ class TeamMemberHiveModelAdapter extends TypeAdapter<TeamMemberHiveModel> {
       fileName: fields[6] as String?,
       initialName: fields[7] as String?,
       userId: fields[8] as String?,
+      planningConstraintsJson: fields[9] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TeamMemberHiveModel obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +51,9 @@ class TeamMemberHiveModelAdapter extends TypeAdapter<TeamMemberHiveModel> {
       ..writeByte(7)
       ..write(obj.initialName)
       ..writeByte(8)
-      ..write(obj.userId);
+      ..write(obj.userId)
+      ..writeByte(9)
+      ..write(obj.planningConstraintsJson);
   }
 
   @override

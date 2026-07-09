@@ -31,6 +31,9 @@ class TeamMemberHiveModel extends HiveObject {
   @HiveField(8)
   final String? userId;
 
+  @HiveField(9)
+  final String? planningConstraintsJson;
+
   TeamMemberHiveModel({
     required this.id,
     required this.userEmail,
@@ -41,5 +44,6 @@ class TeamMemberHiveModel extends HiveObject {
     this.fileName,
     this.initialName,
     this.userId,
+    this.planningConstraintsJson,
   });
 }

@@ -1,4 +1,5 @@
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/crud_service.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/team_mapper.dart';
@@ -116,6 +117,32 @@ class TeamRemoteDataSource extends CrudService<TeamEntity> {
       return item.copyWith(id: effectiveId.isNotEmpty ? effectiveId : item.id);
     } catch (e) {
       throw Exception('Failed to update team: $e');
+    }
+  }
+
+  Future<List<PlanningWorkerTypeEntity>> updatePlanningWorkerTypes(
+    String teamId,
+    List<PlanningWorkerTypeEntity> workerTypes,
+  ) async {
+    try {
+      final response = await DioClient().dio.put(
+        '$endpoint/$teamId/planning-worker-types',
+        data: {
+          'workerTypes': workerTypes
+              .map(TeamMapper.planningWorkerTypeToJson)
+              .toList(),
+        },
+      );
+      return (response.data as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map(
+            (item) => TeamMapper.planningWorkerTypeFromJson(
+              item.map((key, value) => MapEntry(key.toString(), value)),
+            ),
+          )
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to update planning worker types: $e');
     }
   }
 

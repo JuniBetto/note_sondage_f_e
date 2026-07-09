@@ -1,3 +1,4 @@
+import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/invite_team_member_request_mapper.dart';
 
@@ -26,6 +27,15 @@ class TeamMapper {
     final explicitMemberCount = (json['memberCount'] as num?)?.toInt();
     final members = json['members'];
     final derivedMemberCount = members is List ? members.length : 0;
+    final planningWorkerTypes =
+        (json['planningWorkerTypes'] as List<dynamic>? ?? const [])
+            .whereType<Map>()
+            .map(
+              (item) => planningWorkerTypeFromJson(
+                item.map((key, value) => MapEntry(key.toString(), value)),
+              ),
+            )
+            .toList();
 
     return TeamEntity(
       json['id']?.toString(),
@@ -48,8 +58,33 @@ class TeamMapper {
         fallback: _defaultOpenAlertTime,
       ),
       memberCount: explicitMemberCount ?? derivedMemberCount,
+      planningWorkerTypes: planningWorkerTypes.isEmpty
+          ? PlanningWorkerTypeEntity.builtIns
+          : planningWorkerTypes,
       createdAt: createdAt,
     );
+  }
+
+  static PlanningWorkerTypeEntity planningWorkerTypeFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return PlanningWorkerTypeEntity(
+      code: json['code']?.toString() ?? '',
+      label: json['label']?.toString() ?? '',
+      defaultMaxHoursPerDay: (json['defaultMaxHoursPerDay'] as num?)?.toInt(),
+      isCustom: json['custom'] == true,
+    );
+  }
+
+  static Map<String, dynamic> planningWorkerTypeToJson(
+    PlanningWorkerTypeEntity entity,
+  ) {
+    return {
+      'code': entity.code,
+      'label': entity.label,
+      'defaultMaxHoursPerDay': entity.defaultMaxHoursPerDay,
+      'custom': entity.isCustom,
+    };
   }
 
   /// Serializes a [TeamEntity] for the POST /api/aggregate/teams endpoint.
@@ -107,6 +142,15 @@ class TeamMapper {
   }
 
   static TeamUpdate fromJsonForUpdate(Map<String, dynamic> json) {
+    final planningWorkerTypes =
+        (json['planningWorkerTypes'] as List<dynamic>? ?? const [])
+            .whereType<Map>()
+            .map(
+              (item) => planningWorkerTypeFromJson(
+                item.map((key, value) => MapEntry(key.toString(), value)),
+              ),
+            )
+            .toList();
     return TeamUpdate(
       json['isActive'] != null ? !(json['isActive'] as bool) : false,
       id: json['id']?.toString(),
@@ -130,6 +174,9 @@ class TeamMapper {
         json['clockingOpenAlertTime'],
         fallback: _defaultOpenAlertTime,
       ),
+      planningWorkerTypes: planningWorkerTypes.isEmpty
+          ? PlanningWorkerTypeEntity.builtIns
+          : planningWorkerTypes,
       listMember: [],
     );
   }

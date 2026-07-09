@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 
 class TeamMemberMapper {
@@ -21,6 +22,9 @@ class TeamMemberMapper {
       imageFile: json['image_file'],
       imageBytes: json['image_bytes'],
       initialName: (json['initialname'] ?? json['fullName'])?.toString() ?? '',
+      planningConstraints: _planningConstraintsFromJson(
+        json['planningConstraints'] as Map<String, dynamic>?,
+      ),
     );
   }
 
@@ -60,6 +64,68 @@ class TeamMemberMapper {
       teamMemberId: json['teamMember_id']?.toString() ?? '',
       imageUrl: json['image_url']?.toString() ?? '',
       role: json['role']?.toString() ?? '',
+    );
+  }
+
+  static Map<String, dynamic> planningConstraintsToJson(
+    TeamMemberPlanningConstraintsEntity constraints,
+  ) {
+    return {
+      'workerType': constraints.workerType,
+      'availableWeekdays': constraints.availableWeekdays,
+      'preferredShiftTypes': constraints.preferredShiftTypes,
+      'blockedShiftTypes': constraints.blockedShiftTypes,
+      'unavailableDateRanges': constraints.unavailableDateRanges,
+      'minDailyHours': constraints.minDailyHours,
+      'maxDailyHours': constraints.maxDailyHours,
+      'maxWeeklyHours': constraints.maxWeeklyHours,
+      'maxMonthlyHours': constraints.maxMonthlyHours,
+      'overtimeAllowed': constraints.overtimeAllowed,
+      'avoidConsecutiveShifts': constraints.avoidConsecutiveShifts,
+      'minRestHoursBetweenShifts': constraints.minRestHoursBetweenShifts,
+      'maxConsecutiveNightShifts': constraints.maxConsecutiveNightShifts,
+      'maxConsecutiveWeekendShifts': constraints.maxConsecutiveWeekendShifts,
+      'notes': constraints.notes,
+    };
+  }
+
+  static TeamMemberPlanningConstraintsEntity? _planningConstraintsFromJson(
+    Map<String, dynamic>? json,
+  ) {
+    if (json == null || json.isEmpty) {
+      return null;
+    }
+    return TeamMemberPlanningConstraintsEntity(
+      workerType: json['workerType']?.toString(),
+      availableWeekdays:
+          (json['availableWeekdays'] as List<dynamic>? ?? const [])
+              .map((item) => item.toString())
+              .toList(),
+      preferredShiftTypes:
+          (json['preferredShiftTypes'] as List<dynamic>? ?? const [])
+              .map((item) => item.toString())
+              .toList(),
+      blockedShiftTypes:
+          (json['blockedShiftTypes'] as List<dynamic>? ?? const [])
+              .map((item) => item.toString())
+              .toList(),
+      unavailableDateRanges:
+          (json['unavailableDateRanges'] as List<dynamic>? ?? const [])
+              .map((item) => item.toString())
+              .toList(),
+      minDailyHours: (json['minDailyHours'] as num?)?.toInt(),
+      maxDailyHours: (json['maxDailyHours'] as num?)?.toInt(),
+      maxWeeklyHours: (json['maxWeeklyHours'] as num?)?.toInt(),
+      maxMonthlyHours: (json['maxMonthlyHours'] as num?)?.toInt(),
+      overtimeAllowed: json['overtimeAllowed'] as bool?,
+      avoidConsecutiveShifts: json['avoidConsecutiveShifts'] as bool?,
+      minRestHoursBetweenShifts: (json['minRestHoursBetweenShifts'] as num?)
+          ?.toInt(),
+      maxConsecutiveNightShifts: (json['maxConsecutiveNightShifts'] as num?)
+          ?.toInt(),
+      maxConsecutiveWeekendShifts: (json['maxConsecutiveWeekendShifts'] as num?)
+          ?.toInt(),
+      notes: json['notes']?.toString(),
     );
   }
 }

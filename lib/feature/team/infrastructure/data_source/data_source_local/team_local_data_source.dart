@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive/hive.dart';
+import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/feature/team/infrastructure/data/team_mapper.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/hive_models/team_hive_model.dart';
 
 class TeamLocalDataSource {
@@ -36,6 +40,11 @@ class TeamLocalDataSource {
         clockingReminderTime: e.clockingReminderTime,
         clockingMissingAlertTime: e.clockingMissingAlertTime,
         clockingOpenAlertTime: e.clockingOpenAlertTime,
+        planningWorkerTypesJson: jsonEncode(
+          e.planningWorkerTypes
+              .map(TeamMapper.planningWorkerTypeToJson)
+              .toList(),
+        ),
       ),
     );
     await box.addAll(models);
@@ -48,22 +57,38 @@ class TeamLocalDataSource {
 
   Future<List<TeamEntity>> getAll() async {
     final box = await _openBox();
-    return box.values
-        .map(
-          (m) => TeamEntity(
-            m.id,
-            m.color,
-            null,
-            name: m.name,
-            description: m.description,
-            createdByUserId: m.createdByUserId,
-            clockingRequired: m.clockingRequired,
-            clockingReminderTime: m.clockingReminderTime,
-            clockingMissingAlertTime: m.clockingMissingAlertTime,
-            clockingOpenAlertTime: m.clockingOpenAlertTime,
-            createdAt: DateTime.tryParse(m.createdAt),
-          ),
-        )
-        .toList();
+    return box.values.map((m) {
+      final planningWorkerTypes = (() {
+        try {
+          return (jsonDecode(m.planningWorkerTypesJson ?? '[]')
+                  as List<dynamic>)
+              .whereType<Map>()
+              .map(
+                (item) => TeamMapper.planningWorkerTypeFromJson(
+                  item.map((key, value) => MapEntry(key.toString(), value)),
+                ),
+              )
+              .toList();
+        } catch (_) {
+          return <PlanningWorkerTypeEntity>[];
+        }
+      })();
+      return TeamEntity(
+        m.id,
+        m.color,
+        null,
+        name: m.name,
+        description: m.description,
+        createdByUserId: m.createdByUserId,
+        clockingRequired: m.clockingRequired,
+        clockingReminderTime: m.clockingReminderTime,
+        clockingMissingAlertTime: m.clockingMissingAlertTime,
+        clockingOpenAlertTime: m.clockingOpenAlertTime,
+        planningWorkerTypes: planningWorkerTypes.isEmpty
+            ? PlanningWorkerTypeEntity.builtIns
+            : planningWorkerTypes,
+        createdAt: DateTime.tryParse(m.createdAt),
+      );
+    }).toList();
   }
 }

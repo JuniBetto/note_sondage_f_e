@@ -11,16 +11,61 @@ import 'package:note_sondage/feature/notification/realtime/team_realtime_coordin
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
+import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
+import 'package:note_sondage/feature/team/ui/widgets/team_member_planning_constraints_dialog.dart';
 import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
+
+String _planningConstraintsTooltip(BuildContext context) {
+  final code = Localizations.localeOf(context).languageCode.toLowerCase();
+  switch (code) {
+    case 'it':
+      return 'Vincoli pianificazione';
+    case 'fr':
+      return 'Contraintes de planification';
+    case 'es':
+      return 'Restricciones de planificación';
+    default:
+      return 'Planning constraints';
+  }
+}
+
+String _planningConstraintsUpdatedMessage(BuildContext context) {
+  final code = Localizations.localeOf(context).languageCode.toLowerCase();
+  switch (code) {
+    case 'it':
+      return 'Vincoli di pianificazione aggiornati.';
+    case 'fr':
+      return 'Contraintes de planification mises à jour.';
+    case 'es':
+      return 'Restricciones de planificación actualizadas.';
+    default:
+      return 'Planning constraints updated.';
+  }
+}
+
+String _planningConstraintsErrorFallback(BuildContext context) {
+  final code = Localizations.localeOf(context).languageCode.toLowerCase();
+  switch (code) {
+    case 'it':
+      return 'Non siamo riusciti ad aggiornare i vincoli di pianificazione adesso.';
+    case 'fr':
+      return 'Nous n’avons pas pu mettre à jour les contraintes de planification pour le moment.';
+    case 'es':
+      return 'No hemos podido actualizar las restricciones de planificación en este momento.';
+    default:
+      return 'We could not update the planning constraints right now.';
+  }
+}
 
 class TeamSectionPermissions {
   const TeamSectionPermissions({
@@ -96,6 +141,7 @@ class TeamMembersSection extends StatefulWidget {
 class _TeamMembersSectionState extends State<TeamMembersSection> {
   // ── Private bloc instances (NOT from singleton)
   late final TeamMemberUseCase _teamMemberUseCase;
+  late final TeamUseCase _teamUseCase;
   late final TeamMemberBloc _memberBloc;
   late final TeamMemberBloc
   _inviteBloc; // separate instance for invitations list
@@ -122,6 +168,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     super.initState();
     // Create fresh instances so they're isolated from the singleton
     _teamMemberUseCase = getIt<TeamMemberUseCase>();
+    _teamUseCase = getIt<TeamUseCase>();
     _memberBloc = TeamMemberBloc(teamMemberUseCase: _teamMemberUseCase);
     _inviteBloc = TeamMemberBloc(teamMemberUseCase: _teamMemberUseCase);
     _roleBloc = RoleBloc(roleUseCase: getIt<RoleUseCase>());
@@ -404,6 +451,62 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     });
   }
 
+  Future<void> _editPlanningConstraints(TeamMemberEntity member) async {
+    final team = await (() async {
+      try {
+        return await _teamUseCase.getTeamById(widget.teamId);
+      } catch (_) {
+        return null;
+      }
+    })();
+    final dialogResult = await TeamMemberPlanningConstraintsDialog.show(
+      context,
+      memberEmail: member.userEmail,
+      availableWorkerTypes:
+          team?.planningWorkerTypes ?? PlanningWorkerTypeEntity.builtIns,
+      initialConstraints: member.planningConstraints,
+    );
+    if (dialogResult == null || member.id == null || !mounted) {
+      return;
+    }
+
+    try {
+      await _teamUseCase.updatePlanningWorkerTypes(
+        widget.teamId,
+        dialogResult.workerTypes,
+      );
+      final updatedMember = await _teamMemberUseCase.updatePlanningConstraints(
+        teamId: widget.teamId,
+        memberId: member.id!,
+        constraints: dialogResult.constraints,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _members = _members
+            .map((item) => item.id == updatedMember.id ? updatedMember : item)
+            .toList();
+      });
+      AppSnackBar.showSuccess(
+        context,
+        _planningConstraintsUpdatedMessage(context),
+      );
+      _memberBloc.add(LoadTeamMembersByTeamIdEvent(widget.teamId));
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showError(
+        context,
+        AppErrorMessageResolver.resolve(
+          error,
+          fallback: _planningConstraintsErrorFallback(context),
+        ),
+      );
+    }
+  }
+
   Future<void> _cancelInvitation(String invitationId) async {
     final existingIndex = _invitations.indexWhere(
       (invitation) => invitation.id == invitationId,
@@ -566,6 +669,9 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
                 }),
                 onEditSave: _saveRoleEdit,
                 onRoleChanged: (r) => setState(() => _editingRoleId = r),
+                onEditPlanningConstraints: (member) {
+                  unawaited(_editPlanningConstraints(member));
+                },
               );
             },
           ),
@@ -662,6 +768,7 @@ class _MembersList extends StatelessWidget {
   final VoidCallback onEditCancel;
   final void Function(String, TeamMemberEntity) onEditSave;
   final void Function(String) onRoleChanged;
+  final void Function(TeamMemberEntity) onEditPlanningConstraints;
 
   const _MembersList({
     required this.members,
@@ -674,6 +781,7 @@ class _MembersList extends StatelessWidget {
     required this.onEditCancel,
     required this.onEditSave,
     required this.onRoleChanged,
+    required this.onEditPlanningConstraints,
   });
 
   @override
@@ -696,7 +804,7 @@ class _MembersList extends StatelessWidget {
                   Expanded(flex: 3, child: _HeaderText(loc.email)),
                   Expanded(flex: 2, child: _HeaderText(loc.role)),
                   Expanded(flex: 2, child: _HeaderText(loc.status)),
-                  const SizedBox(width: 72),
+                  const SizedBox(width: 108),
                 ],
               );
             },
@@ -715,6 +823,7 @@ class _MembersList extends StatelessWidget {
             onEditCancel: onEditCancel,
             onEditSave: () => onEditSave(m.id ?? '', m),
             onRoleChanged: onRoleChanged,
+            onEditPlanningConstraints: () => onEditPlanningConstraints(m),
           ),
         ),
       ],
@@ -747,6 +856,7 @@ class _MemberRow extends StatelessWidget {
   final VoidCallback onEditCancel;
   final VoidCallback onEditSave;
   final void Function(String) onRoleChanged;
+  final VoidCallback onEditPlanningConstraints;
 
   const _MemberRow({
     required this.member,
@@ -759,6 +869,7 @@ class _MemberRow extends StatelessWidget {
     required this.onEditCancel,
     required this.onEditSave,
     required this.onRoleChanged,
+    required this.onEditPlanningConstraints,
   });
 
   List<RoleEntity> get _editableRoles =>
@@ -808,6 +919,8 @@ class _MemberRow extends StatelessWidget {
         member.status == UserStatus.active &&
         memberRole != 'OWNER' &&
         (permissions.isOwner || !targetIsProtected);
+    final canEditPlanningConstraints =
+        permissions.canChangeMemberRoles && member.status == UserStatus.active;
     return Row(
       children: [
         Expanded(
@@ -834,6 +947,15 @@ class _MemberRow extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (canEditPlanningConstraints) ...[
+              _ActionIcon(
+                icon: Icons.tune_rounded,
+                color: const Color(0xFF1F8A70),
+                tooltip: _planningConstraintsTooltip(context),
+                onTap: onEditPlanningConstraints,
+              ),
+              const SizedBox(width: 4),
+            ],
             if (canEdit) ...[
               _ActionIcon(
                 icon: Icons.edit_rounded,

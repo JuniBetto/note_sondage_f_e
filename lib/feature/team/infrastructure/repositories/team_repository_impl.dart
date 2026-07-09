@@ -1,3 +1,4 @@
+import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_repository.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
@@ -106,6 +107,7 @@ class TeamRepositoryImpl implements TeamRepository {
                     clockingReminderTime: updated.clockingReminderTime,
                     clockingMissingAlertTime: updated.clockingMissingAlertTime,
                     clockingOpenAlertTime: updated.clockingOpenAlertTime,
+                    planningWorkerTypes: updated.planningWorkerTypes,
                     createdAt: updated.createdAt,
                   )
                 : t,
@@ -120,5 +122,51 @@ class TeamRepositoryImpl implements TeamRepository {
 
   Future<void> refreshAll() async {
     await _remote.getAll();
+  }
+
+  @override
+  Future<List<PlanningWorkerTypeEntity>> updatePlanningWorkerTypes(
+    String teamId,
+    List<PlanningWorkerTypeEntity> workerTypes,
+  ) {
+    return _updatePlanningWorkerTypes(teamId, workerTypes);
+  }
+
+  Future<List<PlanningWorkerTypeEntity>> _updatePlanningWorkerTypes(
+    String teamId,
+    List<PlanningWorkerTypeEntity> workerTypes,
+  ) async {
+    try {
+      final updated = await _remote.updatePlanningWorkerTypes(
+        teamId,
+        workerTypes,
+      );
+      final cached = await _local.getAll();
+      final next = cached
+          .map(
+            (team) => team.id == teamId
+                ? TeamEntity(
+                    team.id,
+                    team.color,
+                    team.pendingInvitations,
+                    name: team.name,
+                    description: team.description,
+                    createdByUserId: team.createdByUserId,
+                    clockingRequired: team.clockingRequired,
+                    clockingReminderTime: team.clockingReminderTime,
+                    clockingMissingAlertTime: team.clockingMissingAlertTime,
+                    clockingOpenAlertTime: team.clockingOpenAlertTime,
+                    memberCount: team.memberCount,
+                    planningWorkerTypes: updated,
+                    createdAt: team.createdAt,
+                  )
+                : team,
+          )
+          .toList();
+      await _local.saveAll(next);
+      return updated;
+    } catch (e) {
+      throw Exception('Failed to update planning worker types: $e');
+    }
   }
 }

@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:hive/hive.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/hive_models/team_member_hive_model.dart';
 
@@ -27,6 +30,9 @@ class TeamMemberLocalDataSource {
         imageUrl: e.imageUrl,
         fileName: e.fileName,
         initialName: e.initialName,
+        planningConstraintsJson: _encodePlanningConstraints(
+          e.planningConstraints,
+        ),
       ),
     );
     await box.addAll(models);
@@ -62,6 +68,79 @@ class TeamMemberLocalDataSource {
       imageUrl: m.imageUrl,
       fileName: m.fileName,
       initialName: m.initialName,
+      planningConstraints: _decodePlanningConstraints(
+        m.planningConstraintsJson,
+      ),
     );
+  }
+
+  String? _encodePlanningConstraints(
+    TeamMemberPlanningConstraintsEntity? constraints,
+  ) {
+    if (constraints == null) {
+      return null;
+    }
+    return jsonEncode({
+      'workerType': constraints.workerType,
+      'availableWeekdays': constraints.availableWeekdays,
+      'preferredShiftTypes': constraints.preferredShiftTypes,
+      'blockedShiftTypes': constraints.blockedShiftTypes,
+      'unavailableDateRanges': constraints.unavailableDateRanges,
+      'minDailyHours': constraints.minDailyHours,
+      'maxDailyHours': constraints.maxDailyHours,
+      'maxWeeklyHours': constraints.maxWeeklyHours,
+      'maxMonthlyHours': constraints.maxMonthlyHours,
+      'overtimeAllowed': constraints.overtimeAllowed,
+      'avoidConsecutiveShifts': constraints.avoidConsecutiveShifts,
+      'minRestHoursBetweenShifts': constraints.minRestHoursBetweenShifts,
+      'maxConsecutiveNightShifts': constraints.maxConsecutiveNightShifts,
+      'maxConsecutiveWeekendShifts': constraints.maxConsecutiveWeekendShifts,
+      'notes': constraints.notes,
+    });
+  }
+
+  TeamMemberPlanningConstraintsEntity? _decodePlanningConstraints(
+    String? rawJson,
+  ) {
+    if (rawJson == null || rawJson.isEmpty) {
+      return null;
+    }
+    try {
+      final json = jsonDecode(rawJson) as Map<String, dynamic>;
+      return TeamMemberPlanningConstraintsEntity(
+        workerType: json['workerType']?.toString(),
+        availableWeekdays:
+            (json['availableWeekdays'] as List<dynamic>? ?? const [])
+                .map((item) => item.toString())
+                .toList(),
+        preferredShiftTypes:
+            (json['preferredShiftTypes'] as List<dynamic>? ?? const [])
+                .map((item) => item.toString())
+                .toList(),
+        blockedShiftTypes:
+            (json['blockedShiftTypes'] as List<dynamic>? ?? const [])
+                .map((item) => item.toString())
+                .toList(),
+        unavailableDateRanges:
+            (json['unavailableDateRanges'] as List<dynamic>? ?? const [])
+                .map((item) => item.toString())
+                .toList(),
+        minDailyHours: (json['minDailyHours'] as num?)?.toInt(),
+        maxDailyHours: (json['maxDailyHours'] as num?)?.toInt(),
+        maxWeeklyHours: (json['maxWeeklyHours'] as num?)?.toInt(),
+        maxMonthlyHours: (json['maxMonthlyHours'] as num?)?.toInt(),
+        overtimeAllowed: json['overtimeAllowed'] as bool?,
+        avoidConsecutiveShifts: json['avoidConsecutiveShifts'] as bool?,
+        minRestHoursBetweenShifts: (json['minRestHoursBetweenShifts'] as num?)
+            ?.toInt(),
+        maxConsecutiveNightShifts: (json['maxConsecutiveNightShifts'] as num?)
+            ?.toInt(),
+        maxConsecutiveWeekendShifts:
+            (json['maxConsecutiveWeekendShifts'] as num?)?.toInt(),
+        notes: json['notes']?.toString(),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 }

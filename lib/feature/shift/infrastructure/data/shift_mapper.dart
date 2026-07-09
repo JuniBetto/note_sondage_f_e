@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 
@@ -105,5 +106,45 @@ class ShiftMapper {
       'isPublic': isPublic,
       if (targetFirebaseUid != null) 'targetFirebaseUid': targetFirebaseUid,
     };
+  }
+
+  static Map<String, dynamic> autoPlanRequestToJson(
+    ShiftAutoPlanRequestEntity request,
+  ) {
+    return {
+      'teamId': request.teamId,
+      'from': request.from.toIso8601String().split('T').first,
+      'to': request.to.toIso8601String().split('T').first,
+      'plannerMode': switch (request.plannerMode) {
+        ShiftAutoPlannerMode.coverage => 'COVERAGE',
+        ShiftAutoPlannerMode.rotation => 'ROTATION',
+      },
+      'replaceExistingAssignments': request.replaceExistingAssignments,
+      'templates': request.templates
+          .map(
+            (template) => {
+              'profileId': template.profileId,
+              'requiredMemberCount': template.requiredMemberCount,
+              if (template.simultaneousMemberCount != null)
+                'simultaneousMemberCount': template.simultaneousMemberCount,
+            },
+          )
+          .toList(),
+    };
+  }
+
+  static ShiftAutoPlanResultEntity autoPlanResultFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return ShiftAutoPlanResultEntity(
+      createdAssignmentsCount:
+          (json['createdAssignmentsCount'] as num?)?.toInt() ?? 0,
+      preservedAssignmentsCount:
+          (json['preservedAssignmentsCount'] as num?)?.toInt() ?? 0,
+      uncoveredSlotsCount: (json['uncoveredSlotsCount'] as num?)?.toInt() ?? 0,
+      warnings: (json['warnings'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList(),
+    );
   }
 }
