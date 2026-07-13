@@ -88,7 +88,9 @@ class AppErrorMessageResolver {
     final response = error.response;
     final responseMessage = _extractResponseMessage(response?.data);
     if (responseMessage != null && !_looksTechnical(responseMessage)) {
-      final normalized = _stripTechnicalPrefixes(responseMessage);
+      final normalized = _stripTechnicalPrefixes(
+        _extractEmbeddedJsonMessage(responseMessage) ?? responseMessage,
+      );
       final lowered = normalized.toLowerCase();
       if (lowered.contains('only draft sondage can be modified')) {
         return 'This survey can no longer be edited. Only drafts can be updated.';
@@ -160,6 +162,9 @@ class AppErrorMessageResolver {
       'AuthException:',
       'FirebaseAuthException:',
       'Bad state:',
+      'Errore generico :',
+      'Errore downstream :',
+      'Errore di validazione :',
     ];
     for (final prefix in prefixes) {
       if (value.startsWith(prefix)) {
@@ -245,7 +250,14 @@ class AppErrorMessageResolver {
       return trimmed.isEmpty ? null : trimmed;
     }
     if (data is Map) {
-      const keys = ['message', 'error', 'detail', 'details', 'description'];
+      const keys = [
+        'message',
+        'errorMessage',
+        'error',
+        'detail',
+        'details',
+        'description',
+      ];
       for (final key in keys) {
         final value = data[key];
         final extracted = _extractResponseMessage(value);
@@ -262,6 +274,41 @@ class AppErrorMessageResolver {
           return extracted;
         }
       }
+    }
+    return null;
+  }
+
+  static String? _extractEmbeddedJsonMessage(String message) {
+    final trimmed = message.trim();
+    if (!trimmed.contains('{') || !trimmed.contains('}')) {
+      return null;
+    }
+
+    final jsonStart = trimmed.indexOf('{');
+    final jsonEnd = trimmed.lastIndexOf('}');
+    if (jsonStart == -1 || jsonEnd <= jsonStart) {
+      return null;
+    }
+
+    final embedded = trimmed.substring(jsonStart, jsonEnd + 1);
+    final decoded = _tryDecodeJsonMap(embedded);
+    if (decoded == null) {
+      return null;
+    }
+    return _extractResponseMessage(decoded);
+  }
+
+  static Map<String, dynamic>? _tryDecodeJsonMap(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return decoded.map((key, value) => MapEntry(key.toString(), value));
+      }
+    } catch (_) {
+      return null;
     }
     return null;
   }

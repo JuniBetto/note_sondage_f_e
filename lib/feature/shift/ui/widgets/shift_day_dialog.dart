@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -260,6 +261,15 @@ String _publicShiftReadOnlyBanner(
   es: 'Turno publico: solo owners, admins o roles con permisos Admin/Manage pueden editarlo',
 );
 
+String _publicPersonalShiftReadOnlyBanner(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Turno personale pubblico - solo il proprietario puo modificarlo',
+      en: 'Public personal shift - only the owner can edit it',
+      fr: 'Quart personnel public - seul le proprietaire peut le modifier',
+      es: 'Turno personal publico: solo el propietario puede editarlo',
+    );
+
 String _publicVisibleToTeamTitle(BuildContext context) =>
     _localizedShiftDayText(
       context,
@@ -267,6 +277,15 @@ String _publicVisibleToTeamTitle(BuildContext context) =>
       en: 'Public - visible to the team',
       fr: 'Public - visible par l\'equipe',
       es: 'Publico: visible para el equipo',
+    );
+
+String _publicVisiblePersonalTitle(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Pubblico - turno personale',
+      en: 'Public - personal shift',
+      fr: 'Public - quart personnel',
+      es: 'Publico: turno personal',
     );
 
 String _privateVisibleOnlyToYouTitle(BuildContext context) =>
@@ -295,6 +314,16 @@ String _allTeamMembersSeeShiftText(BuildContext context) =>
       fr: 'Tous les membres de l\'equipe voient ce quart',
       es: 'Todos los miembros del equipo ven este turno',
     );
+
+String _sharedCalendarSeeShiftText(
+  BuildContext context,
+) => _localizedShiftDayText(
+  context,
+  it: 'Il turno resta personale ma visibile nel calendario condiviso',
+  en: 'This shift stays personal but is visible in the shared calendar',
+  fr: 'Ce quart reste personnel mais visible dans le calendrier partage',
+  es: 'Este turno sigue siendo personal pero visible en el calendario compartido',
+);
 
 String _onlyYouCanSeeShiftText(BuildContext context) => _localizedShiftDayText(
   context,
@@ -618,15 +647,20 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   final Map<String, String?> _memberProfileIds = <String, String?>{};
 
   bool get _hasOwnerTeams => widget.ownerTeams.isNotEmpty;
+  bool get _existingHasTeamScope =>
+      widget.existing != null &&
+      ShiftAssignmentAccessPolicy.hasTeamScope(widget.existing!);
   bool get _canOpenRequestMode =>
       widget.existing != null &&
       widget.existing!.isPublic &&
+      _existingHasTeamScope &&
       widget.canRequestPublicShiftChanges &&
       !widget.hasPendingPublicShiftChangeRequest &&
       !widget.canManagePublicShifts;
   bool get _hasPendingRequest =>
       widget.existing != null &&
       widget.existing!.isPublic &&
+      _existingHasTeamScope &&
       widget.hasPendingPublicShiftChangeRequest &&
       !widget.canManagePublicShifts;
   bool get _requestMode => _requestModeActive;
@@ -635,6 +669,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   bool get _approvedSelfEditMode =>
       widget.existing != null &&
       widget.existing!.isPublic &&
+      _existingHasTeamScope &&
       widget.canEditApprovedPublicShift &&
       !widget.canManagePublicShifts;
   bool get _timeLocked => _approvedSelfEditMode;
@@ -812,7 +847,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         !_approvedSelfEditMode &&
         !widget.canManagePublicShifts &&
         widget.existing != null &&
-        (widget.existing!.isPublic);
+        widget.existing!.isPublic;
   }
 
   void _enterRequestMode() {
@@ -946,7 +981,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         alarmOffsets: _alarmOffsets,
         note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
         isPublic: _effectiveIsPublic,
-        teamId: _selectedTeam?.team.id ?? widget.existing?.teamId,
+        teamId: _isTeamScopedSelection ? _selectedTeam?.team.id : null,
         targetUserIds: _resolvedTargetUserIds,
         memberAssignmentPlans: _memberAssignmentPlans,
         scheduledDates: _scheduledDates,
@@ -1137,9 +1172,13 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                                               ? _approvedShiftEditBanner(
                                                   context,
                                                 )
-                                              : _publicShiftReadOnlyBanner(
-                                                  context,
-                                                ))),
+                                              : (_existingHasTeamScope
+                                                    ? _publicShiftReadOnlyBanner(
+                                                        context,
+                                                      )
+                                                    : _publicPersonalShiftReadOnlyBanner(
+                                                        context,
+                                                      )))),
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: appPrimary,
                               ),
@@ -1166,6 +1205,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       overnight: _overnight,
                       note: _noteCtrl.text.trim(),
                       isPublic: _effectiveIsPublic,
+                      hasTeamScope:
+                          _isTeamScopedSelection || _existingHasTeamScope,
                       alarmOffsets: _alarmOffsets,
                     ),
                     const SizedBox(height: 20),
@@ -1540,7 +1581,9 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                           ),
                           title: Text(
                             _effectiveIsPublic
-                                ? _publicVisibleToTeamTitle(context)
+                                ? (_isTeamScopedSelection
+                                      ? _publicVisibleToTeamTitle(context)
+                                      : _publicVisiblePersonalTitle(context))
                                 : _privateVisibleOnlyToYouTitle(context),
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w600,
@@ -1551,7 +1594,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                             _isTeamScopedSelection
                                 ? _teamSelectedCreatesPublicShiftText(context)
                                 : _effectiveIsPublic
-                                ? _allTeamMembersSeeShiftText(context)
+                                ? _sharedCalendarSeeShiftText(context)
                                 : _onlyYouCanSeeShiftText(context),
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: colorScheme.descriptionColor,
@@ -1692,6 +1735,7 @@ class _ShiftViewSection extends StatelessWidget {
     required this.overnight,
     required this.note,
     required this.isPublic,
+    required this.hasTeamScope,
     required this.alarmOffsets,
   });
 
@@ -1707,6 +1751,7 @@ class _ShiftViewSection extends StatelessWidget {
   final bool overnight;
   final String note;
   final bool isPublic;
+  final bool hasTeamScope;
   final List<int> alarmOffsets;
 
   String _formatTime(TimeOfDay value) {
@@ -1745,7 +1790,9 @@ class _ShiftViewSection extends StatelessWidget {
       (label: localization.overnightShift, value: overnight ? 'Yes' : 'No'),
       (
         label: 'Visibility',
-        value: isPublic ? 'Public team shift' : 'Private shift',
+        value: !isPublic
+            ? 'Private shift'
+            : (hasTeamScope ? 'Public team shift' : 'Public personal shift'),
       ),
       (
         label: localization.note,
