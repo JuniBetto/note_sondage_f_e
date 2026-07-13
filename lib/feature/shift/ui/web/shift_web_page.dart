@@ -13,6 +13,7 @@ import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordi
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
+import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments_list.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
@@ -330,25 +331,31 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   }
 
   bool _canManageAssignment(ShiftAssignmentEntity assignment) {
-    if (!assignment.isPublic) {
-      return assignment.userId == _currentUid;
-    }
-    return assignment.teamId != null &&
-        _manageableTeams.any((team) => team.team.id == assignment.teamId);
+    return ShiftAssignmentAccessPolicy.canManageAssignment(
+      assignment,
+      currentUserId: _currentUid,
+      manageableTeamIds: _manageableTeams
+          .map((team) => team.team.id)
+          .whereType<String>(),
+    );
   }
 
   bool _canRequestAssignmentChange(ShiftAssignmentEntity assignment) {
-    return assignment.isPublic &&
-        assignment.userId == _currentUid &&
-        !assignment.memberEditUnlocked &&
-        !_canManageAssignment(assignment);
+    final canManageAssignment = _canManageAssignment(assignment);
+    return ShiftAssignmentAccessPolicy.canRequestAssignmentChange(
+      assignment,
+      currentUserId: _currentUid,
+      canManageAssignment: canManageAssignment,
+    );
   }
 
   bool _canEditApprovedAssignment(ShiftAssignmentEntity assignment) {
-    return assignment.isPublic &&
-        assignment.userId == _currentUid &&
-        assignment.memberEditUnlocked &&
-        !_canManageAssignment(assignment);
+    final canManageAssignment = _canManageAssignment(assignment);
+    return ShiftAssignmentAccessPolicy.canEditApprovedAssignment(
+      assignment,
+      currentUserId: _currentUid,
+      canManageAssignment: canManageAssignment,
+    );
   }
 
   bool _canManageTeam(TeamEntity team) {
@@ -610,6 +617,9 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   }
 
   bool _hasPendingAssignmentChangeRequest(ShiftAssignmentEntity assignment) {
+    if (!ShiftAssignmentAccessPolicy.hasTeamScope(assignment)) {
+      return false;
+    }
     if (assignment.memberChangeRequestPending) {
       return true;
     }
@@ -631,14 +641,18 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   Iterable<ShiftAssignmentEntity> _relatedPublicAssignments(
     ShiftAssignmentEntity existing,
   ) {
-    if (!existing.isPublic || existing.teamId == null) {
+    final teamId = ShiftAssignmentAccessPolicy.normalizedTeamId(
+      existing.teamId,
+    );
+    if (!existing.isPublic || teamId == null) {
       return [existing];
     }
 
     return _assignments.where(
       (assignment) =>
           assignment.isPublic &&
-          assignment.teamId == existing.teamId &&
+          ShiftAssignmentAccessPolicy.normalizedTeamId(assignment.teamId) ==
+              teamId &&
           _isSameShiftDate(assignment.shiftDate, existing.shiftDate) &&
           (existing.teamShiftGroupId != null
               ? assignment.teamShiftGroupId == existing.teamShiftGroupId

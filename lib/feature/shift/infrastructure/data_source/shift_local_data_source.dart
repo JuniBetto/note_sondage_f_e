@@ -23,6 +23,14 @@ class ShiftLocalDataSource {
   String get _profilesBoxName => '${_profilesBoxPrefix}_${_suffix()}';
   String get _assignmentsBoxName => '${_assignmentsBoxPrefix}_${_suffix()}';
 
+  String? _nullableString(dynamic value) {
+    final normalized = (value as String?)?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
+  }
+
   Future<Box<String>> _openProfilesBox() async {
     if (Hive.isBoxOpen(_profilesBoxName)) {
       return Hive.box<String>(_profilesBoxName);
@@ -107,6 +115,8 @@ class ShiftLocalDataSource {
             'note': assignment.note,
             'alarmOffsets': assignment.alarmOffsets,
             'isPublic': assignment.isPublic,
+            'memberEditUnlocked': assignment.memberEditUnlocked,
+            'memberChangeRequestPending': assignment.memberChangeRequestPending,
           },
         )
         .toList();
@@ -133,9 +143,9 @@ class ShiftLocalDataSource {
         userId: map['userId'] as String,
         userName: map['userName'] as String?,
         shiftDate: DateTime.parse(map['shiftDate'] as String),
-        teamId: map['teamId'] as String?,
-        teamShiftGroupId: map['teamShiftGroupId'] as String?,
-        profileId: map['profileId'] as String?,
+        teamId: _nullableString(map['teamId']),
+        teamShiftGroupId: _nullableString(map['teamShiftGroupId']),
+        profileId: _nullableString(map['profileId']),
         profileName: map['profileName'] as String?,
         profileColor: map['profileColor'] as String?,
         startTime: _parseTime(map['startTime'] as String),
@@ -146,6 +156,9 @@ class ShiftLocalDataSource {
             .map((e) => (e as num).toInt())
             .toList(),
         isPublic: (map['isPublic'] as bool?) ?? false,
+        memberEditUnlocked: (map['memberEditUnlocked'] as bool?) ?? false,
+        memberChangeRequestPending:
+            (map['memberChangeRequestPending'] as bool?) ?? false,
       );
     }).toList();
 

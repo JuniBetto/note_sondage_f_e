@@ -4,6 +4,14 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 
 class ShiftMapper {
+  static String? _nullableString(dynamic value) {
+    final normalized = (value as String?)?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
+  }
+
   static TimeOfDay _parseTime(String raw) {
     // Format: "HH:mm:ss" or "HH:mm"
     final parts = raw.split(':');
@@ -37,9 +45,9 @@ class ShiftMapper {
       userId: json['userId'] as String,
       userName: json['userName'] as String?,
       shiftDate: DateTime.parse(json['shiftDate'] as String),
-      teamId: json['teamId'] as String?,
-      teamShiftGroupId: json['teamShiftGroupId'] as String?,
-      profileId: json['profileId'] as String?,
+      teamId: _nullableString(json['teamId']),
+      teamShiftGroupId: _nullableString(json['teamShiftGroupId']),
+      profileId: _nullableString(json['profileId']),
       profileName: json['profileName'] as String?,
       profileColor: json['profileColor'] as String?,
       startTime: _parseTime(json['startTime'] as String),

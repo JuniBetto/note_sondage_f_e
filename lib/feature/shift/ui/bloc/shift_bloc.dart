@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_local_data_source.dart';
 import '../../domain/entities/shift_assignment_entity.dart';
@@ -24,6 +26,16 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
   Set<String> get syncingProfileIds => Set.unmodifiable(_syncingProfileIds);
   Set<String> get syncingAssignmentIds =>
       Set.unmodifiable(_syncingAssignmentIds);
+  String? get _currentUserId {
+    final value = GetIt.instance<AuthBloc>().state.user.uid.trim();
+    return value.isEmpty ? null : value;
+  }
+
+  String? get _currentUserName {
+    final value =
+        GetIt.instance<AuthBloc>().state.user.displayName?.trim() ?? '';
+    return value.isEmpty ? null : value;
+  }
 
   void _upsertProfileCache(ShiftProfileEntity profile) {
     _cachedProfiles = [
@@ -673,8 +685,8 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
 
     return ShiftAssignmentEntity(
       id: _temporaryId('shift_assignment'),
-      userId: event.targetUserId ?? 'pending-user',
-      userName: null,
+      userId: event.targetUserId ?? _currentUserId ?? 'pending-user',
+      userName: _currentUserName,
       shiftDate: event.shiftDate,
       teamId: event.teamId,
       teamShiftGroupId: event.teamShiftGroupId,
@@ -711,14 +723,18 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
           selectedProfile?.alarmOffsets ??
           previous.alarmOffsets,
     );
+    final resolvedTeamId = event.isPublic ? event.teamId : null;
+    final resolvedTeamShiftGroupId = resolvedTeamId == null
+        ? null
+        : (event.teamShiftGroupId ?? previous.teamShiftGroupId);
 
     return ShiftAssignmentEntity(
       id: previous.id,
       userId: event.targetUserId ?? previous.userId,
       userName: previous.userName,
       shiftDate: previous.shiftDate,
-      teamId: event.teamId ?? previous.teamId,
-      teamShiftGroupId: event.teamShiftGroupId ?? previous.teamShiftGroupId,
+      teamId: resolvedTeamId,
+      teamShiftGroupId: resolvedTeamShiftGroupId,
       profileId: selectedProfile?.id ?? event.profileId ?? previous.profileId,
       profileName: selectedProfile?.name ?? previous.profileName,
       profileColor: selectedProfile?.color ?? previous.profileColor,
