@@ -1,7 +1,13 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/web/widgets/create_sondage_web.dart';
@@ -25,10 +31,13 @@ class SondageWeb extends StatefulWidget {
 }
 
 class _SondageWebState extends State<SondageWeb> {
+  static const Duration _expiryRefreshGrace = Duration(seconds: 1);
   final GlobalKey _headerKey = GlobalKey();
   final GlobalKey _statsKey = GlobalKey();
   final GlobalKey _listKey = GlobalKey();
   final TextEditingController _searchController = TextEditingController();
+  StreamSubscription<RealtimeNotification>? _subscription;
+  Timer? _expiryRefreshTimer;
   int isGridView = 1;
   List<SondageEntity> _lastSondages = const <SondageEntity>[];
   bool _tutorialScheduled = false;
@@ -38,6 +47,9 @@ class _SondageWebState extends State<SondageWeb> {
   @override
   void initState() {
     super.initState();
+    _subscription = getIt<RealtimeNotificationService>().stream.listen(
+      _handleRealtimeRefresh,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -49,8 +61,56 @@ class _SondageWebState extends State<SondageWeb> {
     });
   }
 
+  void _handleRealtimeRefresh(RealtimeNotification event) {
+    if (!mounted || event.sourceService != 'sondage-service') {
+      return;
+    }
+    if (event.metadata['refresh'] != 'sondage') {
+      return;
+    }
+    debugPrint(
+      '[SondageWeb] Realtime refresh for sondage feed: ${event.eventType}',
+    );
+    context.read<SondageBloc>().add(LoadSondagesEvent());
+  }
+
+  void _scheduleNextExpiryRefresh(List<SondageEntity> sondages) {
+    _expiryRefreshTimer?.cancel();
+
+    final now = DateTime.now();
+    DateTime? nextExpiry;
+    for (final sondage in sondages) {
+      if (sondage.status != SondageStatus.active ||
+          sondage.expiryDate == null) {
+        continue;
+      }
+      final expiry = sondage.expiryDate!;
+      if (nextExpiry == null || expiry.isBefore(nextExpiry)) {
+        nextExpiry = expiry;
+      }
+    }
+
+    if (nextExpiry == null) {
+      return;
+    }
+
+    final delay = nextExpiry.difference(now) + _expiryRefreshGrace;
+    final effectiveDelay = delay.isNegative
+        ? const Duration(milliseconds: 500)
+        : delay;
+
+    _expiryRefreshTimer = Timer(effectiveDelay, () {
+      if (!mounted) {
+        return;
+      }
+      context.read<SondageBloc>().add(LoadSondagesEvent());
+    });
+  }
+
   @override
   void dispose() {
+    _subscription?.cancel();
+    _expiryRefreshTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -179,6 +239,9 @@ class _SondageWebState extends State<SondageWeb> {
         if (state is SondageError) {
           AppSnackBar.showError(context, state.message);
         }
+        if (state is SondagesLoaded) {
+          _scheduleNextExpiryRefresh(state.sondages);
+        }
       },
       builder: (context, state) {
         if (state is SondagesLoaded) {
@@ -189,7 +252,7 @@ class _SondageWebState extends State<SondageWeb> {
             : _lastSondages;
         final isLoading =
             (state is SondageLoading || state is SondageInitial) &&
-                sondages.isEmpty;
+            sondages.isEmpty;
         final isRefreshing = state is SondageLoading && sondages.isNotEmpty;
         final draftCount = _countByStatus(sondages, SondageStatus.draft);
         final activeCount = _countByStatus(sondages, SondageStatus.active);
@@ -377,9 +440,9 @@ class _SondageWebState extends State<SondageWeb> {
                             boxShadow: [
                               BoxShadow(
                                 color:
-                                (colorScheme.bgNavbarSurface ??
-                                    Colors.black)
-                                    .withValues(alpha: 0.2),
+                                    (colorScheme.bgNavbarSurface ??
+                                            Colors.black)
+                                        .withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 spreadRadius: 2,
                                 offset: const Offset(0, 2),
@@ -389,11 +452,11 @@ class _SondageWebState extends State<SondageWeb> {
                           child: isLoading
                               ? const Center(child: CircularProgressIndicator())
                               : ResponsiveGridSondages(
-                            items: filteredSondages,
-                            isRow: isGridView == 1,
-                            onDeleteTap: _confirmDelete,
-                            onEditTap: _openEditDialog,
-                          ),
+                                  items: filteredSondages,
+                                  isRow: isGridView == 1,
+                                  onDeleteTap: _confirmDelete,
+                                  onEditTap: _openEditDialog,
+                                ),
                         ),
                       ),
                     ),
@@ -434,7 +497,7 @@ class _SondageWebState extends State<SondageWeb> {
     return sondages.where((sondage) {
       final matchesStatus =
           _selectedStatusFilter == null ||
-              sondage.status == _selectedStatusFilter;
+          sondage.status == _selectedStatusFilter;
       if (!matchesStatus) {
         return false;
       }

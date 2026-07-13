@@ -161,10 +161,6 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
       }
       _isRefreshingNotifier.value = false;
       _loadErrorNotifier.value = state.message;
-      final sondageForRefresh = _sondageNotifier.value ?? _pendingVoteRollback;
-      if (sondageForRefresh != null) {
-        _scheduleExpiryRefreshFor(sondageForRefresh);
-      }
     }
   }
 
