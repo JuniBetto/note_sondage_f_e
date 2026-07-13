@@ -145,7 +145,7 @@ class SondageMapper {
         'description': entity.description!.trim(),
       'allowMultipleResponses': entity.allowMultipleResponses,
       if (entity.expiryDate != null)
-        'expiresAt': entity.expiryDate!.toUtc().toIso8601String(),
+        'expiresAt': entity.expiryDate!.toIso8601String(),
       'options': entity.options.map((option) => option.label).toList(),
     };
   }

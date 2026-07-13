@@ -1,10 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_team_list_page.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
@@ -37,6 +41,7 @@ class _SondageMobileState extends State<SondageMobile>
   final GlobalKey _statsKey = GlobalKey();
   final GlobalKey _listKey = GlobalKey();
   late TabController tabController;
+  StreamSubscription<RealtimeNotification>? _subscription;
   Timer? _expiryRefreshTimer;
   final TextEditingController _searchController = TextEditingController();
   int currentViewType = 1;
@@ -55,6 +60,9 @@ class _SondageMobileState extends State<SondageMobile>
       initialIndex: safeInitialTab,
     );
     tabController.addListener(_handleTabChange);
+    _subscription = getIt<RealtimeNotificationService>().stream.listen(
+      _handleRealtimeRefresh,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -67,6 +75,19 @@ class _SondageMobileState extends State<SondageMobile>
   }
 
   void _handleTabChange() => setState(() {});
+
+  void _handleRealtimeRefresh(RealtimeNotification event) {
+    if (!mounted || event.sourceService != 'sondage-service') {
+      return;
+    }
+    if (event.metadata['refresh'] != 'sondage') {
+      return;
+    }
+    debugPrint(
+      '[SondageMobile] Realtime refresh for sondage feed: ${event.eventType}',
+    );
+    context.read<SondageBloc>().add(LoadSondagesEvent());
+  }
 
   void _scheduleNextExpiryRefresh(List<SondageEntity> sondages) {
     _expiryRefreshTimer?.cancel();
@@ -213,6 +234,7 @@ class _SondageMobileState extends State<SondageMobile>
 
   @override
   void dispose() {
+    _subscription?.cancel();
     _expiryRefreshTimer?.cancel();
     tabController.removeListener(_handleTabChange);
     tabController.dispose();
@@ -264,7 +286,7 @@ class _SondageMobileState extends State<SondageMobile>
           builder: (context, constraints) {
             final useLandscapeCompactLayout =
                 orientation == Orientation.landscape &&
-                    constraints.maxHeight < 560;
+                constraints.maxHeight < 560;
             final pagePadding = EdgeInsets.symmetric(
               horizontal: useLandscapeCompactLayout ? 12 : 16,
               vertical: useLandscapeCompactLayout ? 10 : 16,
@@ -278,7 +300,7 @@ class _SondageMobileState extends State<SondageMobile>
                   TabBarComponent(
                     childTab1: BlocBuilder<SondageBloc, SondageState>(
                       buildWhen: (_, current) =>
-                      current is SondagesLoaded ||
+                          current is SondagesLoaded ||
                           current is SondageLoading,
                       builder: (context, _) =>
                           Text('Lista ${localization.sondage}'),
@@ -298,12 +320,12 @@ class _SondageMobileState extends State<SondageMobile>
                         // Tab 0 — lista sondaggi
                         BlocBuilder<SondageBloc, SondageState>(
                           buildWhen: (_, current) =>
-                          current is SondageLoading ||
+                              current is SondageLoading ||
                               current is SondagesLoaded ||
                               current is SondageError,
                           builder: (context, state) {
                             if ((state is SondageLoading ||
-                                state is SondageInitial) &&
+                                    state is SondageInitial) &&
                                 _lastSondages.isEmpty) {
                               return const Center(
                                 child: CircularProgressIndicator(),
@@ -344,7 +366,7 @@ class _SondageMobileState extends State<SondageMobile>
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Bozze e sondaggi attivi dei tuoi team',
@@ -352,9 +374,9 @@ class _SondageMobileState extends State<SondageMobile>
                                               .textTheme
                                               .bodyMedium
                                               ?.copyWith(
-                                            color: Colors.grey[700],
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                                color: Colors.grey[700],
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                         const SizedBox(height: 12),
                                         AppSearchField(
@@ -457,7 +479,7 @@ class _SondageMobileState extends State<SondageMobile>
                                 ),
                                 child: Column(
                                   crossAxisAlignment:
-                                  CrossAxisAlignment.stretch,
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     summaryHeader,
                                     if (isRefreshing)
@@ -521,7 +543,7 @@ class _SondageMobileState extends State<SondageMobile>
     return sondages.where((sondage) {
       final matchesStatus =
           _selectedStatusFilter == null ||
-              sondage.status == _selectedStatusFilter;
+          sondage.status == _selectedStatusFilter;
       if (!matchesStatus) {
         return false;
       }
