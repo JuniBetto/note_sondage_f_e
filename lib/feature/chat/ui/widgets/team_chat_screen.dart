@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -140,7 +141,24 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   void _notifyConversationTitleChanged() {
-    widget.onConversationTitleChanged?.call(_resolvedConversationTitle());
+    final callback = widget.onConversationTitleChanged;
+    if (callback == null) {
+      return;
+    }
+
+    final resolvedTitle = _resolvedConversationTitle();
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        callback(resolvedTitle);
+      });
+      return;
+    }
+
+    callback(resolvedTitle);
   }
 
   @override

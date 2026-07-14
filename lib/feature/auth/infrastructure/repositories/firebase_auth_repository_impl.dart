@@ -79,7 +79,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         final firebaseIdToken = await user.getIdToken();
         if (firebaseIdToken != null) {
           final backendJwt = await _backendAuth.exchangeToken(firebaseIdToken);
-          await _tokenService.saveToken(backendJwt);
+          await _tokenService.saveToken(backendJwt, userId: uid);
           final email = user.email?.trim() ?? '';
           if (email.isNotEmpty) {
             try {

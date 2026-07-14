@@ -136,7 +136,9 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
         } catch (_) {
           summary = _chatUseCase.getCachedDirectSummary(teamId, memberUserId);
         }
-        if (summary == null || !_hasExistingDirectConversation(summary)) {
+        if (summary == null ||
+            !_matchesRequestedDirectParticipant(summary, memberUserId) ||
+            !_hasExistingDirectConversation(summary)) {
           continue;
         }
         nextDirectEntries.add(
@@ -333,6 +335,13 @@ bool _hasExistingDirectConversation(
 ) {
   final conversationId = summary.conversationId?.trim() ?? '';
   return conversationId.isNotEmpty;
+}
+
+bool _matchesRequestedDirectParticipant(
+  ChatDirectConversationSummaryEntity summary,
+  String memberUserId,
+) {
+  return summary.participantUserId.trim() == memberUserId.trim();
 }
 
 class _DirectChatEntry {

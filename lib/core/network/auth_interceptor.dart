@@ -39,7 +39,8 @@ class AuthInterceptor extends Interceptor {
     }
 
     final firebaseUser = FirebaseAuth.instance.currentUser;
-    var token = await _tokenService.getToken();
+    final currentUserId = firebaseUser?.uid;
+    var token = await _tokenService.getTokenForUser(currentUserId);
 
     // Sul web l'app puo' risultare autenticata via Firebase prima che il JWT
     // backend sia stato ancora scambiato/salvato. In quel caso proviamo a
@@ -139,7 +140,7 @@ class AuthInterceptor extends Interceptor {
         _lastSuccessfulExchangeAt != null &&
         now.difference(_lastSuccessfulExchangeAt!) <
             const Duration(seconds: 10)) {
-      return _tokenService.getToken();
+      return _tokenService.getTokenForUser(uid);
     }
 
     late final Future<String?> exchangeFuture;
@@ -174,7 +175,7 @@ class AuthInterceptor extends Interceptor {
         }
 
         final backendToken = response.data['token'] as String;
-        await _tokenService.saveToken(backendToken);
+        await _tokenService.saveToken(backendToken, userId: uid);
         _lastSuccessfulExchangeUid = uid;
         _lastSuccessfulExchangeAt = DateTime.now();
         return backendToken;
