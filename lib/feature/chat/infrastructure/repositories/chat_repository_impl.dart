@@ -57,8 +57,8 @@ class ChatRepositoryImpl implements ChatRepository {
     String teamId,
     String memberUserId,
   ) async {
-    final conversation = await remote.getOrCreateDirectConversation(
-      teamId,
+    final conversation = _requireMatchingDirectConversation(
+      await remote.getOrCreateDirectConversation(teamId, memberUserId),
       memberUserId,
     );
     await local.saveConversation(conversation);
@@ -79,8 +79,8 @@ class ChatRepositoryImpl implements ChatRepository {
     String teamId,
     String memberUserId,
   ) async {
-    final summary = await remote.getDirectConversationSummary(
-      teamId,
+    final summary = _requireMatchingDirectSummary(
+      await remote.getDirectConversationSummary(teamId, memberUserId),
       memberUserId,
     );
     await local.saveDirectSummary(summary);
@@ -160,5 +160,35 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<void> markConversationRead(String conversationId) {
     return remote.markConversationRead(conversationId);
+  }
+
+  ChatConversationEntity _requireMatchingDirectConversation(
+    ChatConversationEntity conversation,
+    String requestedMemberUserId,
+  ) {
+    final participantUserId = conversation.participantUserId?.trim() ?? '';
+    final normalizedRequestedMemberUserId = requestedMemberUserId.trim();
+    if (participantUserId.isEmpty ||
+        participantUserId != normalizedRequestedMemberUserId) {
+      throw StateError(
+        'Direct conversation participant mismatch for '
+        '$normalizedRequestedMemberUserId',
+      );
+    }
+    return conversation;
+  }
+
+  ChatDirectConversationSummaryEntity _requireMatchingDirectSummary(
+    ChatDirectConversationSummaryEntity summary,
+    String requestedMemberUserId,
+  ) {
+    final normalizedRequestedMemberUserId = requestedMemberUserId.trim();
+    if (summary.participantUserId.trim() != normalizedRequestedMemberUserId) {
+      throw StateError(
+        'Direct summary participant mismatch for '
+        '$normalizedRequestedMemberUserId',
+      );
+    }
+    return summary;
   }
 }

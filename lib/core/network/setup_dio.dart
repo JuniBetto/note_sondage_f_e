@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/network/auth_interceptor.dart';
@@ -90,7 +91,8 @@ class DioClient {
       return null;
     }
 
-    final token = await TokenService().getToken();
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final token = await TokenService().getTokenForUser(currentUserId);
     if (token == null || token.isEmpty) {
       return null;
     }
