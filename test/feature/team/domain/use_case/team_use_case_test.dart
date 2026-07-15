@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/team_repository.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
@@ -14,6 +15,11 @@ class _FakeTeamRepository implements TeamRepository {
   Future<TeamEntity> Function(TeamEntity team, String userId)?
   createByUserHandler;
   Future<TeamUpdate> Function(TeamUpdate team)? updateHandler;
+  Future<List<PlanningWorkerTypeEntity>> Function(
+    String teamId,
+    List<PlanningWorkerTypeEntity> workerTypes,
+  )?
+  updatePlanningWorkerTypesHandler;
   Future<bool> Function(String id)? deleteHandler;
 
   int getAllCalls = 0;
@@ -61,6 +67,15 @@ class _FakeTeamRepository implements TeamRepository {
   @override
   Future<TeamUpdate> update(TeamUpdate team) =>
       updateHandler?.call(team) ?? Future.value(team);
+
+  @override
+  Future<List<PlanningWorkerTypeEntity>> updatePlanningWorkerTypes(
+    String teamId,
+    List<PlanningWorkerTypeEntity> workerTypes,
+  ) {
+    return updatePlanningWorkerTypesHandler?.call(teamId, workerTypes) ??
+        Future.value(workerTypes);
+  }
 }
 
 void main() {

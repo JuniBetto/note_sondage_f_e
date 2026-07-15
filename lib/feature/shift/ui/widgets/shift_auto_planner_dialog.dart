@@ -195,7 +195,7 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _selectedTeamId,
+                initialValue: _selectedTeamId,
                 decoration: InputDecoration(
                   labelText: _t(
                     it: 'Team',

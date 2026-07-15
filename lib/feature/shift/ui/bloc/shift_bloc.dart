@@ -57,12 +57,6 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     ]..sort((a, b) => a.shiftDate.compareTo(b.shiftDate));
   }
 
-  void _removeAssignmentCache(String assignmentId) {
-    _cachedAssignments = _cachedAssignments
-        .where((assignment) => assignment.id != assignmentId)
-        .toList();
-  }
-
   void _removeAssignmentsCache(Iterable<String> assignmentIds) {
     final ids = assignmentIds.toSet();
     _cachedAssignments = _cachedAssignments
