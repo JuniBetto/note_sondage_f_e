@@ -404,8 +404,12 @@ class PushNotificationService {
   void _handleMessage(RemoteMessage message) {
     final notification = _emitNotification(message);
     final notificationCenterCubit = getIt<NotificationCenterCubit>();
-    notificationCenterCubit.ingestRealtimeNotification(notification);
-    unawaited(notificationCenterCubit.loadNotifications(force: true));
+    notificationCenterCubit.consumeNotification(notification.notificationId);
+    unawaited(
+      getIt<LocalNotificationService>().dismissDisplayedNotification(
+        notification.notificationId,
+      ),
+    );
     final item = NotificationCenterItem.fromRealtime(notification);
     unawaited(NotificationNavigation.open(item));
   }

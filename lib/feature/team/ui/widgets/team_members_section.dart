@@ -459,6 +459,9 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         return null;
       }
     })();
+    if (!mounted || !context.mounted) {
+      return;
+    }
     final dialogResult = await TeamMemberPlanningConstraintsDialog.show(
       context,
       memberEmail: member.userEmail,

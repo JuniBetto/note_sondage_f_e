@@ -329,6 +329,9 @@ class _MainAppState extends State<MainApp> {
     if (!mounted) {
       return;
     }
+    await getIt<LocalNotificationService>().dismissDisplayedNotification(
+      action.notificationId,
+    );
     // ── Shift alarm tap → naviga al turno ────────────────────────────────────
     if (action.metadata['eventType'] == 'SHIFT_ALARM') {
       final assignmentId = action.metadata['assignmentId'];
@@ -364,18 +367,7 @@ class _MainAppState extends State<MainApp> {
 
     if (!isDecisionAction) {
       final notificationCenterCubit = getIt<NotificationCenterCubit>();
-      notificationCenterCubit.ingestRealtimeNotification(
-        RealtimeNotification(
-          notificationId: item.notificationId,
-          eventType: item.eventType,
-          sourceService: item.sourceService,
-          title: item.title,
-          body: item.body,
-          occurredAt: item.occurredAt,
-          metadata: item.metadata,
-        ),
-      );
-      await notificationCenterCubit.loadNotifications(force: true);
+      notificationCenterCubit.consumeNotification(item.notificationId);
       if (!mounted) return;
       await NotificationNavigation.open(item, context: context);
       return;

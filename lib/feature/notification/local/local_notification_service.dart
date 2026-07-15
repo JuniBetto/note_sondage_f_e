@@ -462,6 +462,24 @@ class LocalNotificationService {
     await _actionController.close();
   }
 
+  Future<void> dismissDisplayedNotification(String notificationId) async {
+    final normalizedId = notificationId.trim();
+    if (normalizedId.isEmpty ||
+        !_initialized ||
+        !_available ||
+        !_supportsLocalNotifications) {
+      return;
+    }
+
+    final notifId = normalizedId.hashCode;
+    if (_isWeb) {
+      _cancelWebScheduledNotification(notifId);
+      return;
+    }
+
+    await _plugin.cancel(notifId);
+  }
+
   Future<List<NotificationActionIntent>> drainPendingActionIntents() async {
     final prefs = await SharedPreferences.getInstance();
     final rawItems = prefs.getStringList(_pendingNotificationActionsKey) ?? [];

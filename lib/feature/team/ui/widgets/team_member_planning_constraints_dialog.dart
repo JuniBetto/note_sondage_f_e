@@ -353,7 +353,7 @@ class _TeamMemberPlanningConstraintsDialogState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
-          value: _workerType,
+          initialValue: _workerType,
           isDense: true,
           decoration: _denseInputDecoration(
             _strings.workerTypeLabel,
@@ -989,8 +989,9 @@ class _PlanningConstraintsStrings {
 
   String get workerTypeEmptyHelper {
     if (_it) return 'Seleziona un tipo per vedere la descrizione operativa.';
-    if (_fr)
+    if (_fr) {
       return 'Sélectionnez un type pour voir sa description opérationnelle.';
+    }
     if (_es) return 'Selecciona un tipo para ver su descripción operativa.';
     return 'Select a type to see its operational description.';
   }
@@ -1080,8 +1081,9 @@ class _PlanningConstraintsStrings {
   String get noCustomWorkerTypes {
     if (_it) return 'Nessun worker type custom creato per questo team.';
     if (_fr) return 'Aucun worker type custom créé pour cette équipe.';
-    if (_es)
+    if (_es) {
       return 'No hay worker types personalizados creados para este equipo.';
+    }
     return 'No custom worker types created for this team.';
   }
 
@@ -1137,36 +1139,48 @@ class _PlanningConstraintsStrings {
   String workerTypeDescription(PlanningWorkerTypeEntity workerType) {
     switch (workerType.code) {
       case 'STANDARD_EMPLOYEE':
-        if (_it)
+        if (_it) {
           return 'Profilo operativo generico del team. Oggi impatta soprattutto come preset di ore massime giornaliere e come priorità neutra.';
-        if (_fr)
+        }
+        if (_fr) {
           return 'Profil opérationnel générique de l’équipe. Aujourd’hui, il agit surtout comme preset d’heures max par jour avec une priorité neutre.';
-        if (_es)
+        }
+        if (_es) {
           return 'Perfil operativo genérico del equipo. Hoy impacta sobre todo como preset de horas máximas al día y con prioridad neutra.';
+        }
         return 'Generic operational team profile. Today it mainly acts as a daily max-hours preset with neutral priority.';
       case 'PART_TIME':
-        if (_it)
+        if (_it) {
           return 'Pensato per disponibilità ridotta: il planner lo usa con un limite giornaliero più basso e una priorità leggermente più prudente.';
-        if (_fr)
+        }
+        if (_fr) {
           return 'Pensé pour une disponibilité réduite : le planner l’utilise avec une limite journalière plus basse et une priorité un peu plus prudente.';
-        if (_es)
+        }
+        if (_es) {
           return 'Pensado para disponibilidad reducida: el planner lo usa con un límite diario más bajo y una prioridad algo más prudente.';
+        }
         return 'Designed for reduced availability: the planner uses a lower daily cap and a slightly more conservative priority.';
       case 'FULL_TIME':
-        if (_it)
+        if (_it) {
           return 'Pensato per coperture più ampie: il planner tende a considerarlo più adatto quando serve continuità o una copertura lunga.';
-        if (_fr)
+        }
+        if (_fr) {
           return 'Pensé pour des couvertures plus larges : le planner a tendance à le considérer comme plus adapté lorsqu’il faut de la continuité ou une longue couverture.';
-        if (_es)
+        }
+        if (_es) {
           return 'Pensado para coberturas más amplias: el planner tiende a considerarlo más adecuado cuando hace falta continuidad o una cobertura larga.';
+        }
         return 'Designed for broader coverage: the planner tends to consider it more suitable when continuity or longer coverage is needed.';
       case 'INTERN':
-        if (_it)
+        if (_it) {
           return 'Profilo formativo: il planner lo tratta in modo più prudente, con limite giornaliero più basso e priorità più conservativa.';
-        if (_fr)
+        }
+        if (_fr) {
           return 'Profil de formation : le planner le traite de manière plus prudente, avec une limite journalière plus basse et une priorité plus conservatrice.';
-        if (_es)
+        }
+        if (_es) {
           return 'Perfil formativo: el planner lo trata de manera más prudente, con límite diario más bajo y prioridad más conservadora.';
+        }
         return 'Training profile: the planner treats it more cautiously, with a lower daily cap and a more conservative priority.';
       default:
         if (_it) {
@@ -1190,12 +1204,15 @@ class _PlanningConstraintsStrings {
   }
 
   String get weekdayAvailabilityHelper {
-    if (_it)
+    if (_it) {
       return 'Seleziona solo i giorni in cui questa persona può essere pianificata normalmente.';
-    if (_fr)
+    }
+    if (_fr) {
       return 'Sélectionnez uniquement les jours où cette personne peut être planifiée normalement.';
-    if (_es)
+    }
+    if (_es) {
       return 'Selecciona solo los días en que esta persona puede planificarse normalmente.';
+    }
     return 'Select only the days when this person can normally be scheduled.';
   }
 
@@ -1207,12 +1224,15 @@ class _PlanningConstraintsStrings {
   }
 
   String get preferredShiftTypesHelper {
-    if (_it)
+    if (_it) {
       return 'Il planner userà queste preferenze come vantaggio in fase di scelta, senza renderle obbligatorie.';
-    if (_fr)
+    }
+    if (_fr) {
       return 'Le planner utilisera ces préférences comme avantage au moment du choix, sans les rendre obligatoires.';
-    if (_es)
+    }
+    if (_es) {
       return 'El planner usará estas preferencias como ventaja al elegir, sin hacerlas obligatorias.';
+    }
     return 'The planner uses these preferences as a soft advantage during selection, not as hard requirements.';
   }
 
@@ -1224,8 +1244,9 @@ class _PlanningConstraintsStrings {
   }
 
   String get blockedShiftTypesHelper {
-    if (_it)
+    if (_it) {
       return 'Questi tipi di turno non verranno assegnati a questo membro.';
+    }
     if (_fr) return 'Ces types de shifts ne seront pas attribués à ce membre.';
     if (_es) return 'Estos tipos de turno no se asignarán a este miembro.';
     return 'These shift types will not be assigned to this member.';

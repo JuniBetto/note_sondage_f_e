@@ -185,17 +185,6 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     setState(() => _assignments = next);
   }
 
-  void _removeAssignment(String assignmentId) {
-    setState(() {
-      _assignments = _assignments
-          .where((assignment) => assignment.id != assignmentId)
-          .toList();
-      _archivedAssignmentIds = _archivedAssignmentIds
-          .where((id) => id != assignmentId)
-          .toSet();
-    });
-  }
-
   void _removeAssignments(Iterable<String> assignmentIds) {
     final ids = assignmentIds.toSet();
     setState(() {
@@ -1148,6 +1137,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   }
 
   Future<void> _openAutoPlanner(BuildContext context) async {
+    final isItalian = _isItalian(context);
     final request = await ShiftAutoPlannerDialog.show(
       context,
       teams: _manageableTeams,
@@ -1163,7 +1153,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
 
     try {
       final result = await _shiftRepository.autoPlan(request);
-      if (!mounted) {
+      if (!mounted || !context.mounted) {
         return;
       }
       setState(() {
@@ -1175,12 +1165,12 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       if (result.createdAssignmentsCount > 0) {
         AppSnackBar.showSuccess(
           context,
-          _isItalian(context)
+          isItalian
               ? 'Creati ${result.createdAssignmentsCount} turni automatici.'
               : 'Created ${result.createdAssignmentsCount} automatic shifts.',
         );
       } else if (result.uncoveredSlotsCount == 0) {
-        final alreadyCoveredMessage = _isItalian(context)
+        final alreadyCoveredMessage = isItalian
             ? result.preservedAssignmentsCount > 0
                   ? 'Nessun nuovo turno creato: i turni esistenti coprono gia l\'intervallo selezionato.'
                   : 'Nessun nuovo turno da creare per l\'intervallo selezionato.'
@@ -1194,22 +1184,22 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         AppSnackBar.showWarning(
           context,
           result.createdAssignmentsCount == 0
-              ? _isItalian(context)
+              ? isItalian
                     ? 'Nessun turno creato. Restano ${result.uncoveredSlotsCount} coperture mancanti. Controlla i vincoli o amplia il team.'
                     : 'No shifts were created. ${result.uncoveredSlotsCount} slots are still uncovered. Review the constraints or expand the team.'
-              : _isItalian(context)
+              : isItalian
               ? 'Restano ${result.uncoveredSlotsCount} coperture mancanti. Controlla i vincoli o amplia il team.'
               : '${result.uncoveredSlotsCount} slots are still uncovered. Review the constraints or expand the team.',
         );
       }
     } catch (error) {
-      if (!mounted) {
+      if (!mounted || !context.mounted) {
         return;
       }
       AppSnackBar.showResolvedError(
         context,
         error,
-        fallback: _isItalian(context)
+        fallback: isItalian
             ? 'Non siamo riusciti a generare i turni automatici.'
             : 'We could not generate the automatic shifts.',
       );

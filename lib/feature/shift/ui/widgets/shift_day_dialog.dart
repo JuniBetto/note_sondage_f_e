@@ -306,15 +306,6 @@ String _teamSelectedCreatesPublicShiftText(BuildContext context) =>
       es: 'Con un equipo seleccionado, el turno se crea como publico',
     );
 
-String _allTeamMembersSeeShiftText(BuildContext context) =>
-    _localizedShiftDayText(
-      context,
-      it: 'Tutti i membri del team vedono questo turno',
-      en: 'All team members can see this shift',
-      fr: 'Tous les membres de l\'equipe voient ce quart',
-      es: 'Todos los miembros del equipo ven este turno',
-    );
-
 String _sharedCalendarSeeShiftText(
   BuildContext context,
 ) => _localizedShiftDayText(
