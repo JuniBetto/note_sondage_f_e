@@ -301,8 +301,11 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
                 ] else
                   FilledButton.icon(
                     onPressed: () => _startEnrollment(pendingSetup),
-                    icon: const Icon(Icons.lock_open_rounded),
-                    label: Text(actionLabel),
+                    icon:  Icon(Icons.lock_open_rounded,color: colorScheme.textInvertedColor),
+                    label: Text(actionLabel,style: textTheme.bodyMedium!.copyWith(
+                      color: colorScheme.textInvertedColor
+                    ),),
+                    style: ElevatedButton.styleFrom(backgroundColor: colorScheme.bgsecondary),
                   ),
               ],
             ],

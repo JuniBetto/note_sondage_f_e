@@ -18,6 +18,7 @@ import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dar
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
+import 'package:note_sondage/feature/team/ui/helper/self_admin_invite_guard.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_member_planning_constraints_dialog.dart';
 import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -231,6 +232,18 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     if (_formKey.currentState?.validate() ?? false) {
       final email = _emailCtrl.text.trim();
       final roleId = _roleCtrl.text.trim();
+      final currentUserEmail = getIt<AuthBloc>().state.user.email;
+      if (isSelfTeamInviteBlocked(
+        currentUserIsOwner: _permissions.isOwner,
+        currentUserEmail: currentUserEmail,
+        invitedEmail: email,
+        activeTeamMemberEmails: _members
+            .where((member) => member.status == UserStatus.active)
+            .map((member) => member.userEmail),
+      )) {
+        AppSnackBar.showError(context, selfTeamInviteBlockedMessage(context));
+        return;
+      }
       final optimisticId =
           'local-invite-${DateTime.now().microsecondsSinceEpoch}';
       final optimisticInvitation = TeamInvitationEntity(

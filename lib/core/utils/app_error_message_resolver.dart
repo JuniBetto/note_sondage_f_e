@@ -117,6 +117,9 @@ class AppErrorMessageResolver {
       if (statusCode == 409) {
         return 'This action conflicts with existing data. Please review and try again.';
       }
+      if (statusCode == 413) {
+        return 'The selected image is too large. Please choose a smaller file and try again.';
+      }
       if (statusCode == 422) {
         return 'Some information is invalid. Please review it and try again.';
       }

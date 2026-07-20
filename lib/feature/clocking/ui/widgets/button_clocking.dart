@@ -86,7 +86,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
     }
     if (oldWidget.selectedTeamId != widget.selectedTeamId) {
       WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _syncClockingAccess(),
+        (_) => _syncClockingAccess(),
       );
     }
   }
@@ -117,7 +117,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
     TeamEntity? team;
     if (teamState is TeamsLoaded) {
       team = teamState.teams.cast<TeamEntity?>().firstWhere(
-            (item) => item?.id == teamId,
+        (item) => item?.id == teamId,
         orElse: () => null,
       );
     }
@@ -148,7 +148,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
 
     return BlocListener<ClockingBloc, ClockingState>(
       listenWhen: (previous, current) =>
-      current is ClockingError || _pendingManualOptimisticIds.isNotEmpty,
+          current is ClockingError || _pendingManualOptimisticIds.isNotEmpty,
       listener: (context, state) {
         if (state is ClockingError) {
           AppSnackBar.showError(context, state.message);
@@ -160,7 +160,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
           final teams = teamState is TeamsLoaded
               ? teamState.teams
               : <TeamEntity>[];
-          if (teams.isEmpty && teamState is! TeamLoading) {
+          final shouldRequestTeams =
+              teamState is TeamInitial || teamState is TeamError;
+          if (shouldRequestTeams) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
               context.read<TeamBloc>().add(LoadTeamsEvent());
@@ -169,7 +171,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
           _ensureSelectedTeam(teams);
           if (widget.selectedTeamId != _resolvedTeamId) {
             WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => _syncClockingAccess(),
+              (_) => _syncClockingAccess(),
             );
           }
 
@@ -188,8 +190,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   .cast<ClockingRecordEntity?>()
                   .firstWhere(
                     (record) => record?.isActive == true,
-                orElse: () => null,
-              );
+                    orElse: () => null,
+                  );
               final activeRecord = _activeRecord(records);
               final hasOpenRecordOutsideSelectedDate =
                   activeRecord != null && activeRecordForSelectedDate == null;
@@ -199,34 +201,34 @@ class _ButtonClockingState extends State<ButtonClocking> {
               );
               final isBusy =
                   clockingState is ClockingActionInProgress ||
-                      _manualActionInProgress;
+                  _manualActionInProgress;
               final isClockingReady =
                   clockingState is ClockingRecordsLoaded ||
-                      clockingState is ClockingActionInProgress ||
-                      clockingState is ClockingActionSuccess;
+                  clockingState is ClockingActionInProgress ||
+                  clockingState is ClockingActionSuccess;
               final hasSelectedTeam =
                   widget.selectedTeamId != null &&
-                      widget.selectedTeamId!.isNotEmpty;
+                  widget.selectedTeamId!.isNotEmpty;
               final hasApprovedManualClockingRequest =
-              _hasApprovedManualClockingRequest(context);
+                  _hasApprovedManualClockingRequest(context);
               final hasVacationOnSelectedDate = recordsForSelectedDate.any(
-                    (record) => record.isVacation,
+                (record) => record.isVacation,
               );
               final useManualEntryMode =
                   !selectedDateIsToday &&
-                      !hasVacationOnSelectedDate &&
-                      !_dismissedManualEntryDates.contains(
-                        _effectiveSelectedDate,
-                      ) &&
-                      (!hasSelectedTeam ||
-                          _canManageClocking ||
-                          hasApprovedManualClockingRequest);
+                  !hasVacationOnSelectedDate &&
+                  !_dismissedManualEntryDates.contains(
+                    _effectiveSelectedDate,
+                  ) &&
+                  (!hasSelectedTeam ||
+                      _canManageClocking ||
+                      hasApprovedManualClockingRequest);
               final requiresApprovalForPastDate =
                   hasSelectedTeam &&
-                      !selectedDateIsToday &&
-                      !hasVacationOnSelectedDate &&
-                      !_canManageClocking &&
-                      !hasApprovedManualClockingRequest;
+                  !selectedDateIsToday &&
+                  !hasVacationOnSelectedDate &&
+                  !_canManageClocking &&
+                  !hasApprovedManualClockingRequest;
 
               final clockColor = activeRecordForSelectedDate != null
                   ? Colors.red
@@ -240,185 +242,185 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   records: records,
                   hasVacationOnSelectedDate: hasVacationOnSelectedDate,
                   hasOpenRecordOutsideSelectedDate:
-                  hasOpenRecordOutsideSelectedDate,
+                      hasOpenRecordOutsideSelectedDate,
                   isClockingReady: isClockingReady,
                 );
               }
 
               final actionButtons = widget.isCompact
                   ? Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                spacing: 8.0,
-                children: [
-                  _ClockActionButton(
-                    onTap:
-                    !isBusy &&
-                        isClockingReady &&
-                        !requiresApprovalForPastDate &&
-                        !hasOpenRecordOutsideSelectedDate &&
-                        !hasVacationOnSelectedDate
-                        ? () =>
-                        _onClockAction(activeRecordForSelectedDate)
-                        : null,
-                    color: clockColor,
-                    icon: activeRecordForSelectedDate != null
-                        ? Icons.stop_rounded
-                        : Icons.play_arrow_rounded,
-                    label: activeRecordForSelectedDate != null
-                        ? localization.clockedOutAt
-                        .replaceAll(':', '')
-                        .trim()
-                        : localization.clockedInAt
-                        .replaceAll(':', '')
-                        .trim(),
-                    subtitle: _primaryActionSubtitle(
-                      localization: localization,
-                      activeRecordForSelectedDate:
-                      activeRecordForSelectedDate,
-                      hasOpenRecordOutsideSelectedDate:
-                      hasOpenRecordOutsideSelectedDate,
-                      selectedDateRecord: selectedDateRecord,
-                      hasVacationOnSelectedDate:
-                      hasVacationOnSelectedDate,
-                      isClockingReady: isClockingReady,
-                      selectedDateIsToday: selectedDateIsToday,
-                      hasApprovedManualClockingRequest:
-                      hasApprovedManualClockingRequest,
-                    ),
-                    isCompact: true,
-                    isDisabled:
-                    isBusy ||
-                        !isClockingReady ||
-                        requiresApprovalForPastDate ||
-                        hasOpenRecordOutsideSelectedDate ||
-                        hasVacationOnSelectedDate,
-                  ),
-                  const SizedBox(height: 12),
-                  _ClockActionButton(
-                    onTap:
-                    activeRecordForSelectedDate != null &&
-                        selectedDateIsToday &&
-                        !isBusy &&
-                        isClockingReady
-                        ? () =>
-                        _onBreakAction(activeRecordForSelectedDate)
-                        : null,
-                    color: breakColor,
-                    icon: Icons.coffee_rounded,
-                    label:
-                    (activeRecordForSelectedDate?.isOnBreak == true
-                        ? localization.endBreakAt
-                        : localization.startBreakAt)
-                        .replaceAll(':', '')
-                        .trim(),
-                    subtitle: activeRecordForSelectedDate == null
-                        ? _breakSubtitle(
-                      localization,
-                      selectedDateIsToday: selectedDateIsToday,
-                      hasVacationOnSelectedDate:
-                      hasVacationOnSelectedDate,
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      spacing: 8.0,
+                      children: [
+                        _ClockActionButton(
+                          onTap:
+                              !isBusy &&
+                                  isClockingReady &&
+                                  !requiresApprovalForPastDate &&
+                                  !hasOpenRecordOutsideSelectedDate &&
+                                  !hasVacationOnSelectedDate
+                              ? () =>
+                                    _onClockAction(activeRecordForSelectedDate)
+                              : null,
+                          color: clockColor,
+                          icon: activeRecordForSelectedDate != null
+                              ? Icons.stop_rounded
+                              : Icons.play_arrow_rounded,
+                          label: activeRecordForSelectedDate != null
+                              ? localization.clockedOutAt
+                                    .replaceAll(':', '')
+                                    .trim()
+                              : localization.clockedInAt
+                                    .replaceAll(':', '')
+                                    .trim(),
+                          subtitle: _primaryActionSubtitle(
+                            localization: localization,
+                            activeRecordForSelectedDate:
+                                activeRecordForSelectedDate,
+                            hasOpenRecordOutsideSelectedDate:
+                                hasOpenRecordOutsideSelectedDate,
+                            selectedDateRecord: selectedDateRecord,
+                            hasVacationOnSelectedDate:
+                                hasVacationOnSelectedDate,
+                            isClockingReady: isClockingReady,
+                            selectedDateIsToday: selectedDateIsToday,
+                            hasApprovedManualClockingRequest:
+                                hasApprovedManualClockingRequest,
+                          ),
+                          isCompact: true,
+                          isDisabled:
+                              isBusy ||
+                              !isClockingReady ||
+                              requiresApprovalForPastDate ||
+                              hasOpenRecordOutsideSelectedDate ||
+                              hasVacationOnSelectedDate,
+                        ),
+                        const SizedBox(height: 12),
+                        _ClockActionButton(
+                          onTap:
+                              activeRecordForSelectedDate != null &&
+                                  selectedDateIsToday &&
+                                  !isBusy &&
+                                  isClockingReady
+                              ? () =>
+                                    _onBreakAction(activeRecordForSelectedDate)
+                              : null,
+                          color: breakColor,
+                          icon: Icons.coffee_rounded,
+                          label:
+                              (activeRecordForSelectedDate?.isOnBreak == true
+                                      ? localization.endBreakAt
+                                      : localization.startBreakAt)
+                                  .replaceAll(':', '')
+                                  .trim(),
+                          subtitle: activeRecordForSelectedDate == null
+                              ? _breakSubtitle(
+                                  localization,
+                                  selectedDateIsToday: selectedDateIsToday,
+                                  hasVacationOnSelectedDate:
+                                      hasVacationOnSelectedDate,
+                                )
+                              : (activeRecordForSelectedDate.isOnBreak
+                                    ? localization.endActiveBreak
+                                    : localization.startActiveBreak),
+                          isCompact: true,
+                          isDisabled:
+                              activeRecordForSelectedDate == null ||
+                              !selectedDateIsToday ||
+                              isBusy ||
+                              !isClockingReady,
+                        ),
+                      ],
                     )
-                        : (activeRecordForSelectedDate.isOnBreak
-                        ? localization.endActiveBreak
-                        : localization.startActiveBreak),
-                    isCompact: true,
-                    isDisabled:
-                    activeRecordForSelectedDate == null ||
-                        !selectedDateIsToday ||
-                        isBusy ||
-                        !isClockingReady,
-                  ),
-                ],
-              )
                   : Row(
-                children: [
-                  Expanded(
-                    child: _ClockActionButton(
-                      onTap:
-                      !isBusy &&
-                          isClockingReady &&
-                          !requiresApprovalForPastDate &&
-                          !hasOpenRecordOutsideSelectedDate &&
-                          !hasVacationOnSelectedDate
-                          ? () => _onClockAction(
-                        activeRecordForSelectedDate,
-                      )
-                          : null,
-                      color: clockColor,
-                      icon: activeRecordForSelectedDate != null
-                          ? Icons.stop_rounded
-                          : Icons.play_arrow_rounded,
-                      label: activeRecordForSelectedDate != null
-                          ? localization.clockedOutAt
-                          .replaceAll(':', '')
-                          .trim()
-                          : localization.clockedInAt
-                          .replaceAll(':', '')
-                          .trim(),
-                      subtitle: _primaryActionSubtitle(
-                        localization: localization,
-                        activeRecordForSelectedDate:
-                        activeRecordForSelectedDate,
-                        hasOpenRecordOutsideSelectedDate:
-                        hasOpenRecordOutsideSelectedDate,
-                        selectedDateRecord: selectedDateRecord,
-                        hasVacationOnSelectedDate:
-                        hasVacationOnSelectedDate,
-                        isClockingReady: isClockingReady,
-                        selectedDateIsToday: selectedDateIsToday,
-                        hasApprovedManualClockingRequest:
-                        hasApprovedManualClockingRequest,
-                      ),
-                      isCompact: false,
-                      isDisabled:
-                      isBusy ||
-                          !isClockingReady ||
-                          requiresApprovalForPastDate ||
-                          hasOpenRecordOutsideSelectedDate ||
-                          hasVacationOnSelectedDate,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ClockActionButton(
-                      onTap:
-                      activeRecordForSelectedDate != null &&
-                          selectedDateIsToday &&
-                          !isBusy &&
-                          isClockingReady
-                          ? () => _onBreakAction(
-                        activeRecordForSelectedDate,
-                      )
-                          : null,
-                      color: breakColor,
-                      icon: Icons.coffee_rounded,
-                      label:
-                      (activeRecordForSelectedDate?.isOnBreak == true
-                          ? localization.endBreakAt
-                          : localization.startBreakAt)
-                          .replaceAll(':', '')
-                          .trim(),
-                      subtitle: activeRecordForSelectedDate == null
-                          ? _breakSubtitle(
-                        localization,
-                        selectedDateIsToday: selectedDateIsToday,
-                        hasVacationOnSelectedDate:
-                        hasVacationOnSelectedDate,
-                      )
-                          : (activeRecordForSelectedDate.isOnBreak
-                          ? localization.endActiveBreak
-                          : localization.startActiveBreak),
-                      isCompact: false,
-                      isDisabled:
-                      activeRecordForSelectedDate == null ||
-                          !selectedDateIsToday ||
-                          isBusy ||
-                          !isClockingReady,
-                    ),
-                  ),
-                ],
-              );
+                      children: [
+                        Expanded(
+                          child: _ClockActionButton(
+                            onTap:
+                                !isBusy &&
+                                    isClockingReady &&
+                                    !requiresApprovalForPastDate &&
+                                    !hasOpenRecordOutsideSelectedDate &&
+                                    !hasVacationOnSelectedDate
+                                ? () => _onClockAction(
+                                    activeRecordForSelectedDate,
+                                  )
+                                : null,
+                            color: clockColor,
+                            icon: activeRecordForSelectedDate != null
+                                ? Icons.stop_rounded
+                                : Icons.play_arrow_rounded,
+                            label: activeRecordForSelectedDate != null
+                                ? localization.clockedOutAt
+                                      .replaceAll(':', '')
+                                      .trim()
+                                : localization.clockedInAt
+                                      .replaceAll(':', '')
+                                      .trim(),
+                            subtitle: _primaryActionSubtitle(
+                              localization: localization,
+                              activeRecordForSelectedDate:
+                                  activeRecordForSelectedDate,
+                              hasOpenRecordOutsideSelectedDate:
+                                  hasOpenRecordOutsideSelectedDate,
+                              selectedDateRecord: selectedDateRecord,
+                              hasVacationOnSelectedDate:
+                                  hasVacationOnSelectedDate,
+                              isClockingReady: isClockingReady,
+                              selectedDateIsToday: selectedDateIsToday,
+                              hasApprovedManualClockingRequest:
+                                  hasApprovedManualClockingRequest,
+                            ),
+                            isCompact: false,
+                            isDisabled:
+                                isBusy ||
+                                !isClockingReady ||
+                                requiresApprovalForPastDate ||
+                                hasOpenRecordOutsideSelectedDate ||
+                                hasVacationOnSelectedDate,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _ClockActionButton(
+                            onTap:
+                                activeRecordForSelectedDate != null &&
+                                    selectedDateIsToday &&
+                                    !isBusy &&
+                                    isClockingReady
+                                ? () => _onBreakAction(
+                                    activeRecordForSelectedDate,
+                                  )
+                                : null,
+                            color: breakColor,
+                            icon: Icons.coffee_rounded,
+                            label:
+                                (activeRecordForSelectedDate?.isOnBreak == true
+                                        ? localization.endBreakAt
+                                        : localization.startBreakAt)
+                                    .replaceAll(':', '')
+                                    .trim(),
+                            subtitle: activeRecordForSelectedDate == null
+                                ? _breakSubtitle(
+                                    localization,
+                                    selectedDateIsToday: selectedDateIsToday,
+                                    hasVacationOnSelectedDate:
+                                        hasVacationOnSelectedDate,
+                                  )
+                                : (activeRecordForSelectedDate.isOnBreak
+                                      ? localization.endActiveBreak
+                                      : localization.startActiveBreak),
+                            isCompact: false,
+                            isDisabled:
+                                activeRecordForSelectedDate == null ||
+                                !selectedDateIsToday ||
+                                isBusy ||
+                                !isClockingReady,
+                          ),
+                        ),
+                      ],
+                    );
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
@@ -458,11 +460,11 @@ class _ButtonClockingState extends State<ButtonClocking> {
                                 localization.personal,
                                 style: Theme.of(context).textTheme.labelSmall
                                     ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.outline,
-                                  letterSpacing: 0.8,
-                                ),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outline,
+                                      letterSpacing: 0.8,
+                                    ),
                               ),
                             ],
                           ),
@@ -481,11 +483,11 @@ class _ButtonClockingState extends State<ButtonClocking> {
                       width: double.infinity,
                       child: CustomAppButton(
                         onPressed:
-                        activeRecord == null &&
-                            !isBusy &&
-                            isClockingReady &&
-                            !requiresApprovalForPastDate &&
-                            !hasVacationOnSelectedDate
+                            activeRecord == null &&
+                                !isBusy &&
+                                isClockingReady &&
+                                !requiresApprovalForPastDate &&
+                                !hasVacationOnSelectedDate
                             ? _onVacationAction
                             : null,
                         type: ButtonType.outlined,
@@ -500,10 +502,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
                       width: double.infinity,
                       child: CustomAppButton(
                         onPressed:
-                        !isBusy &&
-                            isClockingReady &&
-                            !requiresApprovalForPastDate &&
-                            !hasVacationOnSelectedDate
+                            !isBusy &&
+                                isClockingReady &&
+                                !requiresApprovalForPastDate &&
+                                !hasVacationOnSelectedDate
                             ? _onPermissionAction
                             : null,
                         type: ButtonType.outlined,
@@ -561,9 +563,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }
 
   ClockingRecordEntity? _recordForDate(
-      List<ClockingRecordEntity> records,
-      DateTime selectedDate,
-      ) {
+    List<ClockingRecordEntity> records,
+    DateTime selectedDate,
+  ) {
     final recordsForDate = _recordsForDate(records, selectedDate);
     for (final record in recordsForDate) {
       if (record.isActive) {
@@ -574,14 +576,14 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }
 
   List<ClockingRecordEntity> _recordsForDate(
-      List<ClockingRecordEntity> records,
-      DateTime selectedDate,
-      ) {
+    List<ClockingRecordEntity> records,
+    DateTime selectedDate,
+  ) {
     final filtered =
-    records
-        .where((record) => _isSameDay(record.date, selectedDate))
-        .toList()
-      ..sort((a, b) => _recordSortDate(b).compareTo(_recordSortDate(a)));
+        records
+            .where((record) => _isSameDay(record.date, selectedDate))
+            .toList()
+          ..sort((a, b) => _recordSortDate(b).compareTo(_recordSortDate(a)));
     return filtered;
   }
 
@@ -618,8 +620,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }
 
   Future<void> _showClockOutNoteDialog(
-      ClockingRecordEntity activeRecord,
-      ) async {
+    ClockingRecordEntity activeRecord,
+  ) async {
     final localization = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: activeRecord.note ?? '');
     final note = await showDialog<String?>(
@@ -837,9 +839,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
         teamId: widget.selectedTeamId,
         date: _effectiveSelectedDate,
         startTime:
-        '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}:00',
+            '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}:00',
         endTime:
-        '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}:00',
+            '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}:00',
         note: noteController.text.trim().isEmpty
             ? null
             : noteController.text.trim(),
@@ -926,10 +928,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }
 
   String _breakSubtitle(
-      AppLocalizations localization, {
-        required bool selectedDateIsToday,
-        required bool hasVacationOnSelectedDate,
-      }) {
+    AppLocalizations localization, {
+    required bool selectedDateIsToday,
+    required bool hasVacationOnSelectedDate,
+  }) {
     if (hasVacationOnSelectedDate) {
       return localization.selectedDayMarkedAsVacation;
     }
@@ -961,12 +963,12 @@ class _ButtonClockingState extends State<ButtonClocking> {
             children: _manualSelectedDates
                 .map(
                   (date) => InputChip(
-                label: Text(_formatDateLabel(date)),
-                onDeleted: _manualSelectedDates.length == 1
-                    ? null
-                    : () => _removeManualDate(date),
-              ),
-            )
+                    label: Text(_formatDateLabel(date)),
+                    onDeleted: _manualSelectedDates.length == 1
+                        ? null
+                        : () => _removeManualDate(date),
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -974,7 +976,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
           const SizedBox(width: 12),
           IconButton.filledTonal(
             onPressed:
-            hasConflict || !isClockingReady || _manualActionInProgress
+                hasConflict || !isClockingReady || _manualActionInProgress
                 ? null
                 : () => _addManualDate(records),
             icon: const Icon(Icons.add_rounded),
@@ -989,7 +991,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
         Expanded(
           child: CustomAppButton(
             onPressed:
-            hasConflict || !isClockingReady || _manualActionInProgress
+                hasConflict || !isClockingReady || _manualActionInProgress
                 ? null
                 : () => _pickManualTime(isClockIn: true),
             type: ButtonType.outlined,
@@ -1004,7 +1006,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
         Expanded(
           child: CustomAppButton(
             onPressed:
-            hasConflict || !isClockingReady || _manualActionInProgress
+                hasConflict || !isClockingReady || _manualActionInProgress
                 ? null
                 : () => _pickManualTime(isClockIn: false),
             type: ButtonType.outlined,
@@ -1069,10 +1071,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
             widget.selectedTeamId!.isEmpty) ...[
           CustomAppButton(
             onPressed:
-            !hasVacationOnSelectedDate &&
-                !hasOpenRecordOutsideSelectedDate &&
-                isClockingReady &&
-                !_manualActionInProgress
+                !hasVacationOnSelectedDate &&
+                    !hasOpenRecordOutsideSelectedDate &&
+                    isClockingReady &&
+                    !_manualActionInProgress
                 ? _onVacationAction
                 : null,
             type: ButtonType.outlined,
@@ -1084,9 +1086,9 @@ class _ButtonClockingState extends State<ButtonClocking> {
           const SizedBox(height: 12),
           CustomAppButton(
             onPressed:
-            isClockingReady &&
-                !_manualActionInProgress &&
-                !hasVacationOnSelectedDate
+                isClockingReady &&
+                    !_manualActionInProgress &&
+                    !hasVacationOnSelectedDate
                 ? _onPermissionAction
                 : null,
             type: ButtonType.outlined,
@@ -1138,11 +1140,11 @@ class _ButtonClockingState extends State<ButtonClocking> {
                         Text(
                           canAddManualPastDays
                               ? localization.manualClockingDescription(
-                            _formatDateLabel(_effectiveSelectedDate),
-                          )
+                                  _formatDateLabel(_effectiveSelectedDate),
+                                )
                               : localization.manualClockingSingleDayDescription(
-                            _formatDateLabel(_effectiveSelectedDate),
-                          ),
+                                  _formatDateLabel(_effectiveSelectedDate),
+                                ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.descriptionColor,
                           ),
@@ -1230,8 +1232,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
   }
 
   Future<void> _saveManualClockingEntries(
-      List<ClockingRecordEntity> records,
-      ) async {
+    List<ClockingRecordEntity> records,
+  ) async {
     final clockingBloc = context.read<ClockingBloc>();
     final localization = AppLocalizations.of(context)!;
     final selectedDate = _effectiveSelectedDate;
@@ -1249,7 +1251,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
         .map((record) => _normalizeDate(record.date))
         .toSet();
     final conflictingDate = _manualSelectedDates.cast<DateTime?>().firstWhere(
-          (date) => date != null && vacationDates.contains(_normalizeDate(date)),
+      (date) => date != null && vacationDates.contains(_normalizeDate(date)),
       orElse: () => null,
     );
     if (conflictingDate != null) {
@@ -1700,7 +1702,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
     final teamState = context.read<TeamBloc>().state;
     if (teamState is TeamsLoaded) {
       final team = teamState.teams.cast<TeamEntity?>().firstWhere(
-            (item) => item?.id == selectedTeamId,
+        (item) => item?.id == selectedTeamId,
         orElse: () => null,
       );
       final resolvedName = team?.name.trim();
@@ -1866,7 +1868,7 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
                           shrinkWrap: true,
                           padding: EdgeInsets.zero,
                           itemCount:
-                          _filteredTeams.length +
+                              _filteredTeams.length +
                               (_showNoTeamOption ? 1 : 0) +
                               (_filteredTeams.isEmpty ? 1 : 0),
                           separatorBuilder: (_, _) => const SizedBox(height: 6),
@@ -1907,9 +1909,9 @@ class _ClockingTeamSelectorState extends State<_ClockingTeamSelector> {
                                         localization.noTeamFound,
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
-                                          color:
-                                          colorScheme.onSurfaceVariant,
-                                        ),
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -2161,12 +2163,12 @@ class _ClockActionButtonState extends State<_ClockActionButton> {
               ),
               boxShadow: _isHovered && !widget.isDisabled
                   ? [
-                BoxShadow(
-                  color: widget.color.withValues(alpha: 0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
+                      BoxShadow(
+                        color: widget.color.withValues(alpha: 0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
                   : [],
             ),
             child: Column(

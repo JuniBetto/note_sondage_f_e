@@ -36,6 +36,10 @@ class _TeamsWebState extends State<TeamsWeb> {
   void initState() {
     super.initState();
     _teamBloc = getIt<TeamBloc>();
+    final teamState = _teamBloc.state;
+    if (teamState is! TeamsLoaded && teamState is! TeamLoading) {
+      _teamBloc.add(LoadTeamsEvent());
+    }
   }
 
   @override

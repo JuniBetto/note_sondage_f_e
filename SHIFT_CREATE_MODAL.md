@@ -58,6 +58,12 @@ realtime fan-out logic. It exists to prevent regressions.
 - `Un membro specifico` option
 - Contextual banner: _"Il turno sarà visibile a tutto il team selezionato"_
 
+Membership assumptions that must stay true:
+
+- the selectable team list must represent unique active memberships only
+- the owner must not need a duplicated `ADMIN` membership to manage team shifts
+- if a backend/frontend regression ever creates duplicate memberships, the member picker must still avoid duplicate rows for the same user
+
 ### Visible after choosing `Un membro specifico`
 
 - Member list of the selected team (loaded on demand via `TeamMemberUseCase`)
@@ -95,6 +101,7 @@ realtime fan-out logic. It exists to prevent regressions.
 - Team selected, `_assignToAllMembers = false`, one member picked
 - `isPublic = true`, `teamId = <selected>`, `targetUserIds = [<memberFirebaseUid>]`
 - Single assignment for that member, owned by them, with team context
+- a user already belonging to the same team must appear once in the picker and must not become assignable through duplicated membership rows with different roles
 
 ---
 
@@ -121,6 +128,7 @@ Any of the following is a regression:
 - `Tutti i membri del team` is no longer available after team selection
 - `Un membro specifico` is no longer available after team selection
 - The member list does not appear after choosing `Un membro specifico`
+- The same member appears twice in the picker because team membership data was duplicated
 - A team-scoped shift loses its `teamId` on update
 - A team-scoped shift opens with different data on another team member's device
 - A personal public shift is not visible to the user's teams
@@ -163,6 +171,7 @@ Create a shift as a team owner, select a team, leave `Tutti i membri del team` c
 Create a shift as a team owner, select a team, choose `Un membro specifico`, pick one member.
 
 - [ ] Member list is displayed
+- [ ] Each selectable member appears only once
 - [ ] Saving creates one assignment for that member
 - [ ] The **target member** sees the shift on their calendar immediately (realtime)
 - [ ] The **actor (owner)** also sees the refresh immediately (realtime)

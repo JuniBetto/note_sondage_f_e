@@ -417,6 +417,8 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
                                         ),
                                       )
                                     : const Text('Save changes'),
+                                style: ElevatedButton.styleFrom(backgroundColor: colorScheme.bgsecondary),
+
                               ),
                             ],
                           ),

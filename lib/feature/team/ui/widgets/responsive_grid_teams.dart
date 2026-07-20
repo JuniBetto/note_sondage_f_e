@@ -56,7 +56,6 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
     _teamBloc = getIt<TeamBloc>();
     _teamMemberUseCase = getIt<TeamMemberUseCase>();
     _archiveService = getIt<UserArchiveService>();
-    _teamBloc.add(LoadTeamsEvent());
     _loadArchivedTeams();
   }
 
