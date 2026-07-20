@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 
 class ShiftMapper {
   static String? _nullableString(dynamic value) {
@@ -114,6 +115,24 @@ class ShiftMapper {
       'isPublic': isPublic,
       if (targetFirebaseUid != null) 'targetFirebaseUid': targetFirebaseUid,
     };
+  }
+
+  static Map<String, dynamic> assignmentCreateRequestToJson(
+    ShiftAssignmentCreateRequestEntity request,
+  ) {
+    return assignmentToJson(
+      shiftDate: request.shiftDate,
+      profileId: request.profileId,
+      startTime: request.startTime,
+      endTime: request.endTime,
+      overnight: request.overnight,
+      note: request.note,
+      alarmOffsets: request.alarmOffsets,
+      isPublic: request.isPublic,
+      teamId: request.teamId,
+      teamShiftGroupId: request.teamShiftGroupId,
+      targetFirebaseUid: request.targetUserId,
+    );
   }
 
   static Map<String, dynamic> autoPlanRequestToJson(

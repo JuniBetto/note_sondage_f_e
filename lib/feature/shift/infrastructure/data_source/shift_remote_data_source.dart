@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data/shift_mapper.dart';
 import 'package:flutter/material.dart';
@@ -145,6 +146,26 @@ class ShiftRemoteDataSource {
     return ShiftMapper.assignmentFromJson(
       Map<String, dynamic>.from(response.data),
     );
+  }
+
+  Future<List<ShiftAssignmentEntity>> assignBatch({
+    required List<ShiftAssignmentCreateRequestEntity> requests,
+  }) async {
+    final response = await _dio.post(
+      '/api/aggregate/shift/assignments/bulk',
+      data: {
+        'assignments': requests
+            .map(ShiftMapper.assignmentCreateRequestToJson)
+            .toList(),
+      },
+    );
+    final data = response.data as List<dynamic>? ?? const [];
+    return data
+        .map(
+          (item) =>
+              ShiftMapper.assignmentFromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList();
   }
 
   Future<ShiftAssignmentEntity> updateAssignment(
