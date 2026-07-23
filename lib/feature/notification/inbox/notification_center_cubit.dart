@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,9 +45,11 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     try {
       final notifications =
           _normalizeNotifications(
-                (await _backendAuth.getMyNotifications())
-                    .where((item) => !_isRealtimeOnlyMetadata(item.metadata))
-                    .toList(),
+                await _enrichNotificationsWithTeamNames(
+                  (await _backendAuth.getMyNotifications())
+                      .where((item) => !_isRealtimeOnlyMetadata(item.metadata))
+                      .toList(),
+                ),
               )
               .where(
                 (item) => !state.dismissedNotificationIds.contains(
@@ -99,7 +102,9 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       return;
     }
 
-    final item = NotificationCenterItem.fromRealtime(notification);
+    final item = _enrichNotificationWithLoadedTeamName(
+      NotificationCenterItem.fromRealtime(notification),
+    );
     if (state.dismissedNotificationIds.contains(item.notificationId)) {
       return;
     }
@@ -774,6 +779,91 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         _hydrationFuture = null;
       }
     });
+  }
+
+  Future<List<NotificationCenterItem>> _enrichNotificationsWithTeamNames(
+    List<NotificationCenterItem> notifications,
+  ) async {
+    final teamNamesById = _loadedTeamNamesById();
+    final unresolvedTeamIds = notifications
+        .where((item) => item.teamName == null)
+        .map((item) => item.metadata['teamId']?.trim() ?? '')
+        .where(
+          (teamId) => teamId.isNotEmpty && !teamNamesById.containsKey(teamId),
+        )
+        .toSet();
+
+    if (unresolvedTeamIds.isNotEmpty) {
+      try {
+        final localTeams = await getIt<TeamLocalDataSource>().getAll();
+        for (final team in localTeams) {
+          final teamId = team.id?.trim();
+          final teamName = team.name.trim();
+          if (teamId != null && teamId.isNotEmpty && teamName.isNotEmpty) {
+            teamNamesById[teamId] = teamName;
+          }
+        }
+      } catch (_) {
+        // Best effort enrichment only.
+      }
+    }
+
+    return notifications
+        .map(
+          (item) =>
+              _enrichNotificationWithResolvedTeamName(item, teamNamesById),
+        )
+        .toList(growable: false);
+  }
+
+  NotificationCenterItem _enrichNotificationWithLoadedTeamName(
+    NotificationCenterItem item,
+  ) {
+    return _enrichNotificationWithResolvedTeamName(
+      item,
+      _loadedTeamNamesById(),
+    );
+  }
+
+  NotificationCenterItem _enrichNotificationWithResolvedTeamName(
+    NotificationCenterItem item,
+    Map<String, String> teamNamesById,
+  ) {
+    if (item.teamName != null) {
+      return item;
+    }
+    final teamId = item.metadata['teamId']?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      return item;
+    }
+    final resolvedTeamName = teamNamesById[teamId]?.trim();
+    if (resolvedTeamName == null || resolvedTeamName.isEmpty) {
+      return item;
+    }
+    final metadata = Map<String, String>.from(item.metadata)
+      ..putIfAbsent('teamName', () => resolvedTeamName);
+    return item.copyWith(metadata: metadata);
+  }
+
+  Map<String, String> _loadedTeamNamesById() {
+    final state = getIt<TeamBloc>().state;
+    final result = <String, String>{};
+    if (state is TeamsLoaded) {
+      for (final team in state.teams) {
+        final teamId = team.id?.trim();
+        final teamName = team.name.trim();
+        if (teamId != null && teamId.isNotEmpty && teamName.isNotEmpty) {
+          result[teamId] = teamName;
+        }
+      }
+    } else if (state is TeamLoaded) {
+      final teamId = state.team.id?.trim();
+      final teamName = state.team.name.trim();
+      if (teamId != null && teamId.isNotEmpty && teamName.isNotEmpty) {
+        result[teamId] = teamName;
+      }
+    }
+    return result;
   }
 
   Future<void> _hydrateLocalState(String userId) async {

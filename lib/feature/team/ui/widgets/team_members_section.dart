@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
@@ -1208,7 +1209,7 @@ class _InvitationRow extends StatelessWidget {
           ),
           Expanded(
             flex: 2,
-            child: _InviteStatusChip(status: invitation.status),
+            child: _InviteStatusCell(status: invitation.status),
           ),
           if (isOptimistic)
             const SizedBox(
@@ -1236,22 +1237,39 @@ class _InvitationRow extends StatelessWidget {
   }
 }
 
+class _InviteStatusCell extends StatelessWidget {
+  final String status;
+
+  const _InviteStatusCell({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final infoMessage = _inviteStatusInfoMessage(context, status);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Expanded(child: _InviteStatusChip(status: status)),
+        if (infoMessage != null) ...[
+          const SizedBox(width: 6),
+          _InviteStatusInfoButton(
+            title: _inviteStatusLabel(context, status),
+            message: infoMessage,
+            color: _inviteStatusColor(context, status),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _InviteStatusChip extends StatelessWidget {
   final String status;
   const _InviteStatusChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    final (label, color) = switch (status.toUpperCase()) {
-      'ACCEPTED' => (loc.inviteStatusAccepted, const Color(0xFF1B8C4A)),
-      'REJECTED' => (loc.inviteStatusRejected, const Color(0xFFE74C3C)),
-      'PENDING_REGISTRATION' => (
-        loc.inviteStatusUnregistered,
-        const Color(0xFF9B59B6),
-      ),
-      _ => (loc.inviteStatusPending, const Color(0xFFE67E22)),
-    };
+    final label = _inviteStatusLabel(context, status);
+    final color = _inviteStatusColor(context, status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -1269,6 +1287,105 @@ class _InviteStatusChip extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
     );
+  }
+}
+
+class _InviteStatusInfoButton extends StatelessWidget {
+  final String title;
+  final String message;
+  final Color color;
+
+  const _InviteStatusInfoButton({
+    required this.title,
+    required this.message,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = Icon(
+      Icons.error_outline_rounded,
+      size: 16,
+      color: color.withValues(alpha: 0.92),
+    );
+
+    return Tooltip(
+      message: message,
+      waitDuration: const Duration(milliseconds: 150),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () {
+          if (kIsWeb) {
+            return;
+          }
+          showDialog<void>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: Text(title),
+              content: Text(message),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(AppLocalizations.of(context)!.close),
+                ),
+              ],
+            ),
+          );
+        },
+        child: Padding(padding: const EdgeInsets.all(2), child: icon),
+      ),
+    );
+  }
+}
+
+String _inviteStatusLabel(BuildContext context, String status) {
+  final loc = AppLocalizations.of(context)!;
+  return switch (status.toUpperCase()) {
+    'ACCEPTED' => loc.inviteStatusAccepted,
+    'REJECTED' => loc.inviteStatusRejected,
+    'PENDING_REGISTRATION' => loc.inviteStatusUnregistered,
+    _ => loc.inviteStatusPending,
+  };
+}
+
+Color _inviteStatusColor(BuildContext context, String status) {
+  return switch (status.toUpperCase()) {
+    'ACCEPTED' => const Color(0xFF1B8C4A),
+    'REJECTED' => const Color(0xFFE74C3C),
+    'PENDING_REGISTRATION' => const Color(0xFF9B59B6),
+    _ => const Color(0xFFE67E22),
+  };
+}
+
+String? _inviteStatusInfoMessage(BuildContext context, String status) {
+  final code = Localizations.localeOf(context).languageCode.toLowerCase();
+  final normalized = status.trim().toUpperCase();
+
+  switch (normalized) {
+    case 'PENDING':
+      switch (code) {
+        case 'it':
+          return 'L’utente ha già un account e deve ancora accettare o rifiutare l’invito.';
+        case 'fr':
+          return 'L’utilisateur a déjà un compte et doit encore accepter ou refuser l’invitation.';
+        case 'es':
+          return 'El usuario ya tiene una cuenta y todavía debe aceptar o rechazar la invitación.';
+        default:
+          return 'The user already has an account and still needs to accept or reject the invitation.';
+      }
+    case 'PENDING_REGISTRATION':
+      switch (code) {
+        case 'it':
+          return 'L’email invitata non ha ancora completato la registrazione. L’utente dovrà registrarsi con questa stessa email prima di poter entrare nel team.';
+        case 'fr':
+          return 'L’adresse e-mail invitée n’a pas encore terminé son inscription. L’utilisateur devra s’inscrire avec cette même adresse avant de pouvoir rejoindre l’équipe.';
+        case 'es':
+          return 'El correo invitado aún no ha completado el registro. El usuario deberá registrarse con este mismo correo antes de poder entrar en el equipo.';
+        default:
+          return 'The invited email has not completed registration yet. The user must sign up with this same email before joining the team.';
+      }
+    default:
+      return null;
   }
 }
 

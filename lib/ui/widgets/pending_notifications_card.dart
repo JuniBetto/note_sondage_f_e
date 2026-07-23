@@ -315,10 +315,10 @@ class _PendingNotificationTile extends StatelessWidget {
                             color: colorScheme.textColor,
                           ),
                         ),
-                        if (item.body.isNotEmpty) ...[
+                        if (item.bodyWithTeamContext.isNotEmpty) ...[
                           const SizedBox(height: 6),
                           Text(
-                            item.body,
+                            item.bodyWithTeamContext,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.textColor,
                               height: 1.35,

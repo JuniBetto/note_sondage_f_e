@@ -70,6 +70,26 @@ class NotificationCenterItem extends Equatable {
     };
   }
 
+  NotificationCenterItem copyWith({
+    String? notificationId,
+    String? eventType,
+    String? sourceService,
+    String? title,
+    String? body,
+    DateTime? occurredAt,
+    Map<String, String>? metadata,
+  }) {
+    return NotificationCenterItem(
+      notificationId: notificationId ?? this.notificationId,
+      eventType: eventType ?? this.eventType,
+      sourceService: sourceService ?? this.sourceService,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      occurredAt: occurredAt ?? this.occurredAt,
+      metadata: metadata ?? this.metadata,
+    );
+  }
+
   String? get invitationId {
     final value = metadata['invitationId']?.trim();
     if (value == null || value.isEmpty) {

@@ -288,9 +288,9 @@ class _NotificationCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              if (item.body.isNotEmpty) ...[
+              if (item.bodyWithTeamContext.isNotEmpty) ...[
                 const SizedBox(height: 6),
-                Text(item.body, style: theme.textTheme.bodyMedium),
+                Text(item.bodyWithTeamContext, style: theme.textTheme.bodyMedium),
               ],
               if (teamName != null) ...[
                 const SizedBox(height: 10),
