@@ -29,12 +29,7 @@ class RolePermissionComponent extends StatelessWidget {
   final void Function(String?)? onTap;
   final void Function(String?)? onDelete;
 
-  static const Set<String> _defaultRoleCodes = {
-    'OWNER',
-    'ADMIN',
-    'MEMBER',
-    'VIEWER',
-  };
+  static const Set<String> _defaultRoleCodes = {'OWNER', 'ADMIN', 'MEMBER'};
 
   bool get _isDefaultRole {
     final normalizedId = id?.trim().toUpperCase();

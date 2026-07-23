@@ -21,6 +21,7 @@ class TeamComponentCard extends StatefulWidget {
     this.onDeleteTap,
     this.onArchiveTap,
     this.isOwner = false,
+    this.canManageTeam = false,
     this.isArchived = false,
     this.isSyncing = false,
     this.currentUserId,
@@ -38,6 +39,7 @@ class TeamComponentCard extends StatefulWidget {
   final void Function(String id)? onDeleteTap;
   final VoidCallback? onArchiveTap;
   final bool isOwner;
+  final bool canManageTeam;
   final bool isArchived;
   final bool isSyncing;
   final String? currentUserId;
@@ -151,17 +153,19 @@ class _TeamComponentCardState extends State<TeamComponentCard> {
                                             mainAxisSize: MainAxisSize.min,
                                             spacing: 8,
                                             children: [
-                                              ActionOnUser(
-                                                iconSize: 18,
-                                                icon: Icons.edit,
-                                                color: colorScheme.cursorColor!,
-                                                onTap: () {
-                                                  context.go(
-                                                    RouterPaths.updateTeam,
-                                                    extra: widget.teamId,
-                                                  );
-                                                },
-                                              ),
+                                              if (widget.canManageTeam)
+                                                ActionOnUser(
+                                                  iconSize: 18,
+                                                  icon: Icons.edit,
+                                                  color:
+                                                      colorScheme.cursorColor!,
+                                                  onTap: () {
+                                                    context.go(
+                                                      RouterPaths.updateTeam,
+                                                      extra: widget.teamId,
+                                                    );
+                                                  },
+                                                ),
                                               ActionOnUser(
                                                 iconSize: 18,
                                                 icon: widget.isArchived

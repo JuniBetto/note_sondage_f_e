@@ -13,6 +13,7 @@ import 'package:note_sondage/feature/notification/realtime/team_realtime_coordin
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
+import 'package:note_sondage/feature/team/ui/helper/self_admin_invite_guard.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/add_user_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
@@ -461,6 +462,21 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
 
   void _onSave() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+    final hasBlockedSelfTeamInvite = listInviteFormData.any(
+      (invite) =>
+          invite.emailController.text.trim().isNotEmpty &&
+          isSelfTeamInviteBlocked(
+            currentUserIsOwner: true,
+            currentUserEmail: currentUserEmail,
+            invitedEmail: invite.emailController.text,
+          ),
+    );
+    if (hasBlockedSelfTeamInvite) {
+      AppSnackBar.showError(context, selfTeamInviteBlockedMessage(context));
+      return;
+    }
 
     final pendingInvitations = listInviteFormData
         .where((d) => d.emailController.text.trim().isNotEmpty)

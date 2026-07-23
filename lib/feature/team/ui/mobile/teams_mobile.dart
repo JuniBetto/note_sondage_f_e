@@ -29,7 +29,10 @@ class _TeamsMobileState extends State<TeamsMobile>
     _teamBloc = getIt<TeamBloc>();
     tabController = TabController(length: 2, vsync: this);
     tabController.addListener(_handleTabChange);
-    _teamBloc.add(LoadTeamsEvent());
+    final teamState = _teamBloc.state;
+    if (teamState is! TeamsLoaded && teamState is! TeamLoading) {
+      _teamBloc.add(LoadTeamsEvent());
+    }
   }
 
   void _handleTabChange() {

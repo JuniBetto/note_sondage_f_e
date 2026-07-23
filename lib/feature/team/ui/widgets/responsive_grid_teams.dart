@@ -8,7 +8,9 @@ import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/utils/extention_color.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -41,8 +43,11 @@ class ResponsiveGridTeams extends StatefulWidget {
 class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
   late final TeamBloc _teamBloc;
   late final TeamMemberUseCase _teamMemberUseCase;
+  late final RoleUseCase _roleUseCase;
   late final UserArchiveService _archiveService;
   List<TeamEntityForView> teamsWithMembers = [];
+  final Map<String, List<RoleEntity>> _rolesByTeamId =
+      <String, List<RoleEntity>>{};
   bool _syncedFromCurrentState = false;
   bool _showArchivedOnly = false;
   Set<String> _archivedTeamIds = <String>{};
@@ -55,8 +60,8 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
     super.initState();
     _teamBloc = getIt<TeamBloc>();
     _teamMemberUseCase = getIt<TeamMemberUseCase>();
+    _roleUseCase = getIt<RoleUseCase>();
     _archiveService = getIt<UserArchiveService>();
-    _teamBloc.add(LoadTeamsEvent());
     _loadArchivedTeams();
   }
 
@@ -101,6 +106,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
             teamsWithMembers = _mergeWithExistingMembers(state.teams);
           });
           unawaited(_refreshMembersForTeams(state.teams));
+          unawaited(_refreshRolesForTeams(state.teams));
         }
       },
       builder: (context, teamState) {
@@ -114,6 +120,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
               teamsWithMembers = _mergeWithExistingMembers(teamState.teams);
             });
             unawaited(_refreshMembersForTeams(teamState.teams));
+            unawaited(_refreshRolesForTeams(teamState.teams));
           });
         }
 
@@ -158,6 +165,8 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
                   },
                 )
                 .toList(),
+            "roles":
+                _rolesByTeamId[teamView.team.id ?? ''] ?? const <RoleEntity>[],
             "color": teamView.team.color?.toColor() ?? Colors.blue,
           };
         }).toList();
@@ -351,6 +360,43 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
     });
   }
 
+  Future<void> _refreshRolesForTeams(List<TeamEntity> teams) async {
+    final teamIds = teams
+        .map((team) => team.id ?? '')
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+
+    if (teamIds.isEmpty) {
+      return;
+    }
+
+    final rolesByTeamId = <String, List<RoleEntity>>{};
+    await Future.wait(
+      teamIds.map((teamId) async {
+        try {
+          final roles = await _roleUseCase.getAllRolesByTeamId(teamId);
+          rolesByTeamId[teamId] = roles
+              .where(
+                (role) =>
+                    _normalizeRoleCode(role.id) != 'VIEWER' &&
+                    _normalizeRoleCode(role.name) != 'VIEWER',
+              )
+              .toList(growable: false);
+        } catch (_) {
+          // Preserve last successfully rendered roles if refresh fails.
+        }
+      }),
+    );
+
+    if (!mounted || rolesByTeamId.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _rolesByTeamId.addAll(rolesByTeamId);
+    });
+  }
+
   TeamEntity _teamWithMemberCount(TeamEntity team, int memberCount) {
     return TeamEntity(
       team.id,
@@ -363,6 +409,62 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
       createdAt: team.createdAt,
     );
   }
+}
+
+String _normalizeRoleCode(String? roleCode) {
+  final normalized = (roleCode ?? '').trim().toUpperCase();
+  if (normalized.isEmpty) {
+    return 'MEMBER';
+  }
+  return normalized == 'VIEWER' ? 'MEMBER' : normalized;
+}
+
+bool _canManageTeamFromItem(
+  Map<String, dynamic> item, {
+  required String currentUserId,
+  required String currentUserEmail,
+}) {
+  final ownerUserId = (item['ownerUserId'] as String?) ?? '';
+  if (currentUserId.isNotEmpty && currentUserId == ownerUserId) {
+    return true;
+  }
+
+  final members = (item['members'] as List<dynamic>? ?? const [])
+      .whereType<Map<String, dynamic>>()
+      .toList(growable: false);
+  final currentMember =
+      members
+          .where(
+            (member) =>
+                ((member['userId'] ?? '') as String).trim().isNotEmpty &&
+                ((member['userId'] ?? '') as String).trim() == currentUserId,
+          )
+          .firstOrNull ??
+      members
+          .where(
+            (member) =>
+                ((member['email'] ?? '') as String).trim().toLowerCase() ==
+                currentUserEmail.trim().toLowerCase(),
+          )
+          .firstOrNull;
+
+  final roleCode = _normalizeRoleCode(currentMember?['role']?.toString());
+  final roles = (item['roles'] as List<dynamic>? ?? const [])
+      .whereType<RoleEntity>()
+      .toList(growable: false);
+  final role = roles
+      .where((item) => _normalizeRoleCode(item.id) == roleCode)
+      .firstOrNull;
+  final permissions = (role?.permissions ?? const <String>[])
+      .map((permission) => permission.trim().toUpperCase())
+      .where((permission) => permission.isNotEmpty)
+      .toSet();
+
+  if (permissions.isEmpty) {
+    return roleCode == 'ADMIN';
+  }
+
+  return permissions.contains('ADMIN') || permissions.contains('MANAGE');
 }
 
 Widget viewScrollWebMobile(
@@ -388,6 +490,11 @@ Widget viewScrollWebMobile(
       final teamId = item["teamId"] as String;
       final ownerUserId = (item["ownerUserId"] as String?) ?? '';
       final isOwner = currentUserId.isNotEmpty && currentUserId == ownerUserId;
+      final canManageTeam = _canManageTeamFromItem(
+        item,
+        currentUserId: currentUserId,
+        currentUserEmail: currentUserEmail,
+      );
       final isArchived = archivedTeamIds.contains(teamId);
 
       return isRow
@@ -401,6 +508,7 @@ Widget viewScrollWebMobile(
               memberCount: item["memberCount"] as int?,
               isSyncing: item["isSyncing"] as bool? ?? false,
               isOwner: isOwner,
+              canManageTeam: canManageTeam,
               isArchived: isArchived,
               currentUserId: currentUserId,
               currentUserEmail: currentUserEmail,
@@ -427,6 +535,7 @@ Widget viewScrollWebMobile(
               memberCount: item["memberCount"] as int?,
               isSyncing: item["isSyncing"] as bool? ?? false,
               isOwner: isOwner,
+              canManageTeam: canManageTeam,
               isArchived: isArchived,
               currentUserId: currentUserId,
               currentUserEmail: currentUserEmail,

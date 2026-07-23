@@ -1793,4 +1793,150 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get profileTitle => 'Perfil';
+
+  @override
+  String get profileDescription =>
+      'Gestiona la información que se muestra para tu cuenta.';
+
+  @override
+  String get profileProviderEmail => 'Correo electrónico';
+
+  @override
+  String get profileProviderPhone => 'Teléfono';
+
+  @override
+  String get profileProviderAnonymous => 'Anónimo';
+
+  @override
+  String get profileEmailVerified => 'Correo verificado';
+
+  @override
+  String get profileEmailNotVerified => 'Correo no verificado';
+
+  @override
+  String get profileAvatarHint =>
+      'Toca el avatar para elegir una nueva imagen de perfil.';
+
+  @override
+  String get profileEmailReadOnlyHint =>
+      'El correo electrónico no se puede cambiar desde esta página.';
+
+  @override
+  String get profileFullNameRequired => 'El nombre completo es obligatorio.';
+
+  @override
+  String get profileFullNameMinLength =>
+      'El nombre completo debe contener al menos 2 caracteres.';
+
+  @override
+  String get profileFullNameMaxLength =>
+      'El nombre completo debe contener como máximo 80 caracteres.';
+
+  @override
+  String get profileNoChangesTitle => 'No se detectaron cambios';
+
+  @override
+  String get profileNoChangesMessage =>
+      'Actualiza al menos un campo antes de guardar tu perfil.';
+
+  @override
+  String get profileDuplicateIdentityError =>
+      'Ya existe otro usuario con el mismo nombre y correo electrónico.';
+
+  @override
+  String get profileSaveFallbackError =>
+      'No pudimos guardar tu perfil en este momento. Inténtalo de nuevo.';
+
+  @override
+  String get profileSaveSuccessTitle => 'Perfil actualizado';
+
+  @override
+  String get profileSaveSuccessMessage =>
+      'La información de tu perfil se guardó correctamente.';
+
+  @override
+  String get profileTwoFactorTitle => 'Autenticación de dos factores';
+
+  @override
+  String get profileTwoFactorEnabledDescription =>
+      'Tu cuenta requiere un segundo paso de verificación al iniciar sesión.';
+
+  @override
+  String get profileTwoFactorDisabledDescription =>
+      'Agrega una aplicación de autenticación para una protección extra.';
+
+  @override
+  String get profileTwoFactorPhoneUnsupported =>
+      'La autenticación de dos factores no está disponible para cuentas solo con teléfono.';
+
+  @override
+  String get profileTwoFactorVerifyEmailFirst =>
+      'Verifica primero tu dirección de correo electrónico. Después, toca \"Ya verifiqué mi correo\" y verás la configuración TOTP con la clave secreta, el código QR y el primer paso de verificación.';
+
+  @override
+  String get profileTwoFactorVerifiedAction => 'Ya verifiqué mi correo';
+
+  @override
+  String get profileTwoFactorResendEmailAction =>
+      'Reenviar correo de verificación';
+
+  @override
+  String get profileTwoFactorPendingSetup =>
+      'Solicitud de registro detectada. Termina de configurar tu aplicación de autenticación.';
+
+  @override
+  String get profileTwoFactorAddMethod => 'Agregar otro método';
+
+  @override
+  String get profileTwoFactorCompleteSetup => 'Completar configuración';
+
+  @override
+  String get profileTwoFactorEnableAction => 'Activar 2FA';
+
+  @override
+  String get profileTwoFactorEnabledSuccessTitle => '2FA activada';
+
+  @override
+  String get profileTwoFactorEnabledSuccessMessage =>
+      'La autenticación de dos factores se activó correctamente.';
+
+  @override
+  String get profileTwoFactorEmailVerifiedTitle => 'Correo verificado';
+
+  @override
+  String get profileTwoFactorEmailVerifiedMessage =>
+      'Tu correo está verificado. Ahora puedes activar la 2FA con una aplicación de autenticación.';
+
+  @override
+  String get profileTwoFactorVerificationPendingTitle =>
+      'Verificación pendiente';
+
+  @override
+  String get profileTwoFactorVerificationPendingMessage =>
+      'Tu correo sigue apareciendo como no verificado. Abre el enlace de verificación en tu bandeja de entrada y vuelve a intentarlo.';
+
+  @override
+  String get profileTwoFactorRefreshFailedTitle => 'Actualización fallida';
+
+  @override
+  String get profileTwoFactorRefreshFailedMessage =>
+      'No pudimos actualizar tu estado de verificación en este momento. Inténtalo de nuevo.';
+
+  @override
+  String get profileTwoFactorVerificationSentTitle =>
+      'Correo de verificación enviado';
+
+  @override
+  String get profileTwoFactorVerificationSentMessage =>
+      'Enviamos un nuevo correo de verificación. Abre el enlace recibido y luego toca \"Ya verifiqué mi correo\".';
+
+  @override
+  String get profileTwoFactorSendFailedTitle => 'No se pudo enviar el correo';
+
+  @override
+  String get profileTwoFactorSendFailedMessage =>
+      'No pudimos enviar un nuevo correo de verificación en este momento. Inténtalo de nuevo.';
 }

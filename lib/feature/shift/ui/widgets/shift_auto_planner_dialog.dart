@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class ShiftAutoPlannerDialog extends StatefulWidget {
   const ShiftAutoPlannerDialog({
@@ -113,6 +114,8 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final compact = widget.compact || MediaQuery.of(context).size.width < 720;
     final profiles = [...widget.profiles]
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
@@ -341,14 +344,26 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.primaryColor,
+          ),
           child: Text(
             _t(it: 'Annulla', en: 'Cancel', fr: 'Annuler', es: 'Cancelar'),
+            style: textTheme.bodyMedium!.copyWith(
+              color: colorScheme.textInvertedColor,
+            ),
           ),
         ),
         FilledButton(
           onPressed: _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.primaryColor,
+          ),
           child: Text(
             _t(it: 'Genera', en: 'Generate', fr: 'Générer', es: 'Generar'),
+            style: textTheme.bodyMedium!.copyWith(
+              color: colorScheme.textInvertedColor,
+            ),
           ),
         ),
       ],

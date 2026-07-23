@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_local_data_source.dart';
@@ -163,6 +164,21 @@ class ShiftRepositoryImpl implements ShiftRepository {
       assignment,
     ]);
     return assignment;
+  }
+
+  @override
+  Future<List<ShiftAssignmentEntity>> assignBatch({
+    required List<ShiftAssignmentCreateRequestEntity> requests,
+  }) async {
+    final assignments = await _remote.assignBatch(requests: requests);
+    final cached = await _local.getAssignments();
+    await _local.saveAssignments([
+      ...cached.where(
+        (item) => !assignments.any((assignment) => assignment.id == item.id),
+      ),
+      ...assignments,
+    ]);
+    return assignments;
   }
 
   @override

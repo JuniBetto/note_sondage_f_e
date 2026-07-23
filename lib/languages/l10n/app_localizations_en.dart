@@ -1776,4 +1776,147 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get profileDescription =>
+      'Manage the information shown for your account.';
+
+  @override
+  String get profileProviderEmail => 'Email';
+
+  @override
+  String get profileProviderPhone => 'Phone';
+
+  @override
+  String get profileProviderAnonymous => 'Anonymous';
+
+  @override
+  String get profileEmailVerified => 'Email verified';
+
+  @override
+  String get profileEmailNotVerified => 'Email not verified';
+
+  @override
+  String get profileAvatarHint =>
+      'Tap the avatar to choose a new profile image.';
+
+  @override
+  String get profileEmailReadOnlyHint =>
+      'Email cannot be changed from this page.';
+
+  @override
+  String get profileFullNameRequired => 'Full name is required';
+
+  @override
+  String get profileFullNameMinLength =>
+      'Full name must contain at least 2 characters';
+
+  @override
+  String get profileFullNameMaxLength =>
+      'Full name must contain at most 80 characters';
+
+  @override
+  String get profileNoChangesTitle => 'No changes detected';
+
+  @override
+  String get profileNoChangesMessage =>
+      'Update at least one field before saving your profile.';
+
+  @override
+  String get profileDuplicateIdentityError =>
+      'Another user already exists with the same name and email.';
+
+  @override
+  String get profileSaveFallbackError =>
+      'We could not save your profile right now. Please try again.';
+
+  @override
+  String get profileSaveSuccessTitle => 'Profile updated';
+
+  @override
+  String get profileSaveSuccessMessage =>
+      'Your profile information has been saved successfully.';
+
+  @override
+  String get profileTwoFactorTitle => 'Two-factor authentication';
+
+  @override
+  String get profileTwoFactorEnabledDescription =>
+      'Your account requires a second verification step when signing in.';
+
+  @override
+  String get profileTwoFactorDisabledDescription =>
+      'Add an authenticator app for extra protection.';
+
+  @override
+  String get profileTwoFactorPhoneUnsupported =>
+      'Two-factor authentication is not available for phone-only accounts.';
+
+  @override
+  String get profileTwoFactorVerifyEmailFirst =>
+      'Verify your email address first. After that, tap \"I\'ve verified my email\" and you will see the TOTP setup with the secret key, QR code and first verification step.';
+
+  @override
+  String get profileTwoFactorVerifiedAction => 'I\'ve verified my email';
+
+  @override
+  String get profileTwoFactorResendEmailAction => 'Resend verification email';
+
+  @override
+  String get profileTwoFactorPendingSetup =>
+      'Registration request detected. Finish setting up your authenticator app.';
+
+  @override
+  String get profileTwoFactorAddMethod => 'Add another method';
+
+  @override
+  String get profileTwoFactorCompleteSetup => 'Complete setup';
+
+  @override
+  String get profileTwoFactorEnableAction => 'Enable 2FA';
+
+  @override
+  String get profileTwoFactorEnabledSuccessTitle => '2FA enabled';
+
+  @override
+  String get profileTwoFactorEnabledSuccessMessage =>
+      'Two-factor authentication enabled successfully.';
+
+  @override
+  String get profileTwoFactorEmailVerifiedTitle => 'Email verified';
+
+  @override
+  String get profileTwoFactorEmailVerifiedMessage =>
+      'Your email is verified. You can now enable authenticator app 2FA.';
+
+  @override
+  String get profileTwoFactorVerificationPendingTitle => 'Verification pending';
+
+  @override
+  String get profileTwoFactorVerificationPendingMessage =>
+      'We still see your email as unverified. Open the verification link from your inbox, then try again.';
+
+  @override
+  String get profileTwoFactorRefreshFailedTitle => 'Refresh failed';
+
+  @override
+  String get profileTwoFactorRefreshFailedMessage =>
+      'We could not refresh your verification status right now. Please try again.';
+
+  @override
+  String get profileTwoFactorVerificationSentTitle => 'Verification email sent';
+
+  @override
+  String get profileTwoFactorVerificationSentMessage =>
+      'We sent a new verification email. Open the link you receive, then tap \"I\'ve verified my email\".';
+
+  @override
+  String get profileTwoFactorSendFailedTitle => 'Unable to send email';
+
+  @override
+  String get profileTwoFactorSendFailedMessage =>
+      'We could not send a new verification email right now. Please try again.';
 }

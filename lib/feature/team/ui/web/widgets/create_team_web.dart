@@ -6,6 +6,7 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
+import 'package:note_sondage/feature/team/ui/helper/self_admin_invite_guard.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_checkbox.dart';
 import 'package:note_sondage/feature/team/ui/web/widgets/add_user_web.dart';
@@ -396,7 +397,22 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
   void _onSave() {
     if (_formKey.currentState?.validate() ?? false) {
       final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
       final name = nameTeamController.text.trim();
+
+      final hasBlockedSelfTeamInvite = listInviteFormData.any(
+        (invite) =>
+            invite.emailController.text.trim().isNotEmpty &&
+            isSelfTeamInviteBlocked(
+              currentUserIsOwner: true,
+              currentUserEmail: currentUserEmail,
+              invitedEmail: invite.emailController.text,
+            ),
+      );
+      if (hasBlockedSelfTeamInvite) {
+        AppSnackBar.showError(context, selfTeamInviteBlockedMessage(context));
+        return;
+      }
 
       final pendingInvitations = listInviteFormData
           .where((d) => d.emailController.text.trim().isNotEmpty)

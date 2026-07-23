@@ -11,6 +11,7 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
@@ -430,6 +431,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       date: date,
       profiles: _profiles,
       existing: existing,
+      initialTeamId: existing == null ? _selectedCalendarTeamId : null,
       canManagePublicShifts: existing == null
           ? _canManageAnyTeam
           : _canManageAssignment(existing),
@@ -521,54 +523,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       return;
     }
 
-    final scheduledDates = result.scheduledDates.isEmpty
-        ? <DateTime>[date]
-        : result.scheduledDates;
-    final targetUserIds = result.targetUserIds.isEmpty
-        ? const <String?>[null]
-        : result.targetUserIds.cast<String?>();
-    final uuid = const Uuid();
-    final hasMemberSpecificPlans = result.memberAssignmentPlans.isNotEmpty;
-    for (final scheduledDate in scheduledDates) {
-      if (hasMemberSpecificPlans) {
-        for (final plan in result.memberAssignmentPlans) {
-          shiftBloc.add(
-            AssignShiftEvent(
-              shiftDate: scheduledDate,
-              profileId: plan.profileId ?? result.profileId,
-              startTime: plan.profileId == null ? result.startTime : null,
-              endTime: plan.profileId == null ? result.endTime : null,
-              overnight: plan.profileId == null ? result.overnight : null,
-              note: result.note,
-              alarmOffsets: plan.profileId == null ? result.alarmOffsets : null,
-              isPublic: result.isPublic,
-              teamId: result.isPublic ? result.teamId : null,
-              teamShiftGroupId: result.isPublic ? uuid.v4() : null,
-              targetUserId: plan.targetUserId,
-            ),
-          );
-        }
-        continue;
-      }
-      final sharedGroupId = result.isPublic ? uuid.v4() : null;
-      for (final targetUserId in targetUserIds) {
-        shiftBloc.add(
-          AssignShiftEvent(
-            shiftDate: scheduledDate,
-            profileId: result.profileId,
-            startTime: result.startTime,
-            endTime: result.endTime,
-            overnight: result.overnight,
-            note: result.note,
-            alarmOffsets: result.alarmOffsets,
-            isPublic: result.isPublic,
-            teamId: result.isPublic ? result.teamId : null,
-            teamShiftGroupId: sharedGroupId,
-            targetUserId: targetUserId,
-          ),
-        );
-      }
-    }
+    await _createAssignments(context, shiftBloc, date, result);
   }
 
   Future<void> _requestAssignmentChange(
@@ -602,6 +557,133 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         fallback:
             'Non siamo riusciti a inviare la richiesta di modifica turno.',
       );
+    }
+  }
+
+  List<ShiftAssignmentCreateRequestEntity> _buildCreateRequests(
+    DateTime fallbackDate,
+    ShiftDayDialogResult result,
+  ) {
+    final scheduledDates = result.scheduledDates.isEmpty
+        ? <DateTime>[fallbackDate]
+        : result.scheduledDates;
+    final targetUserIds = result.targetUserIds.isEmpty
+        ? const <String?>[null]
+        : result.targetUserIds.cast<String?>();
+    final uuid = const Uuid();
+    final hasMemberSpecificPlans = result.memberAssignmentPlans.isNotEmpty;
+    final requests = <ShiftAssignmentCreateRequestEntity>[];
+
+    for (final scheduledDate in scheduledDates) {
+      if (hasMemberSpecificPlans) {
+        for (final plan in result.memberAssignmentPlans) {
+          requests.add(
+            ShiftAssignmentCreateRequestEntity(
+              shiftDate: scheduledDate,
+              profileId: plan.profileId ?? result.profileId,
+              startTime: plan.profileId == null ? result.startTime : null,
+              endTime: plan.profileId == null ? result.endTime : null,
+              overnight: plan.profileId == null ? result.overnight : null,
+              note: result.note,
+              alarmOffsets: plan.profileId == null ? result.alarmOffsets : null,
+              isPublic: result.isPublic,
+              teamId: result.isPublic ? result.teamId : null,
+              teamShiftGroupId: result.isPublic ? uuid.v4() : null,
+              targetUserId: plan.targetUserId,
+            ),
+          );
+        }
+        continue;
+      }
+
+      final sharedGroupId = result.isPublic ? uuid.v4() : null;
+      for (final targetUserId in targetUserIds) {
+        requests.add(
+          ShiftAssignmentCreateRequestEntity(
+            shiftDate: scheduledDate,
+            profileId: result.profileId,
+            startTime: result.startTime,
+            endTime: result.endTime,
+            overnight: result.overnight,
+            note: result.note,
+            alarmOffsets: result.alarmOffsets,
+            isPublic: result.isPublic,
+            teamId: result.isPublic ? result.teamId : null,
+            teamShiftGroupId: sharedGroupId,
+            targetUserId: targetUserId,
+          ),
+        );
+      }
+    }
+
+    return requests;
+  }
+
+  String _bulkCreateSuccessMessage(BuildContext context, int createdCount) {
+    final isItalian = _isItalian(context);
+    return isItalian
+        ? 'Creati $createdCount turni con successo.'
+        : 'Created $createdCount shifts successfully.';
+  }
+
+  String _bulkCreateErrorFallback(BuildContext context, int requestedCount) {
+    final isItalian = _isItalian(context);
+    return isItalian
+        ? 'Non siamo riusciti a salvare tutti i $requestedCount turni richiesti. Nessun turno e stato creato.'
+        : 'We could not save all $requestedCount requested shifts. No shifts were created.';
+  }
+
+  Future<void> _createAssignments(
+    BuildContext context,
+    ShiftBloc shiftBloc,
+    DateTime fallbackDate,
+    ShiftDayDialogResult result,
+  ) async {
+    final requests = _buildCreateRequests(fallbackDate, result);
+    if (requests.isEmpty) {
+      return;
+    }
+
+    if (requests.length == 1) {
+      final request = requests.single;
+      shiftBloc.add(
+        AssignShiftEvent(
+          shiftDate: request.shiftDate,
+          profileId: request.profileId,
+          startTime: request.startTime,
+          endTime: request.endTime,
+          overnight: request.overnight,
+          note: request.note,
+          alarmOffsets: request.alarmOffsets,
+          isPublic: request.isPublic,
+          teamId: request.teamId,
+          teamShiftGroupId: request.teamShiftGroupId,
+          targetUserId: request.targetUserId,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _shiftRepository.assignBatch(requests: requests);
+      if (!mounted || !context.mounted) {
+        return;
+      }
+      AppSnackBar.showSuccess(
+        context,
+        _bulkCreateSuccessMessage(context, requests.length),
+      );
+      _loadAssignments();
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: _bulkCreateErrorFallback(context, requests.length),
+      );
+      _loadAssignments();
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:note_sondage/feature/auth/domain/entities/mfa_factor_hint_entity
 import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
 import 'package:note_sondage/feature/auth/infrastructure/local/pending_mfa_setup_store.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/auth/mfa_enrollment_dialog.dart';
@@ -53,6 +54,7 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
 
   Future<void> _startEnrollment(PendingMfaSetupPreference? pendingSetup) async {
     final authUser = context.read<AuthBloc>().state.user;
+    final localization = AppLocalizations.of(context)!;
     final enabled = await showDialog<bool>(
       context: context,
       builder: (_) => MfaEnrollmentDialog(
@@ -68,14 +70,15 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
       if (!mounted) return;
       AppSnackBar.showSuccess(
         context,
-        'Two-factor authentication enabled successfully.',
-        title: '2FA enabled',
+        localization.profileTwoFactorEnabledSuccessMessage,
+        title: localization.profileTwoFactorEnabledSuccessTitle,
       );
       await _refresh();
     }
   }
 
   Future<void> _reloadVerificationStatus() async {
+    final localization = AppLocalizations.of(context)!;
     setState(() {
       _isRefreshingVerification = true;
     });
@@ -92,22 +95,22 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
       if (refreshedUser.emailVerified) {
         AppSnackBar.showSuccess(
           context,
-          'Your email is verified. You can now enable authenticator app 2FA.',
-          title: 'Email verified',
+          localization.profileTwoFactorEmailVerifiedMessage,
+          title: localization.profileTwoFactorEmailVerifiedTitle,
         );
       } else {
         AppSnackBar.showWarning(
           context,
-          'We still see your email as unverified. Open the verification link from your inbox, then try again.',
-          title: 'Verification pending',
+          localization.profileTwoFactorVerificationPendingMessage,
+          title: localization.profileTwoFactorVerificationPendingTitle,
         );
       }
     } catch (error) {
       if (!mounted) return;
       AppSnackBar.showError(
         context,
-        'We could not refresh your verification status right now. Please try again.',
-        title: 'Refresh failed',
+        localization.profileTwoFactorRefreshFailedMessage,
+        title: localization.profileTwoFactorRefreshFailedTitle,
       );
     } finally {
       if (mounted) {
@@ -119,6 +122,7 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
   }
 
   Future<void> _resendVerificationEmail() async {
+    final localization = AppLocalizations.of(context)!;
     setState(() {
       _isResendingVerification = true;
     });
@@ -128,15 +132,15 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
       if (!mounted) return;
       AppSnackBar.showSuccess(
         context,
-        'We sent a new verification email. Open the link you receive, then tap "I\'ve verified my email".',
-        title: 'Verification email sent',
+        localization.profileTwoFactorVerificationSentMessage,
+        title: localization.profileTwoFactorVerificationSentTitle,
       );
     } catch (error) {
       if (!mounted) return;
       AppSnackBar.showError(
         context,
-        'We could not send a new verification email right now. Please try again.',
-        title: 'Unable to send email',
+        localization.profileTwoFactorSendFailedMessage,
+        title: localization.profileTwoFactorSendFailedTitle,
       );
     } finally {
       if (mounted) {
@@ -154,6 +158,7 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
+    final localization = AppLocalizations.of(context)!;
     final supportsMfa =
         authUser.provider != AuthProvider.phone &&
         authUser.provider != AuthProvider.anonymous;
@@ -165,8 +170,8 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
         final pendingSetup = snapshot.data?.pendingSetup;
         final isEnabled = factors.isNotEmpty;
         final actionLabel = pendingSetup != null && !isEnabled
-            ? 'Complete setup'
-            : 'Enable 2FA';
+            ? localization.profileTwoFactorCompleteSetup
+            : localization.profileTwoFactorEnableAction;
 
         return Container(
           padding: EdgeInsets.all(widget.compact ? 18 : 24),
@@ -200,7 +205,7 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Two-factor authentication',
+                          localization.profileTwoFactorTitle,
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -208,8 +213,9 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
                         const SizedBox(height: 4),
                         Text(
                           isEnabled
-                              ? 'Your account requires a second verification step when signing in.'
-                              : 'Add an authenticator app for extra protection.',
+                              ? localization.profileTwoFactorEnabledDescription
+                              : localization
+                                    .profileTwoFactorDisabledDescription,
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -222,14 +228,14 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
               const SizedBox(height: 18),
               if (!supportsMfa)
                 Text(
-                  'Two-factor authentication is not available for phone-only accounts.',
+                  localization.profileTwoFactorPhoneUnsupported,
                   style: textTheme.bodyMedium?.copyWith(
                     color: colorScheme.descriptionColor,
                   ),
                 )
               else if (!authUser.emailVerified) ...[
                 Text(
-                  'Verify your email address first. After that, tap "I\'ve verified my email" and you will see the TOTP setup with the secret key, QR code and first verification step.',
+                  localization.profileTwoFactorVerifyEmailFirst,
                   style: textTheme.bodyMedium?.copyWith(
                     color: colorScheme.descriptionColor,
                   ),
@@ -250,7 +256,13 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.verified_outlined),
-                      label: const Text('I\'ve verified my email'),
+                      label: Text(localization.profileTwoFactorVerifiedAction),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colorScheme.bgsecondary,
+                        foregroundColor: colorScheme.textInvertedColor,
+                        disabledBackgroundColor: colorScheme.buttonIsDisableBg,
+                        disabledForegroundColor: colorScheme.descriptionColor,
+                      ),
                     ),
                     OutlinedButton.icon(
                       onPressed: _isResendingVerification
@@ -263,7 +275,9 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.mark_email_unread_outlined),
-                      label: const Text('Resend verification email'),
+                      label: Text(
+                        localization.profileTwoFactorResendEmailAction,
+                      ),
                     ),
                   ],
                 ),
@@ -276,7 +290,7 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
-                      'Registration request detected. Finish setting up your authenticator app.',
+                      localization.profileTwoFactorPendingSetup,
                       style: textTheme.bodyMedium,
                     ),
                   ),
@@ -296,13 +310,27 @@ class _TwoFactorSetupCardState extends State<TwoFactorSetupCard> {
                   OutlinedButton.icon(
                     onPressed: () => _startEnrollment(pendingSetup),
                     icon: const Icon(Icons.add_moderator_rounded),
-                    label: const Text('Add another method'),
+                    label: Text(localization.profileTwoFactorAddMethod),
                   ),
                 ] else
                   FilledButton.icon(
                     onPressed: () => _startEnrollment(pendingSetup),
-                    icon: const Icon(Icons.lock_open_rounded),
-                    label: Text(actionLabel),
+                    icon: Icon(
+                      Icons.lock_open_rounded,
+                      color: colorScheme.textInvertedColor,
+                    ),
+                    label: Text(
+                      actionLabel,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.textInvertedColor,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.bgsecondary,
+                      foregroundColor: colorScheme.textInvertedColor,
+                      disabledBackgroundColor: colorScheme.buttonIsDisableBg,
+                      disabledForegroundColor: colorScheme.descriptionColor,
+                    ),
                   ),
               ],
             ],

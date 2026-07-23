@@ -98,38 +98,41 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
   }
 
   String _providerLabel(AuthProvider provider) {
+    final localization = AppLocalizations.of(context)!;
     switch (provider) {
       case AuthProvider.google:
         return 'Google';
       case AuthProvider.phone:
-        return 'Phone';
+        return localization.profileProviderPhone;
       case AuthProvider.apple:
         return 'Apple';
       case AuthProvider.anonymous:
-        return 'Anonymous';
+        return localization.profileProviderAnonymous;
       case AuthProvider.email:
-        return 'Email';
+        return localization.profileProviderEmail;
     }
   }
 
   String? _displayNameValidator(String? value) {
+    final localization = AppLocalizations.of(context)!;
     final trimmedValue = value?.trim() ?? '';
     if (trimmedValue.isEmpty) {
-      return 'Full name is required';
+      return localization.profileFullNameRequired;
     }
     if (trimmedValue.length < 2) {
-      return 'Full name must contain at least 2 characters';
+      return localization.profileFullNameMinLength;
     }
     if (trimmedValue.length > 80) {
-      return 'Full name must contain at most 80 characters';
+      return localization.profileFullNameMaxLength;
     }
     return null;
   }
 
   String _mapSaveError(Object error) {
+    final localization = AppLocalizations.of(context)!;
     return AuthUserMessageResolver.resolve(
       error,
-      fallback: 'We could not save your profile right now. Please try again.',
+      fallback: localization.profileSaveFallbackError,
     );
   }
 
@@ -143,6 +146,7 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
   }
 
   Future<void> _save() async {
+    final localization = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -153,8 +157,8 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
     if (!_hasChanges) {
       AppSnackBar.showWarning(
         context,
-        'Update at least one field before saving your profile.',
-        title: 'No changes detected',
+        localization.profileNoChangesMessage,
+        title: localization.profileNoChangesTitle,
       );
       return;
     }
@@ -180,9 +184,7 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
             existingUserId.isNotEmpty &&
             existingUserId != currentProfileId &&
             existingName == normalizedDisplayName.toLowerCase()) {
-          throw Exception(
-            'Another user already exists with the same name and email.',
-          );
+          throw Exception(localization.profileDuplicateIdentityError);
         }
       }
 
@@ -214,8 +216,8 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
 
       AppSnackBar.showSuccess(
         context,
-        'Your profile information has been saved successfully.',
-        title: 'Profile updated',
+        localization.profileSaveSuccessMessage,
+        title: localization.profileSaveSuccessTitle,
       );
     } catch (error) {
       if (!mounted) return;
@@ -263,14 +265,14 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Profile',
+                              localization.profileTitle,
                               style: textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Manage the information shown for your account.',
+                              localization.profileDescription,
                               style: textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.descriptionColor,
                               ),
@@ -298,8 +300,8 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
                             ? Icons.mark_email_read_outlined
                             : Icons.mark_email_unread_outlined,
                         label: authUser.emailVerified
-                            ? 'Email verified'
-                            : 'Email not verified',
+                            ? localization.profileEmailVerified
+                            : localization.profileEmailNotVerified,
                       ),
                     ],
                   ),
@@ -323,7 +325,7 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Tap the avatar to choose a new profile image.',
+                          localization.profileAvatarHint,
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -373,7 +375,7 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Email cannot be changed from this page.',
+                          localization.profileEmailReadOnlyHint,
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                           ),
@@ -396,13 +398,21 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: _isSaving ? null : _resetForm,
-                          child: const Text('Reset'),
+                          child: Text(localization.reset),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
                           onPressed: _isSaving ? null : _save,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colorScheme.bgsecondary,
+                            foregroundColor: colorScheme.textInvertedColor,
+                            disabledBackgroundColor:
+                                colorScheme.buttonIsDisableBg,
+                            disabledForegroundColor:
+                                colorScheme.descriptionColor,
+                          ),
                           child: _isSaving
                               ? const SizedBox(
                                   width: 18,
@@ -411,7 +421,7 @@ class _ProfileSettingsMobileState extends State<ProfileSettingsMobile> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text('Save'),
+                              : Text(localization.saveChanges),
                         ),
                       ),
                     ],

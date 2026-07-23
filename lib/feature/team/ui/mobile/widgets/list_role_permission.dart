@@ -96,7 +96,11 @@ class _ListRolePermissionState extends State<ListRolePermission> {
         listener: (context, state) {
           if (state is RolesLoaded) {
             setState(() {
-              rolesList = state.roles;
+              rolesList = state.roles
+                  .where(
+                    (role) => (role.id ?? '').trim().toUpperCase() != 'VIEWER',
+                  )
+                  .toList();
               _isLoading = false;
             });
           }

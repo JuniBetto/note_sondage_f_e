@@ -3249,6 +3249,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days, plural, =1{1 day ago} other{{days} days ago}}'**
   String chatDaysAgo(int days);
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @profileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage the information shown for your account.'**
+  String get profileDescription;
+
+  /// No description provided for @profileProviderEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get profileProviderEmail;
+
+  /// No description provided for @profileProviderPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get profileProviderPhone;
+
+  /// No description provided for @profileProviderAnonymous.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous'**
+  String get profileProviderAnonymous;
+
+  /// No description provided for @profileEmailVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Email verified'**
+  String get profileEmailVerified;
+
+  /// No description provided for @profileEmailNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Email not verified'**
+  String get profileEmailNotVerified;
+
+  /// No description provided for @profileAvatarHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the avatar to choose a new profile image.'**
+  String get profileAvatarHint;
+
+  /// No description provided for @profileEmailReadOnlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Email cannot be changed from this page.'**
+  String get profileEmailReadOnlyHint;
+
+  /// No description provided for @profileFullNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name is required'**
+  String get profileFullNameRequired;
+
+  /// No description provided for @profileFullNameMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name must contain at least 2 characters'**
+  String get profileFullNameMinLength;
+
+  /// No description provided for @profileFullNameMaxLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name must contain at most 80 characters'**
+  String get profileFullNameMaxLength;
+
+  /// No description provided for @profileNoChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes detected'**
+  String get profileNoChangesTitle;
+
+  /// No description provided for @profileNoChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Update at least one field before saving your profile.'**
+  String get profileNoChangesMessage;
+
+  /// No description provided for @profileDuplicateIdentityError.
+  ///
+  /// In en, this message translates to:
+  /// **'Another user already exists with the same name and email.'**
+  String get profileDuplicateIdentityError;
+
+  /// No description provided for @profileSaveFallbackError.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not save your profile right now. Please try again.'**
+  String get profileSaveFallbackError;
+
+  /// No description provided for @profileSaveSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated'**
+  String get profileSaveSuccessTitle;
+
+  /// No description provided for @profileSaveSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile information has been saved successfully.'**
+  String get profileSaveSuccessMessage;
+
+  /// No description provided for @profileTwoFactorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-factor authentication'**
+  String get profileTwoFactorTitle;
+
+  /// No description provided for @profileTwoFactorEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account requires a second verification step when signing in.'**
+  String get profileTwoFactorEnabledDescription;
+
+  /// No description provided for @profileTwoFactorDisabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an authenticator app for extra protection.'**
+  String get profileTwoFactorDisabledDescription;
+
+  /// No description provided for @profileTwoFactorPhoneUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-factor authentication is not available for phone-only accounts.'**
+  String get profileTwoFactorPhoneUnsupported;
+
+  /// No description provided for @profileTwoFactorVerifyEmailFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email address first. After that, tap \"I\'ve verified my email\" and you will see the TOTP setup with the secret key, QR code and first verification step.'**
+  String get profileTwoFactorVerifyEmailFirst;
+
+  /// No description provided for @profileTwoFactorVerifiedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ve verified my email'**
+  String get profileTwoFactorVerifiedAction;
+
+  /// No description provided for @profileTwoFactorResendEmailAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend verification email'**
+  String get profileTwoFactorResendEmailAction;
+
+  /// No description provided for @profileTwoFactorPendingSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration request detected. Finish setting up your authenticator app.'**
+  String get profileTwoFactorPendingSetup;
+
+  /// No description provided for @profileTwoFactorAddMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another method'**
+  String get profileTwoFactorAddMethod;
+
+  /// No description provided for @profileTwoFactorCompleteSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete setup'**
+  String get profileTwoFactorCompleteSetup;
+
+  /// No description provided for @profileTwoFactorEnableAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable 2FA'**
+  String get profileTwoFactorEnableAction;
+
+  /// No description provided for @profileTwoFactorEnabledSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'2FA enabled'**
+  String get profileTwoFactorEnabledSuccessTitle;
+
+  /// No description provided for @profileTwoFactorEnabledSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-factor authentication enabled successfully.'**
+  String get profileTwoFactorEnabledSuccessMessage;
+
+  /// No description provided for @profileTwoFactorEmailVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email verified'**
+  String get profileTwoFactorEmailVerifiedTitle;
+
+  /// No description provided for @profileTwoFactorEmailVerifiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your email is verified. You can now enable authenticator app 2FA.'**
+  String get profileTwoFactorEmailVerifiedMessage;
+
+  /// No description provided for @profileTwoFactorVerificationPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification pending'**
+  String get profileTwoFactorVerificationPendingTitle;
+
+  /// No description provided for @profileTwoFactorVerificationPendingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We still see your email as unverified. Open the verification link from your inbox, then try again.'**
+  String get profileTwoFactorVerificationPendingMessage;
+
+  /// No description provided for @profileTwoFactorRefreshFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh failed'**
+  String get profileTwoFactorRefreshFailedTitle;
+
+  /// No description provided for @profileTwoFactorRefreshFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not refresh your verification status right now. Please try again.'**
+  String get profileTwoFactorRefreshFailedMessage;
+
+  /// No description provided for @profileTwoFactorVerificationSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification email sent'**
+  String get profileTwoFactorVerificationSentTitle;
+
+  /// No description provided for @profileTwoFactorVerificationSentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a new verification email. Open the link you receive, then tap \"I\'ve verified my email\".'**
+  String get profileTwoFactorVerificationSentMessage;
+
+  /// No description provided for @profileTwoFactorSendFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to send email'**
+  String get profileTwoFactorSendFailedTitle;
+
+  /// No description provided for @profileTwoFactorSendFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not send a new verification email right now. Please try again.'**
+  String get profileTwoFactorSendFailedMessage;
 }
 
 class _AppLocalizationsDelegate

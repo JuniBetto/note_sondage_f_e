@@ -24,8 +24,9 @@ import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:uuid/uuid.dart';
 
 class UpdateTeamWeb extends StatefulWidget {
-  const UpdateTeamWeb({super.key, this.teamId, required bool readOnly});
+  const UpdateTeamWeb({super.key, this.teamId, this.readOnly = false});
   final String? teamId;
+  final bool readOnly;
 
   @override
   State<UpdateTeamWeb> createState() => _UpdateTeamWebState();
@@ -64,6 +65,11 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   bool get _showClockingSection => _teamPermissions.canManageClockingSettings;
+  bool get _canEditTeamFields => !widget.readOnly && _teamPermissions.isOwner;
+  bool get _canOpenRoleManager =>
+      !widget.readOnly &&
+      widget.teamId != null &&
+      _teamPermissions.canAccessRoleManager;
 
   @override
   void initState() {
@@ -196,7 +202,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                       ),
                     ),
                     // Role Manager button
-                    if (widget.teamId != null)
+                    if (_canOpenRoleManager)
                       FilledButton.tonalIcon(
                         onPressed: () {
                           context.go(
@@ -240,6 +246,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                               child: CustomInputField(
                                 hintText: localization.teamName,
                                 controller: nameTeamController,
+                                enabled: _canEditTeamFields,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Il nome del team è obbligatorio';
@@ -253,6 +260,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                               child: CustomInputField(
                                 hintText: localization.teamDescription,
                                 controller: focusTeamController,
+                                enabled: _canEditTeamFields,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'La descrizione è obbligatoria';
@@ -282,6 +290,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                   child: ListCheckbox(
                     selectedColor: selectedColor,
                     isEditMode: true,
+                    isEnabled: _canEditTeamFields,
                     onColorChanged: (newColor) {
                       setState(() {
                         selectedColor = [newColor];
@@ -312,6 +321,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                     onOpenAlertTimeChanged: (value) {
                       setState(() => _clockingOpenAlertTime = value);
                     },
+                    readOnly: !_canEditTeamFields,
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -331,6 +341,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                   child: widget.teamId != null
                       ? TeamMembersSection(
                           teamId: widget.teamId!,
+                          forceReadOnly: widget.readOnly,
                           onPermissionsChanged: (permissions) {
                             if (!mounted) return;
                             setState(() {
@@ -347,37 +358,50 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                 const SizedBox(height: 32),
 
                 // ── Save Button ──
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.icon(
-                    onPressed: _onSave,
-                    icon: const Icon(Icons.save_rounded, size: 20),
-                    label: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
+                if (!_canEditTeamFields)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      widget.readOnly
+                          ? 'This team is in read-only mode.'
+                          : 'Only the team owner can edit team information.',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.descriptionColor,
                       ),
-                      child: Text(
-                        localization.editTeam,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                    ),
+                  )
+                else
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.icon(
+                      onPressed: _onSave,
+                      icon: const Icon(Icons.save_rounded, size: 20),
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        child: Text(
+                          localization.editTeam,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C4DFF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
                         ),
                       ),
                     ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C4DFF),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 16,
-                      ),
-                    ),
                   ),
-                ),
                 const SizedBox(height: 32),
               ],
             ),

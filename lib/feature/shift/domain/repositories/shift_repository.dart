@@ -1,5 +1,6 @@
 import '../entities/shift_profile_entity.dart';
 import '../entities/shift_assignment_entity.dart';
+import '../entities/shift_assignment_create_request_entity.dart';
 import '../entities/shift_auto_plan_entity.dart';
 import 'package:flutter/material.dart';
 
@@ -48,6 +49,10 @@ abstract class ShiftRepository {
     String? teamId,
     String? teamShiftGroupId,
     String? targetUserId,
+  });
+
+  Future<List<ShiftAssignmentEntity>> assignBatch({
+    required List<ShiftAssignmentCreateRequestEntity> requests,
   });
 
   Future<ShiftAssignmentEntity> updateAssignment(
