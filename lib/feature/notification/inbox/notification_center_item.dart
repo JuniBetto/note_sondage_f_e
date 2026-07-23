@@ -70,6 +70,26 @@ class NotificationCenterItem extends Equatable {
     };
   }
 
+  NotificationCenterItem copyWith({
+    String? notificationId,
+    String? eventType,
+    String? sourceService,
+    String? title,
+    String? body,
+    DateTime? occurredAt,
+    Map<String, String>? metadata,
+  }) {
+    return NotificationCenterItem(
+      notificationId: notificationId ?? this.notificationId,
+      eventType: eventType ?? this.eventType,
+      sourceService: sourceService ?? this.sourceService,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      occurredAt: occurredAt ?? this.occurredAt,
+      metadata: metadata ?? this.metadata,
+    );
+  }
+
   String? get invitationId {
     final value = metadata['invitationId']?.trim();
     if (value == null || value.isEmpty) {
@@ -84,6 +104,25 @@ class NotificationCenterItem extends Equatable {
       return null;
     }
     return value;
+  }
+
+  String get bodyWithTeamContext {
+    final resolvedBody = body.trim();
+    final resolvedTeamName = teamName;
+    if (resolvedTeamName == null) {
+      return resolvedBody;
+    }
+
+    final normalizedBody = resolvedBody.toLowerCase();
+    final normalizedTeamName = resolvedTeamName.toLowerCase();
+    if (normalizedBody.contains(normalizedTeamName)) {
+      return resolvedBody;
+    }
+
+    if (resolvedBody.isEmpty) {
+      return 'Team: $resolvedTeamName';
+    }
+    return '$resolvedBody\nTeam: $resolvedTeamName';
   }
 
   String? get roleCode {

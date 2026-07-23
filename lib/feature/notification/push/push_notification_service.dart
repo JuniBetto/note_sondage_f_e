@@ -76,11 +76,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         DateTime.now(),
     metadata: metadata,
   );
+  final resolvedBody = notificationItem.bodyWithTeamContext;
   if (notificationItem.eventType.trim().toUpperCase().startsWith('SHIFT_')) {
     debugPrint(
       '[PushBackground] eventType=${notificationItem.eventType} '
       'title="${notificationItem.title}" '
-      'body="${notificationItem.body}" '
+      'body="$resolvedBody" '
       'messageId=${message.messageId} '
       'dataKeys=${message.data.keys.toList()}',
     );
@@ -92,7 +93,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final payload = jsonEncode(notificationItem.toJson());
 
   // Nessun testo = niente da mostrare (es. silent sync messages).
-  if (title.isEmpty && body.isEmpty) return;
+  if (title.isEmpty && resolvedBody.isEmpty) return;
   if (message.notification != null) return;
 
   // 3. Inizializza flutter_local_notifications standalone.
@@ -157,7 +158,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await plugin.show(
     notificationItem.notificationId.hashCode,
     title,
-    body,
+    resolvedBody,
     notificationDetails,
     payload: payload,
   );
