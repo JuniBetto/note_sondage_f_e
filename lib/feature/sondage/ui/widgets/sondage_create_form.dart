@@ -875,6 +875,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         buildDefaultDragHandles: false,
+                        // ignore: deprecated_member_use
                         onReorder: (oldIndex, newIndex) {
                           setState(() {
                             if (newIndex > oldIndex) {
