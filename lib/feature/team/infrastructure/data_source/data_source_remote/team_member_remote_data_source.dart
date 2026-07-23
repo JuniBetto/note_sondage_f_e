@@ -300,5 +300,6 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       case DioExceptionType.unknown:
         return true;
     }
+
   }
 }
