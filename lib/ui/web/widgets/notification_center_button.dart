@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
@@ -264,6 +266,7 @@ class _NotificationCard extends StatelessWidget {
         ? null
         : NotificationNavigation.labelFor(item);
     final actionRequestNote = item.actionRequestNote;
+    final teamName = _resolveDisplayTeamName(item);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -288,6 +291,26 @@ class _NotificationCard extends StatelessWidget {
               if (item.body.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(item.body, style: theme.textTheme.bodyMedium),
+              ],
+              if (teamName != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.selectItem!.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    'Team: $teamName',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colorScheme.selectItem,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ],
               if (actionRequestNote != null) ...[
                 const SizedBox(height: 10),
@@ -378,4 +401,35 @@ class _NotificationCard extends StatelessWidget {
       closeOverlays: true,
     );
   }
+}
+
+String? _resolveDisplayTeamName(NotificationCenterItem item) {
+  final directTeamName = item.teamName;
+  if (directTeamName != null) {
+    return directTeamName;
+  }
+
+  final teamId = item.metadata['teamId']?.trim();
+  if (teamId == null || teamId.isEmpty) {
+    return null;
+  }
+
+  final state = getIt<TeamBloc>().state;
+  if (state is TeamsLoaded) {
+    for (final team in state.teams) {
+      final candidateId = team.id?.trim();
+      final candidateName = team.name.trim();
+      if (candidateId == teamId && candidateName.isNotEmpty) {
+        return candidateName;
+      }
+    }
+  } else if (state is TeamLoaded) {
+    final candidateId = state.team.id?.trim();
+    final candidateName = state.team.name.trim();
+    if (candidateId == teamId && candidateName.isNotEmpty) {
+      return candidateName;
+    }
+  }
+
+  return null;
 }

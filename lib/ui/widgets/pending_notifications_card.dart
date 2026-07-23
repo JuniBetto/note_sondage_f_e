@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/theme/extensions/theme_extensions.dart';
@@ -272,7 +274,7 @@ class _PendingNotificationTile extends StatelessWidget {
     );
     final isSeen = state.seenNotificationIds.contains(item.notificationId);
     final navigationLabel = canRespond ? null : _navigationLabelFor(item);
-    final teamName = item.teamName;
+    final teamName = _resolveDisplayTeamName(item);
     final roleCode = item.roleCode;
     final actionRequestNote = item.actionRequestNote;
     final theme = Theme.of(context);
@@ -548,6 +550,37 @@ class _PendingNotificationTile extends StatelessWidget {
       default:
         return 'Member';
     }
+  }
+
+  static String? _resolveDisplayTeamName(NotificationCenterItem item) {
+    final directTeamName = item.teamName;
+    if (directTeamName != null) {
+      return directTeamName;
+    }
+
+    final teamId = item.metadata['teamId']?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      return null;
+    }
+
+    final state = getIt<TeamBloc>().state;
+    if (state is TeamsLoaded) {
+      for (final team in state.teams) {
+        final candidateId = team.id?.trim();
+        final candidateName = team.name.trim();
+        if (candidateId == teamId && candidateName.isNotEmpty) {
+          return candidateName;
+        }
+      }
+    } else if (state is TeamLoaded) {
+      final candidateId = state.team.id?.trim();
+      final candidateName = state.team.name.trim();
+      if (candidateId == teamId && candidateName.isNotEmpty) {
+        return candidateName;
+      }
+    }
+
+    return null;
   }
 }
 

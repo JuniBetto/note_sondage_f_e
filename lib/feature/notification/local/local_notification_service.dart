@@ -273,7 +273,7 @@ class LocalNotificationService {
     await _plugin.show(
       item.notificationId.hashCode,
       item.title,
-      item.body,
+      item.bodyWithTeamContext,
       NotificationDetails(android: androidDetails, iOS: darwinDetails),
       payload: payload,
     );

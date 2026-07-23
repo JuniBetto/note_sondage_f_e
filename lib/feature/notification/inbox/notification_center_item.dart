@@ -86,6 +86,25 @@ class NotificationCenterItem extends Equatable {
     return value;
   }
 
+  String get bodyWithTeamContext {
+    final resolvedBody = body.trim();
+    final resolvedTeamName = teamName;
+    if (resolvedTeamName == null) {
+      return resolvedBody;
+    }
+
+    final normalizedBody = resolvedBody.toLowerCase();
+    final normalizedTeamName = resolvedTeamName.toLowerCase();
+    if (normalizedBody.contains(normalizedTeamName)) {
+      return resolvedBody;
+    }
+
+    if (resolvedBody.isEmpty) {
+      return 'Team: $resolvedTeamName';
+    }
+    return '$resolvedBody\nTeam: $resolvedTeamName';
+  }
+
   String? get roleCode {
     final value = metadata['roleCode']?.trim();
     if (value == null || value.isEmpty) {
