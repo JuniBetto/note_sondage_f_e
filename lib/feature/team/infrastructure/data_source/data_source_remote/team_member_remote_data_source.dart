@@ -288,17 +288,15 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       return false;
     }
 
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-      case DioExceptionType.connectionError:
-      case DioExceptionType.cancel:
-        return false;
-      case DioExceptionType.badResponse:
-      case DioExceptionType.badCertificate:
-      case DioExceptionType.unknown:
-        return true;
+    final errorType = error.type;
+    if (errorType == DioExceptionType.connectionTimeout ||
+        errorType == DioExceptionType.sendTimeout ||
+        errorType == DioExceptionType.receiveTimeout ||
+        errorType == DioExceptionType.connectionError ||
+        errorType == DioExceptionType.cancel) {
+      return false;
     }
+
+    return true;
   }
 }

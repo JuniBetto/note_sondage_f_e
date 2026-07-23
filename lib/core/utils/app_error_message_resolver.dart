@@ -128,25 +128,23 @@ class AppErrorMessageResolver {
       }
     }
 
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return 'The request took too long. Please try again.';
-      case DioExceptionType.connectionError:
-        if (_isWebBackendReachabilityIssue(
-          error.message?.toLowerCase() ?? '',
-        )) {
-          return 'The web app could not reach the backend. Check API_BASE_URL, CORS, and that the API server is running.';
-        }
-        return 'Check your connection and try again.';
-      case DioExceptionType.cancel:
-        return 'The request was cancelled. Please try again.';
-      case DioExceptionType.badCertificate:
-        return 'A secure connection could not be established. Please try again.';
-      case DioExceptionType.badResponse:
-      case DioExceptionType.unknown:
-        break;
+    final errorType = error.type;
+    if (errorType == DioExceptionType.connectionTimeout ||
+        errorType == DioExceptionType.sendTimeout ||
+        errorType == DioExceptionType.receiveTimeout) {
+      return 'The request took too long. Please try again.';
+    }
+    if (errorType == DioExceptionType.connectionError) {
+      if (_isWebBackendReachabilityIssue(error.message?.toLowerCase() ?? '')) {
+        return 'The web app could not reach the backend. Check API_BASE_URL, CORS, and that the API server is running.';
+      }
+      return 'Check your connection and try again.';
+    }
+    if (errorType == DioExceptionType.cancel) {
+      return 'The request was cancelled. Please try again.';
+    }
+    if (errorType == DioExceptionType.badCertificate) {
+      return 'A secure connection could not be established. Please try again.';
     }
 
     final normalized = _stripTechnicalPrefixes(error.toString());
