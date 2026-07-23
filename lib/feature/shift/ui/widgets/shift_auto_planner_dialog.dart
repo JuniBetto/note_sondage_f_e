@@ -115,7 +115,7 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme= theme.textTheme;
+    final textTheme = theme.textTheme;
     final compact = widget.compact || MediaQuery.of(context).size.width < 720;
     final profiles = [...widget.profiles]
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
@@ -344,17 +344,27 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.primaryColor,
+          ),
           child: Text(
-            _t(it: 'Annulla', en: 'Cancel', fr: 'Annuler', es: 'Cancelar'),style:
-          textTheme.bodyMedium!.copyWith(color: colorScheme.textInvertedColor)
-          ),style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primaryColor),
+            _t(it: 'Annulla', en: 'Cancel', fr: 'Annuler', es: 'Cancelar'),
+            style: textTheme.bodyMedium!.copyWith(
+              color: colorScheme.textInvertedColor,
+            ),
+          ),
         ),
         FilledButton(
           onPressed: _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.primaryColor,
+          ),
           child: Text(
-            _t(it: 'Genera', en: 'Generate', fr: 'Générer', es: 'Generar'),style: textTheme.bodyMedium!.copyWith(color: colorScheme.textInvertedColor)
-            ,
-          ),style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primaryColor),
+            _t(it: 'Genera', en: 'Generate', fr: 'Générer', es: 'Generar'),
+            style: textTheme.bodyMedium!.copyWith(
+              color: colorScheme.textInvertedColor,
+            ),
+          ),
         ),
       ],
     );

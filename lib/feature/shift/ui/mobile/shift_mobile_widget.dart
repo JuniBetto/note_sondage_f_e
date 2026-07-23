@@ -448,6 +448,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       date: date,
       profiles: _profiles,
       existing: existing,
+      initialTeamId: existing == null ? _selectedCalendarTeamId : null,
       canManagePublicShifts: existing == null
           ? _canManageAnyTeam
           : _canManageAssignment(existing),
@@ -682,7 +683,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
 
     try {
       await _shiftRepository.assignBatch(requests: requests);
-      if (!mounted) {
+      if (!mounted || !context.mounted) {
         return;
       }
       AppSnackBar.showSuccess(

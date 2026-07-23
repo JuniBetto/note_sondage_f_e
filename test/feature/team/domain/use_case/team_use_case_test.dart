@@ -26,6 +26,9 @@ class _FakeTeamRepository implements TeamRepository {
   int getLocalOnlyCalls = 0;
   final getAllByUserIdCalls = <String>[];
   final createByUserCalls = <({TeamEntity team, String userId})>[];
+  final updatePlanningWorkerTypesCalls =
+      <({String teamId, List<PlanningWorkerTypeEntity> workerTypes})>[];
+  final deleteCalls = <String>[];
 
   @override
   Future<TeamEntity> create(TeamEntity team) =>
@@ -38,8 +41,10 @@ class _FakeTeamRepository implements TeamRepository {
   }
 
   @override
-  Future<bool> delete(String id) =>
-      deleteHandler?.call(id) ?? Future.value(true);
+  Future<bool> delete(String id) {
+    deleteCalls.add(id);
+    return deleteHandler?.call(id) ?? Future.value(true);
+  }
 
   @override
   Future<List<TeamEntity>> getAll() {
@@ -73,6 +78,10 @@ class _FakeTeamRepository implements TeamRepository {
     String teamId,
     List<PlanningWorkerTypeEntity> workerTypes,
   ) {
+    updatePlanningWorkerTypesCalls.add((
+      teamId: teamId,
+      workerTypes: workerTypes,
+    ));
     return updatePlanningWorkerTypesHandler?.call(teamId, workerTypes) ??
         Future.value(workerTypes);
   }
@@ -114,6 +123,22 @@ void main() {
       );
     });
 
+    test('getTeamById wraps repository errors', () async {
+      repository.getByIdHandler = (_) =>
+          Future<TeamEntity?>.error(Exception('team not reachable'));
+
+      expect(
+        useCase.getTeamById('team-42'),
+        throwsA(
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'message',
+            contains('Failed to fetch team'),
+          ),
+        ),
+      );
+    });
+
     test('createTeamByUser delegates team and user id', () async {
       final team = buildTeam();
       repository.createByUserHandler = (team, _) async => team;
@@ -134,6 +159,50 @@ void main() {
 
       expect(result, same(localTeams));
       expect(repository.getLocalOnlyCalls, 1);
+    });
+
+    test('updatePlanningWorkerTypes delegates team id and payload', () async {
+      final workerTypes = [
+        const PlanningWorkerTypeEntity(
+          code: 'NIGHT_SHIFT',
+          label: 'Night shift',
+          defaultMaxHoursPerDay: 10,
+          isCustom: true,
+        ),
+      ];
+
+      final result = await useCase.updatePlanningWorkerTypes(
+        'team-42',
+        workerTypes,
+      );
+
+      expect(result, same(workerTypes));
+      expect(repository.updatePlanningWorkerTypesCalls, hasLength(1));
+      expect(
+        repository.updatePlanningWorkerTypesCalls.single.teamId,
+        'team-42',
+      );
+      expect(
+        repository.updatePlanningWorkerTypesCalls.single.workerTypes,
+        same(workerTypes),
+      );
+    });
+
+    test('deleteTeam wraps repository errors', () async {
+      repository.deleteHandler = (_) =>
+          Future<bool>.error(Exception('delete failed'));
+
+      expect(
+        useCase.deleteTeam('team-42'),
+        throwsA(
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'message',
+            contains('Failed to delete team'),
+          ),
+        ),
+      );
+      expect(repository.deleteCalls, ['team-42']);
     });
   });
 }

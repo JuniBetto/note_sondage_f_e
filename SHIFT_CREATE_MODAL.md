@@ -225,7 +225,7 @@ modal must also show:
 
 - team selector
 
-If the user is only a viewer or simple member without the required grants,
+If the user is only a member without the required grants,
 the modal must not expose team-scoped shift creation options.
 
 If the user selects a team, the modal must show:

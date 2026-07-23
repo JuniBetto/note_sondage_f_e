@@ -28,6 +28,7 @@ class _FakeTeamRepository implements TeamRepository {
 
   int getAllCalls = 0;
   int getLocalOnlyCalls = 0;
+  final getAllByUserIdCalls = <String>[];
   final createByUserCalls = <({TeamEntity team, String userId})>[];
   final updateCalls = <TeamUpdate>[];
   final deleteCalls = <String>[];
@@ -55,8 +56,11 @@ class _FakeTeamRepository implements TeamRepository {
   }
 
   @override
-  Future<List<TeamEntity>> getAllByUserId(String userId) =>
-      getAllByUserIdHandler?.call(userId) ?? Future.value(const <TeamEntity>[]);
+  Future<List<TeamEntity>> getAllByUserId(String userId) {
+    getAllByUserIdCalls.add(userId);
+    return getAllByUserIdHandler?.call(userId) ??
+        Future.value(const <TeamEntity>[]);
+  }
 
   @override
   Future<TeamEntity?> getById(String id) =>
@@ -197,6 +201,75 @@ void main() {
     );
 
     test(
+      'LoadTeamsByUserIdEvent refreshes teams for the requested user',
+      () async {
+        final localTeams = [buildTeam(id: 'local-team', name: 'Local Team')];
+        final remoteTeams = [buildTeam(id: 'remote-team', name: 'Remote Team')];
+        final remoteCompleter = Completer<List<TeamEntity>>();
+        final emittedStates = <TeamState>[];
+
+        repository.getLocalOnlyHandler = () async => localTeams;
+        repository.getAllByUserIdHandler = (_) => remoteCompleter.future;
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(const LoadTeamsByUserIdEvent('user-42'));
+        await pumpEventQueue();
+
+        expect(
+          emittedStates.first,
+          isA<TeamsLoaded>().having(
+            (state) => state.teams,
+            'local teams',
+            localTeams,
+          ),
+        );
+
+        remoteCompleter.complete(remoteTeams);
+        await pumpEventQueue(times: 20);
+
+        expect(repository.getAllByUserIdCalls, ['user-42']);
+        expect(
+          emittedStates.last,
+          isA<TeamsLoaded>().having(
+            (state) => state.teams,
+            'remote teams',
+            remoteTeams,
+          ),
+        );
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
+      'LoadTeamByIdEvent emits cached team before refreshed details',
+      () async {
+        final cachedTeam = buildTeam(id: 'team-1', name: 'Cached');
+        final remoteTeam = buildTeam(id: 'team-1', name: 'Remote');
+        final emittedStates = <TeamState>[];
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        repository.getLocalOnlyHandler = () async => [cachedTeam];
+        repository.getAllHandler = () async => [cachedTeam];
+        repository.getByIdHandler = (_) async => remoteTeam;
+
+        bloc.add(LoadTeamsEvent());
+        await pumpEventQueue(times: 20);
+        emittedStates.clear();
+
+        bloc.add(const LoadTeamByIdEvent('team-1'));
+        await pumpEventQueue(times: 20);
+
+        expect(emittedStates.first, isA<TeamLoaded>());
+        expect((emittedStates.first as TeamLoaded).team.name, 'Cached');
+        expect(emittedStates.last, isA<TeamLoaded>());
+        expect((emittedStates.last as TeamLoaded).team.name, 'Remote');
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
       'CreateTeamEvent creates team by user and persists optimistic cache',
       () async {
         final createdTeam = buildTeam(id: 'team-created', name: 'Created Team');
@@ -291,6 +364,39 @@ void main() {
         expect(repository.deleteCalls, ['team-1']);
         expect(teamLocalDataSource.savedSnapshots, isNotEmpty);
         expect(teamLocalDataSource.savedSnapshots.last, isEmpty);
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
+      'DeleteTeamEvent rolls back cached teams when repository delete fails',
+      () async {
+        final localTeam = buildTeam(id: 'team-1', name: 'Original');
+        final emittedStates = <TeamState>[];
+
+        repository.getLocalOnlyHandler = () async => [localTeam];
+        repository.getAllHandler = () async => [localTeam];
+        repository.deleteHandler = (_) =>
+            Future<bool>.error(Exception('delete failed'));
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(LoadTeamsEvent());
+        await pumpEventQueue(times: 20);
+        emittedStates.clear();
+
+        bloc.add(const DeleteTeamEvent('team-1'));
+        await pumpEventQueue(times: 40);
+
+        expect(emittedStates.first, isA<TeamDeleted>());
+        expect(emittedStates.whereType<TeamError>(), isNotEmpty);
+        expect(emittedStates.last, isA<TeamsLoaded>());
+        expect(
+          emittedStates.whereType<TeamsLoaded>().last.teams.single.id,
+          'team-1',
+        );
+        expect(bloc.state, isA<TeamsLoaded>());
+        expect(teamLocalDataSource.savedSnapshots.last.single.id, 'team-1');
 
         await subscription.cancel();
       },

@@ -543,9 +543,8 @@ class _PendingNotificationTile extends StatelessWidget {
         return 'Owner';
       case 'ADMIN':
         return 'Admin';
-      case 'VIEWER':
-        return 'Viewer';
       case 'MEMBER':
+      case 'VIEWER':
       default:
         return 'Member';
     }

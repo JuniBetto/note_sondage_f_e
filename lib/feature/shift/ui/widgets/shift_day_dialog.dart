@@ -541,6 +541,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
   required DateTime date,
   required List<ShiftProfileEntity> profiles,
   ShiftAssignmentEntity? existing,
+  String? initialTeamId,
   bool canManagePublicShifts = false,
   bool canRequestPublicShiftChanges = false,
   bool hasPendingPublicShiftChangeRequest = false,
@@ -554,6 +555,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
     date: date,
     profiles: profiles,
     existing: existing,
+    initialTeamId: initialTeamId,
     canManagePublicShifts: canManagePublicShifts,
     canRequestPublicShiftChanges: canRequestPublicShiftChanges,
     hasPendingPublicShiftChangeRequest: hasPendingPublicShiftChangeRequest,
@@ -587,6 +589,7 @@ class _ShiftDaySheet extends StatefulWidget {
     required this.date,
     required this.profiles,
     this.existing,
+    this.initialTeamId,
     this.canManagePublicShifts = false,
     this.canRequestPublicShiftChanges = false,
     this.hasPendingPublicShiftChangeRequest = false,
@@ -598,6 +601,7 @@ class _ShiftDaySheet extends StatefulWidget {
   final DateTime date;
   final List<ShiftProfileEntity> profiles;
   final ShiftAssignmentEntity? existing;
+  final String? initialTeamId;
   final bool canManagePublicShifts;
   final bool canRequestPublicShiftChanges;
   final bool hasPendingPublicShiftChangeRequest;
@@ -830,6 +834,15 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       _alarmOffsets = [-30, -15];
       _isPublic = false;
       _rangeEndDate = widget.date;
+      final initialTeamId = widget.initialTeamId?.trim();
+      if (initialTeamId != null && initialTeamId.isNotEmpty) {
+        _selectedTeam = widget.ownerTeams
+            .where((team) => team.team.id == initialTeamId)
+            .firstOrNull;
+        if (_selectedTeam != null) {
+          unawaited(_ensureTeamMembersLoaded(_selectedTeam));
+        }
+      }
     }
     _requestModeActive = false;
     // Non-owners cannot edit existing public shifts

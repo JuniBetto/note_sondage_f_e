@@ -55,9 +55,10 @@ class _AddUserWebState extends State<AddUserWeb> {
   }
 
   List<RoleEntity> _assignableRoles(List<RoleEntity> roles) {
-    return roles
-        .where((role) => (role.id ?? '').trim().toUpperCase() != 'OWNER')
-        .toList();
+    return roles.where((role) {
+      final normalizedRoleId = (role.id ?? '').trim().toUpperCase();
+      return normalizedRoleId != 'OWNER' && normalizedRoleId != 'VIEWER';
+    }).toList();
   }
 
   @override

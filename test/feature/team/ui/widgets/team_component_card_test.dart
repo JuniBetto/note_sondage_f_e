@@ -18,6 +18,7 @@ void main() {
             teamId: 'team-1',
             members: buildTeamMembersViewData(),
             memberCount: 3,
+            canManageTeam: true,
           ),
         ),
       );
@@ -31,8 +32,9 @@ void main() {
       expect(find.byIcon(Icons.delete_forever_outlined), findsNothing);
     });
 
-    testWidgets('shows delete confirmation and calls callback for owners',
-        (tester) async {
+    testWidgets('shows delete confirmation and calls callback for owners', (
+      tester,
+    ) async {
       String? deletedTeamId;
 
       await tester.pumpWidget(
@@ -63,8 +65,9 @@ void main() {
       expect(deletedTeamId, 'team-delete');
     });
 
-    testWidgets('navigates to update team route when edit is tapped',
-        (tester) async {
+    testWidgets('navigates to update team route when edit is tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildRouterTestApp(
           child: TeamComponentCard(
@@ -74,6 +77,7 @@ void main() {
             teamFocus: 'UI system',
             teamId: 'team-22',
             members: buildTeamMembersViewData(),
+            canManageTeam: true,
           ),
         ),
       );

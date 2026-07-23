@@ -84,7 +84,7 @@ class TeamSectionPermissions {
 
   factory TeamSectionPermissions.readOnly() {
     return const TeamSectionPermissions(
-      roleCode: 'VIEWER',
+      roleCode: 'MEMBER',
       canEditTeamBasics: false,
       canEditTeamColor: false,
       canManageClockingSettings: false,
@@ -300,11 +300,17 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
     }
   }
 
-  List<RoleEntity> get _assignableRoles =>
-      _roles.where((role) => !_isOwnerRole(role.id)).toList();
+  List<RoleEntity> get _assignableRoles => _roles
+      .where(
+        (role) => !_isOwnerRole(role.id) && !_isDeprecatedViewerRole(role.id),
+      )
+      .toList();
 
   bool _isOwnerRole(String? roleCode) =>
       (roleCode ?? '').trim().toUpperCase() == 'OWNER';
+
+  bool _isDeprecatedViewerRole(String? roleCode) =>
+      (roleCode ?? '').trim().toUpperCase() == 'VIEWER';
 
   Future<void> _deleteMember(String memberId) async {
     final existingIndex = _members.indexWhere(
@@ -359,7 +365,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
   void _updatePermissions(List<TeamMemberEntity> members) {
     if (widget.forceReadOnly) {
       const readOnlyPermissions = TeamSectionPermissions(
-        roleCode: 'VIEWER',
+        roleCode: 'MEMBER',
         canEditTeamBasics: false,
         canEditTeamColor: false,
         canManageClockingSettings: false,
@@ -416,7 +422,7 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
               (member) => member.userEmail.trim().toLowerCase() == currentEmail,
             )
             .firstOrNull;
-    final roleCode = (currentMember?.roleId ?? 'VIEWER').trim().toUpperCase();
+    final roleCode = _normalizeRoleCode(currentMember?.roleId);
     final role = _roles.where((item) => item.id == roleCode).firstOrNull;
     final normalizedPermissions = _normalizePermissions(
       roleCode,
@@ -768,6 +774,14 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         current.canManageRoleDefinitions == next.canManageRoleDefinitions &&
         current.canAccessRoleManager == next.canAccessRoleManager;
   }
+
+  String _normalizeRoleCode(String? roleCode) {
+    final normalized = (roleCode ?? '').trim().toUpperCase();
+    if (normalized.isEmpty) {
+      return 'MEMBER';
+    }
+    return normalized == 'VIEWER' ? 'MEMBER' : normalized;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -888,11 +902,17 @@ class _MemberRow extends StatelessWidget {
     required this.onEditPlanningConstraints,
   });
 
-  List<RoleEntity> get _editableRoles =>
-      roles.where((role) => !_isOwnerRole(role.id)).toList();
+  List<RoleEntity> get _editableRoles => roles
+      .where(
+        (role) => !_isOwnerRole(role.id) && !_isDeprecatedViewerRole(role.id),
+      )
+      .toList();
 
   bool _isOwnerRole(String? roleCode) =>
       (roleCode ?? '').trim().toUpperCase() == 'OWNER';
+
+  bool _isDeprecatedViewerRole(String? roleCode) =>
+      (roleCode ?? '').trim().toUpperCase() == 'VIEWER';
 
   @override
   Widget build(BuildContext context) {
@@ -1381,6 +1401,9 @@ class _InviteForm extends StatelessWidget {
   bool _isOwnerRole(String? roleCode) =>
       (roleCode ?? '').trim().toUpperCase() == 'OWNER';
 
+  bool _isDeprecatedViewerRole(String? roleCode) =>
+      (roleCode ?? '').trim().toUpperCase() == 'VIEWER';
+
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
@@ -1431,13 +1454,20 @@ class _InviteForm extends StatelessWidget {
                     size: 18,
                     color: theme.colorScheme.cursorColor,
                   ),
-                  items: roles.where((role) => !_isOwnerRole(role.id)).toList(),
+                  items: roles
+                      .where(
+                        (role) =>
+                            !_isOwnerRole(role.id) &&
+                            !_isDeprecatedViewerRole(role.id),
+                      )
+                      .toList(),
                   value: roleController.text.isEmpty
                       ? null
                       : roles
                             .where(
                               (role) =>
                                   !_isOwnerRole(role.id) &&
+                                  !_isDeprecatedViewerRole(role.id) &&
                                   role.id == roleController.text,
                             )
                             .firstOrNull,

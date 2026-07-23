@@ -183,7 +183,7 @@ GoRouter createRouter(BuildContext context) {
               pageBuilder: (context, state) => NoTransitionPage<void>(
                 child: UpdateTeamWeb(
                   teamId: state.extra as String?,
-                  readOnly: true,
+                  readOnly: false,
                 ),
               ),
             ),
