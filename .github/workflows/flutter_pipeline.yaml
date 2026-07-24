@@ -233,7 +233,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Remove old Gemfile.lock
-        run: rm -f Gemfile.lock
+        run: rm -f fastlane/Gemfile.lock
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -249,6 +249,8 @@ jobs:
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_GEMFILE: fastlane/Gemfile
         with:
           ruby-version: "3.2"
           bundler-cache: true
@@ -281,7 +283,7 @@ jobs:
           FLUTTER_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
           FLUTTER_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
           PLAY_STORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-        run: bundle exec fastlane android internal
+        run: BUNDLE_GEMFILE=fastlane/Gemfile bundle exec fastlane android internal
 
 
 
@@ -296,7 +298,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Remove old Gemfile.lock
-        run: rm -f Gemfile.lock
+        run: rm -f fastlane/Gemfile.lock
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -306,6 +308,8 @@ jobs:
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_GEMFILE: fastlane/Gemfile
         with:
           ruby-version: "3.2"
           bundler-cache: true
@@ -373,4 +377,4 @@ jobs:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-        run: bundle exec fastlane ios testflight
+        run: BUNDLE_GEMFILE=fastlane/Gemfile bundle exec fastlane ios testflight

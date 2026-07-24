@@ -16,7 +16,7 @@ Così eviti di inviare una build agli store a ogni push su `main`.
 
 ## File principali
 
-- [Gemfile](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/Gemfile)
+- [fastlane/Gemfile](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/fastlane/Gemfile)
 - [fastlane/Appfile](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/fastlane/Appfile)
 - [fastlane/Fastfile](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/fastlane/Fastfile)
 - [.github/workflows/flutter_pipeline.yaml](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/.github/workflows/flutter_pipeline.yaml)
@@ -128,7 +128,7 @@ Il job `Publish Android Internal Testing`:
 
 1. ricostruisce il keystore da GitHub Secrets
 2. genera `android/key.properties`
-3. esegue `bundle exec fastlane android internal`
+3. esegue `BUNDLE_GEMFILE=fastlane/Gemfile bundle exec fastlane android internal`
 4. carica l`AAB` su `Google Play Internal Testing`
 
 ### iOS
@@ -137,7 +137,7 @@ Il job `Publish iOS TestFlight`:
 
 1. ricostruisce certificato `.p12`
 2. installa il provisioning profile
-3. esegue `bundle exec fastlane ios testflight`
+3. esegue `BUNDLE_GEMFILE=fastlane/Gemfile bundle exec fastlane ios testflight`
 4. carica l`IPA` su `TestFlight`
 
 ## Come lanciare il publish
