@@ -45,6 +45,7 @@ import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 import '../feature/auth/domain/entities/auth_user_entity.dart';
 import '../feature/notification/inbox/notification_center_item.dart';
+import 'bloc/navigation_bloc/navigation_event.dart';
 
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
@@ -73,14 +74,21 @@ class _MainAppState extends State<MainApp> {
     );
     _localActionSubscription = getIt<LocalNotificationService>().actions.listen(
       (action) async {
-        await _handleLocalNotificationAction(action);
+        try {
+          await _handleLocalNotificationAction(action);
+        } catch (error, stackTrace) {
+          debugPrint(
+            '[MainApp] Failed to handle live local notification action: '
+            '$error\n$stackTrace',
+          );
+        }
       },
     );
-    unawaited(_drainPendingLocalNotificationActions());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
+      unawaited(_drainPendingLocalNotificationActions());
       _syncServicesForAuthState(getIt<AuthBloc>().state, resetCaches: true);
     });
   }
@@ -255,6 +263,7 @@ class _MainAppState extends State<MainApp> {
         position: TooltipActionPosition.inside,
       ),
       enableAutoScroll: true,
+      skipIfTargetNotPresent: true,
       blurValue: 1,
     );
     _showcaseView!
@@ -329,59 +338,66 @@ class _MainAppState extends State<MainApp> {
     if (!mounted) {
       return;
     }
-    await getIt<LocalNotificationService>().dismissDisplayedNotification(
-      action.notificationId,
-    );
-    // ── Shift alarm tap → naviga al turno ────────────────────────────────────
-    if (action.metadata['eventType'] == 'SHIFT_ALARM') {
-      final assignmentId = action.metadata['assignmentId'];
-      final shiftDateRaw = action.metadata['shiftDate'];
-      getIt<ShiftOpenIntentController>().queue(
-        assignmentId: assignmentId,
-        shiftDate: shiftDateRaw,
+    try {
+      await getIt<LocalNotificationService>().dismissDisplayedNotification(
+        action.notificationId,
       );
-      if (mounted) {
-        await NotificationNavigation.openShifts(context: context);
+      // ── Shift alarm tap → naviga al turno ──────────────────────────────────
+      if (action.metadata['eventType'] == 'SHIFT_ALARM') {
+        final assignmentId = action.metadata['assignmentId'];
+        final shiftDateRaw = action.metadata['shiftDate'];
+        getIt<ShiftOpenIntentController>().queue(
+          assignmentId: assignmentId,
+          shiftDate: shiftDateRaw,
+        );
+        if (mounted) {
+          await NotificationNavigation.openShifts(context: context);
+        }
+        return;
       }
-      return;
-    }
 
-    final item = NotificationCenterItem(
-      notificationId: action.notificationId,
-      eventType: action.metadata['eventType'] ?? '',
-      sourceService: action.metadata['sourceService'] ?? 'push',
-      title: action.metadata['title'] ?? '',
-      body: action.metadata['body'] ?? '',
-      occurredAt:
-          DateTime.tryParse(action.metadata['occurredAt'] ?? '') ??
-          DateTime.now(),
-      metadata: action.metadata,
-    );
+      final item = NotificationCenterItem(
+        notificationId: action.notificationId,
+        eventType: action.metadata['eventType'] ?? '',
+        sourceService: action.metadata['sourceService'] ?? 'push',
+        title: action.metadata['title'] ?? '',
+        body: action.metadata['body'] ?? '',
+        occurredAt:
+            DateTime.tryParse(action.metadata['occurredAt'] ?? '') ??
+            DateTime.now(),
+        metadata: action.metadata,
+      );
 
-    final actionId = action.actionId.trim();
-    final isDecisionAction =
-        actionId == 'accept_team_invite' ||
-        actionId == 'reject_team_invite' ||
-        actionId == 'approve_clocking_request' ||
-        actionId == 'reject_clocking_request';
+      final actionId = action.actionId.trim();
+      final isDecisionAction =
+          actionId == 'accept_team_invite' ||
+          actionId == 'reject_team_invite' ||
+          actionId == 'approve_clocking_request' ||
+          actionId == 'reject_clocking_request';
 
-    if (!isDecisionAction) {
-      final notificationCenterCubit = getIt<NotificationCenterCubit>();
-      notificationCenterCubit.consumeNotification(item.notificationId);
+      if (!isDecisionAction) {
+        final notificationCenterCubit = getIt<NotificationCenterCubit>();
+        notificationCenterCubit.consumeNotification(item.notificationId);
+        if (!mounted) return;
+        await NotificationNavigation.open(item, context: context);
+        return;
+      }
+
+      // ── Team invite / altri ───────────────────────────────────────────────
+      await getIt<NotificationCenterCubit>().handleActionIntent(
+        notificationId: action.notificationId,
+        actionId: actionId,
+        metadata: action.metadata,
+      );
       if (!mounted) return;
-      await NotificationNavigation.open(item, context: context);
-      return;
+      getIt<TeamBloc>().add(LoadTeamsEvent());
+      getIt<DashboardBloc>().add(RefreshDashboardEvent());
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[MainApp] Failed to handle local notification action '
+        '${action.notificationId}: $error\n$stackTrace',
+      );
     }
-
-    // ── Team invite / altri ───────────────────────────────────────────────────
-    await getIt<NotificationCenterCubit>().handleActionIntent(
-      notificationId: action.notificationId,
-      actionId: actionId,
-      metadata: action.metadata,
-    );
-    if (!mounted) return;
-    getIt<TeamBloc>().add(LoadTeamsEvent());
-    getIt<DashboardBloc>().add(RefreshDashboardEvent());
   }
 
   Future<void> _drainPendingLocalNotificationActions() async {
@@ -391,7 +407,14 @@ class _MainAppState extends State<MainApp> {
       if (!mounted) {
         return;
       }
-      await _handleLocalNotificationAction(action);
+      try {
+        await _handleLocalNotificationAction(action);
+      } catch (error, stackTrace) {
+        debugPrint(
+          '[MainApp] Failed to drain pending notification action '
+          '${action.notificationId}: $error\n$stackTrace',
+        );
+      }
     }
   }
 

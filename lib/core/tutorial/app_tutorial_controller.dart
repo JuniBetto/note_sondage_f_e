@@ -122,6 +122,24 @@ class AppTutorialController {
     await replay(context: context, keys: keys);
   }
 
+  static bool dismissActiveTutorialIfAny() {
+    if (!_tutorialsEnabled) {
+      return false;
+    }
+
+    try {
+      final showcase = ShowcaseView.get();
+      if (showcase.isShowcaseRunning) {
+        showcase.dismiss();
+        return true;
+      }
+    } catch (_) {
+      // Ignore missing showcase registrations on screens without tutorials.
+    }
+
+    return false;
+  }
+
   static Future<void> resetForUser(String? userId) async {
     final normalizedUserId = _normalizeUserId(userId);
     final prefix = '$_storagePrefix::$normalizedUserId::';
@@ -148,7 +166,17 @@ class AppTutorialController {
   }
 
   static List<GlobalKey> _attachedKeys(List<GlobalKey> keys) {
-    return keys.toSet().toList(growable: false);
+    return keys
+        .where((key) {
+          final context = key.currentContext;
+          if (context == null) {
+            return false;
+          }
+          final renderObject = context.findRenderObject();
+          return renderObject?.attached ?? false;
+        })
+        .toSet()
+        .toList(growable: false);
   }
 
   static bool get _tutorialsEnabled => true;

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
@@ -51,6 +52,14 @@ class TeamComponentCard extends StatefulWidget {
 }
 
 class _TeamComponentCardState extends State<TeamComponentCard> {
+  void _openUpdateTeam(BuildContext context) {
+    if (kIsWeb) {
+      context.go(RouterPaths.updateTeam, extra: widget.teamId);
+      return;
+    }
+    context.push(RouterPaths.updateTeam, extra: widget.teamId);
+  }
+
   bool _isHovered = false;
 
   Future<void> _confirmDelete(BuildContext context) async {
@@ -159,12 +168,8 @@ class _TeamComponentCardState extends State<TeamComponentCard> {
                                                   icon: Icons.edit,
                                                   color:
                                                       colorScheme.cursorColor!,
-                                                  onTap: () {
-                                                    context.go(
-                                                      RouterPaths.updateTeam,
-                                                      extra: widget.teamId,
-                                                    );
-                                                  },
+                                                  onTap: () =>
+                                                      _openUpdateTeam(context),
                                                 ),
                                               ActionOnUser(
                                                 iconSize: 18,

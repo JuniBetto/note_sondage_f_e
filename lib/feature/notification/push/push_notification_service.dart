@@ -403,16 +403,23 @@ class PushNotificationService {
   }
 
   void _handleMessage(RemoteMessage message) {
-    final notification = _emitNotification(message);
-    final notificationCenterCubit = getIt<NotificationCenterCubit>();
-    notificationCenterCubit.consumeNotification(notification.notificationId);
-    unawaited(
-      getIt<LocalNotificationService>().dismissDisplayedNotification(
-        notification.notificationId,
-      ),
-    );
-    final item = NotificationCenterItem.fromRealtime(notification);
-    unawaited(NotificationNavigation.open(item));
+    try {
+      final notification = _emitNotification(message);
+      final notificationCenterCubit = getIt<NotificationCenterCubit>();
+      notificationCenterCubit.consumeNotification(notification.notificationId);
+      unawaited(
+        getIt<LocalNotificationService>().dismissDisplayedNotification(
+          notification.notificationId,
+        ),
+      );
+      final item = NotificationCenterItem.fromRealtime(notification);
+      unawaited(NotificationNavigation.open(item));
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[PushNotificationService] Failed to handle notification tap: '
+        '$error\n$stackTrace',
+      );
+    }
   }
 
   RealtimeNotification _emitNotification(RemoteMessage message) {

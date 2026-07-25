@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
@@ -14,6 +17,8 @@ import 'package:note_sondage/ui/mobile/widgets/settings/settings_mobile.dart';
 import 'package:note_sondage/ui/widgets/navigation_bar.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
+import '../bloc/navigation_bloc/navigation_event.dart';
+
 class MainMobile extends StatefulWidget {
   const MainMobile({super.key});
 
@@ -22,6 +27,9 @@ class MainMobile extends StatefulWidget {
 }
 
 class _MainMobileState extends State<MainMobile> {
+  static const MethodChannel _lifecycleChannel = MethodChannel(
+    'com.arthbet.noteSondage/app_lifecycle',
+  );
   final GlobalKey _bodyKey = GlobalKey();
   final GlobalKey _navigationBarKey = GlobalKey();
 
@@ -62,39 +70,76 @@ class _MainMobileState extends State<MainMobile> {
       listener: (context, navIndex) {
         _scheduleTutorialForIndex(navIndex);
       },
-      child: Scaffold(
-        appBar: HeaderPage(
-          showBackButton: false,
-          title: switch (navBarItem) {
-            1 => loc.team,
-            2 => loc.settings,
-            3 => loc.clockingInOut,
-            4 => loc.sondageChat,
-            int() => loc.home,
-          },
-          closeAction: _supportsTutorial(navBarItem)
-              ? IconButton(
-                  tooltip: loc.reviewTutorial,
-                  onPressed: () => _replayTutorialForIndex(navBarItem),
-                  icon: const Icon(Icons.help_outline_rounded),
-                )
-              : null,
-        ),
-        backgroundColor: colorScheme.homePrimary,
-        body: _buildShowcase(
-          showcaseKey: _bodyKey,
-          title: _pageTitle(loc, navBarItem),
-          description: _pageDescription(context, navBarItem),
-          child: body,
-        ),
-        bottomNavigationBar: _buildShowcase(
-          showcaseKey: _navigationBarKey,
-          title: _navigationTitle(context, loc),
-          description: _navigationDescription(context),
-          child: const NavigationBarWidget(key: Key('mobile_navigation_bar')),
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) {
+            return;
+          }
+          unawaited(_handleAndroidBack());
+        },
+        child: Scaffold(
+          appBar: HeaderPage(
+            showBackButton: false,
+            title: switch (navBarItem) {
+              1 => loc.team,
+              2 => loc.settings,
+              3 => loc.clockingInOut,
+              4 => loc.sondageChat,
+              int() => loc.home,
+            },
+            closeAction: _supportsTutorial(navBarItem)
+                ? IconButton(
+                    tooltip: loc.reviewTutorial,
+                    onPressed: () => _replayTutorialForIndex(navBarItem),
+                    icon: const Icon(Icons.help_outline_rounded),
+                  )
+                : null,
+          ),
+          backgroundColor: colorScheme.homePrimary,
+          body: _buildShowcase(
+            showcaseKey: _bodyKey,
+            title: _pageTitle(loc, navBarItem),
+            description: _pageDescription(context, navBarItem),
+            child: body,
+          ),
+          bottomNavigationBar: _buildShowcase(
+            showcaseKey: _navigationBarKey,
+            title: _navigationTitle(context, loc),
+            description: _navigationDescription(context),
+            child: const NavigationBarWidget(key: Key('mobile_navigation_bar')),
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleAndroidBack() async {
+    if (Theme.of(context).platform != TargetPlatform.android) {
+      return;
+    }
+
+    if (AppTutorialController.dismissActiveTutorialIfAny()) {
+      return;
+    }
+
+    final navigator = Navigator.of(context, rootNavigator: true);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    final navBloc = context.read<NavigationBloc>();
+    if (navBloc.state != 0) {
+      navBloc.add(NavigationPositionChanged(0));
+      return;
+    }
+
+    final movedToBack =
+        await _lifecycleChannel.invokeMethod<bool>('moveTaskToBack') ?? false;
+    if (!movedToBack) {
+      await SystemNavigator.pop();
+    }
   }
 
   Widget _buildShowcase({

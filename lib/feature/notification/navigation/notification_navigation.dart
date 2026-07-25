@@ -14,6 +14,9 @@ import 'package:note_sondage/ui/app_keys.dart';
 class NotificationNavigation {
   const NotificationNavigation._();
 
+  static const Duration _navigationRetryDelay = Duration(milliseconds: 120);
+  static const int _navigationReadyAttempts = 12;
+
   static Future<void> open(
     NotificationCenterItem item, {
     BuildContext? context,
@@ -24,34 +27,35 @@ class NotificationNavigation {
       return;
     }
 
-    final sourceContext = context ?? navigatorKey.currentContext;
-    if (sourceContext == null || !sourceContext.mounted) {
+    final runtime = await _resolveNavigationRuntime(preferredContext: context);
+    if (runtime == null) {
+      debugPrint(
+        '[NotificationNavigation] Router not ready for '
+        '${item.notificationId} (${item.eventType}).',
+      );
       return;
     }
 
     if (closeOverlays) {
-      final rootNavigator = Navigator.of(sourceContext, rootNavigator: true);
+      final rootNavigator = Navigator.of(runtime.context, rootNavigator: true);
       if (rootNavigator.canPop()) {
         rootNavigator.pop();
       }
     }
 
-    await SchedulerBinding.instance.endOfFrame;
-    final navigationContext = navigatorKey.currentContext ?? sourceContext;
-    if (!navigationContext.mounted) {
-      return;
-    }
-    final router = GoRouter.of(navigationContext);
-    if (_openInsideMobileMainShell(destination, router)) {
+    if (_openInsideMobileMainShell(destination, runtime.router)) {
       return;
     }
 
     switch (destination.kind) {
       case _NotificationDestinationKind.path:
-        router.go(destination.path!);
+        runtime.router.go(destination.path!);
         return;
       case _NotificationDestinationKind.named:
-        router.goNamed(destination.routeName!, extra: destination.extra);
+        runtime.router.goNamed(
+          destination.routeName!,
+          extra: destination.extra,
+        );
         return;
     }
   }
@@ -87,14 +91,38 @@ class NotificationNavigation {
 
   /// Naviga direttamente alla pagina dei turni (usato per allarmi locali).
   static Future<void> openShifts({BuildContext? context}) async {
-    final sourceContext = context ?? navigatorKey.currentContext;
-    if (sourceContext == null || !sourceContext.mounted) return;
-    await SchedulerBinding.instance.endOfFrame;
-    final navigationContext = navigatorKey.currentContext ?? sourceContext;
-    if (!navigationContext.mounted) {
+    final runtime = await _resolveNavigationRuntime(preferredContext: context);
+    if (runtime == null) {
+      debugPrint('[NotificationNavigation] Router not ready for shifts.');
       return;
     }
-    GoRouter.of(navigationContext).go(RouterPaths.shifts);
+    runtime.router.go(RouterPaths.shifts);
+  }
+
+  static Future<_NavigationRuntime?> _resolveNavigationRuntime({
+    BuildContext? preferredContext,
+  }) async {
+    for (var attempt = 0; attempt < _navigationReadyAttempts; attempt++) {
+      await SchedulerBinding.instance.endOfFrame;
+
+      final navigationContext = navigatorKey.currentContext;
+      if (navigationContext != null && navigationContext.mounted) {
+        final router = GoRouter.maybeOf(navigationContext);
+        if (router != null) {
+          return _NavigationRuntime(navigationContext, router);
+        }
+      }
+
+      if (preferredContext != null && preferredContext.mounted) {
+        final router = GoRouter.maybeOf(preferredContext);
+        if (router != null) {
+          return _NavigationRuntime(preferredContext, router);
+        }
+      }
+
+      await Future<void>.delayed(_navigationRetryDelay);
+    }
+    return null;
   }
 
   static _NotificationDestination? _resolve(
@@ -230,4 +258,11 @@ class _NotificationDestination {
   final String? routeName;
   final Object? extra;
   final String? label;
+}
+
+class _NavigationRuntime {
+  const _NavigationRuntime(this.context, this.router);
+
+  final BuildContext context;
+  final GoRouter router;
 }

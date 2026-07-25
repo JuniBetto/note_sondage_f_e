@@ -430,6 +430,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       context: context,
       date: date,
       profiles: _profiles,
+      allTeams: _teams,
       existing: existing,
       initialTeamId: existing == null ? _selectedCalendarTeamId : null,
       canManagePublicShifts: existing == null
@@ -765,15 +766,6 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
 
     if (sortedAssignments.isEmpty) {
       await _openDialogForAssignment(context, date);
-      return;
-    }
-
-    if (sortedAssignments.length == 1) {
-      await _openDialogForAssignment(
-        context,
-        date,
-        existing: sortedAssignments.first,
-      );
       return;
     }
 

@@ -50,6 +50,10 @@ class _UpdateTeamMobileState extends State<UpdateTeamMobile> {
             child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           ),
           onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+              return;
+            }
             context.read<NavigationBloc>().add(NavigationPositionChanged(1));
             context.go(RouterPaths.home);
           },
@@ -65,7 +69,7 @@ class _UpdateTeamMobileState extends State<UpdateTeamMobile> {
               padding: const EdgeInsets.only(right: 8),
               child: IconButton(
                 onPressed: () {
-                  context.go(RouterPaths.rolePage, extra: widget.teamId);
+                  context.push(RouterPaths.rolePage, extra: widget.teamId);
                 },
                 icon: Container(
                   padding: const EdgeInsets.all(6),

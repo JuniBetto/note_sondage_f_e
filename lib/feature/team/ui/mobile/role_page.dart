@@ -64,6 +64,10 @@ class _RolePageState extends State<RolePage>
             child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           ),
           onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+              return;
+            }
             context.goNamed(RouterPaths.updateTeam, extra: widget.teamId);
           },
         ),
