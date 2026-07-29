@@ -62,12 +62,28 @@ android {
         )
     }
 
+    lint {
+        // Work around an AGP/lint crash on macOS release builds where
+        // MissingClass initializes AWT/Swing in a headless environment.
+        disable += setOf(
+            "InnerclassSeparator",
+            "Instantiatable",
+            "MissingClass",
+        )
+    }
+
     buildTypes {
         release {
             // Uses the release keystore when configured, otherwise keeps the
             // current debug fallback so local release builds do not break.
             signingConfig = signingConfigs.getByName(
                 if (hasReleaseKeystore) "release" else "debug"
+            )
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
             )
         }
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
+import 'package:showcaseview/src/showcase/showcase_service.dart';
 
 class AppTutorialController {
   AppTutorialController._();
@@ -41,15 +42,28 @@ class AppTutorialController {
       return;
     }
 
-    final attachedKeys = _attachedKeys(keys);
-    if (attachedKeys.isEmpty) {
+    final normalizedKeys = _normalizedKeys(keys);
+    if (normalizedKeys.isEmpty) {
       return;
     }
 
     _startedThisSession.add(sessionKey);
 
     try {
-      ShowcaseView.get().startShowCase(attachedKeys);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) {
+        _startedThisSession.remove(sessionKey);
+        return;
+      }
+      final mountedKeys = _mountedShowcaseKeys(normalizedKeys);
+      if (mountedKeys.isEmpty) {
+        _startedThisSession.remove(sessionKey);
+        debugPrint(
+          '[Tutorial] Skipped "$tutorialId": no mounted showcase targets found.',
+        );
+        return;
+      }
+      ShowcaseView.get().startShowCase(mountedKeys);
       await prefs.setBool(storageKey, true);
     } catch (error, stack) {
       _startedThisSession.remove(sessionKey);
@@ -71,6 +85,11 @@ class AppTutorialController {
     _registeredReplays[tutorialId] = action;
   }
 
+  static void unregisterTutorial(String tutorialId) {
+    _registeredTargets.remove(tutorialId);
+    _registeredReplays.remove(tutorialId);
+  }
+
   static Future<void> replay({
     required BuildContext context,
     required List<GlobalKey> keys,
@@ -82,20 +101,32 @@ class AppTutorialController {
       return;
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!context.mounted) {
         return;
       }
 
-      final attachedKeys = _attachedKeys(keys);
-      if (attachedKeys.isEmpty) {
-        debugPrint('[Tutorial] Replay skipped: no attached keys found.');
+      final normalizedKeys = _normalizedKeys(keys);
+      if (normalizedKeys.isEmpty) {
+        debugPrint('[Tutorial] Replay skipped: no registered keys found.');
+        return;
+      }
+
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) {
         return;
       }
 
       try {
+        final mountedKeys = _mountedShowcaseKeys(normalizedKeys);
+        if (mountedKeys.isEmpty) {
+          debugPrint(
+            '[Tutorial] Replay skipped: no mounted showcase targets found.',
+          );
+          return;
+        }
         final showcase = ShowcaseView.get();
-        showcase.startShowCase(attachedKeys);
+        showcase.startShowCase(mountedKeys);
       } catch (error, stack) {
         debugPrint('[Tutorial] Unable to replay tutorial: $error\n$stack');
       }
@@ -165,18 +196,33 @@ class AppTutorialController {
     return normalized;
   }
 
-  static List<GlobalKey> _attachedKeys(List<GlobalKey> keys) {
-    return keys
-        .where((key) {
-          final context = key.currentContext;
-          if (context == null) {
-            return false;
-          }
-          final renderObject = context.findRenderObject();
-          return renderObject?.attached ?? false;
-        })
-        .toSet()
-        .toList(growable: false);
+  static List<GlobalKey> _normalizedKeys(List<GlobalKey> keys) {
+    final normalized = <GlobalKey>[];
+    final seen = <GlobalKey>{};
+    for (final key in keys) {
+      if (seen.contains(key)) {
+        continue;
+      }
+      normalized.add(key);
+      seen.add(key);
+    }
+    return normalized;
+  }
+
+  static List<GlobalKey> _mountedShowcaseKeys(List<GlobalKey> keys) {
+    try {
+      final scope = ShowcaseView.get().scope;
+      final controllers = ShowcaseService.instance.getControllers(scope: scope);
+      final mountedKeys = <GlobalKey>[];
+      for (final key in keys) {
+        if (controllers[key]?.isNotEmpty ?? false) {
+          mountedKeys.add(key);
+        }
+      }
+      return mountedKeys;
+    } catch (_) {
+      return const <GlobalKey>[];
+    }
   }
 
   static bool get _tutorialsEnabled => true;

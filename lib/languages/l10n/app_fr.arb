@@ -392,6 +392,36 @@
     "visibleToTeamMembers": "Visible par tous les membres de l'équipe",
     "visibleOnlyToYou": "Visible uniquement par vous",
     "syncing": "Synchronisation",
+    "shiftEntriesForDate": "Quarts du {date}",
+    "@shiftEntriesForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "noArchivedShifts": "Aucun quart archivé.",
+    "openAction": "Ouvrir",
+    "restoreAction": "Restaurer",
+    "selectMonth": "Sélectionner le mois",
+    "selectYear": "Sélectionner l'année",
+    "shiftCalendarPublicAssignments": "{count, plural, =1{1 quart public visible pour l'équipe} other{{count} quarts publics visibles pour l'équipe}}",
+    "@shiftCalendarPublicAssignments": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shiftCalendarPrivateAssignments": "Quarts privés",
+    "shiftCalendarMoreEntries": "+{count} autres",
+    "@shiftCalendarMoreEntries": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "customProfile": "Profils personnalisés",
     "noShiftsThisMonth": "Aucun quart ce mois-ci",
     "systemProfile": "Profils système",

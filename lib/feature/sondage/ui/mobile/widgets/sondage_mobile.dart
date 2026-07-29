@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_display.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
@@ -73,7 +74,12 @@ class _SondageMobileState extends State<SondageMobile>
     });
   }
 
-  void _handleTabChange() => setState(() {});
+  void _handleTabChange() {
+    if (tabController.indexIsChanging) {
+      AppTutorialController.dismissActiveTutorialIfAny();
+    }
+    setState(() {});
+  }
 
   void _handleRealtimeRefresh(RealtimeNotification event) {
     if (!mounted || event.sourceService != 'sondage-service') {
@@ -245,6 +251,17 @@ class _SondageMobileState extends State<SondageMobile>
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
     final orientation = MediaQuery.orientationOf(context);
+    final availableTeamIds = context.select<TeamBloc, Set<String>?>((bloc) {
+      final state = bloc.state;
+      if (state is! TeamsLoaded) {
+        return null;
+      }
+      return state.teams
+          .map((team) => team.id?.trim())
+          .whereType<String>()
+          .where((teamId) => teamId.isNotEmpty)
+          .toSet();
+    });
 
     AppTutorialController.registerReplayAction(
       tutorialId: 'mobile-main-4',
@@ -252,6 +269,8 @@ class _SondageMobileState extends State<SondageMobile>
         context: context,
         tutorialId: tabController.index == 1
             ? 'mobile-sondage-create'
+            : tabController.index == 2
+            ? 'mobile-chat-list'
             : 'mobile-sondage-list',
       ),
     );
@@ -350,7 +369,10 @@ class _SondageMobileState extends State<SondageMobile>
                               sondages,
                               SondageStatus.completed,
                             );
-                            final filteredSondages = _filterSondages(sondages);
+                            final filteredSondages = _filterSondages(
+                              sondages,
+                              availableTeamIds,
+                            );
 
                             final summaryHeader = Showcase(
                               key: _summaryKey,
@@ -499,9 +521,11 @@ class _SondageMobileState extends State<SondageMobile>
                         ),
                         CreateSondageMobile(
                           onsondageCreated: _handleSondageCreated,
+                          enableTutorial: tabController.index == 1,
                         ),
                         ChatMobileTeamListPage(
                           initialTeamId: widget.initialChatTeamId,
+                          isActive: tabController.index == 2,
                         ),
                       ],
                     ),
@@ -537,9 +561,21 @@ class _SondageMobileState extends State<SondageMobile>
     return Localizations.localeOf(context).languageCode == 'it';
   }
 
-  List<SondageEntity> _filterSondages(List<SondageEntity> sondages) {
+  List<SondageEntity> _filterSondages(
+    List<SondageEntity> sondages,
+    Set<String>? availableTeamIds,
+  ) {
     final normalized = _searchQuery.trim().toLowerCase();
     return sondages.where((sondage) {
+      final normalizedTeamId = sondage.teamId?.trim();
+      final belongsToAvailableTeam =
+          availableTeamIds == null ||
+          normalizedTeamId == null ||
+          normalizedTeamId.isEmpty ||
+          availableTeamIds.contains(normalizedTeamId);
+      if (!belongsToAvailableTeam) {
+        return false;
+      }
       final matchesStatus =
           _selectedStatusFilter == null ||
           sondage.status == _selectedStatusFilter;

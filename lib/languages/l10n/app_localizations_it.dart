@@ -1218,6 +1218,45 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncing => 'Sincronizzazione';
 
   @override
+  String shiftEntriesForDate(String date) {
+    return 'Turni del $date';
+  }
+
+  @override
+  String get noArchivedShifts => 'Nessun turno archiviato.';
+
+  @override
+  String get openAction => 'Apri';
+
+  @override
+  String get restoreAction => 'Ripristina';
+
+  @override
+  String get selectMonth => 'Seleziona mese';
+
+  @override
+  String get selectYear => 'Seleziona anno';
+
+  @override
+  String shiftCalendarPublicAssignments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count turni pubblici visibili al team',
+      one: '1 turno pubblico visibile al team',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shiftCalendarPrivateAssignments => 'Turni privati';
+
+  @override
+  String shiftCalendarMoreEntries(int count) {
+    return '+$count altri';
+  }
+
+  @override
   String get customProfile => 'Profili personalizzati';
 
   @override

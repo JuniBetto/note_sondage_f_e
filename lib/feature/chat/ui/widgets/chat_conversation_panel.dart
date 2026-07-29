@@ -4,6 +4,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_ent
 import 'package:note_sondage/feature/chat/ui/widgets/chat_composer.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_draft_attachment.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_message_timeline.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class ChatConversationPanel extends StatelessWidget {
@@ -32,6 +33,12 @@ class ChatConversationPanel extends StatelessWidget {
     this.onDeleteRequested,
     this.replyTarget,
     this.onClearReplyPressed,
+    this.timelineShowcaseKey,
+    this.timelineShowcaseTitle,
+    this.timelineShowcaseDescription,
+    this.composerShowcaseKey,
+    this.composerShowcaseTitle,
+    this.composerShowcaseDescription,
   });
 
   final List<ChatMessageEntity> messages;
@@ -57,6 +64,12 @@ class ChatConversationPanel extends StatelessWidget {
   final ValueChanged<ChatMessageEntity>? onDeleteRequested;
   final ChatMessageReplyEntity? replyTarget;
   final VoidCallback? onClearReplyPressed;
+  final GlobalKey? timelineShowcaseKey;
+  final String? timelineShowcaseTitle;
+  final String? timelineShowcaseDescription;
+  final GlobalKey? composerShowcaseKey;
+  final String? composerShowcaseTitle;
+  final String? composerShowcaseDescription;
 
   @override
   Widget build(BuildContext context) {
@@ -82,42 +95,73 @@ class ChatConversationPanel extends StatelessWidget {
         children: [
           if (refreshingMessages) const LinearProgressIndicator(minHeight: 2),
           Expanded(
-            child: loadingMessages
-                ? const Center(child: CircularProgressIndicator())
-                : ChatMessageTimeline(
-                    messages: messages,
-                    scrollController: scrollController,
-                    compact: compact,
-                    accentColor: accentColor,
-                    selectedTeamName: selectedTeamName,
-                    loadingOlderMessages: loadingOlderMessages,
-                    hasMoreOlderMessages: hasMoreOlderMessages,
-                    onSenderPressed: onSenderPressed,
-                    onMessagePressed: onMessagePressed,
-                    onMessageLongPressed: onMessageLongPressed,
-                    onReplyRequested: onReplyRequested,
-                    onDeleteRequested: onDeleteRequested,
-                  ),
+            child: _buildShowcase(
+              showcaseKey: timelineShowcaseKey,
+              title: timelineShowcaseTitle,
+              description: timelineShowcaseDescription,
+              child: loadingMessages
+                  ? const Center(child: CircularProgressIndicator())
+                  : ChatMessageTimeline(
+                      messages: messages,
+                      scrollController: scrollController,
+                      compact: compact,
+                      accentColor: accentColor,
+                      selectedTeamName: selectedTeamName,
+                      loadingOlderMessages: loadingOlderMessages,
+                      hasMoreOlderMessages: hasMoreOlderMessages,
+                      onSenderPressed: onSenderPressed,
+                      onMessagePressed: onMessagePressed,
+                      onMessageLongPressed: onMessageLongPressed,
+                      onReplyRequested: onReplyRequested,
+                      onDeleteRequested: onDeleteRequested,
+                    ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.only(bottom: 2.0),
             child: const Divider(height: 1),
           ),
-          ChatComposer(
-            messageController: messageController,
-            compact: compact,
-            sending: sending,
-            accentColor: accentColor,
-            selectedAttachment: selectedAttachment,
-            replyTarget: replyTarget,
-            onPickImagePressed: onPickImagePressed,
-            onPickDocumentPressed: onPickDocumentPressed,
-            onClearAttachmentPressed: onClearAttachmentPressed,
-            onClearReplyPressed: onClearReplyPressed,
-            onSendPressed: onSendPressed,
+          _buildShowcase(
+            showcaseKey: composerShowcaseKey,
+            title: composerShowcaseTitle,
+            description: composerShowcaseDescription,
+            child: ChatComposer(
+              messageController: messageController,
+              compact: compact,
+              sending: sending,
+              accentColor: accentColor,
+              selectedAttachment: selectedAttachment,
+              replyTarget: replyTarget,
+              onPickImagePressed: onPickImagePressed,
+              onPickDocumentPressed: onPickDocumentPressed,
+              onClearAttachmentPressed: onClearAttachmentPressed,
+              onClearReplyPressed: onClearReplyPressed,
+              onSendPressed: onSendPressed,
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildShowcase({
+    required Widget child,
+    GlobalKey? showcaseKey,
+    String? title,
+    String? description,
+  }) {
+    if (showcaseKey == null ||
+        title == null ||
+        description == null ||
+        isInspectorSelectionActive) {
+      return child;
+    }
+
+    return Showcase(
+      key: showcaseKey,
+      title: title,
+      description: description,
+      child: child,
     );
   }
 }

@@ -65,157 +65,164 @@ class _ClockingMobileState extends State<ClockingMobile> {
       _scheduleTutorial();
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final pagePadding = EdgeInsets.all(useLandscapeCompactLayout ? 12 : 16);
-        final sectionSpacing = useLandscapeCompactLayout ? 10.0 : 16.0;
-        final cardPadding = useLandscapeCompactLayout ? 12.0 : 16.0;
-        final statusCard = Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(cardPadding),
-          decoration: BoxDecoration(
-            color: colorScheme.bgNavbarSurface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.blue.withValues(alpha: 0.15)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
+    return BlocListener<ClockingBloc, ClockingState>(
+      listener: (context, state) => _syncSelectedTeamFromState(state),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final pagePadding = EdgeInsets.all(
+            useLandscapeCompactLayout ? 12 : 16,
+          );
+          final sectionSpacing = useLandscapeCompactLayout ? 10.0 : 16.0;
+          final cardPadding = useLandscapeCompactLayout ? 12.0 : 16.0;
+          final statusCard = Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(cardPadding),
+            decoration: BoxDecoration(
+              color: colorScheme.bgNavbarSurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.15)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.timer_rounded,
+                        color: Colors.blue,
+                        size: 20,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.timer_rounded,
-                      color: Colors.blue,
-                      size: 20,
+                    const SizedBox(width: 10),
+                    Text(
+                      localization.clockingCurrentStatusTitle,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    localization.clockingCurrentStatusTitle,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[500],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                localization.clockingCurrentStatusDescription,
-                style: textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
-              ),
-              SizedBox(height: sectionSpacing),
-              StatusClocking(
-                isCompact: true,
-                selectedTeamId: _selectedTeamId,
-                selectedDate: _selectedDate,
-              ),
-            ],
-          ),
-        );
-        final actionSection = Center(
-          child: ButtonClocking(
-            isCompact: true,
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  localization.clockingCurrentStatusDescription,
+                  style: textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+                ),
+                SizedBox(height: sectionSpacing),
+                StatusClocking(
+                  isCompact: true,
+                  selectedTeamId: _selectedTeamId,
+                  selectedDate: _selectedDate,
+                ),
+              ],
+            ),
+          );
+          final actionSection = Center(
+            child: ButtonClocking(
+              isCompact: true,
+              selectedTeamId: _selectedTeamId,
+              selectedDate: _selectedDate,
+              onSelectedTeamChanged: (value) {
+                if (!mounted) return;
+                setState(() => _selectedTeamId = value);
+                context.read<ClockingBloc>().add(
+                  LoadClockingRecordsEvent(teamId: value),
+                );
+              },
+              onSelectedDateChanged: (value) {
+                if (!mounted) return;
+                setState(() => _selectedDate = value);
+              },
+            ),
+          );
+          final historySection = StatusClockInChangeView(
+            isMobile: true,
             selectedTeamId: _selectedTeamId,
             selectedDate: _selectedDate,
-            onSelectedTeamChanged: (value) {
-              if (!mounted) return;
-              setState(() => _selectedTeamId = value);
-              context.read<ClockingBloc>().add(
-                LoadClockingRecordsEvent(teamId: value),
-              );
-            },
-            onSelectedDateChanged: (value) {
-              if (!mounted) return;
-              setState(() => _selectedDate = value);
-            },
-          ),
-        );
-        final historySection = StatusClockInChangeView(
-          isMobile: true,
-          selectedTeamId: _selectedTeamId,
-          selectedDate: _selectedDate,
-        );
+          );
 
-        return SingleChildScrollView(
-          padding: pagePadding,
-          child: Column(
-            children: [
-              ClockingDateSelector(
-                selectedDate: _selectedDate,
-                calendarFormat: _calendarFormat,
-                onSelectedDateChanged: (value) {
-                  if (!mounted) return;
-                  setState(() => _selectedDate = _normalizeDate(value));
-                },
-                onFormatChanged: (value) {
-                  if (!mounted) return;
-                  setState(() => _calendarFormat = value);
-                },
-              ),
-              SizedBox(height: sectionSpacing),
-              // ═══════════════════════════════
-              // Status + Subtitle
-              // ═══════════════════════════════
-              _maybeWrapShowcase(
-                enabled: !useLandscapeCompactLayout,
-                key: _statusKey,
-                title: _isItalian(context) ? 'Stato attuale' : 'Current status',
-                description: _isItalian(context)
-                    ? 'Questa sezione ti mostra subito lo stato della tua timbratura e le informazioni principali della giornata.'
-                    : 'This section gives you an instant view of your clocking status and the main information for the current day.',
-                child: statusCard,
-              ),
-              SizedBox(height: sectionSpacing),
+          return SingleChildScrollView(
+            padding: pagePadding,
+            child: Column(
+              children: [
+                ClockingDateSelector(
+                  selectedDate: _selectedDate,
+                  calendarFormat: _calendarFormat,
+                  onSelectedDateChanged: (value) {
+                    if (!mounted) return;
+                    setState(() => _selectedDate = _normalizeDate(value));
+                  },
+                  onFormatChanged: (value) {
+                    if (!mounted) return;
+                    setState(() => _calendarFormat = value);
+                  },
+                ),
+                SizedBox(height: sectionSpacing),
+                // ═══════════════════════════════
+                // Status + Subtitle
+                // ═══════════════════════════════
+                _maybeWrapShowcase(
+                  enabled: !useLandscapeCompactLayout,
+                  key: _statusKey,
+                  title: _isItalian(context)
+                      ? 'Stato attuale'
+                      : 'Current status',
+                  description: _isItalian(context)
+                      ? 'Questa sezione ti mostra subito lo stato della tua timbratura e le informazioni principali della giornata.'
+                      : 'This section gives you an instant view of your clocking status and the main information for the current day.',
+                  child: statusCard,
+                ),
+                SizedBox(height: sectionSpacing),
 
-              // ═══════════════════════════════
-              // Action buttons — centered
-              // ═══════════════════════════════
-              _maybeWrapShowcase(
-                enabled: !useLandscapeCompactLayout,
-                key: _actionKey,
-                title: _isItalian(context)
-                    ? 'Azioni di timbratura'
-                    : 'Clocking actions',
-                description: _isItalian(context)
-                    ? 'Da qui puoi selezionare la squadra corretta e registrare entrata o uscita.'
-                    : 'Use this area to pick the right team and register your clock-in or clock-out.',
-                child: actionSection,
-              ),
+                // ═══════════════════════════════
+                // Action buttons — centered
+                // ═══════════════════════════════
+                _maybeWrapShowcase(
+                  enabled: !useLandscapeCompactLayout,
+                  key: _actionKey,
+                  title: _isItalian(context)
+                      ? 'Azioni di timbratura'
+                      : 'Clocking actions',
+                  description: _isItalian(context)
+                      ? 'Da qui puoi selezionare la squadra corretta e registrare entrata o uscita.'
+                      : 'Use this area to pick the right team and register your clock-in or clock-out.',
+                  child: actionSection,
+                ),
 
-              SizedBox(height: sectionSpacing),
+                SizedBox(height: sectionSpacing),
 
-              // ═══════════════════════════════
-              // Tracking section
-              // ═══════════════════════════════
-              _maybeWrapShowcase(
-                enabled: !useLandscapeCompactLayout,
-                key: _historyKey,
-                title: _isItalian(context)
-                    ? 'Storico timbrature'
-                    : 'Clocking history',
-                description: _isItalian(context)
-                    ? 'Qui puoi controllare i cambi di stato e lo storico filtrato anche per squadra.'
-                    : 'Review status changes and history here, including the records filtered by the selected team.',
-                child: historySection,
-              ),
-            ],
-          ),
-        );
-      },
+                // ═══════════════════════════════
+                // Tracking section
+                // ═══════════════════════════════
+                _maybeWrapShowcase(
+                  enabled: !useLandscapeCompactLayout,
+                  key: _historyKey,
+                  title: _isItalian(context)
+                      ? 'Storico timbrature'
+                      : 'Clocking history',
+                  description: _isItalian(context)
+                      ? 'Qui puoi controllare i cambi di stato e lo storico filtrato anche per squadra.'
+                      : 'Review status changes and history here, including the records filtered by the selected team.',
+                  child: historySection,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -235,6 +242,19 @@ class _ClockingMobileState extends State<ClockingMobile> {
         keys: <GlobalKey>[_statusKey, _actionKey, _historyKey],
       );
     });
+  }
+
+  void _syncSelectedTeamFromState(ClockingState state) {
+    final nextSelectedTeamId = switch (state) {
+      ClockingRecordsLoaded(:final selectedTeamId) => selectedTeamId,
+      ClockingActionInProgress(:final selectedTeamId) => selectedTeamId,
+      ClockingActionSuccess(:final selectedTeamId) => selectedTeamId,
+      _ => _selectedTeamId,
+    };
+    if (_selectedTeamId == nextSelectedTeamId) {
+      return;
+    }
+    setState(() => _selectedTeamId = nextSelectedTeamId);
   }
 
   bool _isItalian(BuildContext context) {

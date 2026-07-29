@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_conversation_page.dart';
-import 'package:note_sondage/feature/chat/ui/web/chat_web_page.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/mobile/shift_mobile_page.dart';
@@ -90,7 +89,9 @@ GoRouter createRouter(BuildContext context) {
                 path == RouterPaths.team ||
                 path == RouterPaths.clocking ||
                 path == RouterPaths.sondage ||
-                path == RouterPaths.shifts;
+                path == RouterPaths.shifts ||
+                path == RouterPaths.chat;
+            final isChatPage = path == RouterPaths.chat;
 
             // ═══ Sincronizza il NavigationBloc con l'URL corrente ═══
             // Fondamentale per i pulsanti back/forward del browser:
@@ -105,7 +106,22 @@ GoRouter createRouter(BuildContext context) {
             }
 
             return NoTransitionPage<void>(
-              child: MainWeb(child: isMainPage ? null : child),
+              child: MainWeb(
+
+                chatInitialTeamId: isChatPage
+                    ? state.uri.queryParameters['teamId']
+                    : null,
+                chatInitialMemberUserId: isChatPage
+                    ? state.uri.queryParameters['memberUserId']
+                    : null,
+                chatInitialMemberName: isChatPage
+                    ? state.uri.queryParameters['memberName']
+                    : null,
+                chatFocusLatestOnOpen:
+                    isChatPage &&
+                    state.uri.queryParameters['focus'] == 'latest',
+                child: isMainPage ? null : child,
+              ),
             );
           },
           routes: [
@@ -145,16 +161,8 @@ GoRouter createRouter(BuildContext context) {
             GoRoute(
               path: RouterPaths.chat,
               name: RouterPaths.chat,
-              pageBuilder: (context, state) => NoTransitionPage<void>(
-                child: ChatWebPage(
-                  initialTeamId: state.uri.queryParameters['teamId'],
-                  initialMemberUserId:
-                      state.uri.queryParameters['memberUserId'],
-                  initialMemberName: state.uri.queryParameters['memberName'],
-                  focusLatestOnOpen:
-                      state.uri.queryParameters['focus'] == 'latest',
-                ),
-              ),
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage<void>(child: SizedBox.shrink()),
             ),
             // Route secondarie — queste passano il child a MainWeb
             GoRoute(

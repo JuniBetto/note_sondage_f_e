@@ -72,6 +72,7 @@ import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/user/user_bloc.dart';
+import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -309,6 +310,8 @@ void _registerUseCases() {
 // ==================== BLOCS ====================
 
 void _registerBlocs() {
+  getIt.registerLazySingleton<NavigationBloc>(() => NavigationBloc());
+
   // Role - Singleton per condividere lo stato tra widget
   getIt.registerLazySingleton<RoleBloc>(
     () => RoleBloc(roleUseCase: getIt<RoleUseCase>()),

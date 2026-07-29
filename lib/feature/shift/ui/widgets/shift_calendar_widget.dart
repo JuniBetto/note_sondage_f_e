@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/theme/text_theme.dart';
 
@@ -274,21 +275,11 @@ class ShiftCalendarWidget extends StatelessWidget {
   }
 
   String _monthPickerTitle(BuildContext context) {
-    return switch (Localizations.localeOf(context).languageCode) {
-      'it' => 'Seleziona mese',
-      'fr' => 'Selectionner le mois',
-      'es' => 'Seleccionar mes',
-      _ => 'Select month',
-    };
+    return AppLocalizations.of(context)!.selectMonth;
   }
 
   String _yearPickerTitle(BuildContext context) {
-    return switch (Localizations.localeOf(context).languageCode) {
-      'it' => 'Seleziona anno',
-      'fr' => 'Selectionner l\'annee',
-      'es' => 'Seleccionar ano',
-      _ => 'Select year',
-    };
+    return AppLocalizations.of(context)!.selectYear;
   }
 }
 
@@ -350,6 +341,7 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -405,8 +397,8 @@ class _DayCell extends StatelessWidget {
                       const SizedBox(width: 1),
                       Tooltip(
                         message: publicCount > 0
-                            ? '$publicCount turno/i pubblico/i visibili al team'
-                            : 'Turni privati',
+                            ? loc.shiftCalendarPublicAssignments(publicCount)
+                            : loc.shiftCalendarPrivateAssignments,
                         child: Icon(
                           publicCount > 0 ? Icons.public : Icons.lock_outline,
                           size: 8,
@@ -503,7 +495,7 @@ class _DayCell extends StatelessWidget {
                   }),
                   if (hasMore)
                     Text(
-                      '+${assignments.length - 2} altri',
+                      loc.shiftCalendarMoreEntries(assignments.length - 2),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontSize: 8,
                         color: colorScheme.descriptionColor,

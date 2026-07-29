@@ -15,6 +15,32 @@ class ShiftAssignmentAccessPolicy {
     return normalizedTeamId(assignment.teamId) != null;
   }
 
+  static bool belongsToAvailableTeam(
+    ShiftAssignmentEntity assignment, {
+    required Iterable<String> availableTeamIds,
+  }) {
+    final assignmentTeamId = normalizedTeamId(assignment.teamId);
+    if (assignmentTeamId == null) {
+      return true;
+    }
+
+    final availableIds = availableTeamIds
+        .map((teamId) => normalizedTeamId(teamId))
+        .whereType<String>()
+        .toSet();
+    return availableIds.contains(assignmentTeamId);
+  }
+
+  static bool isVisibleWithAvailableTeams(
+    ShiftAssignmentEntity assignment, {
+    required Iterable<String> availableTeamIds,
+  }) {
+    return belongsToAvailableTeam(
+      assignment,
+      availableTeamIds: availableTeamIds,
+    );
+  }
+
   static bool isOwnedByCurrentUser(
     ShiftAssignmentEntity assignment, {
     required String currentUserId,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class ShiftAutoPlannerDialog extends StatefulWidget {
@@ -113,6 +115,7 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -197,26 +200,19 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
                 },
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedTeamId,
-                decoration: InputDecoration(
-                  labelText: _t(
-                    it: 'Team',
-                    en: 'Team',
-                    fr: 'Équipe',
-                    es: 'Equipo',
-                  ),
-                  border: const OutlineInputBorder(),
-                ),
-                items: widget.teams
+              ShiftCalendarTeamPicker(
+                teams: widget.teams
                     .where((entry) => entry.team.id != null)
-                    .map(
-                      (entry) => DropdownMenuItem<String>(
-                        value: entry.team.id!,
-                        child: Text(entry.team.name),
-                      ),
-                    )
                     .toList(),
+                selectedTeamId: _selectedTeamId,
+                includePersonalOption: false,
+                unselectedTitle: _t(
+                  it: 'Team',
+                  en: 'Team',
+                  fr: 'Équipe',
+                  es: 'Equipo',
+                ),
+                triggerSubtitle: loc.changeOrSearchTeam,
                 onChanged: (value) {
                   setState(() {
                     _selectedTeamId = value;

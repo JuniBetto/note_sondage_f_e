@@ -13,7 +13,8 @@ class ClockingPdfExportService {
     required List<ClockingRecordEntity> records,
     required String teamName,
     required String searchQuery,
-    required DateTime? selectedDate,
+    required DateTime startDate,
+    required DateTime endDate,
     required Set<ClockingStatus> selectedStatuses,
   }) async {
     final document = pw.Document(title: 'Clocking $teamName');
@@ -53,10 +54,17 @@ class ClockingPdfExportService {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _filterBadge('Ricerca', searchQuery.isEmpty ? 'Tutte' : searchQuery),
                     _filterBadge(
-                      'Data',
-                      selectedDate == null ? 'Tutte' : dateFormat.format(selectedDate),
+                      'Ricerca',
+                      searchQuery.isEmpty ? 'Tutte' : searchQuery,
+                    ),
+                    _filterBadge(
+                      'Intervallo',
+                      _formatDateRange(
+                        startDate: startDate,
+                        endDate: endDate,
+                        dateFormat: dateFormat,
+                      ),
                     ),
                     _filterBadge(
                       'Stato',
@@ -153,6 +161,23 @@ class ClockingPdfExportService {
         ),
       ),
     );
+  }
+
+  static String _formatDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    required DateFormat dateFormat,
+  }) {
+    final normalizedStart = DateTime(
+      startDate.year,
+      startDate.month,
+      startDate.day,
+    );
+    final normalizedEnd = DateTime(endDate.year, endDate.month, endDate.day);
+    if (normalizedStart == normalizedEnd) {
+      return dateFormat.format(normalizedStart);
+    }
+    return '${dateFormat.format(normalizedStart)} - ${dateFormat.format(normalizedEnd)}';
   }
 
   static String _statusLabel(ClockingStatus status) {

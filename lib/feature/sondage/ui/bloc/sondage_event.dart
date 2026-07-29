@@ -109,6 +109,15 @@ class RemoveCachedSondageEvent extends SondageEvent {
   List<Object?> get props => [id];
 }
 
+class RemoveSondagesForTeamEvent extends SondageEvent {
+  final String teamId;
+
+  const RemoveSondagesForTeamEvent(this.teamId);
+
+  @override
+  List<Object?> get props => [teamId];
+}
+
 class ResetSondageCacheEvent extends SondageEvent {
   const ResetSondageCacheEvent();
 }

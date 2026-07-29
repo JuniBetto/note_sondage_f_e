@@ -213,6 +213,15 @@ class DeleteClockingRecordEvent extends ClockingEvent {
   List<Object?> get props => [id];
 }
 
+class RemoveClockingRecordsForTeamEvent extends ClockingEvent {
+  final String teamId;
+
+  const RemoveClockingRecordsForTeamEvent(this.teamId);
+
+  @override
+  List<Object?> get props => [teamId];
+}
+
 class _ClockingRecordCommittedEvent extends ClockingEvent {
   final String previousId;
   final ClockingRecordEntity record;

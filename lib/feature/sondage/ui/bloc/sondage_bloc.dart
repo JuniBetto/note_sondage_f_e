@@ -38,6 +38,7 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     on<VoteSondageEvent>(_onVoteSondage);
     on<SyncCachedSondageEvent>(_onSyncCachedSondage);
     on<RemoveCachedSondageEvent>(_onRemoveCachedSondage);
+    on<RemoveSondagesForTeamEvent>(_onRemoveSondagesForTeam);
     on<_SondageCreateCommittedEvent>(_onSondageCreateCommitted);
     on<_SondageUpdateCommittedEvent>(_onSondageUpdateCommitted);
     on<_SondageDeleteCommittedEvent>(_onSondageDeleteCommitted);
@@ -411,6 +412,38 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
     }
     _cachedSondages = updated;
     _syncingSondageIds.remove(event.id);
+    await _persistCache();
+    emit(SondagesLoaded(_cachedSondages));
+  }
+
+  Future<void> _onRemoveSondagesForTeam(
+    RemoveSondagesForTeamEvent event,
+    Emitter<SondageState> emit,
+  ) async {
+    final normalizedTeamId = event.teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return;
+    }
+
+    final sourceSondages = _cachedSondages.isNotEmpty
+        ? List<SondageEntity>.from(_cachedSondages)
+        : await sondageLocalDataSource.getAll();
+    if (sourceSondages.isEmpty) {
+      return;
+    }
+
+    final removedIds = sourceSondages
+        .where((sondage) => sondage.teamId?.trim() == normalizedTeamId)
+        .map((sondage) => sondage.id)
+        .toSet();
+    if (removedIds.isEmpty) {
+      return;
+    }
+
+    _cachedSondages = sourceSondages
+        .where((sondage) => !removedIds.contains(sondage.id))
+        .toList();
+    _syncingSondageIds.removeWhere(removedIds.contains);
     await _persistCache();
     emit(SondagesLoaded(_cachedSondages));
   }

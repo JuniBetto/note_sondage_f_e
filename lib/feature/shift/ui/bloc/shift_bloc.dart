@@ -73,6 +73,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     on<UpdateShiftProfileEvent>(_onUpdateProfile);
     on<DeleteShiftProfileEvent>(_onDeleteProfile);
     on<LoadShiftAssignmentsEvent>(_onLoadAssignments);
+    on<RemoveAssignmentsForTeamEvent>(_onRemoveAssignmentsForTeam);
     on<ShiftAssignmentCreateCommittedEvent>(_onAssignmentCreateCommitted);
     on<ShiftAssignmentUpdateCommittedEvent>(_onAssignmentUpdateCommitted);
     on<ShiftAssignmentDeleteCommittedEvent>(_onAssignmentDeleteCommitted);
@@ -354,6 +355,29 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       if (_assignmentsRefreshKey == requestKey) {
         _assignmentsRefreshKey = null;
       }
+    }
+  }
+
+  Future<void> _onRemoveAssignmentsForTeam(
+    RemoveAssignmentsForTeamEvent event,
+    Emitter<ShiftState> emit,
+  ) async {
+    final teamId = event.teamId.trim();
+    if (teamId.isEmpty) {
+      return;
+    }
+
+    final nextAssignments = _cachedAssignments
+        .where((assignment) => assignment.teamId != teamId)
+        .toList();
+    if (nextAssignments.length == _cachedAssignments.length) {
+      return;
+    }
+
+    _cachedAssignments = nextAssignments;
+    await _localDataSource.saveAssignments(_cachedAssignments);
+    if (state is ShiftAssignmentsLoaded) {
+      emit(ShiftAssignmentsLoaded(_cachedAssignments));
     }
   }
 

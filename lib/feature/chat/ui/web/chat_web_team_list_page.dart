@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
@@ -16,7 +19,9 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class ChatWebTeamListPage extends StatefulWidget {
@@ -27,6 +32,9 @@ class ChatWebTeamListPage extends StatefulWidget {
 }
 
 class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
+  final GlobalKey _introKey = GlobalKey();
+  final GlobalKey _teamChannelsKey = GlobalKey();
+  final GlobalKey _directChatsKey = GlobalKey();
   final TeamUseCase _teamUseCase = GetIt.instance<TeamUseCase>();
   final TeamMemberUseCase _teamMemberUseCase =
       GetIt.instance<TeamMemberUseCase>();
@@ -37,11 +45,19 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
       const <String, ChatTeamConversationSummaryEntity>{};
   List<_DirectChatEntry> _directEntries = const <_DirectChatEntry>[];
   bool _loading = true;
+  bool _tutorialScheduled = false;
 
   @override
   void initState() {
     super.initState();
     unawaited(_loadTeams());
+  }
+
+  @override
+  void dispose() {
+    AppTutorialController.unregisterTutorial('web-chat-list');
+    AppTutorialController.unregisterTutorial('web-main-6');
+    super.dispose();
   }
 
   Future<void> _loadTeams() async {
@@ -200,6 +216,33 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
     context.go(path);
   }
 
+  void _handleTeamDeleted(String teamId) {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return;
+    }
+    final nextTeams = _teams
+        .where((team) => team.id?.trim() != normalizedTeamId)
+        .toList();
+    final nextDirectEntries = _directEntries
+        .where((entry) => entry.team.id?.trim() != normalizedTeamId)
+        .toList();
+    final hadSummary = _summaryByTeamId.containsKey(normalizedTeamId);
+    if (nextTeams.length == _teams.length &&
+        nextDirectEntries.length == _directEntries.length &&
+        !hadSummary) {
+      return;
+    }
+    final nextSummaries = Map<String, ChatTeamConversationSummaryEntity>.from(
+      _summaryByTeamId,
+    )..remove(normalizedTeamId);
+    setState(() {
+      _teams = nextTeams;
+      _summaryByTeamId = nextSummaries;
+      _directEntries = nextDirectEntries;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -223,110 +266,263 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            loc.chatChooseConversation,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            loc.chatListDescriptionWeb,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final cardWidth = constraints.maxWidth < 1120 ? 320.0 : 360.0;
+    _registerTutorials(context);
+    _scheduleTutorial();
 
-                return SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        loc.chatTeamChannels,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: [
-                          for (final team in _teams)
-                            if (team.id != null)
-                              SizedBox(
-                                width: cardWidth,
-                                child: ChatTeamListCard(
-                                  team: team,
-                                  compact: false,
-                                  summary: _summaryByTeamId[team.id!],
-                                  memberCountOverride: team.memberCount,
-                                  onTap: () => _openTeamConversation(team.id!),
-                                ),
-                              ),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      Text(
-                        loc.chatDirectChats,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      if (_directEntries.isEmpty)
-                        Text(
-                          loc.chatNoDirectContacts,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        )
-                      else
-                        Wrap(
-                          spacing: 16,
-                          runSpacing: 16,
-                          children: [
-                            for (final entry in _directEntries)
-                              SizedBox(
-                                width: cardWidth,
-                                child: ChatDirectListCard(
-                                  compact: false,
-                                  title: entry.displayName,
-                                  teamName: entry.team.name,
-                                  preview: entry.summary?.lastMessagePreview,
-                                  avatarUrl:
-                                      entry.summary?.participantAvatarUrl ??
-                                      entry.member.imageUrl,
-                                  unreadCount: entry.summary?.unreadCount ?? 0,
-                                  accentColor:
-                                      ChatThemeTokens.resolveTeamAccentColor(
-                                        entry.team.color,
-                                        theme.colorScheme.primary,
-                                      ),
-                                  onTap: () => _openDirectConversation(entry),
-                                ),
-                              ),
-                          ],
-                        ),
-                    ],
+    return BlocListener<TeamBloc, TeamState>(
+      listener: (context, state) {
+        if (state is TeamDeleted) {
+          _handleTeamDeleted(state.teamId);
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildShowcase(
+              showcaseKey: _introKey,
+              title: _introTitle(context),
+              description: _introDescription(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.chatChooseConversation,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                );
-              },
+                  const SizedBox(height: 8),
+                  Text(
+                    loc.chatListDescriptionWeb,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final cardWidth = constraints.maxWidth < 1120 ? 320.0 : 360.0;
+
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildShowcase(
+                          showcaseKey: _teamChannelsKey,
+                          title: _teamChannelsTitle(context),
+                          description: _teamChannelsDescription(context),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                loc.chatTeamChannels,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Wrap(
+                                spacing: 16,
+                                runSpacing: 16,
+                                children: [
+                                  for (final team in _teams)
+                                    if (team.id != null)
+                                      SizedBox(
+                                        width: cardWidth,
+                                        child: ChatTeamListCard(
+                                          team: team,
+                                          compact: false,
+                                          summary: _summaryByTeamId[team.id!],
+                                          memberCountOverride: team.memberCount,
+                                          onTap: () =>
+                                              _openTeamConversation(team.id!),
+                                        ),
+                                      ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        _buildShowcase(
+                          showcaseKey: _directChatsKey,
+                          title: _directChatsTitle(context),
+                          description: _directChatsDescription(context),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                loc.chatDirectChats,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              if (_directEntries.isEmpty)
+                                Text(
+                                  loc.chatNoDirectContacts,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                )
+                              else
+                                Wrap(
+                                  spacing: 16,
+                                  runSpacing: 16,
+                                  children: [
+                                    for (final entry in _directEntries)
+                                      SizedBox(
+                                        width: cardWidth,
+                                        child: ChatDirectListCard(
+                                          compact: false,
+                                          title: entry.displayName,
+                                          teamName: entry.team.name,
+                                          preview:
+                                              entry.summary?.lastMessagePreview,
+                                          avatarUrl:
+                                              entry
+                                                  .summary
+                                                  ?.participantAvatarUrl ??
+                                              entry.member.imageUrl,
+                                          unreadCount:
+                                              entry.summary?.unreadCount ?? 0,
+                                          accentColor:
+                                              ChatThemeTokens.resolveTeamAccentColor(
+                                                entry.team.color,
+                                                theme.colorScheme.primary,
+                                              ),
+                                          onTap: () =>
+                                              _openDirectConversation(entry),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  void _registerTutorials(BuildContext context) {
+    AppTutorialController.registerTargets(
+      tutorialId: 'web-chat-list',
+      keys: <GlobalKey>[_introKey, _teamChannelsKey, _directChatsKey],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-chat-list',
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[_introKey, _teamChannelsKey, _directChatsKey],
+      ),
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: 'web-main-6',
+      action: () => AppTutorialController.replayRegistered(
+        context: context,
+        tutorialId: 'web-chat-list',
+      ),
+    );
+  }
+
+  void _scheduleTutorial() {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: 'web-chat-list',
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[_introKey, _teamChannelsKey, _directChatsKey],
+      );
+    });
+  }
+
+  Widget _buildShowcase({
+    required GlobalKey showcaseKey,
+    required String title,
+    required String description,
+    required Widget child,
+  }) {
+    if (isInspectorSelectionActive) {
+      return child;
+    }
+
+    return Showcase(
+      key: showcaseKey,
+      title: title,
+      description: description,
+      child: child,
+    );
+  }
+
+  String _introTitle(BuildContext context) {
+    if (_isItalian(context)) {
+      return 'Panoramica chat';
+    }
+    return 'Chat overview';
+  }
+
+  String _introDescription(BuildContext context) {
+    if (_isItalian(context)) {
+      return 'Da qui puoi scegliere una conversazione del team o riaprire una chat diretta già esistente.';
+    }
+    return 'Start here to choose a team conversation or reopen an existing direct chat.';
+  }
+
+  String _teamChannelsTitle(BuildContext context) {
+    if (_isItalian(context)) {
+      return 'Canali del team';
+    }
+    return 'Team channels';
+  }
+
+  String _teamChannelsDescription(BuildContext context) {
+    if (_isItalian(context)) {
+      return 'Queste card mostrano i canali condivisi dei team con riepilogo e accesso rapido alla conversazione.';
+    }
+    return 'These cards show your shared team channels with a summary and quick access to each conversation.';
+  }
+
+  String _directChatsTitle(BuildContext context) {
+    if (_isItalian(context)) {
+      return 'Chat dirette';
+    }
+    return 'Direct chats';
+  }
+
+  String _directChatsDescription(BuildContext context) {
+    if (_isItalian(context)) {
+      return 'Qui trovi le conversazioni private già avviate con altri membri del team.';
+    }
+    return 'Here you can reopen private conversations already started with other team members.';
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }
 

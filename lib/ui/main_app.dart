@@ -19,6 +19,7 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/notification/preferences/notification_preferences_cubit.dart';
 import 'package:note_sondage/feature/notification/push/push_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/clocking_realtime_coordinator.dart';
+import 'package:note_sondage/feature/notification/navigation/notification_interaction_gate.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/sondage_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
@@ -45,7 +46,6 @@ import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 import '../feature/auth/domain/entities/auth_user_entity.dart';
 import '../feature/notification/inbox/notification_center_item.dart';
-import 'bloc/navigation_bloc/navigation_event.dart';
 
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
@@ -89,6 +89,7 @@ class _MainAppState extends State<MainApp> {
         return;
       }
       unawaited(_drainPendingLocalNotificationActions());
+      unawaited(NotificationNavigation.drainPending(context: context));
       _syncServicesForAuthState(getIt<AuthBloc>().state, resetCaches: true);
     });
   }
@@ -125,15 +126,26 @@ class _MainAppState extends State<MainApp> {
     final removedTeamId = teamDecision.teamIdToRemoveFromCache?.trim();
     if (removedTeamId != null && removedTeamId.isNotEmpty) {
       getIt<TeamBloc>().add(RemoveTeamFromCacheEvent(removedTeamId));
+      getIt<ShiftBloc>().add(RemoveAssignmentsForTeamEvent(removedTeamId));
+      getIt<SondageBloc>().add(RemoveSondagesForTeamEvent(removedTeamId));
+      getIt<ClockingBloc>().add(
+        RemoveClockingRecordsForTeamEvent(removedTeamId),
+      );
     }
     final selectedClockingTeamId = _selectedClockingTeamId(
       getIt<ClockingBloc>().state,
     );
+    final effectiveSelectedClockingTeamId =
+        removedTeamId != null &&
+            removedTeamId.isNotEmpty &&
+            selectedClockingTeamId?.trim() == removedTeamId
+        ? null
+        : selectedClockingTeamId;
     final clockingDecision = getIt<ClockingRealtimeCoordinator>()
         .resolveDecision(
           notification,
           currentUserId: currentUserId,
-          selectedTeamId: selectedClockingTeamId,
+          selectedTeamId: effectiveSelectedClockingTeamId,
         );
     final sondageDecision = getIt<SondageRealtimeCoordinator>().resolveDecision(
       notification,
@@ -164,12 +176,12 @@ class _MainAppState extends State<MainApp> {
     }
     if (removedTeamId != null && removedTeamId.isNotEmpty) {
       getIt<ClockingBloc>().add(
-        LoadClockingRecordsEvent(teamId: selectedClockingTeamId),
+        LoadClockingRecordsEvent(teamId: effectiveSelectedClockingTeamId),
       );
     }
     if (clockingDecision.refreshClocking) {
       getIt<ClockingBloc>().add(
-        LoadClockingRecordsEvent(teamId: selectedClockingTeamId),
+        LoadClockingRecordsEvent(teamId: effectiveSelectedClockingTeamId),
       );
     }
     if (clockingDecision.refreshDashboard) {
@@ -338,6 +350,14 @@ class _MainAppState extends State<MainApp> {
     if (!mounted) {
       return;
     }
+    final normalizedActionId = action.actionId.trim();
+    final claimKey = NotificationInteractionGate.tryClaimTap(
+      notificationId: action.notificationId,
+      actionId: normalizedActionId,
+    );
+    if (claimKey == null) {
+      return;
+    }
     try {
       await getIt<LocalNotificationService>().dismissDisplayedNotification(
         action.notificationId,
@@ -368,12 +388,11 @@ class _MainAppState extends State<MainApp> {
         metadata: action.metadata,
       );
 
-      final actionId = action.actionId.trim();
       final isDecisionAction =
-          actionId == 'accept_team_invite' ||
-          actionId == 'reject_team_invite' ||
-          actionId == 'approve_clocking_request' ||
-          actionId == 'reject_clocking_request';
+          normalizedActionId == 'accept_team_invite' ||
+          normalizedActionId == 'reject_team_invite' ||
+          normalizedActionId == 'approve_clocking_request' ||
+          normalizedActionId == 'reject_clocking_request';
 
       if (!isDecisionAction) {
         final notificationCenterCubit = getIt<NotificationCenterCubit>();
@@ -386,13 +405,14 @@ class _MainAppState extends State<MainApp> {
       // ── Team invite / altri ───────────────────────────────────────────────
       await getIt<NotificationCenterCubit>().handleActionIntent(
         notificationId: action.notificationId,
-        actionId: actionId,
+        actionId: normalizedActionId,
         metadata: action.metadata,
       );
       if (!mounted) return;
       getIt<TeamBloc>().add(LoadTeamsEvent());
       getIt<DashboardBloc>().add(RefreshDashboardEvent());
     } catch (error, stackTrace) {
+      NotificationInteractionGate.release(claimKey);
       debugPrint(
         '[MainApp] Failed to handle local notification action '
         '${action.notificationId}: $error\n$stackTrace',
@@ -453,7 +473,10 @@ class _MainAppState extends State<MainApp> {
     }
   }
 
-  void _handleLifecycleState(AppLifecycleBlocState state) {
+  void _handleLifecycleState(
+    BuildContext context,
+    AppLifecycleBlocState state,
+  ) {
     if (state.status != AppLifecycleStatusEnum.active) {
       return;
     }
@@ -466,6 +489,7 @@ class _MainAppState extends State<MainApp> {
 
     getIt<RealtimeNotificationService>().connect(authState.user.uid);
     unawaited(getIt<PushNotificationService>().syncDeviceRegistration());
+    unawaited(NotificationNavigation.drainPending(context: context));
   }
 
   String? _selectedClockingTeamId(ClockingState state) {
@@ -521,7 +545,7 @@ class _MainAppState extends State<MainApp> {
         BlocProvider<NotificationCenterCubit>.value(
           value: getIt<NotificationCenterCubit>(),
         ),
-        BlocProvider<NavigationBloc>(create: (context) => NavigationBloc()),
+        BlocProvider<NavigationBloc>.value(value: getIt<NavigationBloc>()),
         BlocProvider<SettingNavigationBloc>(
           create: (context) => SettingNavigationBloc(),
         ),
@@ -547,13 +571,40 @@ class _MainAppState extends State<MainApp> {
                         previous.user.uid != current.user.uid,
                     listener: (context, state) {
                       _syncServicesForAuthState(state, resetCaches: true);
+                      if (state.status == AuthStatus.authenticated &&
+                          state.user.uid.isNotEmpty) {
+                        unawaited(
+                          NotificationNavigation.drainPending(context: context),
+                        );
+                      }
                     },
                   ),
                   BlocListener<AppLifecycleBloc, AppLifecycleBlocState>(
                     listenWhen: (previous, current) =>
                         previous.status != current.status,
                     listener: (context, state) {
-                      _handleLifecycleState(state);
+                      _handleLifecycleState(context, state);
+                    },
+                  ),
+                  BlocListener<TeamBloc, TeamState>(
+                    listener: (context, state) {
+                      if (state is! TeamDeleted) {
+                        return;
+                      }
+                      final teamId = state.teamId.trim();
+                      if (teamId.isEmpty) {
+                        return;
+                      }
+                      getIt<ShiftBloc>().add(
+                        RemoveAssignmentsForTeamEvent(teamId),
+                      );
+                      getIt<SondageBloc>().add(
+                        RemoveSondagesForTeamEvent(teamId),
+                      );
+                      getIt<ClockingBloc>().add(
+                        RemoveClockingRecordsForTeamEvent(teamId),
+                      );
+                      getIt<DashboardBloc>().add(RefreshDashboardEvent());
                     },
                   ),
                 ],

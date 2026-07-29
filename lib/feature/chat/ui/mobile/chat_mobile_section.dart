@@ -37,6 +37,12 @@ class ChatMobileSection extends StatelessWidget {
     this.showTeamHeader = true,
     this.selectedTeamId,
     this.selectedTeamName,
+    this.timelineShowcaseKey,
+    this.timelineShowcaseTitle,
+    this.timelineShowcaseDescription,
+    this.composerShowcaseKey,
+    this.composerShowcaseTitle,
+    this.composerShowcaseDescription,
   });
 
   final String headerDescription;
@@ -67,6 +73,12 @@ class ChatMobileSection extends StatelessWidget {
   final bool showTeamHeader;
   final String? selectedTeamId;
   final String? selectedTeamName;
+  final GlobalKey? timelineShowcaseKey;
+  final String? timelineShowcaseTitle;
+  final String? timelineShowcaseDescription;
+  final GlobalKey? composerShowcaseKey;
+  final String? composerShowcaseTitle;
+  final String? composerShowcaseDescription;
 
   @override
   Widget build(BuildContext context) {
@@ -111,6 +123,12 @@ class ChatMobileSection extends StatelessWidget {
               onClearAttachmentPressed: onClearAttachmentPressed,
               onClearReplyPressed: onClearReplyPressed,
               onSendPressed: onSendPressed,
+              timelineShowcaseKey: timelineShowcaseKey,
+              timelineShowcaseTitle: timelineShowcaseTitle,
+              timelineShowcaseDescription: timelineShowcaseDescription,
+              composerShowcaseKey: composerShowcaseKey,
+              composerShowcaseTitle: composerShowcaseTitle,
+              composerShowcaseDescription: composerShowcaseDescription,
             ),
           ),
         ],

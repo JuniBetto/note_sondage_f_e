@@ -11,6 +11,7 @@ import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/auth/domain/entities/user_device_entity.dart';
+import 'package:note_sondage/feature/notification/navigation/notification_interaction_gate.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
@@ -220,11 +221,13 @@ class PushNotificationService {
       );
 
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        unawaited(_handleMessage(message));
+      });
 
       final initialMessage = await _messaging.getInitialMessage();
       if (initialMessage != null) {
-        _handleMessage(initialMessage);
+        await _handleMessage(initialMessage);
       }
 
       _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
@@ -385,7 +388,8 @@ class PushNotificationService {
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
-    _emitNotification(message);
+    final notification = _notificationFromMessage(message);
+    _controller.add(notification);
   }
 
   void _logFullPushTokens(PushDiagnosticsSnapshot snapshot) {
@@ -402,9 +406,16 @@ class PushNotificationService {
     );
   }
 
-  void _handleMessage(RemoteMessage message) {
+  Future<void> _handleMessage(RemoteMessage message) async {
+    String? claimKey;
     try {
-      final notification = _emitNotification(message);
+      final notification = _notificationFromMessage(message);
+      claimKey = NotificationInteractionGate.tryClaimTap(
+        notificationId: notification.notificationId,
+      );
+      if (claimKey == null) {
+        return;
+      }
       final notificationCenterCubit = getIt<NotificationCenterCubit>();
       notificationCenterCubit.consumeNotification(notification.notificationId);
       unawaited(
@@ -413,8 +424,11 @@ class PushNotificationService {
         ),
       );
       final item = NotificationCenterItem.fromRealtime(notification);
-      unawaited(NotificationNavigation.open(item));
+      await NotificationNavigation.open(item);
     } catch (error, stackTrace) {
+      if (claimKey != null) {
+        NotificationInteractionGate.release(claimKey);
+      }
       debugPrint(
         '[PushNotificationService] Failed to handle notification tap: '
         '$error\n$stackTrace',
@@ -422,7 +436,8 @@ class PushNotificationService {
     }
   }
 
-  RealtimeNotification _emitNotification(RemoteMessage message) {
+
+  RealtimeNotification _notificationFromMessage(RemoteMessage message) {
     final data = message.data;
     final notification = RealtimeNotification(
       notificationId:
@@ -446,7 +461,6 @@ class PushNotificationService {
             entry.key.toString(): entry.value.toString(),
       },
     );
-    _controller.add(notification);
     return notification;
   }
 

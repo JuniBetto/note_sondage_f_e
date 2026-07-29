@@ -9,6 +9,7 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
+import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/sondage/ui/web/widgets/create_sondage_web.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/responsive_grid_sondages.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
@@ -246,6 +247,17 @@ class _SondageWebState extends State<SondageWeb> {
         if (state is SondagesLoaded) {
           _lastSondages = state.sondages;
         }
+        final availableTeamIds = context.select<TeamBloc, Set<String>?>((bloc) {
+          final teamState = bloc.state;
+          if (teamState is! TeamsLoaded) {
+            return null;
+          }
+          return teamState.teams
+              .map((team) => team.id?.trim())
+              .whereType<String>()
+              .where((teamId) => teamId.isNotEmpty)
+              .toSet();
+        });
         final List<SondageEntity> sondages = state is SondagesLoaded
             ? state.sondages
             : _lastSondages;
@@ -259,7 +271,7 @@ class _SondageWebState extends State<SondageWeb> {
           sondages,
           SondageStatus.completed,
         );
-        final filteredSondages = _filterSondages(sondages);
+        final filteredSondages = _filterSondages(sondages, availableTeamIds);
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
@@ -491,9 +503,21 @@ class _SondageWebState extends State<SondageWeb> {
     return Localizations.localeOf(context).languageCode == 'it';
   }
 
-  List<SondageEntity> _filterSondages(List<SondageEntity> sondages) {
+  List<SondageEntity> _filterSondages(
+    List<SondageEntity> sondages,
+    Set<String>? availableTeamIds,
+  ) {
     final normalized = _searchQuery.trim().toLowerCase();
     return sondages.where((sondage) {
+      final normalizedTeamId = sondage.teamId?.trim();
+      final belongsToAvailableTeam =
+          availableTeamIds == null ||
+          normalizedTeamId == null ||
+          normalizedTeamId.isEmpty ||
+          availableTeamIds.contains(normalizedTeamId);
+      if (!belongsToAvailableTeam) {
+        return false;
+      }
       final matchesStatus =
           _selectedStatusFilter == null ||
           sondage.status == _selectedStatusFilter;

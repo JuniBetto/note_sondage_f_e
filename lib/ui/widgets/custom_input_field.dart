@@ -22,6 +22,7 @@ class CustomInputField extends StatefulWidget {
   final int? minLines;
   final int? maxLines;
   final bool enabled;
+  final bool toLowerCase;
   final String? Function(String?)? validator; // Funzione di validazione
   final void Function()? onSearchPressed; // Callback per il pulsante di ricerca
 
@@ -34,6 +35,7 @@ class CustomInputField extends StatefulWidget {
     this.isSearch = false, // Default: false
     this.isNumber = false, // Default: false
     this.enabled = true,
+    this.toLowerCase = true,
     this.validator,
     this.minLines,
     this.maxLines = 1,
@@ -46,6 +48,27 @@ class CustomInputField extends StatefulWidget {
 
 class _CustomInputFieldState extends State<CustomInputField> {
   bool _isObscured = true; // Stato per nascondere la password
+
+  // Metodo helper per calcolare i formattatori corretti senza andare in conflitto
+  List<TextInputFormatter> _getFormatters() {
+    if (widget.isNumber) {
+      return _kDigitsOnlyFormatter;
+    }
+
+    // Se non è un numero ed è richiesto il minuscolo, applica il formattatore
+    if (widget.toLowerCase) {
+      return [
+        TextInputFormatter.withFunction((oldValue, newValue) {
+          return newValue.copyWith(
+            text: newValue.text.toLowerCase(),
+            selection: newValue.selection,
+          );
+        }),
+      ];
+    }
+
+    return [];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,10 +87,11 @@ class _CustomInputFieldState extends State<CustomInputField> {
       keyboardType: widget.isNumber ? TextInputType.number : TextInputType.text,
 
       // Se è number, accetta solo cifre (usando la costante cached)
-      inputFormatters: widget.isNumber ? _kDigitsOnlyFormatter : [],
+      inputFormatters: _getFormatters(),
 
       // Funzione di validazione (gestisce bordo rosso e messaggio)
       validator: widget.validator,
+
 
       decoration: InputDecoration(
         hintText: widget.hintText,
@@ -135,6 +159,7 @@ class CustomTextFieldImmersive extends StatefulWidget {
   final Widget? suffixIcon;
   final TextEditingController controller;
   final Function(String)? onChanged;
+  final bool toLowerCase;
 
   const CustomTextFieldImmersive({
     super.key,
@@ -143,6 +168,7 @@ class CustomTextFieldImmersive extends StatefulWidget {
     required this.controller,
     this.suffixIcon,
     this.onChanged,
+    this.toLowerCase = true,
   });
 
   @override
@@ -170,12 +196,23 @@ class _CustomTextFieldImmersiveState extends State<CustomTextFieldImmersive> {
         ),
         controller: widget.controller,
         onChanged: widget.onChanged,
+        inputFormatters:  widget.toLowerCase
+            ? [
+          TextInputFormatter.withFunction((oldValue, newValue) {
+            return newValue.copyWith(
+              text: newValue.text.toLowerCase(), // Forza il minuscolo
+              selection: newValue.selection,     // Mantiene il cursore al suo posto
+            );
+          }),
+        ]
+            : null,
       ),
     );
   }
 }
 
 String? emailValidator(String? value) {
+
   if (value == null || value.isEmpty) {
     return 'Email is required';
   }

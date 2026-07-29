@@ -392,6 +392,36 @@
     "visibleToTeamMembers": "Visible to all team members",
     "visibleOnlyToYou": "Visible only to you",
     "syncing": "Syncing",
+    "shiftEntriesForDate": "Shifts for {date}",
+    "@shiftEntriesForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "noArchivedShifts": "No archived shifts.",
+    "openAction": "Open",
+    "restoreAction": "Restore",
+    "selectMonth": "Select month",
+    "selectYear": "Select year",
+    "shiftCalendarPublicAssignments": "{count, plural, =1{1 public team shift visible} other{{count} public team shifts visible}}",
+    "@shiftCalendarPublicAssignments": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shiftCalendarPrivateAssignments": "Private shifts",
+    "shiftCalendarMoreEntries": "+{count} more",
+    "@shiftCalendarMoreEntries": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "customProfile": "Custom Profiles",
     "noShiftsThisMonth": "No shifts this month",
     "systemProfile": "System Profiles",
