@@ -38,7 +38,7 @@ def shell_join(parts)
 end
 
 def export_options_plist_path
-  "ios/ExportOptions.plist"
+  File.expand_path("../ios/ExportOptions.plist", __dir__)
 end
 
 def export_options_team_id
@@ -97,7 +97,6 @@ platform :android do
     ])
 
     flutter_pub_get
-    ensure_export_options_plist!
 
     sh(
       shell_join(
@@ -147,6 +146,7 @@ platform :ios do
     )
 
     flutter_pub_get
+    ensure_export_options_plist!
 
     sh(
       shell_join(
@@ -157,7 +157,7 @@ platform :ios do
           "--release",
           "--build-name=#{flutter_build_name}",
           "--build-number=#{flutter_build_number}",
-          "--export-options-plist=#{export_options_plist_path}",
+          "--export-options-plist=#{Shellwords.escape(export_options_plist_path)}",
         ] + dart_define_args,
       ),
     )
