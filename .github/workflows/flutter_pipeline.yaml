@@ -360,9 +360,9 @@ jobs:
 
       - name: Create Custom ExportOptions.plist
         run: |
-          cat <<EOF > ExportOptions.plist
+          cat <<EOF > ios/ExportOptions.plist
           <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.EN">
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
               <key>destination</key>
@@ -381,7 +381,7 @@ jobs:
           </dict>
           </plist>
           EOF
-          cp ExportOptions.plist ios/ExportOptions.plist
+          ls -l ios/ExportOptions.plist
 
       - name: Extract Version from pubspec.yaml
         run: |
