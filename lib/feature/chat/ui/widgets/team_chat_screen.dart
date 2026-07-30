@@ -40,6 +40,13 @@ class TeamChatScreen extends StatefulWidget {
     this.layout = ChatScreenLayout.web,
     this.showTeamHeader = true,
     this.onConversationTitleChanged,
+    this.onContentReady,
+    this.timelineShowcaseKey,
+    this.timelineShowcaseTitle,
+    this.timelineShowcaseDescription,
+    this.composerShowcaseKey,
+    this.composerShowcaseTitle,
+    this.composerShowcaseDescription,
   });
 
   final String? initialTeamId;
@@ -48,6 +55,13 @@ class TeamChatScreen extends StatefulWidget {
   final ChatScreenLayout layout;
   final bool showTeamHeader;
   final ValueChanged<String?>? onConversationTitleChanged;
+  final VoidCallback? onContentReady;
+  final GlobalKey? timelineShowcaseKey;
+  final String? timelineShowcaseTitle;
+  final String? timelineShowcaseDescription;
+  final GlobalKey? composerShowcaseKey;
+  final String? composerShowcaseTitle;
+  final String? composerShowcaseDescription;
 
   @override
   State<TeamChatScreen> createState() => _TeamChatScreenState();
@@ -86,6 +100,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   bool _pendingForceLatestFocus = false;
   ChatDraftAttachment? _selectedAttachment;
   ChatMessageEntity? _replyTarget;
+  bool _didNotifyContentReady = false;
 
   bool get _sending => _pendingSendCount > 0;
 
@@ -1288,6 +1303,16 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       );
     }
 
+    if (!_didNotifyContentReady) {
+      _didNotifyContentReady = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        widget.onContentReady?.call();
+      });
+    }
+
     if (isMobileLayout) {
       return ChatMobileSection(
         headerDescription: _headerDescription(loc),
@@ -1318,6 +1343,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         onMessageLongPressed: _handleMessageLongPressed,
         onReplyRequested: _handleReplyRequested,
         onDeleteRequested: _handleDeleteRequested,
+        timelineShowcaseKey: widget.timelineShowcaseKey,
+        timelineShowcaseTitle: widget.timelineShowcaseTitle,
+        timelineShowcaseDescription: widget.timelineShowcaseDescription,
+        composerShowcaseKey: widget.composerShowcaseKey,
+        composerShowcaseTitle: widget.composerShowcaseTitle,
+        composerShowcaseDescription: widget.composerShowcaseDescription,
       );
     }
 
@@ -1350,6 +1381,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       onMessageLongPressed: _handleMessageLongPressed,
       onReplyRequested: _handleReplyRequested,
       onDeleteRequested: _handleDeleteRequested,
+      timelineShowcaseKey: widget.timelineShowcaseKey,
+      timelineShowcaseTitle: widget.timelineShowcaseTitle,
+      timelineShowcaseDescription: widget.timelineShowcaseDescription,
+      composerShowcaseKey: widget.composerShowcaseKey,
+      composerShowcaseTitle: widget.composerShowcaseTitle,
+      composerShowcaseDescription: widget.composerShowcaseDescription,
     );
   }
 }

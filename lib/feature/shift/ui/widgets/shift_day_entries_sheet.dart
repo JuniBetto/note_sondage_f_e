@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 enum ShiftDayEntriesActionType { createNew, openExisting }
@@ -23,7 +25,9 @@ Future<ShiftDayEntriesAction?> showShiftDayEntriesSheet({
   required bool canCreate,
   Set<String> syncingAssignmentIds = const <String>{},
 }) {
-  final dateLabel = '${date.day}/${date.month}/${date.year}';
+  final dateLabel = DateFormat.yMd(
+    Localizations.localeOf(context).toLanguageTag(),
+  ).format(date);
   return showModalBottomSheet<ShiftDayEntriesAction>(
     context: context,
     isScrollControlled: true,
@@ -52,6 +56,7 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final dialogBackground =
@@ -74,7 +79,7 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Turni del $dateLabel',
+              loc.shiftEntriesForDate(dateLabel),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -109,7 +114,10 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
                     context,
                   ).pop(const ShiftDayEntriesAction.create()),
                   icon: const Icon(Icons.add),
-                  label: const Text('Nuovo turno'),
+                  label: Text(loc.addShift),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.bgsecondary,
+                  ),
                 ),
               ),
             ],
@@ -128,11 +136,14 @@ class _AssignmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final appPrimary = colorScheme.primaryColor ?? colorScheme.primary;
     final icon = assignment.isPublic ? Icons.public : Icons.lock_outline;
-    final visibilityLabel = assignment.isPublic ? 'Pubblico' : 'Privato';
+    final visibilityLabel = assignment.isPublic
+        ? loc.publicProfile
+        : loc.privateProfile;
     final assignee = assignment.userName?.trim().isNotEmpty == true
         ? assignment.userName!
         : assignment.userId;
@@ -168,7 +179,7 @@ class _AssignmentTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      assignment.profileName ?? 'Turno',
+                      assignment.profileName ?? loc.shiftReportDefaultProfile,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -189,7 +200,7 @@ class _AssignmentTile extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            'Syncing',
+                            loc.syncing,
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: Colors.amber.shade900,
                               fontWeight: FontWeight.w700,

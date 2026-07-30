@@ -208,6 +208,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       description: event.team.description,
       createdByUserId: event.team.createdByUserId,
       clockingRequired: event.team.clockingRequired,
+      clockingRequiredStartDate: event.team.clockingRequiredStartDate,
       clockingReminderTime: event.team.clockingReminderTime,
       clockingMissingAlertTime: event.team.clockingMissingAlertTime,
       clockingOpenAlertTime: event.team.clockingOpenAlertTime,
@@ -310,7 +311,6 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     final rollbackTeams = List<TeamEntity>.from(_cachedTeams);
     _syncingTeamIds.add(event.id);
     _cachedTeams = _cachedTeams.where((team) => team.id != event.id).toList();
-    emit(TeamDeleted());
     emit(TeamsLoaded(_cachedTeams));
     unawaited(teamLocalDataSource.saveAll(_cachedTeams));
 
@@ -365,8 +365,11 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       return;
     }
 
-    final previousLength = _cachedTeams.length;
-    _cachedTeams = _cachedTeams.where((team) => team.id != teamId).toList();
+    final sourceTeams = _cachedTeams.isNotEmpty
+        ? List<TeamEntity>.from(_cachedTeams)
+        : await teamUseCase.getLocalTeams();
+    final previousLength = sourceTeams.length;
+    _cachedTeams = sourceTeams.where((team) => team.id != teamId).toList();
     _syncingTeamIds.remove(teamId);
 
     if (_cachedTeams.length == previousLength) {
@@ -375,6 +378,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
 
     await teamLocalDataSource.saveAll(_cachedTeams);
     emit(TeamsLoaded(_cachedTeams));
+    emit(TeamDeleted(teamId));
   }
 
   Future<void> _onTeamCreateCommitted(
@@ -443,6 +447,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
   ) async {
     _syncingTeamIds.remove(event.teamId);
     await teamLocalDataSource.saveAll(_cachedTeams);
+    emit(TeamDeleted(event.teamId));
     emit(TeamsLoaded(_cachedTeams));
   }
 
@@ -603,6 +608,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
           ? update.createdByUserId
           : (previous?.createdByUserId ?? ''),
       clockingRequired: update.clockingRequired,
+      clockingRequiredStartDate: update.clockingRequiredStartDate,
       clockingReminderTime: update.clockingReminderTime,
       clockingMissingAlertTime: update.clockingMissingAlertTime,
       clockingOpenAlertTime: update.clockingOpenAlertTime,

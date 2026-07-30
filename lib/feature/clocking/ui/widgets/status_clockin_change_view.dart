@@ -16,6 +16,7 @@ import 'package:note_sondage/feature/team/domain/use_case/team_member/team_membe
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/theme/text_theme.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
@@ -47,7 +48,8 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   late final TextEditingController _inlineClockInController;
   late final TextEditingController _inlineClockOutController;
   late final TextEditingController _inlineBreakController;
-  DateTime? _selectedDateFilter;
+  late DateTime _startDateFilter;
+  late DateTime _endDateFilter;
   String? _selectedUserIdFilter;
   final Set<ClockingStatus> _selectedStatusFilters = <ClockingStatus>{};
   Set<String> _archivedRecordIds = <String>{};
@@ -59,13 +61,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   @override
   void initState() {
     super.initState();
-    _selectedDateFilter = widget.selectedDate == null
-        ? null
-        : DateTime(
-            widget.selectedDate!.year,
-            widget.selectedDate!.month,
-            widget.selectedDate!.day,
-          );
+    _syncDateRangeFiltersWithSelectedDate();
     _searchController = TextEditingController();
     _inlineClockInController = TextEditingController();
     _inlineClockOutController = TextEditingController();
@@ -99,16 +95,19 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     }
     if (!_isSameDayOrNull(oldWidget.selectedDate, widget.selectedDate)) {
       setState(() {
-        _selectedDateFilter = widget.selectedDate == null
-            ? null
-            : DateTime(
-                widget.selectedDate!.year,
-                widget.selectedDate!.month,
-                widget.selectedDate!.day,
-              );
+        _syncDateRangeFiltersWithSelectedDate();
       });
     }
   }
+
+  void _syncDateRangeFiltersWithSelectedDate() {
+    final defaultDate = _defaultFilterDate;
+    _startDateFilter = defaultDate;
+    _endDateFilter = defaultDate;
+  }
+
+  DateTime get _defaultFilterDate =>
+      _normalizeDate(widget.selectedDate ?? DateTime.now());
 
   Future<void> _loadArchivedRecords() async {
     final archived = await _archiveService.loadArchivedIds(
@@ -181,9 +180,6 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final localization = AppLocalizations.of(context)!;
-    final dateFilterLabel = _selectedDateFilter == null
-        ? localization.allDates
-        : DateFormat('dd/MM/yyyy').format(_selectedDateFilter!);
 
     final content = Container(
       padding: const EdgeInsets.all(16),
@@ -397,7 +393,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           onSearchPressed: () => setState(() {}),
                         ),
                         const SizedBox(height: 12),
-                        _buildDateFilterButton(theme, dateFilterLabel),
+                        _buildDateRangeFilters(theme),
                         const SizedBox(height: 12),
                         _buildStatusFilters(theme),
                         if (!showingPersonalHistory) ...[
@@ -436,7 +432,22 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                         const SizedBox(width: 16),
                         Expanded(
                           flex: 2,
-                          child: _buildDateFilterButton(theme, dateFilterLabel),
+                          child: _buildDateFilterButton(
+                            theme,
+                            title: localization.start,
+                            date: _startDateFilter,
+                            onPressed: _selectStartDateFilter,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: _buildDateFilterButton(
+                            theme,
+                            title: localization.end,
+                            date: _endDateFilter,
+                            onPressed: _selectEndDateFilter,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(flex: 3, child: _buildStatusFilters(theme)),
@@ -572,11 +583,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   ) {
     var filtered = records;
 
-    if (_selectedDateFilter != null) {
-      filtered = filtered
-          .where((record) => _isSameDay(record.date, _selectedDateFilter!))
-          .toList();
-    }
+    filtered = filtered
+        .where((record) => _isDateWithinSelectedRange(record.date))
+        .toList();
 
     if (_selectedStatusFilters.isNotEmpty) {
       filtered = filtered
@@ -621,9 +630,35 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     return values;
   }
 
-  Widget _buildDateFilterButton(ThemeData theme, String label) {
+  Widget _buildDateRangeFilters(ThemeData theme) {
+    final localization = AppLocalizations.of(context)!;
+    return Column(
+      children: [
+        _buildDateFilterButton(
+          theme,
+          title: localization.start,
+          date: _startDateFilter,
+          onPressed: _selectStartDateFilter,
+        ),
+        const SizedBox(height: 12),
+        _buildDateFilterButton(
+          theme,
+          title: localization.end,
+          date: _endDateFilter,
+          onPressed: _selectEndDateFilter,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateFilterButton(
+    ThemeData theme, {
+    required String title,
+    required DateTime date,
+    required VoidCallback onPressed,
+  }) {
     return CustomAppButton(
-      onPressed: _selectDateFilter,
+      onPressed: onPressed,
       type: ButtonType.outlined,
       isActive: true,
       fullWidth: true,
@@ -632,12 +667,27 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       minHeight: 54,
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(
-          label,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              DateFormat('dd/MM/yyyy').format(date),
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -735,19 +785,43 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   }
 
   bool get _hasActiveFilters =>
-      _selectedDateFilter != null ||
+      !_isSameDay(_startDateFilter, _defaultFilterDate) ||
+      !_isSameDay(_endDateFilter, _defaultFilterDate) ||
       _selectedUserIdFilter != null ||
       _selectedStatusFilters.isNotEmpty;
 
-  Future<void> _selectDateFilter() async {
+  Future<void> _selectStartDateFilter() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDateFilter ?? DateTime.now(),
+      initialDate: _startDateFilter,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
     if (picked == null || !mounted) return;
-    setState(() => _selectedDateFilter = picked);
+    final normalized = _normalizeDate(picked);
+    setState(() {
+      _startDateFilter = normalized;
+      if (_endDateFilter.isBefore(normalized)) {
+        _endDateFilter = normalized;
+      }
+    });
+  }
+
+  Future<void> _selectEndDateFilter() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _endDateFilter,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null || !mounted) return;
+    final normalized = _normalizeDate(picked);
+    setState(() {
+      _endDateFilter = normalized;
+      if (_startDateFilter.isAfter(normalized)) {
+        _startDateFilter = normalized;
+      }
+    });
   }
 
   Future<void> _selectUserFilter(
@@ -830,10 +904,20 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
 
   void _clearFilters() {
     setState(() {
-      _selectedDateFilter = null;
+      _syncDateRangeFiltersWithSelectedDate();
       _selectedUserIdFilter = null;
       _selectedStatusFilters.clear();
     });
+  }
+
+  bool _isDateWithinSelectedRange(DateTime value) {
+    final normalized = _normalizeDate(value);
+    return !normalized.isBefore(_startDateFilter) &&
+        !normalized.isAfter(_endDateFilter);
+  }
+
+  DateTime _normalizeDate(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
   }
 
   bool _isSameDay(DateTime left, DateTime right) {
@@ -861,9 +945,9 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     }
 
     final selectedDate = DateTime(
-      (widget.selectedDate ?? _selectedDateFilter ?? DateTime.now()).year,
-      (widget.selectedDate ?? _selectedDateFilter ?? DateTime.now()).month,
-      (widget.selectedDate ?? _selectedDateFilter ?? DateTime.now()).day,
+      (widget.selectedDate ?? _startDateFilter).year,
+      (widget.selectedDate ?? _startDateFilter).month,
+      (widget.selectedDate ?? _startDateFilter).day,
     );
 
     final candidates =
@@ -1300,14 +1384,33 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                   children: [
                     DropdownButtonFormField<String>(
                       initialValue: selectedUser.value,
+                      isExpanded: true,
                       decoration: InputDecoration(
                         labelText: localization.userLabel,
+                        alignLabelWithHint: true,
+                        contentPadding: const EdgeInsets.fromLTRB(
+                          12,
+                          18,
+                          12,
+                          10,
+                        ),
                       ),
+                      selectedItemBuilder: (context) => assignableMembers
+                          .map(
+                            (member) => _AssignableMemberDropdownLabel(
+                              label: member.label,
+                              email: member.email,
+                            ),
+                          )
+                          .toList(),
                       items: assignableMembers
                           .map(
                             (member) => DropdownMenuItem<String>(
                               value: member.userId,
-                              child: Text('${member.label} (${member.email})'),
+                              child: _AssignableMemberDropdownLabel(
+                                label: member.label,
+                                email: member.email,
+                              ),
                             ),
                           )
                           .toList(),
@@ -1470,8 +1573,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     }
 
     final noteController = TextEditingController();
-    final selectedDate =
-        widget.selectedDate ?? _selectedDateFilter ?? record.date;
+    final selectedDate = widget.selectedDate ?? _startDateFilter;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -1696,12 +1798,28 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
             children: [
               DropdownButtonFormField<String>(
                 initialValue: selectedUser.value,
-                decoration: InputDecoration(labelText: localization.userLabel),
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'User',
+                  alignLabelWithHint: true,
+                  contentPadding: EdgeInsets.fromLTRB(12, 18, 12, 10),
+                ).copyWith(labelText: localization.userLabel),
+                selectedItemBuilder: (context) => assignableMembers
+                    .map(
+                      (member) => _AssignableMemberDropdownLabel(
+                        label: member.label,
+                        email: member.email,
+                      ),
+                    )
+                    .toList(),
                 items: assignableMembers
                     .map(
                       (member) => DropdownMenuItem<String>(
                         value: member.userId,
-                        child: Text('${member.label} (${member.email})'),
+                        child: _AssignableMemberDropdownLabel(
+                          label: member.label,
+                          email: member.email,
+                        ),
                       ),
                     )
                     .toList(),
@@ -1878,7 +1996,8 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
         records: records,
         teamName: selectedTeam?.name ?? 'Team',
         searchQuery: _searchController.text.trim(),
-        selectedDate: _selectedDateFilter,
+        startDate: _startDateFilter,
+        endDate: _endDateFilter,
         selectedStatuses: Set<ClockingStatus>.from(_selectedStatusFilters),
       );
     } catch (e) {
@@ -2685,6 +2804,42 @@ class _ClockingAssignableMember {
   final String userId;
   final String label;
   final String email;
+}
+
+class _AssignableMemberDropdownLabel extends StatelessWidget {
+  const _AssignableMemberDropdownLabel({
+    required this.label,
+    required this.email,
+  });
+
+  final String label;
+  final String email;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final resolvedEmail = email.trim();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(height: 1),
+        ),
+        if (resolvedEmail.isNotEmpty)
+          Text(
+            '($resolvedEmail)',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.largeText.copyWith(height: 1),
+          ),
+      ],
+    );
+  }
 }
 
 class _PermissionDialogResult {

@@ -1223,6 +1223,45 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncing => 'Synchronisation';
 
   @override
+  String shiftEntriesForDate(String date) {
+    return 'Quarts du $date';
+  }
+
+  @override
+  String get noArchivedShifts => 'Aucun quart archivé.';
+
+  @override
+  String get openAction => 'Ouvrir';
+
+  @override
+  String get restoreAction => 'Restaurer';
+
+  @override
+  String get selectMonth => 'Sélectionner le mois';
+
+  @override
+  String get selectYear => 'Sélectionner l\'année';
+
+  @override
+  String shiftCalendarPublicAssignments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count quarts publics visibles pour l\'équipe',
+      one: '1 quart public visible pour l\'équipe',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shiftCalendarPrivateAssignments => 'Quarts privés';
+
+  @override
+  String shiftCalendarMoreEntries(int count) {
+    return '+$count autres';
+  }
+
+  @override
   String get customProfile => 'Profils personnalisés';
 
   @override

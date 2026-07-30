@@ -1,4 +1,7 @@
-platform :ios, '13.0'
+ios_deployment_target = '13.0'
+
+platform :ios, ios_deployment_target
+require 'pathname'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -26,6 +29,65 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+def patch_sentry_flutter_podspec!(minimum_ios_version)
+  sentry_podspec_path = File.expand_path(
+    File.join(
+      __dir__,
+      '.symlinks',
+      'plugins',
+      'sentry_flutter',
+      'ios',
+      'sentry_flutter.podspec',
+    ),
+  )
+
+  return unless File.exist?(sentry_podspec_path)
+
+  podspec = File.read(sentry_podspec_path)
+  patched = podspec.gsub(
+    /s\.ios\.deployment_target\s*=\s*'[^']+'/,
+    "s.ios.deployment_target = '#{minimum_ios_version}'",
+  )
+
+  return if patched == podspec
+
+  File.write(sentry_podspec_path, patched)
+end
+
+patch_sentry_flutter_podspec!(ios_deployment_target)
+
+def expand_xcassets_into_resource_files(installer, target, resource_path_parts)
+  resources_phase = target.resources_build_phase
+  return if resources_phase.nil?
+
+  resources_phase.files.each do |build_file|
+    file_ref = build_file.file_ref
+    next unless file_ref && File.basename(file_ref.path.to_s) == 'Images.xcassets'
+
+    resources_phase.remove_build_file(build_file)
+  end
+
+  sandbox_root = installer.sandbox.root.to_s
+  images_root = File.join(sandbox_root, *resource_path_parts)
+  return unless Dir.exist?(images_root)
+
+  Dir.glob(File.join(images_root, '*.imageset')).sort.each do |imageset_path|
+    Dir.glob(File.join(imageset_path, '*.{png,jpg,jpeg,gif,webp}')).sort.each do |image_path|
+      existing_ref = resources_phase.files_references.find do |ref|
+        ref&.real_path&.to_s == image_path
+      end
+      next if existing_ref
+
+      relative_dir = Pathname.new(File.dirname(image_path))
+        .relative_path_from(Pathname.new(sandbox_root))
+        .to_s
+      group = installer.pods_project.main_group.find_subpath(relative_dir, true)
+      file_ref = group.new_file(image_path)
+      resources_phase.add_file_reference(file_ref, true)
+    end
+  end
+end
+
 target 'Runner' do
   use_frameworks!
 
@@ -36,11 +98,38 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  pod_asset_workarounds = {
+    'DKPhotoGallery-DKPhotoGallery' => [
+      'DKPhotoGallery',
+      'DKPhotoGallery',
+      'Resource',
+      'Resources',
+      'Images.xcassets',
+    ],
+    'DKImagePickerController-DKImagePickerController' => [
+      'DKImagePickerController',
+      'Sources',
+      'DKImagePickerController',
+      'Resource',
+      'Resources',
+      'Images.xcassets',
+    ],
+  }
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] =
+          ios_deployment_target
     end
+
+    next unless pod_asset_workarounds.key?(target.name)
+
+    expand_xcassets_into_resource_files(
+      installer,
+      target,
+      pod_asset_workarounds.fetch(target.name),
+    )
   end
 end

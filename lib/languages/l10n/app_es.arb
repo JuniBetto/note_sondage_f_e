@@ -392,6 +392,36 @@
     "visibleToTeamMembers": "Visible para todos los miembros del equipo",
     "visibleOnlyToYou": "Visible solo para ti",
     "syncing": "Sincronizando",
+    "shiftEntriesForDate": "Turnos del {date}",
+    "@shiftEntriesForDate": {
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "noArchivedShifts": "No hay turnos archivados.",
+    "openAction": "Abrir",
+    "restoreAction": "Restaurar",
+    "selectMonth": "Seleccionar mes",
+    "selectYear": "Seleccionar año",
+    "shiftCalendarPublicAssignments": "{count, plural, =1{1 turno publico visible para el equipo} other{{count} turnos publicos visibles para el equipo}}",
+    "@shiftCalendarPublicAssignments": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shiftCalendarPrivateAssignments": "Turnos privados",
+    "shiftCalendarMoreEntries": "+{count} mas",
+    "@shiftCalendarMoreEntries": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "customProfile": "Perfiles personalizados",
     "noShiftsThisMonth": "Sin turnos este mes",
     "systemProfile": "Perfiles del sistema",

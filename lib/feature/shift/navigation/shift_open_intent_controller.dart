@@ -8,6 +8,7 @@ class ShiftOpenIntent {
     this.profileName,
     this.startTime,
     this.endTime,
+    this.openDialogWhenAssignmentMissing = false,
   });
 
   final String? assignmentId;
@@ -18,6 +19,7 @@ class ShiftOpenIntent {
   final String? profileName;
   final String? startTime;
   final String? endTime;
+  final bool openDialogWhenAssignmentMissing;
 }
 
 class ShiftOpenIntentController {
@@ -36,6 +38,7 @@ class ShiftOpenIntentController {
     String? profileName,
     String? startTime,
     String? endTime,
+    bool openDialogWhenAssignmentMissing = false,
   }) {
     final normalizedAssignmentId = assignmentId?.trim();
     final normalizedShiftDate = shiftDate?.trim();
@@ -48,20 +51,18 @@ class ShiftOpenIntentController {
     _pendingIntent = ShiftOpenIntent(
       assignmentId:
           normalizedAssignmentId != null && normalizedAssignmentId.isNotEmpty
-              ? normalizedAssignmentId
-              : null,
-      shiftDate:
-          normalizedShiftDate != null && normalizedShiftDate.isNotEmpty
-              ? DateTime.tryParse(normalizedShiftDate)
-              : null,
-      teamId:
-          normalizedTeamId != null && normalizedTeamId.isNotEmpty
-              ? normalizedTeamId
-              : null,
+          ? normalizedAssignmentId
+          : null,
+      shiftDate: normalizedShiftDate != null && normalizedShiftDate.isNotEmpty
+          ? DateTime.tryParse(normalizedShiftDate)
+          : null,
+      teamId: normalizedTeamId != null && normalizedTeamId.isNotEmpty
+          ? normalizedTeamId
+          : null,
       targetUserId:
           normalizedTargetUserId != null && normalizedTargetUserId.isNotEmpty
-              ? normalizedTargetUserId
-              : null,
+          ? normalizedTargetUserId
+          : null,
       isPublic: switch (normalizedIsPublic) {
         'true' => true,
         'false' => false,
@@ -69,16 +70,15 @@ class ShiftOpenIntentController {
       },
       profileName:
           normalizedProfileName != null && normalizedProfileName.isNotEmpty
-              ? normalizedProfileName
-              : null,
-      startTime:
-          normalizedStartTime != null && normalizedStartTime.isNotEmpty
-              ? normalizedStartTime
-              : null,
-      endTime:
-          normalizedEndTime != null && normalizedEndTime.isNotEmpty
-              ? normalizedEndTime
-              : null,
+          ? normalizedProfileName
+          : null,
+      startTime: normalizedStartTime != null && normalizedStartTime.isNotEmpty
+          ? normalizedStartTime
+          : null,
+      endTime: normalizedEndTime != null && normalizedEndTime.isNotEmpty
+          ? normalizedEndTime
+          : null,
+      openDialogWhenAssignmentMissing: openDialogWhenAssignmentMissing,
     );
   }
 

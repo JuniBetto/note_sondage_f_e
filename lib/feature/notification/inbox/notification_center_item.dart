@@ -235,6 +235,7 @@ class NotificationCenterItem extends Equatable {
   bool supportsApprovedManualClockingFor({
     required String currentUserId,
     required String teamId,
+    String? teamName,
     required DateTime date,
   }) {
     if (eventType != 'CLOCKING_CLOCKING_REQUEST_APPROVED') {
@@ -243,9 +244,23 @@ class NotificationCenterItem extends Equatable {
     if ((requesterUserId ?? '') != currentUserId) {
       return false;
     }
-    if ((metadata['teamId']?.trim() ?? '') != teamId) {
-      return false;
+    final notificationTeamId = metadata['teamId']?.trim() ?? '';
+    final notificationTeamName = metadata['teamName']?.trim() ?? '';
+    final normalizedSelectedTeamName = teamName?.trim().toLowerCase() ?? '';
+
+    if (notificationTeamId.isNotEmpty) {
+      if (notificationTeamId.toLowerCase() != teamId.trim().toLowerCase()) {
+        return false;
+      }
+    } else {
+      if (notificationTeamName.isEmpty || normalizedSelectedTeamName.isEmpty) {
+        return false;
+      }
+      if (notificationTeamName.toLowerCase() != normalizedSelectedTeamName) {
+        return false;
+      }
     }
+
     final requested = requestedDate;
     if (requested == null) {
       return false;

@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -805,6 +806,24 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
         }
       } catch (_) {
         // Best effort enrichment only.
+      }
+    }
+
+    final remainingUnresolvedTeamIds = unresolvedTeamIds
+        .where((teamId) => !teamNamesById.containsKey(teamId))
+        .toList(growable: false);
+    if (remainingUnresolvedTeamIds.isNotEmpty) {
+      final teamUseCase = getIt<TeamUseCase>();
+      for (final teamId in remainingUnresolvedTeamIds) {
+        try {
+          final team = await teamUseCase.getTeamById(teamId);
+          final resolvedTeamName = team?.name.trim();
+          if (resolvedTeamName != null && resolvedTeamName.isNotEmpty) {
+            teamNamesById[teamId] = resolvedTeamName;
+          }
+        } catch (_) {
+          // Best effort enrichment only.
+        }
       }
     }
 

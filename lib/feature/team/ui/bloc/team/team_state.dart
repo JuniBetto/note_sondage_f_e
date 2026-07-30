@@ -48,7 +48,14 @@ class TeamUpdated extends TeamState {
   List<Object?> get props => [team];
 }
 
-class TeamDeleted extends TeamState {}
+class TeamDeleted extends TeamState {
+  final String teamId;
+
+  const TeamDeleted(this.teamId);
+
+  @override
+  List<Object?> get props => [teamId];
+}
 
 class TeamError extends TeamState {
   final String message;

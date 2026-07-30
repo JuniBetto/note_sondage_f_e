@@ -60,6 +60,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
 
   String get _currentUserId => context.read<AuthBloc>().state.user.uid;
   String get _currentUserEmail => context.read<AuthBloc>().state.user.email;
+  bool get _hasResolvedClockingAccessForSelectedTeam =>
+      widget.selectedTeamId != null && widget.selectedTeamId == _resolvedTeamId;
+  bool get _canManageSelectedTeamClocking =>
+      _hasResolvedClockingAccessForSelectedTeam && _canManageClocking;
 
   @override
   void initState() {
@@ -221,13 +225,13 @@ class _ButtonClockingState extends State<ButtonClocking> {
                     _effectiveSelectedDate,
                   ) &&
                   (!hasSelectedTeam ||
-                      _canManageClocking ||
+                      _canManageSelectedTeamClocking ||
                       hasApprovedManualClockingRequest);
               final requiresApprovalForPastDate =
                   hasSelectedTeam &&
                   !selectedDateIsToday &&
                   !hasVacationOnSelectedDate &&
-                  !_canManageClocking &&
+                  !_canManageSelectedTeamClocking &&
                   !hasApprovedManualClockingRequest;
 
               final clockColor = activeRecordForSelectedDate != null
@@ -854,6 +858,15 @@ class _ButtonClockingState extends State<ButtonClocking> {
     if (teamId == null || teamId.isEmpty) {
       return false;
     }
+    String? selectedTeamName;
+    final teamState = context.read<TeamBloc>().state;
+    if (teamState is TeamsLoaded) {
+      final selectedTeam = teamState.teams.cast<TeamEntity?>().firstWhere(
+        (item) => item?.id == teamId,
+        orElse: () => null,
+      );
+      selectedTeamName = selectedTeam?.name;
+    }
     final notifications = context
         .watch<NotificationCenterCubit>()
         .state
@@ -862,6 +875,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
       if (item.supportsApprovedManualClockingFor(
         currentUserId: _currentUserId,
         teamId: teamId,
+        teamName: selectedTeamName,
         date: _effectiveSelectedDate,
       )) {
         return true;
@@ -880,13 +894,14 @@ class _ButtonClockingState extends State<ButtonClocking> {
     if (!hasSelectedTeam || selectedDateIsToday) {
       return false;
     }
-    return !_canManageClocking && !_hasApprovedManualClockingRequest(context);
+    return !_canManageSelectedTeamClocking &&
+        !_hasApprovedManualClockingRequest(context);
   }
 
   bool _canAddManualPastDays() {
     final hasSelectedTeam =
         widget.selectedTeamId != null && widget.selectedTeamId!.isNotEmpty;
-    return !hasSelectedTeam || _canManageClocking;
+    return !hasSelectedTeam || _canManageSelectedTeamClocking;
   }
 
   String _primaryActionSubtitle({
@@ -906,7 +921,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
       final hasSelectedTeam =
           widget.selectedTeamId != null && widget.selectedTeamId!.isNotEmpty;
       if (hasSelectedTeam &&
-          !_canManageClocking &&
+          !_canManageSelectedTeamClocking &&
           !hasApprovedManualClockingRequest) {
         return localization.manualClockingRequiresApproval;
       }

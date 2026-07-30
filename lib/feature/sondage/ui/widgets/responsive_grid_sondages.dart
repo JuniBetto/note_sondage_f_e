@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -34,6 +35,14 @@ class ResponsiveGridSondages extends StatefulWidget {
 }
 
 class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
+  void _openSondageDetail(BuildContext context, String sondageId) {
+    if (kIsWeb) {
+      context.go(RouterPaths.sondageDetail, extra: sondageId);
+      return;
+    }
+    context.push(RouterPaths.sondageDetail, extra: sondageId);
+  }
+
   final UserArchiveService _archiveService = getIt<UserArchiveService>();
   final SondageBloc _sondageBloc = getIt<SondageBloc>();
   String? _selectedSondageId;
@@ -211,7 +220,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
               isActive: _selectedSondageId == sondageId,
               onTap: () {
                 setState(() => _selectedSondageId = sondageId);
-                context.go(RouterPaths.sondageDetail, extra: sondageId);
+                _openSondageDetail(context, sondageId);
               },
               onEditTap: canEditAsCreator ? () => widget.onEditTap(item) : null,
               onArchiveTap: () => _toggleArchive(sondageId),
@@ -257,7 +266,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
           isActive: _selectedSondageId == sondageId,
           onTap: () {
             setState(() => _selectedSondageId = sondageId);
-            context.go(RouterPaths.sondageDetail, extra: sondageId);
+            _openSondageDetail(context, sondageId);
           },
           onEditTap: canEditAsCreator ? () => widget.onEditTap(item) : null,
           onArchiveTap: () => _toggleArchive(sondageId),

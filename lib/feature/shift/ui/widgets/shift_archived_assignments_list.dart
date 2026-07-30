@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 
 class ShiftArchivedAssignmentsList extends StatelessWidget {
   const ShiftArchivedAssignmentsList({
@@ -18,8 +19,9 @@ class ShiftArchivedAssignmentsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     if (assignments.isEmpty) {
-      return const Center(child: Text('Nessun turno archiviato.'));
+      return Center(child: Text(loc.noArchivedShifts));
     }
 
     return ListView.separated(
@@ -59,7 +61,7 @@ class ShiftArchivedAssignmentsList extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      assignment.profileName ?? 'Turno',
+                      assignment.profileName ?? loc.shiftReportDefaultProfile,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -83,12 +85,12 @@ class ShiftArchivedAssignmentsList extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () => onOpen(assignment),
                     icon: const Icon(Icons.open_in_new_rounded),
-                    label: const Text('Apri'),
+                    label: Text(loc.openAction),
                   ),
                   FilledButton.tonalIcon(
                     onPressed: () => onRestore(assignment),
                     icon: const Icon(Icons.unarchive_outlined),
-                    label: const Text('Ripristina'),
+                    label: Text(loc.restoreAction),
                   ),
                 ],
               ),

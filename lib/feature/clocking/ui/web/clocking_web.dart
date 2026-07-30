@@ -45,6 +45,19 @@ class _ClockingWebState extends State<ClockingWeb> {
     context.read<TeamBloc>().add(LoadTeamsEvent());
   }
 
+  void _syncSelectedTeamFromState(ClockingState state) {
+    final nextSelectedTeamId = switch (state) {
+      ClockingRecordsLoaded(:final selectedTeamId) => selectedTeamId,
+      ClockingActionInProgress(:final selectedTeamId) => selectedTeamId,
+      ClockingActionSuccess(:final selectedTeamId) => selectedTeamId,
+      _ => _selectedTeamId,
+    };
+    if (_selectedTeamId == nextSelectedTeamId) {
+      return;
+    }
+    setState(() => _selectedTeamId = nextSelectedTeamId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -72,11 +85,18 @@ class _ClockingWebState extends State<ClockingWeb> {
     );
     _scheduleTutorial();
 
-    return BlocListener<NavigationBloc, int>(
-      listenWhen: (previous, current) =>
-          previous != _clockingNavigationIndex &&
-          current == _clockingNavigationIndex,
-      listener: (context, _) => _refreshClockingPageData(),
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<NavigationBloc, int>(
+          listenWhen: (previous, current) =>
+              previous != _clockingNavigationIndex &&
+              current == _clockingNavigationIndex,
+          listener: (context, _) => _refreshClockingPageData(),
+        ),
+        BlocListener<ClockingBloc, ClockingState>(
+          listener: (context, state) => _syncSelectedTeamFromState(state),
+        ),
+      ],
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isSmallScreen = constraints.maxWidth < 700;

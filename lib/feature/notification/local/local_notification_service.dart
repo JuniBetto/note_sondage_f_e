@@ -368,7 +368,7 @@ class LocalNotificationService {
       durationSeconds: durationSeconds,
     );
     final notifId = _shiftFallbackNotificationId('debug-shift-alarm-manual');
-    await _plugin.cancel(notifId);
+    await _cancelNotificationSafely(notifId);
     await _plugin.zonedSchedule(
       notifId,
       '⏰ Debug shift alarm',
@@ -477,7 +477,7 @@ class LocalNotificationService {
       return;
     }
 
-    await _plugin.cancel(notifId);
+    await _cancelNotificationSafely(notifId);
   }
 
   Future<List<NotificationActionIntent>> drainPendingActionIntents() async {
@@ -932,11 +932,11 @@ class LocalNotificationService {
     }
     for (final offset in alarmOffsets) {
       final notifId = '${shiftId}_$offset'.hashCode;
-      await _plugin.cancel(notifId);
+      await _cancelNotificationSafely(notifId);
       await _forgetScheduledShiftAlarmId(notifId);
     }
     final fallbackId = _shiftFallbackNotificationId(shiftId);
-    await _plugin.cancel(fallbackId);
+    await _cancelNotificationSafely(fallbackId);
     await _forgetScheduledShiftAlarmId(fallbackId);
   }
 
@@ -952,10 +952,38 @@ class LocalNotificationService {
               .toList() ??
           const <int>[];
       for (final notifId in scheduledIds) {
-        await _plugin.cancel(notifId);
+        await _cancelNotificationSafely(notifId);
       }
       await prefs.remove(_scheduledShiftAlarmIdsKey);
     }
+  }
+
+  Future<void> _cancelNotificationSafely(int notificationId) async {
+    try {
+      await _plugin.cancel(notificationId);
+    } on PlatformException catch (error, stackTrace) {
+      if (_isMissingTypeParameterPluginBug(error)) {
+        debugPrint(
+          '[LocalNotificationService] Ignored Android cancel bug for '
+          '$notificationId: ${error.message ?? error.code}',
+        );
+        return;
+      }
+      debugPrint(
+        '[LocalNotificationService] Failed to cancel notification '
+        '$notificationId: ${error.message ?? error.code}\n$stackTrace',
+      );
+      rethrow;
+    }
+  }
+
+  bool _isMissingTypeParameterPluginBug(PlatformException error) {
+    if (!_isAndroid) {
+      return false;
+    }
+    final combinedMessage = '${error.code} ${error.message} ${error.details}'
+        .toLowerCase();
+    return combinedMessage.contains('missing type parameter');
   }
 
   Future<bool> areShiftNotificationsEnabled() async {

@@ -2352,6 +2352,60 @@ abstract class AppLocalizations {
   /// **'Syncing'**
   String get syncing;
 
+  /// No description provided for @shiftEntriesForDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Shifts for {date}'**
+  String shiftEntriesForDate(String date);
+
+  /// No description provided for @noArchivedShifts.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived shifts.'**
+  String get noArchivedShifts;
+
+  /// No description provided for @openAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get openAction;
+
+  /// No description provided for @restoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restoreAction;
+
+  /// No description provided for @selectMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Select month'**
+  String get selectMonth;
+
+  /// No description provided for @selectYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Select year'**
+  String get selectYear;
+
+  /// No description provided for @shiftCalendarPublicAssignments.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 public team shift visible} other{{count} public team shifts visible}}'**
+  String shiftCalendarPublicAssignments(int count);
+
+  /// No description provided for @shiftCalendarPrivateAssignments.
+  ///
+  /// In en, this message translates to:
+  /// **'Private shifts'**
+  String get shiftCalendarPrivateAssignments;
+
+  /// No description provided for @shiftCalendarMoreEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String shiftCalendarMoreEntries(int count);
+
   /// No description provided for @customProfile.
   ///
   /// In en, this message translates to:

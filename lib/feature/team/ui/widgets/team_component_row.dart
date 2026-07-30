@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -52,6 +53,14 @@ class TeamComponentRow extends StatefulWidget {
 }
 
 class _TeamComponentRowState extends State<TeamComponentRow> {
+  void _openUpdateTeam(BuildContext context) {
+    if (kIsWeb) {
+      context.go(RouterPaths.updateTeam, extra: widget.teamId);
+      return;
+    }
+    context.push(RouterPaths.updateTeam, extra: widget.teamId);
+  }
+
   bool _isHovered = false;
 
   Future<void> _confirmDelete(BuildContext context) async {
@@ -161,12 +170,8 @@ class _TeamComponentRowState extends State<TeamComponentRow> {
                                                   icon: Icons.edit,
                                                   color:
                                                       colorScheme.cursorColor!,
-                                                  onTap: () {
-                                                    context.go(
-                                                      RouterPaths.updateTeam,
-                                                      extra: widget.teamId,
-                                                    );
-                                                  },
+                                                  onTap: () =>
+                                                      _openUpdateTeam(context),
                                                 ),
                                               ActionOnUser(
                                                 iconSize: 28,

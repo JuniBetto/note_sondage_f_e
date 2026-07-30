@@ -444,6 +444,88 @@ String _addLabel(BuildContext context) => _localizedShiftDayText(
   es: 'Agregar',
 );
 
+String _shiftLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Turno',
+  en: 'Shift',
+  fr: 'Quart',
+  es: 'Turno',
+);
+
+String _shiftDetailsTitle(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Dettagli turno',
+  en: 'Shift details',
+  fr: 'Details du quart',
+  es: 'Detalles del turno',
+);
+
+String _dateRowLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Data',
+  en: 'Date',
+  fr: 'Date',
+  es: 'Fecha',
+);
+
+String _memberRowLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Membro',
+  en: 'Member',
+  fr: 'Membre',
+  es: 'Miembro',
+);
+
+String _visibilityRowLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Visibilita',
+  en: 'Visibility',
+  fr: 'Visibilite',
+  es: 'Visibilidad',
+);
+
+String _yesLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Si',
+  en: 'Yes',
+  fr: 'Oui',
+  es: 'Si',
+);
+
+String _noLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'No',
+  en: 'No',
+  fr: 'Non',
+  es: 'No',
+);
+
+String _privateShiftSummaryLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Turno privato',
+  en: 'Private shift',
+  fr: 'Quart prive',
+  es: 'Turno privado',
+);
+
+String _publicTeamShiftSummaryLabel(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Turno pubblico del team',
+      en: 'Public team shift',
+      fr: 'Quart public d\'equipe',
+      es: 'Turno publico del equipo',
+    );
+
+String _publicPersonalShiftSummaryLabel(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Turno personale pubblico',
+      en: 'Public personal shift',
+      fr: 'Quart personnel public',
+      es: 'Turno personal publico',
+    );
+
 /// A simplified view of a team member used inside the shift dialog.
 class ShiftTeamMember {
   final String? userId; // Firebase UID when assignable
@@ -540,6 +622,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
   required BuildContext context,
   required DateTime date,
   required List<ShiftProfileEntity> profiles,
+  List<TeamEntity> allTeams = const [],
   ShiftAssignmentEntity? existing,
   String? initialTeamId,
   bool canManagePublicShifts = false,
@@ -554,6 +637,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
   final sheet = _ShiftDaySheet(
     date: date,
     profiles: profiles,
+    allTeams: allTeams,
     existing: existing,
     initialTeamId: initialTeamId,
     canManagePublicShifts: canManagePublicShifts,
@@ -588,6 +672,7 @@ class _ShiftDaySheet extends StatefulWidget {
   const _ShiftDaySheet({
     required this.date,
     required this.profiles,
+    this.allTeams = const [],
     this.existing,
     this.initialTeamId,
     this.canManagePublicShifts = false,
@@ -600,6 +685,7 @@ class _ShiftDaySheet extends StatefulWidget {
 
   final DateTime date;
   final List<ShiftProfileEntity> profiles;
+  final List<TeamEntity> allTeams;
   final ShiftAssignmentEntity? existing;
   final String? initialTeamId;
   final bool canManagePublicShifts;
@@ -673,6 +759,48 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   bool get _isSelectedTeamLoading {
     final teamId = _selectedTeam?.team.id;
     return teamId != null && _loadingTeamIds.contains(teamId);
+  }
+
+  TeamEntity? _findAnyTeamById(String? teamId) {
+    final normalized = teamId?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return widget.allTeams.where((team) => team.id == normalized).firstOrNull;
+  }
+
+  String _resolvedProfileName(AppLocalizations localization) {
+    final selectedName = _selectedProfile?.name.trim();
+    if (selectedName != null && selectedName.isNotEmpty) {
+      return selectedName;
+    }
+    final existingName = widget.existing?.profileName?.trim();
+    if (existingName != null && existingName.isNotEmpty) {
+      return existingName;
+    }
+    return localization.shiftReportDefaultProfile;
+  }
+
+  String _resolvedTeamName(BuildContext context) {
+    final selectedName = _selectedTeam?.team.name.trim();
+    if (selectedName != null && selectedName.isNotEmpty) {
+      return selectedName;
+    }
+    final fallbackTeam = _findAnyTeamById(widget.existing?.teamId);
+    final fallbackName = fallbackTeam?.name.trim();
+    if (fallbackName != null && fallbackName.isNotEmpty) {
+      return fallbackName;
+    }
+    if (_existingHasTeamScope) {
+      return _localizedShiftDayText(
+        context,
+        it: 'Team non disponibile',
+        en: 'Team unavailable',
+        fr: 'Equipe indisponible',
+        es: 'Equipo no disponible',
+      );
+    }
+    return _privateShiftLabel(context);
   }
 
   String _formatRoleLabel(String rawRole) {
@@ -816,16 +944,29 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       _rangeEndDate = widget.date;
       _noteCtrl.text = ex.note ?? '';
       if (ex.teamId != null) {
-        _selectedTeam = widget.ownerTeams
+        final manageableTeam = widget.ownerTeams
             .where((team) => team.team.id == ex.teamId)
             .firstOrNull;
+        if (manageableTeam != null) {
+          _selectedTeam = manageableTeam;
+        } else {
+          final fallbackTeam = _findAnyTeamById(ex.teamId);
+          if (fallbackTeam != null) {
+            _selectedTeam = TeamEntityForView(
+              team: fallbackTeam,
+              members: _membersByTeamId[fallbackTeam.id!] ?? const [],
+            );
+          }
+        }
         // Pre-select the existing target member so an admin can see and
         // optionally change it when editing a team-scoped shift.
         if (ex.userId.isNotEmpty) {
           _assignToAllMembers = false;
           _selectedMemberIds.add(ex.userId);
         }
-        unawaited(_ensureTeamMembersLoaded(_selectedTeam));
+        if (manageableTeam != null) {
+          unawaited(_ensureTeamMembersLoaded(_selectedTeam));
+        }
       }
     } else {
       _startTime = const TimeOfDay(hour: 7, minute: 0);
@@ -1089,7 +1230,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                           _requestMode
                               ? '${_requestShiftChangeTitle(context)} - $dateLabel'
                               : (_viewOnlyRequestMode
-                                    ? 'Shift - $dateLabel'
+                                    ? '${_shiftLabel(context)} - $dateLabel'
                                     : (widget.existing != null
                                           ? '${loc.editAction} - $dateLabel'
                                           : '${loc.addShift} - $dateLabel')),
@@ -1198,12 +1339,9 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       borderColor: borderColor,
                       mutedSurface: mutedSurface,
                       dateLabel: dateLabel,
-                      profileName:
-                          _selectedProfile?.name ??
-                          widget.existing?.profileName ??
-                          '-',
+                      profileName: _resolvedProfileName(loc),
                       userName: widget.existing?.userName,
-                      teamName: _selectedTeam?.team.name,
+                      teamName: _resolvedTeamName(context),
                       startTime: _startTime,
                       endTime: _endTime,
                       overnight: _overnight,
@@ -1758,15 +1896,23 @@ class _ShiftViewSection extends StatelessWidget {
   final bool hasTeamScope;
   final List<int> alarmOffsets;
 
+  bool _hasMeaningfulValue(String? value) {
+    if (value == null) {
+      return false;
+    }
+    final trimmed = value.trim();
+    return trimmed.isNotEmpty && trimmed != '-';
+  }
+
   String _formatTime(TimeOfDay value) {
     final hour = value.hour.toString().padLeft(2, '0');
     final minute = value.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
 
-  String _formatAlarmOffsets() {
+  String? _formatAlarmOffsets() {
     if (alarmOffsets.isEmpty) {
-      return '-';
+      return null;
     }
     return alarmOffsets.map((value) => '$value min').join(', ');
   }
@@ -1774,35 +1920,32 @@ class _ShiftViewSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
+    final alarmsText = _formatAlarmOffsets();
     final rows = <({String label, String value})>[
-      (label: 'Date', value: dateLabel),
-      (
-        label: 'Member',
-        value: (userName != null && userName!.trim().isNotEmpty)
-            ? userName!.trim()
-            : '-',
-      ),
-      (
-        label: 'Team',
-        value: (teamName != null && teamName!.trim().isNotEmpty)
-            ? teamName!.trim()
-            : '-',
-      ),
-      (label: localization.shiftProfile, value: profileName),
+      (label: _dateRowLabel(context), value: dateLabel),
+      if (_hasMeaningfulValue(userName))
+        (label: _memberRowLabel(context), value: userName!.trim()),
+      if (_hasMeaningfulValue(teamName))
+        (label: localization.team, value: teamName!.trim()),
+      if (_hasMeaningfulValue(profileName))
+        (label: localization.shiftProfile, value: profileName.trim()),
       (label: localization.shiftStart, value: _formatTime(startTime)),
       (label: localization.shiftEnd, value: _formatTime(endTime)),
-      (label: localization.overnightShift, value: overnight ? 'Yes' : 'No'),
       (
-        label: 'Visibility',
+        label: localization.overnightShift,
+        value: overnight ? _yesLabel(context) : _noLabel(context),
+      ),
+      (
+        label: _visibilityRowLabel(context),
         value: !isPublic
-            ? 'Private shift'
-            : (hasTeamScope ? 'Public team shift' : 'Public personal shift'),
+            ? _privateShiftSummaryLabel(context)
+            : (hasTeamScope
+                  ? _publicTeamShiftSummaryLabel(context)
+                  : _publicPersonalShiftSummaryLabel(context)),
       ),
-      (
-        label: localization.note,
-        value: note.trim().isEmpty ? '-' : note.trim(),
-      ),
-      (label: localization.alarms, value: _formatAlarmOffsets()),
+      if (_hasMeaningfulValue(note))
+        (label: localization.note, value: note.trim()),
+      if (alarmsText != null) (label: localization.alarms, value: alarmsText),
     ];
 
     return Container(
@@ -1817,7 +1960,7 @@ class _ShiftViewSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Shift details',
+            _shiftDetailsTitle(context),
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),

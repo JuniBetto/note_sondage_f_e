@@ -1223,6 +1223,45 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncing => 'Sincronizando';
 
   @override
+  String shiftEntriesForDate(String date) {
+    return 'Turnos del $date';
+  }
+
+  @override
+  String get noArchivedShifts => 'No hay turnos archivados.';
+
+  @override
+  String get openAction => 'Abrir';
+
+  @override
+  String get restoreAction => 'Restaurar';
+
+  @override
+  String get selectMonth => 'Seleccionar mes';
+
+  @override
+  String get selectYear => 'Seleccionar año';
+
+  @override
+  String shiftCalendarPublicAssignments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count turnos publicos visibles para el equipo',
+      one: '1 turno publico visible para el equipo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shiftCalendarPrivateAssignments => 'Turnos privados';
+
+  @override
+  String shiftCalendarMoreEntries(int count) {
+    return '+$count mas';
+  }
+
+  @override
   String get customProfile => 'Perfiles personalizados';
 
   @override

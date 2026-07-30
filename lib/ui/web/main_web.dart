@@ -22,10 +22,23 @@ import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart
 import 'package:note_sondage/ui/widgets/theme_config/custom_toggle_switch.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
+import '../../feature/chat/ui/web/chat_web_page.dart';
+
 class MainWeb extends StatefulWidget {
-  const MainWeb({super.key, this.child});
+  const MainWeb({
+    super.key,
+    this.child,
+    this.chatInitialTeamId,
+    this.chatInitialMemberUserId,
+    this.chatInitialMemberName,
+    this.chatFocusLatestOnOpen = false,
+  });
 
   final Widget? child;
+  final String? chatInitialTeamId;
+  final String? chatInitialMemberUserId;
+  final String? chatInitialMemberName;
+  final bool chatFocusLatestOnOpen;
 
   @override
   State<MainWeb> createState() => _MainWebState();
@@ -216,6 +229,12 @@ class _MainWebState extends State<MainWeb> {
                   value: GetIt.instance<ShiftBloc>(),
                   child: const ShiftWebPage(),
                 ),
+                ChatWebPage(
+                  initialTeamId: widget.chatInitialTeamId,
+                  initialMemberUserId: widget.chatInitialMemberUserId,
+                  initialMemberName: widget.chatInitialMemberName,
+                  focusLatestOnOpen: widget.chatFocusLatestOnOpen,
+                ),
               ];
 
               return Stack(
@@ -225,12 +244,20 @@ class _MainWebState extends State<MainWeb> {
                     showcaseKey: _contentKey,
                     title: _contentTitle(localizations, currentNavIndex),
                     description: _contentDescription(context, currentNavIndex),
-                    child: BlocBuilder<NavigationBloc, int>(
-                      builder: (context, navIndex) {
-                        final safeIndex = navIndex.clamp(0, pages.length - 1);
-                        return IndexedStack(index: safeIndex, children: pages);
-                      },
-                    ),
+                    child: widget.child == null
+                        ? BlocBuilder<NavigationBloc, int>(
+                            builder: (context, navIndex) {
+                              final safeIndex = navIndex.clamp(
+                                0,
+                                pages.length - 1,
+                              );
+                              return IndexedStack(
+                                index: safeIndex,
+                                children: pages,
+                              );
+                            },
+                          )
+                        : const SizedBox.shrink(),
                   ),
                   if (widget.child != null)
                     Positioned.fill(
@@ -339,7 +366,8 @@ class _MainWebState extends State<MainWeb> {
         navIndex == 1 ||
         navIndex == 3 ||
         navIndex == 4 ||
-        navIndex == 5;
+        navIndex == 5 ||
+        navIndex == 6;
   }
 
   bool _shouldBypassShowcaseInDebug() {

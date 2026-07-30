@@ -92,6 +92,15 @@ class LoadShiftAssignmentsEvent extends ShiftEvent {
   List<Object?> get props => [from, to, visibleTeamIds, visibleUserIds];
 }
 
+class RemoveAssignmentsForTeamEvent extends ShiftEvent {
+  final String teamId;
+
+  RemoveAssignmentsForTeamEvent(this.teamId);
+
+  @override
+  List<Object?> get props => [teamId];
+}
+
 class AssignShiftEvent extends ShiftEvent {
   final DateTime shiftDate;
   final String? profileId;

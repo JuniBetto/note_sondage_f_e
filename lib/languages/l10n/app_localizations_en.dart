@@ -1209,6 +1209,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncing => 'Syncing';
 
   @override
+  String shiftEntriesForDate(String date) {
+    return 'Shifts for $date';
+  }
+
+  @override
+  String get noArchivedShifts => 'No archived shifts.';
+
+  @override
+  String get openAction => 'Open';
+
+  @override
+  String get restoreAction => 'Restore';
+
+  @override
+  String get selectMonth => 'Select month';
+
+  @override
+  String get selectYear => 'Select year';
+
+  @override
+  String shiftCalendarPublicAssignments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count public team shifts visible',
+      one: '1 public team shift visible',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shiftCalendarPrivateAssignments => 'Private shifts';
+
+  @override
+  String shiftCalendarMoreEntries(int count) {
+    return '+$count more';
+  }
+
+  @override
   String get customProfile => 'Custom Profiles';
 
   @override

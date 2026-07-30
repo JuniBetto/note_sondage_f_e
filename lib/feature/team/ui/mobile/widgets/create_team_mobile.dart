@@ -69,6 +69,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   bool _isLoading = false;
   String? _ownerUserId;
   bool _clockingRequired = false;
+  String _clockingRequiredStartDate = _todayDateIso();
   String _clockingReminderTime = '09:00';
   String _clockingMissingAlertTime = '10:00';
   String _clockingOpenAlertTime = '18:00';
@@ -175,6 +176,8 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             selectedColor = team.color != null ? [team.color!] : [];
             _ownerUserId = team.createdByUserId;
             _clockingRequired = team.clockingRequired;
+            _clockingRequiredStartDate =
+                team.clockingRequiredStartDate ?? _todayDateIso();
             _clockingReminderTime = team.clockingReminderTime ?? '09:00';
             _clockingMissingAlertTime =
                 team.clockingMissingAlertTime ?? '10:00';
@@ -207,6 +210,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             descriptionTeamController.clear();
             selectedColor = [];
             _clockingRequired = false;
+            _clockingRequiredStartDate = _todayDateIso();
             _clockingReminderTime = '09:00';
             _clockingMissingAlertTime = '10:00';
             _clockingOpenAlertTime = '18:00';
@@ -331,6 +335,10 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                           clockingRequired: _clockingRequired,
                           onClockingRequiredChanged: (value) {
                             setState(() => _clockingRequired = value);
+                          },
+                          requiredStartDate: _clockingRequiredStartDate,
+                          onRequiredStartDateChanged: (value) {
+                            setState(() => _clockingRequiredStartDate = value);
                           },
                           reminderTime: _clockingReminderTime,
                           onReminderTimeChanged: (value) {
@@ -492,6 +500,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         description: descriptionTeamController.text.trim(),
         createdByUserId: null,
         clockingRequired: _clockingRequired,
+        clockingRequiredStartDate: _clockingRequiredStartDate,
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
@@ -508,6 +517,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         description: descriptionTeamController.text.trim(),
         createdByUserId: currentUserId,
         clockingRequired: _clockingRequired,
+        clockingRequiredStartDate: _clockingRequiredStartDate,
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
@@ -566,5 +576,12 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
 
   bool _isItalian(BuildContext context) {
     return Localizations.localeOf(context).languageCode == 'it';
+  }
+
+  static String _todayDateIso() {
+    final today = DateTime.now();
+    final month = today.month.toString().padLeft(2, '0');
+    final day = today.day.toString().padLeft(2, '0');
+    return '${today.year}-$month-$day';
   }
 }

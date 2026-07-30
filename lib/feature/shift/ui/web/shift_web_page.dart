@@ -105,11 +105,25 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   List<ShiftAssignmentEntity> _filterAssignmentsForSelectedCalendarTeam(
     List<ShiftAssignmentEntity> assignments,
   ) {
+    final availableTeamIds = _teams
+        .map((team) => team.id?.trim())
+        .whereType<String>()
+        .where((teamId) => teamId.isNotEmpty)
+        .toSet();
+    final visibleAssignments = assignments
+        .where(
+          (assignment) =>
+              ShiftAssignmentAccessPolicy.isVisibleWithAvailableTeams(
+                assignment,
+                availableTeamIds: availableTeamIds,
+              ),
+        )
+        .toList();
     final selectedTeamId = _selectedCalendarTeamId;
     if (selectedTeamId == null || selectedTeamId.isEmpty) {
-      return assignments;
+      return visibleAssignments;
     }
-    return assignments
+    return visibleAssignments
         .where((assignment) => assignment.teamId == selectedTeamId)
         .toList();
   }
@@ -123,7 +137,8 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     if (teamState is TeamsLoaded) {
       _teams = teamState.teams;
       _ensureTeamAccessContextLoaded(teamState.teams);
-    } else if (teamState is! TeamLoading) {
+    }
+    if (teamState is! TeamLoading) {
       _teamBloc.add(LoadTeamsEvent());
     }
     unawaited(_loadArchivedAssignments());
@@ -316,6 +331,9 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
             .toList();
         if (matches.length == 1) existing = matches.first;
       }
+      if (existing == null && !intent.openDialogWhenAssignmentMissing) {
+        return;
+      }
       await _openDialogForAssignment(context, date, existing: existing);
     });
   }
@@ -430,6 +448,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       context: context,
       date: date,
       profiles: _profiles,
+      allTeams: _teams,
       existing: existing,
       initialTeamId: existing == null ? _selectedCalendarTeamId : null,
       canManagePublicShifts: existing == null
@@ -765,15 +784,6 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
 
     if (sortedAssignments.isEmpty) {
       await _openDialogForAssignment(context, date);
-      return;
-    }
-
-    if (sortedAssignments.length == 1) {
-      await _openDialogForAssignment(
-        context,
-        date,
-        existing: sortedAssignments.first,
-      );
       return;
     }
 

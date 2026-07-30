@@ -47,6 +47,7 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     on<DecommitClockingRecordEvent>(_onDecommitRecord);
     on<CommitClockingRecordEvent>(_onCommitRecord);
     on<DeleteClockingRecordEvent>(_onDelete);
+    on<RemoveClockingRecordsForTeamEvent>(_onRemoveRecordsForTeam);
   }
 
   Future<void> _onLoadRecords(
@@ -495,6 +496,53 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
         }
       }
     }());
+  }
+
+  Future<void> _onRemoveRecordsForTeam(
+    RemoveClockingRecordsForTeamEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    final normalizedTeamId = event.teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return;
+    }
+
+    final sourceMyRecords = _cachedMyRecords.isNotEmpty
+        ? List<ClockingRecordEntity>.from(_cachedMyRecords)
+        : await _clockingLocalDataSource.getAll();
+    final removedMyRecordIds = sourceMyRecords
+        .where((record) => record.teamId?.trim() == normalizedTeamId)
+        .map((record) => record.id)
+        .toSet();
+    final removedTeamRecordIds = _cachedTeamRecords
+        .where((record) => record.teamId?.trim() == normalizedTeamId)
+        .map((record) => record.id)
+        .toSet();
+    final shouldResetSelectedTeam = _selectedTeamId?.trim() == normalizedTeamId;
+
+    if (removedMyRecordIds.isEmpty &&
+        removedTeamRecordIds.isEmpty &&
+        !shouldResetSelectedTeam) {
+      return;
+    }
+
+    _cachedMyRecords = sourceMyRecords
+        .where((record) => record.teamId?.trim() != normalizedTeamId)
+        .toList();
+    _cachedTeamRecords = shouldResetSelectedTeam
+        ? []
+        : _cachedTeamRecords
+              .where((record) => record.teamId?.trim() != normalizedTeamId)
+              .toList();
+    if (shouldResetSelectedTeam) {
+      _selectedTeamId = null;
+    }
+    _syncingRecordIds.removeWhere(
+      (id) =>
+          removedMyRecordIds.contains(id) || removedTeamRecordIds.contains(id),
+    );
+    await _clockingLocalDataSource.saveAll(_cachedMyRecords);
+    emit(_loadedState());
   }
 
   Future<void> _performAction(

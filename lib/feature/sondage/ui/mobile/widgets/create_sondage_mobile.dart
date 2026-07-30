@@ -6,12 +6,14 @@ class CreateSondageMobile extends StatelessWidget {
   final String? sondageId;
   final VoidCallback? onsondageCreated;
   final SondageEntity? initialSondage;
+  final bool enableTutorial;
 
   const CreateSondageMobile({
     super.key,
     this.onsondageCreated,
     this.sondageId,
     this.initialSondage,
+    this.enableTutorial = true,
   });
 
   @override
@@ -23,7 +25,9 @@ class CreateSondageMobile extends StatelessWidget {
         onCreated: onsondageCreated,
         showHeader: false,
         initialSondage: initialSondage,
-        tutorialId: initialSondage == null ? 'mobile-sondage-create' : null,
+        tutorialId: initialSondage == null && enableTutorial
+            ? 'mobile-sondage-create'
+            : null,
         onCloseRequested: () {
           if (!context.mounted) {
             return;

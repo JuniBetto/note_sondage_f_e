@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +19,14 @@ import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_card.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_row.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
+
+void _openTeamDetailRoute(BuildContext context, String teamId) {
+  if (kIsWeb) {
+    context.go(RouterPaths.teamDetail, extra: teamId);
+    return;
+  }
+  context.push(RouterPaths.teamDetail, extra: teamId);
+}
 
 class ResponsiveGridTeams extends StatefulWidget {
   const ResponsiveGridTeams({
@@ -405,6 +414,11 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
       name: team.name,
       description: team.description,
       createdByUserId: team.createdByUserId,
+      clockingRequired: team.clockingRequired,
+      clockingRequiredStartDate: team.clockingRequiredStartDate,
+      clockingReminderTime: team.clockingReminderTime,
+      clockingMissingAlertTime: team.clockingMissingAlertTime,
+      clockingOpenAlertTime: team.clockingOpenAlertTime,
       memberCount: memberCount,
       createdAt: team.createdAt,
     );
@@ -515,7 +529,7 @@ Widget viewScrollWebMobile(
               currentUserPhotoUrl: currentUserPhotoUrl,
               onTap: isSelectionMode
                   ? () => onTeamSelected?.call(item)
-                  : () => context.go(RouterPaths.teamDetail, extra: teamId),
+                  : () => _openTeamDetailRoute(context, teamId),
               colorTeam: item["color"],
               onArchiveTap: isSelectionMode
                   ? null
@@ -542,7 +556,7 @@ Widget viewScrollWebMobile(
               currentUserPhotoUrl: currentUserPhotoUrl,
               onTap: isSelectionMode
                   ? () => onTeamSelected?.call(item)
-                  : () => context.go(RouterPaths.teamDetail, extra: teamId),
+                  : () => _openTeamDetailRoute(context, teamId),
               colorTeam: item["color"],
               teamId: teamId,
               onArchiveTap: isSelectionMode

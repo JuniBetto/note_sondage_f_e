@@ -56,6 +56,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
 
   List<String> selectedColor = [];
   bool _clockingRequired = false;
+  String _clockingRequiredStartDate = _todayDateIso();
   String _clockingReminderTime = '09:00';
   String _clockingMissingAlertTime = '10:00';
   String _clockingOpenAlertTime = '18:00';
@@ -138,6 +139,8 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
           setState(() {
             selectedColor = team.color != null ? [team.color!] : [];
             _clockingRequired = team.clockingRequired;
+            _clockingRequiredStartDate =
+                team.clockingRequiredStartDate ?? _todayDateIso();
             _clockingReminderTime = team.clockingReminderTime ?? '09:00';
             _clockingMissingAlertTime =
                 team.clockingMissingAlertTime ?? '10:00';
@@ -309,6 +312,10 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                     onClockingRequiredChanged: (value) {
                       setState(() => _clockingRequired = value);
                     },
+                    requiredStartDate: _clockingRequiredStartDate,
+                    onRequiredStartDateChanged: (value) {
+                      setState(() => _clockingRequiredStartDate = value);
+                    },
                     reminderTime: _clockingReminderTime,
                     onReminderTimeChanged: (value) {
                       setState(() => _clockingReminderTime = value);
@@ -453,6 +460,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
         description: focusTeamController.text,
         createdByUserId: null,
         clockingRequired: _clockingRequired,
+        clockingRequiredStartDate: _clockingRequiredStartDate,
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
@@ -461,5 +469,12 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
 
       _teamBloc.add(UpdateTeamEvent(team));
     }
+  }
+
+  static String _todayDateIso() {
+    final today = DateTime.now();
+    final month = today.month.toString().padLeft(2, '0');
+    final day = today.day.toString().padLeft(2, '0');
+    return '${today.year}-$month-$day';
   }
 }

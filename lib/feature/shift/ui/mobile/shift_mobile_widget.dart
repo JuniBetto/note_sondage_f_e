@@ -101,11 +101,25 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   List<ShiftAssignmentEntity> _filterAssignmentsForSelectedCalendarTeam(
     List<ShiftAssignmentEntity> assignments,
   ) {
+    final availableTeamIds = _teams
+        .map((team) => team.id?.trim())
+        .whereType<String>()
+        .where((teamId) => teamId.isNotEmpty)
+        .toSet();
+    final visibleAssignments = assignments
+        .where(
+          (assignment) =>
+              ShiftAssignmentAccessPolicy.isVisibleWithAvailableTeams(
+                assignment,
+                availableTeamIds: availableTeamIds,
+              ),
+        )
+        .toList();
     final selectedTeamId = _selectedCalendarTeamId;
     if (selectedTeamId == null || selectedTeamId.isEmpty) {
-      return assignments;
+      return visibleAssignments;
     }
-    return assignments
+    return visibleAssignments
         .where((assignment) => assignment.teamId == selectedTeamId)
         .toList();
   }
@@ -119,7 +133,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     if (teamState is TeamsLoaded) {
       _teams = teamState.teams;
       _ensureTeamAccessContextLoaded(teamState.teams);
-    } else if (teamState is! TeamLoading) {
+    }
+    if (teamState is! TeamLoading) {
       _teamBloc.add(LoadTeamsEvent());
     }
     unawaited(_loadArchivedAssignmentsSafely());
@@ -333,6 +348,9 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
             .toList();
         if (matches.length == 1) existing = matches.first;
       }
+      if (existing == null && !intent.openDialogWhenAssignmentMissing) {
+        return;
+      }
       await _openDialogForAssignment(context, date, existing: existing);
     });
   }
@@ -447,6 +465,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       context: context,
       date: date,
       profiles: _profiles,
+      allTeams: _teams,
       existing: existing,
       initialTeamId: existing == null ? _selectedCalendarTeamId : null,
       canManagePublicShifts: existing == null
@@ -782,15 +801,6 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
 
     if (sortedAssignments.isEmpty) {
       await _openDialogForAssignment(context, date);
-      return;
-    }
-
-    if (sortedAssignments.length == 1) {
-      await _openDialogForAssignment(
-        context,
-        date,
-        existing: sortedAssignments.first,
-      );
       return;
     }
 

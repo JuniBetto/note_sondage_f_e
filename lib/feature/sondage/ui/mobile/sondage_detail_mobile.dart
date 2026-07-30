@@ -427,7 +427,11 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
               rootSondageBloc.add(RemoveCachedSondageEvent(widget.sondageId));
             }
             AppSnackBar.showSuccess(context, localization.surveyDeleted);
-            context.go(RouterPaths.sondage);
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(RouterPaths.sondage);
+            }
             return;
           }
           if (state is SondageError && context.mounted) {
@@ -473,6 +477,10 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                       color: colorScheme.iconLabel,
                     ),
                     onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                        return;
+                      }
                       context.read<NavigationBloc>().add(
                         NavigationPositionChanged(4),
                       );

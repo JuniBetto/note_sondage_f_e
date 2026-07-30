@@ -359,8 +359,11 @@ void main() {
         bloc.add(const DeleteTeamEvent('team-1'));
         await pumpEventQueue(times: 20);
 
-        expect(emittedStates.first, isA<TeamDeleted>());
-        expect(emittedStates.whereType<TeamsLoaded>().last.teams, isEmpty);
+        expect(emittedStates.first, isA<TeamsLoaded>());
+        expect((emittedStates.first as TeamsLoaded).teams, isEmpty);
+        expect(emittedStates.whereType<TeamDeleted>(), isNotEmpty);
+        expect(emittedStates.last, isA<TeamsLoaded>());
+        expect((emittedStates.last as TeamsLoaded).teams, isEmpty);
         expect(repository.deleteCalls, ['team-1']);
         expect(teamLocalDataSource.savedSnapshots, isNotEmpty);
         expect(teamLocalDataSource.savedSnapshots.last, isEmpty);
@@ -388,7 +391,9 @@ void main() {
         bloc.add(const DeleteTeamEvent('team-1'));
         await pumpEventQueue(times: 40);
 
-        expect(emittedStates.first, isA<TeamDeleted>());
+        expect(emittedStates.first, isA<TeamsLoaded>());
+        expect((emittedStates.first as TeamsLoaded).teams, isEmpty);
+        expect(emittedStates.whereType<TeamDeleted>(), isEmpty);
         expect(emittedStates.whereType<TeamError>(), isNotEmpty);
         expect(emittedStates.last, isA<TeamsLoaded>());
         expect(
