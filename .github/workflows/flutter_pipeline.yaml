@@ -381,6 +381,7 @@ jobs:
           </dict>
           </plist>
           EOF
+          cp ExportOptions.plist ios/ExportOptions.plist
 
       - name: Extract Version from pubspec.yaml
         run: |
