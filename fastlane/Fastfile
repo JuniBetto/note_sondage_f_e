@@ -37,6 +37,52 @@ def shell_join(parts)
   parts.map { |part| Shellwords.escape(part.to_s) }.join(" ")
 end
 
+def export_options_plist_path
+  "ios/ExportOptions.plist"
+end
+
+def export_options_team_id
+  ENV["IOS_TEAM_ID"].to_s.strip.empty? ? "HQCYCT77HU" : ENV["IOS_TEAM_ID"].strip
+end
+
+def export_options_bundle_id
+  ENV["IOS_BUNDLE_IDENTIFIER"].to_s.strip.empty? ? "com.teammanagement.app" : ENV["IOS_BUNDLE_IDENTIFIER"].strip
+end
+
+def export_options_profile_name
+  ENV["IOS_PROVISIONING_PROFILE_NAME"].to_s.strip.empty? ? "juni_TestFlight" : ENV["IOS_PROVISIONING_PROFILE_NAME"].strip
+end
+
+def ensure_export_options_plist!
+  path = export_options_plist_path
+  return if File.exist?(path)
+
+  File.write(
+    path,
+    <<~PLIST
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>destination</key>
+        <string>export</string>
+        <key>method</key>
+        <string>app-store</string>
+        <key>teamID</key>
+        <string>#{export_options_team_id}</string>
+        <key>signingStyle</key>
+        <string>manual</string>
+        <key>provisioningProfiles</key>
+        <dict>
+          <key>#{export_options_bundle_id}</key>
+          <string>#{export_options_profile_name}</string>
+        </dict>
+      </dict>
+      </plist>
+    PLIST
+  )
+end
+
 def flutter_pub_get
   sh("flutter pub get")
 end
@@ -51,6 +97,7 @@ platform :android do
     ])
 
     flutter_pub_get
+    ensure_export_options_plist!
 
     sh(
       shell_join(
@@ -110,7 +157,7 @@ platform :ios do
           "--release",
           "--build-name=#{flutter_build_name}",
           "--build-number=#{flutter_build_number}",
-          "--export-options-plist=ios/ExportOptions.plist",
+          "--export-options-plist=#{export_options_plist_path}",
         ] + dart_define_args,
       ),
     )
