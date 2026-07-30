@@ -45,6 +45,9 @@ class TeamMapper {
       description: json['description']?.toString() ?? '',
       createdByUserId: createdByUserId,
       clockingRequired: clockingRequired,
+      clockingRequiredStartDate: _normalizeDateString(
+        json['clockingRequiredStartDate'],
+      ),
       clockingReminderTime: _normalizeTimeString(
         json['clockingReminderTime'],
         fallback: _defaultReminderTime,
@@ -91,6 +94,9 @@ class TeamMapper {
   static Map<String, dynamic> toJson(TeamEntity entity) {
     final name = entity.name;
     final slug = name.toLowerCase().replaceAll(RegExp(r'\s+'), '-');
+    final normalizedStartDate = _normalizeDateString(
+      entity.clockingRequiredStartDate,
+    );
     return {
       'name': name,
       'slug': slug,
@@ -98,6 +104,8 @@ class TeamMapper {
       if (entity.color != null && entity.color!.isNotEmpty)
         'color': entity.color,
       'clockingRequired': entity.clockingRequired,
+      if (normalizedStartDate != null)
+        'clockingRequiredStartDate': normalizedStartDate,
       'clockingReminderTime': _timeForApi(
         entity.clockingReminderTime,
         fallback: _defaultReminderTime,
@@ -120,12 +128,17 @@ class TeamMapper {
   }
 
   static Map<String, dynamic> toJsonForUpdate(TeamUpdate entity) {
+    final normalizedStartDate = _normalizeDateString(
+      entity.clockingRequiredStartDate,
+    );
     return {
       'name': entity.name,
       'description': entity.description,
       if (entity.color != null && entity.color!.isNotEmpty)
         'color': entity.color,
       'clockingRequired': entity.clockingRequired,
+      if (normalizedStartDate != null)
+        'clockingRequiredStartDate': normalizedStartDate,
       'clockingReminderTime': _timeForApi(
         entity.clockingReminderTime,
         fallback: _defaultReminderTime,
@@ -162,6 +175,9 @@ class TeamMapper {
           ? json['color']!.toString()
           : null,
       clockingRequired: json['clockingRequired'] == true,
+      clockingRequiredStartDate: _normalizeDateString(
+        json['clockingRequiredStartDate'],
+      ),
       clockingReminderTime: _normalizeTimeString(
         json['clockingReminderTime'],
         fallback: _defaultReminderTime,
@@ -198,5 +214,13 @@ class TeamMapper {
       return value.substring(0, 5);
     }
     return value;
+  }
+
+  static String? _normalizeDateString(dynamic raw) {
+    final value = raw?.toString().trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value.length >= 10 ? value.substring(0, 10) : value;
   }
 }

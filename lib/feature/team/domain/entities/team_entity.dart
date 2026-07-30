@@ -11,6 +11,7 @@ class TeamEntity {
   final DateTime createdAt;
   final String? color; // New field for team color
   final bool clockingRequired;
+  final String? clockingRequiredStartDate;
   final String? clockingReminderTime;
   final String? clockingMissingAlertTime;
   final String? clockingOpenAlertTime;
@@ -27,6 +28,7 @@ class TeamEntity {
     required this.description,
     required this.createdByUserId,
     this.clockingRequired = false,
+    this.clockingRequiredStartDate,
     this.clockingReminderTime,
     this.clockingMissingAlertTime,
     this.clockingOpenAlertTime,
@@ -84,6 +86,7 @@ class TeamUpdate extends TeamEntity {
     required String? createdByUserId,
     String? color,
     bool clockingRequired = false,
+    String? clockingRequiredStartDate,
     String? clockingReminderTime,
     String? clockingMissingAlertTime,
     String? clockingOpenAlertTime,
@@ -99,6 +102,7 @@ class TeamUpdate extends TeamEntity {
          description: description,
          createdByUserId: createdByUserId ?? '',
          clockingRequired: clockingRequired,
+         clockingRequiredStartDate: clockingRequiredStartDate,
          clockingReminderTime: clockingReminderTime,
          clockingMissingAlertTime: clockingMissingAlertTime,
          clockingOpenAlertTime: clockingOpenAlertTime,
@@ -116,6 +120,7 @@ class TeamUpdate extends TeamEntity {
     String? createdAt,
     String? createdByUserId,
     bool? clockingRequired,
+    String? clockingRequiredStartDate,
     String? clockingReminderTime,
     String? clockingMissingAlertTime,
     String? clockingOpenAlertTime,
@@ -129,6 +134,8 @@ class TeamUpdate extends TeamEntity {
       description: description ?? this.description,
       color: color ?? this.color,
       clockingRequired: clockingRequired ?? this.clockingRequired,
+      clockingRequiredStartDate:
+          clockingRequiredStartDate ?? this.clockingRequiredStartDate,
       clockingReminderTime: clockingReminderTime ?? this.clockingReminderTime,
       clockingMissingAlertTime:
           clockingMissingAlertTime ?? this.clockingMissingAlertTime,

@@ -6,6 +6,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
     super.key,
     required this.clockingRequired,
     required this.onClockingRequiredChanged,
+    required this.requiredStartDate,
+    required this.onRequiredStartDateChanged,
     required this.reminderTime,
     required this.onReminderTimeChanged,
     required this.missingAlertTime,
@@ -17,6 +19,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
 
   final bool clockingRequired;
   final ValueChanged<bool> onClockingRequiredChanged;
+  final String requiredStartDate;
+  final ValueChanged<String> onRequiredStartDateChanged;
   final String reminderTime;
   final ValueChanged<String> onReminderTimeChanged;
   final String missingAlertTime;
@@ -91,6 +95,20 @@ class TeamClockingRequirementSection extends StatelessWidget {
               opacity: clockingRequired ? 1 : 0.55,
               child: Column(
                 children: [
+                  _DateTile(
+                    title: isItalian ? 'Data di inizio' : 'Start date',
+                    subtitle: isItalian
+                        ? 'Le notifiche di timbratura obbligatoria partono da questa data.'
+                        : 'Required clocking notifications start from this date.',
+                    value: _formatDateForDisplay(context, requiredStartDate),
+                    enabled: !readOnly && clockingRequired,
+                    onTap: () => _pickDate(
+                      context,
+                      requiredStartDate,
+                      onRequiredStartDateChanged,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   _TimeTile(
                     title: isItalian ? 'Promemoria utente' : 'User reminder',
                     subtitle: isItalian
@@ -142,6 +160,25 @@ class TeamClockingRequirementSection extends StatelessWidget {
     );
   }
 
+  Future<void> _pickDate(
+    BuildContext context,
+    String currentValue,
+    ValueChanged<String> onChanged,
+  ) async {
+    final now = DateTime.now();
+    final initial = _parseDate(currentValue) ?? now;
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (selected == null) {
+      return;
+    }
+    onChanged(_formatDateForApi(selected));
+  }
+
   Future<void> _pickTime(
     BuildContext context,
     String currentValue,
@@ -151,6 +188,17 @@ class TeamClockingRequirementSection extends StatelessWidget {
     final selected = await showTimePicker(
       context: context,
       initialTime: initial,
+      builder: (pickerContext, child) {
+        final mediaQuery = MediaQuery.of(
+          pickerContext,
+        ).copyWith(alwaysUse24HourFormat: false);
+
+        return Localizations.override(
+          context: pickerContext,
+          locale: const Locale('en'),
+          child: MediaQuery(data: mediaQuery, child: child!),
+        );
+      },
     );
     if (selected == null) {
       return;
@@ -169,6 +217,27 @@ class TeamClockingRequirementSection extends StatelessWidget {
     final hh = value.hour.toString().padLeft(2, '0');
     final mm = value.minute.toString().padLeft(2, '0');
     return '$hh:$mm';
+  }
+
+  DateTime? _parseDate(String value) {
+    if (value.trim().isEmpty) {
+      return null;
+    }
+    return DateTime.tryParse(value);
+  }
+
+  String _formatDateForApi(DateTime value) {
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    return '${value.year}-$month-$day';
+  }
+
+  String _formatDateForDisplay(BuildContext context, String value) {
+    final parsed = _parseDate(value);
+    if (parsed == null) {
+      return value;
+    }
+    return MaterialLocalizations.of(context).formatMediumDate(parsed);
   }
 }
 
@@ -253,6 +322,122 @@ class _TimeTile extends StatelessWidget {
                           ? colorScheme.primary
                           : colorScheme.descriptionColor,
                     ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DateTile extends StatelessWidget {
+  const _DateTile({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String value;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingTile(
+      title: title,
+      subtitle: subtitle,
+      value: value,
+      enabled: enabled,
+      onTap: onTap,
+      icon: Icons.event_outlined,
+    );
+  }
+}
+
+class _SettingTile extends StatelessWidget {
+  const _SettingTile({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.enabled,
+    required this.onTap,
+    required this.icon,
+  });
+
+  final String title;
+  final String subtitle;
+  final String value;
+  final bool enabled;
+  final VoidCallback onTap;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.descriptionColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.homeSecondary?.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(icon, size: 18, color: colorScheme.descriptionColor),
                   ],
                 ),
               ),

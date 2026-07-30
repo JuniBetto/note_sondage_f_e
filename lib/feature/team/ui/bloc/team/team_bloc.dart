@@ -208,6 +208,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       description: event.team.description,
       createdByUserId: event.team.createdByUserId,
       clockingRequired: event.team.clockingRequired,
+      clockingRequiredStartDate: event.team.clockingRequiredStartDate,
       clockingReminderTime: event.team.clockingReminderTime,
       clockingMissingAlertTime: event.team.clockingMissingAlertTime,
       clockingOpenAlertTime: event.team.clockingOpenAlertTime,
@@ -607,6 +608,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
           ? update.createdByUserId
           : (previous?.createdByUserId ?? ''),
       clockingRequired: update.clockingRequired,
+      clockingRequiredStartDate: update.clockingRequiredStartDate,
       clockingReminderTime: update.clockingReminderTime,
       clockingMissingAlertTime: update.clockingMissingAlertTime,
       clockingOpenAlertTime: update.clockingOpenAlertTime,

@@ -26,15 +26,18 @@ class TeamHiveModel extends HiveObject {
   final bool clockingRequired;
 
   @HiveField(7)
-  final String? clockingReminderTime;
+  final String? clockingRequiredStartDate;
 
   @HiveField(8)
-  final String? clockingMissingAlertTime;
+  final String? clockingReminderTime;
 
   @HiveField(9)
-  final String? clockingOpenAlertTime;
+  final String? clockingMissingAlertTime;
 
   @HiveField(10)
+  final String? clockingOpenAlertTime;
+
+  @HiveField(11)
   final String? planningWorkerTypesJson;
 
   TeamHiveModel({
@@ -45,6 +48,7 @@ class TeamHiveModel extends HiveObject {
     required this.createdAt,
     this.color,
     this.clockingRequired = false,
+    this.clockingRequiredStartDate,
     this.clockingReminderTime,
     this.clockingMissingAlertTime,
     this.clockingOpenAlertTime,
