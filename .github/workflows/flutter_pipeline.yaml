@@ -358,6 +358,30 @@ jobs:
        
           cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
 
+      - name: Create Custom ExportOptions.plist
+        run: |
+          cat <<EOF > ExportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.EN">
+          <plist version="1.0">
+          <dict>
+              <key>destination</key>
+              <string>export</string>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>HQCYCT77HU</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.teammanagement.app</key>
+                  <string>juni_TestFlight</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
       - name: Extract Version from pubspec.yaml
         run: |
           FULL_VERSION=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2)
