@@ -110,7 +110,7 @@ platform :ios do
           "--release",
           "--build-name=#{flutter_build_name}",
           "--build-number=#{flutter_build_number}",
-          "--export-options-plist=ExportOptions.plist",
+          "--export-options-plist=ios/ExportOptions.plist",
         ] + dart_define_args,
       ),
     )
