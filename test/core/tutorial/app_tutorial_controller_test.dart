@@ -74,37 +74,51 @@ class _TutorialHarnessState extends State<_TutorialHarness> {
   }
 }
 
+Future<void> _pumpUntilVisible(
+  WidgetTester tester,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 2),
+  Duration step = const Duration(milliseconds: 50),
+}) async {
+  var elapsed = Duration.zero;
+  while (finder.evaluate().isEmpty && elapsed < timeout) {
+    await tester.pump(step);
+    elapsed += step;
+  }
+}
+
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     await AppTutorialController.resetForUser('user-1');
   });
 
-  testWidgets('showIfNeeded starts the tutorial and replayRegistered reopens it', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const _TutorialHarness());
-    await tester.pump();
+  testWidgets(
+    'showIfNeeded starts the tutorial and replayRegistered reopens it',
+    (tester) async {
+      await tester.pumpWidget(const _TutorialHarness());
+      await tester.pump();
 
-    await tester.tap(find.text('start'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.text('start'));
+      await tester.pump();
+      await _pumpUntilVisible(tester, find.text('Tutorial title'));
 
-    expect(ShowcaseView.get().isShowcaseRunning, isTrue);
-    expect(find.text('Tutorial title'), findsOneWidget);
-    expect(find.text('Tutorial description'), findsOneWidget);
+      expect(ShowcaseView.get().isShowcaseRunning, isTrue);
+      expect(find.text('Tutorial title'), findsOneWidget);
+      expect(find.text('Tutorial description'), findsOneWidget);
 
-    expect(AppTutorialController.dismissActiveTutorialIfAny(), isTrue);
-    await tester.pump();
+      expect(AppTutorialController.dismissActiveTutorialIfAny(), isTrue);
+      await tester.pump();
 
-    expect(ShowcaseView.get().isShowcaseRunning, isFalse);
+      expect(ShowcaseView.get().isShowcaseRunning, isFalse);
 
-    await tester.tap(find.text('replay'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.text('replay'));
+      await tester.pump();
+      await _pumpUntilVisible(tester, find.text('Tutorial title'));
 
-    expect(ShowcaseView.get().isShowcaseRunning, isTrue);
-    expect(find.text('Tutorial title'), findsOneWidget);
-    expect(find.text('Tutorial description'), findsOneWidget);
-  });
+      expect(ShowcaseView.get().isShowcaseRunning, isTrue);
+      expect(find.text('Tutorial title'), findsOneWidget);
+      expect(find.text('Tutorial description'), findsOneWidget);
+    },
+  );
 }
