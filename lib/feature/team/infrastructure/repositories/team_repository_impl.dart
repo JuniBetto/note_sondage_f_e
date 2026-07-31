@@ -106,6 +106,7 @@ class TeamRepositoryImpl implements TeamRepository {
                     clockingRequired: updated.clockingRequired,
                     clockingRequiredStartDate:
                         updated.clockingRequiredStartDate,
+                    clockingRequiredEndDate: updated.clockingRequiredEndDate,
                     clockingReminderTime: updated.clockingReminderTime,
                     clockingMissingAlertTime: updated.clockingMissingAlertTime,
                     clockingOpenAlertTime: updated.clockingOpenAlertTime,
@@ -156,6 +157,7 @@ class TeamRepositoryImpl implements TeamRepository {
                     createdByUserId: team.createdByUserId,
                     clockingRequired: team.clockingRequired,
                     clockingRequiredStartDate: team.clockingRequiredStartDate,
+                    clockingRequiredEndDate: team.clockingRequiredEndDate,
                     clockingReminderTime: team.clockingReminderTime,
                     clockingMissingAlertTime: team.clockingMissingAlertTime,
                     clockingOpenAlertTime: team.clockingOpenAlertTime,

@@ -48,6 +48,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
   List<String> selectedColor = [];
   bool _clockingRequired = false;
   String _clockingRequiredStartDate = _todayDateIso();
+  String? _clockingRequiredEndDate;
   String _clockingReminderTime = '09:00';
   String _clockingMissingAlertTime = '10:00';
   String _clockingOpenAlertTime = '18:00';
@@ -122,6 +123,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
             selectedColor = [];
             _clockingRequired = false;
             _clockingRequiredStartDate = _todayDateIso();
+            _clockingRequiredEndDate = null;
             _clockingReminderTime = '09:00';
             _clockingMissingAlertTime = '10:00';
             _clockingOpenAlertTime = '18:00';
@@ -291,6 +293,10 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                     onRequiredStartDateChanged: (value) {
                       setState(() => _clockingRequiredStartDate = value);
                     },
+                    requiredEndDate: _clockingRequiredEndDate,
+                    onRequiredEndDateChanged: (value) {
+                      setState(() => _clockingRequiredEndDate = value);
+                    },
                     reminderTime: _clockingReminderTime,
                     onReminderTimeChanged: (value) {
                       setState(() => _clockingReminderTime = value);
@@ -402,6 +408,11 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
 
   void _onSave() {
     if (_formKey.currentState?.validate() ?? false) {
+      final clockingDateRangeError = _clockingDateRangeError();
+      if (clockingDateRangeError != null) {
+        AppSnackBar.showWarning(context, clockingDateRangeError);
+        return;
+      }
       final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
       final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
       final name = nameTeamController.text.trim();
@@ -434,12 +445,28 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
         createdByUserId: currentUserId,
         clockingRequired: _clockingRequired,
         clockingRequiredStartDate: _clockingRequiredStartDate,
+        clockingRequiredEndDate: _clockingRequiredEndDate,
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
       );
       _teamBloc.add(CreateTeamEvent(team, userId: currentUserId));
     }
+  }
+
+  String? _clockingDateRangeError() {
+    final endDate = _clockingRequiredEndDate;
+    if (endDate == null || endDate.trim().isEmpty) {
+      return null;
+    }
+    final start = DateTime.tryParse(_clockingRequiredStartDate);
+    final end = DateTime.tryParse(endDate);
+    if (start == null || end == null || !end.isBefore(start)) {
+      return null;
+    }
+    return _isItalian(context)
+        ? 'La data di fine deve essere uguale o successiva alla data di inizio.'
+        : 'The end date must be after or equal to the start date.';
   }
 
   void _scheduleTutorial() {

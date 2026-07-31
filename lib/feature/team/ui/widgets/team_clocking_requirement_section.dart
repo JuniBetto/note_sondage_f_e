@@ -8,6 +8,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
     required this.onClockingRequiredChanged,
     required this.requiredStartDate,
     required this.onRequiredStartDateChanged,
+    required this.requiredEndDate,
+    required this.onRequiredEndDateChanged,
     required this.reminderTime,
     required this.onReminderTimeChanged,
     required this.missingAlertTime,
@@ -21,6 +23,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
   final ValueChanged<bool> onClockingRequiredChanged;
   final String requiredStartDate;
   final ValueChanged<String> onRequiredStartDateChanged;
+  final String? requiredEndDate;
+  final ValueChanged<String?> onRequiredEndDateChanged;
   final String reminderTime;
   final ValueChanged<String> onReminderTimeChanged;
   final String missingAlertTime;
@@ -100,15 +104,48 @@ class TeamClockingRequirementSection extends StatelessWidget {
                     subtitle: isItalian
                         ? 'Le notifiche di timbratura obbligatoria partono da questa data.'
                         : 'Required clocking notifications start from this date.',
-                    value: _formatDateForDisplay(context, requiredStartDate),
+                    value:
+                        _formatDateForDisplay(context, requiredStartDate) ??
+                        requiredStartDate,
+                    enabled: !readOnly && clockingRequired,
+                    onTap: () => _pickDate(context, requiredStartDate, (value) {
+                      if (value != null) {
+                        onRequiredStartDateChanged(value);
+                      }
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+                  _DateTile(
+                    title: isItalian ? 'Data di fine' : 'End date',
+                    subtitle: isItalian
+                        ? 'Se impostata, le notifiche si fermano da questa data in poi. Se vuota, restano attive senza scadenza.'
+                        : 'If set, notifications stop after this date. Leave it empty to keep them active with no end date.',
+                    value:
+                        _formatDateForDisplay(context, requiredEndDate) ??
+                        (isItalian ? 'Senza scadenza' : 'No end date'),
                     enabled: !readOnly && clockingRequired,
                     onTap: () => _pickDate(
                       context,
-                      requiredStartDate,
-                      onRequiredStartDateChanged,
+                      requiredEndDate,
+                      onRequiredEndDateChanged,
+                      _parseDate(requiredStartDate),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  if ((requiredEndDate?.trim().isNotEmpty ?? false) &&
+                      !readOnly &&
+                      clockingRequired)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => onRequiredEndDateChanged(null),
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        label: Text(
+                          isItalian ? 'Rimuovi fine' : 'Clear end date',
+                        ),
+                      ),
+                    ),
+                  if (requiredEndDate?.trim().isNotEmpty ?? false)
+                    const SizedBox(height: 10),
                   _TimeTile(
                     title: isItalian ? 'Promemoria utente' : 'User reminder',
                     subtitle: isItalian
@@ -162,15 +199,17 @@ class TeamClockingRequirementSection extends StatelessWidget {
 
   Future<void> _pickDate(
     BuildContext context,
-    String currentValue,
-    ValueChanged<String> onChanged,
-  ) async {
+    String? currentValue,
+    ValueChanged<String?> onChanged, [
+    DateTime? minDate,
+  ]) async {
     final now = DateTime.now();
-    final initial = _parseDate(currentValue) ?? now;
+    final firstDate = minDate ?? DateTime(now.year - 2);
+    final initial = _parseDate(currentValue ?? '') ?? firstDate;
     final selected = await showDatePicker(
       context: context,
-      initialDate: initial,
-      firstDate: DateTime(now.year - 2),
+      initialDate: initial.isBefore(firstDate) ? firstDate : initial,
+      firstDate: firstDate,
       lastDate: DateTime(now.year + 5),
     );
     if (selected == null) {
@@ -232,7 +271,10 @@ class TeamClockingRequirementSection extends StatelessWidget {
     return '${value.year}-$month-$day';
   }
 
-  String _formatDateForDisplay(BuildContext context, String value) {
+  String? _formatDateForDisplay(BuildContext context, String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
     final parsed = _parseDate(value);
     if (parsed == null) {
       return value;

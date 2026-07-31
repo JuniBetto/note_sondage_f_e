@@ -48,6 +48,9 @@ class TeamMapper {
       clockingRequiredStartDate: _normalizeDateString(
         json['clockingRequiredStartDate'],
       ),
+      clockingRequiredEndDate: _normalizeDateString(
+        json['clockingRequiredEndDate'],
+      ),
       clockingReminderTime: _normalizeTimeString(
         json['clockingReminderTime'],
         fallback: _defaultReminderTime,
@@ -97,6 +100,9 @@ class TeamMapper {
     final normalizedStartDate = _normalizeDateString(
       entity.clockingRequiredStartDate,
     );
+    final normalizedEndDate = _normalizeDateString(
+      entity.clockingRequiredEndDate,
+    );
     return {
       'name': name,
       'slug': slug,
@@ -106,6 +112,8 @@ class TeamMapper {
       'clockingRequired': entity.clockingRequired,
       if (normalizedStartDate != null)
         'clockingRequiredStartDate': normalizedStartDate,
+      if (normalizedEndDate != null)
+        'clockingRequiredEndDate': normalizedEndDate,
       'clockingReminderTime': _timeForApi(
         entity.clockingReminderTime,
         fallback: _defaultReminderTime,
@@ -131,6 +139,9 @@ class TeamMapper {
     final normalizedStartDate = _normalizeDateString(
       entity.clockingRequiredStartDate,
     );
+    final normalizedEndDate = _normalizeDateString(
+      entity.clockingRequiredEndDate,
+    );
     return {
       'name': entity.name,
       'description': entity.description,
@@ -139,6 +150,10 @@ class TeamMapper {
       'clockingRequired': entity.clockingRequired,
       if (normalizedStartDate != null)
         'clockingRequiredStartDate': normalizedStartDate,
+      if (normalizedEndDate != null)
+        'clockingRequiredEndDate': normalizedEndDate,
+      if (entity.clearClockingRequiredEndDate)
+        'clearClockingRequiredEndDate': true,
       'clockingReminderTime': _timeForApi(
         entity.clockingReminderTime,
         fallback: _defaultReminderTime,
@@ -178,6 +193,9 @@ class TeamMapper {
       clockingRequiredStartDate: _normalizeDateString(
         json['clockingRequiredStartDate'],
       ),
+      clockingRequiredEndDate: _normalizeDateString(
+        json['clockingRequiredEndDate'],
+      ),
       clockingReminderTime: _normalizeTimeString(
         json['clockingReminderTime'],
         fallback: _defaultReminderTime,
@@ -190,6 +208,8 @@ class TeamMapper {
         json['clockingOpenAlertTime'],
         fallback: _defaultOpenAlertTime,
       ),
+      clearClockingRequiredEndDate:
+          json['clearClockingRequiredEndDate'] == true,
       planningWorkerTypes: planningWorkerTypes.isEmpty
           ? PlanningWorkerTypeEntity.builtIns
           : planningWorkerTypes,

@@ -40,6 +40,9 @@ class TeamHiveModel extends HiveObject {
   @HiveField(11)
   final String? planningWorkerTypesJson;
 
+  @HiveField(12)
+  final String? clockingRequiredEndDate;
+
   TeamHiveModel({
     required this.id,
     required this.name,
@@ -53,5 +56,6 @@ class TeamHiveModel extends HiveObject {
     this.clockingMissingAlertTime,
     this.clockingOpenAlertTime,
     this.planningWorkerTypesJson,
+    this.clockingRequiredEndDate,
   });
 }

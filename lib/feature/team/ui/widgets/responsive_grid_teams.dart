@@ -416,6 +416,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
       createdByUserId: team.createdByUserId,
       clockingRequired: team.clockingRequired,
       clockingRequiredStartDate: team.clockingRequiredStartDate,
+      clockingRequiredEndDate: team.clockingRequiredEndDate,
       clockingReminderTime: team.clockingReminderTime,
       clockingMissingAlertTime: team.clockingMissingAlertTime,
       clockingOpenAlertTime: team.clockingOpenAlertTime,

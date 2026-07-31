@@ -131,6 +131,7 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
           createdByUserId: team.createdByUserId,
           clockingRequired: team.clockingRequired,
           clockingRequiredStartDate: team.clockingRequiredStartDate,
+          clockingRequiredEndDate: team.clockingRequiredEndDate,
           clockingReminderTime: team.clockingReminderTime,
           clockingMissingAlertTime: team.clockingMissingAlertTime,
           clockingOpenAlertTime: team.clockingOpenAlertTime,

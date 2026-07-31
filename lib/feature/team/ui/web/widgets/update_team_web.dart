@@ -57,6 +57,8 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   List<String> selectedColor = [];
   bool _clockingRequired = false;
   String _clockingRequiredStartDate = _todayDateIso();
+  String? _clockingRequiredEndDate;
+  String? _initialClockingRequiredEndDate;
   String _clockingReminderTime = '09:00';
   String _clockingMissingAlertTime = '10:00';
   String _clockingOpenAlertTime = '18:00';
@@ -141,6 +143,8 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
             _clockingRequired = team.clockingRequired;
             _clockingRequiredStartDate =
                 team.clockingRequiredStartDate ?? _todayDateIso();
+            _clockingRequiredEndDate = team.clockingRequiredEndDate;
+            _initialClockingRequiredEndDate = team.clockingRequiredEndDate;
             _clockingReminderTime = team.clockingReminderTime ?? '09:00';
             _clockingMissingAlertTime =
                 team.clockingMissingAlertTime ?? '10:00';
@@ -316,6 +320,10 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                     onRequiredStartDateChanged: (value) {
                       setState(() => _clockingRequiredStartDate = value);
                     },
+                    requiredEndDate: _clockingRequiredEndDate,
+                    onRequiredEndDateChanged: (value) {
+                      setState(() => _clockingRequiredEndDate = value);
+                    },
                     reminderTime: _clockingReminderTime,
                     onReminderTimeChanged: (value) {
                       setState(() => _clockingReminderTime = value);
@@ -435,6 +443,11 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
 
   void _onSave() {
     if (_formKey.currentState?.validate() ?? false) {
+      final clockingDateRangeError = _clockingDateRangeError();
+      if (clockingDateRangeError != null) {
+        AppSnackBar.showWarning(context, clockingDateRangeError);
+        return;
+      }
       final listteamMember = <TeamMemberUpdateTeam>[];
       final dataToSave = listUserFormData.length > 1
           ? listUserFormData.sublist(0, listUserFormData.length - 1)
@@ -461,9 +474,13 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
         createdByUserId: null,
         clockingRequired: _clockingRequired,
         clockingRequiredStartDate: _clockingRequiredStartDate,
+        clockingRequiredEndDate: _clockingRequiredEndDate,
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
+        clearClockingRequiredEndDate:
+            _initialClockingRequiredEndDate != null &&
+            _clockingRequiredEndDate == null,
         listMember: listteamMember,
       );
 
@@ -471,10 +488,29 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
     }
   }
 
+  String? _clockingDateRangeError() {
+    final endDate = _clockingRequiredEndDate;
+    if (endDate == null || endDate.trim().isEmpty) {
+      return null;
+    }
+    final start = DateTime.tryParse(_clockingRequiredStartDate);
+    final end = DateTime.tryParse(endDate);
+    if (start == null || end == null || !end.isBefore(start)) {
+      return null;
+    }
+    return _isItalian(context)
+        ? 'La data di fine deve essere uguale o successiva alla data di inizio.'
+        : 'The end date must be after or equal to the start date.';
+  }
+
   static String _todayDateIso() {
     final today = DateTime.now();
     final month = today.month.toString().padLeft(2, '0');
     final day = today.day.toString().padLeft(2, '0');
     return '${today.year}-$month-$day';
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
   }
 }
