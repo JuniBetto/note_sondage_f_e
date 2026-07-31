@@ -87,6 +87,10 @@ def flutter_pub_get
   sh("flutter pub get")
 end
 
+def built_ipa_glob
+  File.expand_path("../build/ios/ipa/*.ipa", __dir__)
+end
+
 platform :android do
   desc "Build and upload Android app bundle to Google Play Internal Testing"
   lane :internal do
@@ -162,8 +166,8 @@ platform :ios do
       ),
     )
 
-    ipa_path = Dir["build/ios/ipa/*.ipa"].first
-    UI.user_error!("No IPA found in build/ios/ipa") if ipa_path.to_s.empty?
+    ipa_path = Dir[built_ipa_glob].first
+    UI.user_error!("No IPA found in #{built_ipa_glob}") if ipa_path.to_s.empty?
 
     upload_to_testflight(
       api_key: api_key,

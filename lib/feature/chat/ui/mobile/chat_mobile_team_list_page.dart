@@ -164,6 +164,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
           createdByUserId: team.createdByUserId,
           clockingRequired: team.clockingRequired,
           clockingRequiredStartDate: team.clockingRequiredStartDate,
+          clockingRequiredEndDate: team.clockingRequiredEndDate,
           clockingReminderTime: team.clockingReminderTime,
           clockingMissingAlertTime: team.clockingMissingAlertTime,
           clockingOpenAlertTime: team.clockingOpenAlertTime,

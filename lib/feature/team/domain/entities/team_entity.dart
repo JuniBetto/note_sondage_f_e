@@ -12,6 +12,7 @@ class TeamEntity {
   final String? color; // New field for team color
   final bool clockingRequired;
   final String? clockingRequiredStartDate;
+  final String? clockingRequiredEndDate;
   final String? clockingReminderTime;
   final String? clockingMissingAlertTime;
   final String? clockingOpenAlertTime;
@@ -29,6 +30,7 @@ class TeamEntity {
     required this.createdByUserId,
     this.clockingRequired = false,
     this.clockingRequiredStartDate,
+    this.clockingRequiredEndDate,
     this.clockingReminderTime,
     this.clockingMissingAlertTime,
     this.clockingOpenAlertTime,
@@ -76,6 +78,7 @@ class TeamEntityForView {
 
 class TeamUpdate extends TeamEntity {
   final bool? isDeleted; // New field to indicate if the team is deleted
+  final bool clearClockingRequiredEndDate;
   final List<TeamMemberUpdateTeam> listMember;
 
   TeamUpdate(
@@ -87,9 +90,11 @@ class TeamUpdate extends TeamEntity {
     String? color,
     bool clockingRequired = false,
     String? clockingRequiredStartDate,
+    String? clockingRequiredEndDate,
     String? clockingReminderTime,
     String? clockingMissingAlertTime,
     String? clockingOpenAlertTime,
+    this.clearClockingRequiredEndDate = false,
     DateTime? createdAt,
     List<PlanningWorkerTypeEntity> planningWorkerTypes =
         PlanningWorkerTypeEntity.builtIns,
@@ -103,6 +108,7 @@ class TeamUpdate extends TeamEntity {
          createdByUserId: createdByUserId ?? '',
          clockingRequired: clockingRequired,
          clockingRequiredStartDate: clockingRequiredStartDate,
+         clockingRequiredEndDate: clockingRequiredEndDate,
          clockingReminderTime: clockingReminderTime,
          clockingMissingAlertTime: clockingMissingAlertTime,
          clockingOpenAlertTime: clockingOpenAlertTime,
@@ -121,9 +127,11 @@ class TeamUpdate extends TeamEntity {
     String? createdByUserId,
     bool? clockingRequired,
     String? clockingRequiredStartDate,
+    String? clockingRequiredEndDate,
     String? clockingReminderTime,
     String? clockingMissingAlertTime,
     String? clockingOpenAlertTime,
+    bool? clearClockingRequiredEndDate,
     List<PlanningWorkerTypeEntity>? planningWorkerTypes,
     List<TeamMemberUpdateTeam>? listMember,
   }) {
@@ -136,11 +144,15 @@ class TeamUpdate extends TeamEntity {
       clockingRequired: clockingRequired ?? this.clockingRequired,
       clockingRequiredStartDate:
           clockingRequiredStartDate ?? this.clockingRequiredStartDate,
+      clockingRequiredEndDate:
+          clockingRequiredEndDate ?? this.clockingRequiredEndDate,
       clockingReminderTime: clockingReminderTime ?? this.clockingReminderTime,
       clockingMissingAlertTime:
           clockingMissingAlertTime ?? this.clockingMissingAlertTime,
       clockingOpenAlertTime:
           clockingOpenAlertTime ?? this.clockingOpenAlertTime,
+      clearClockingRequiredEndDate:
+          clearClockingRequiredEndDate ?? this.clearClockingRequiredEndDate,
       planningWorkerTypes: planningWorkerTypes ?? this.planningWorkerTypes,
       createdAt: createdAt != null ? DateTime.parse(createdAt) : this.createdAt,
       createdByUserId: createdByUserId ?? this.createdByUserId,

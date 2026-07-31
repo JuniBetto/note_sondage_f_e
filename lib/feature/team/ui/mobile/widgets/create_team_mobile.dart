@@ -70,6 +70,8 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   String? _ownerUserId;
   bool _clockingRequired = false;
   String _clockingRequiredStartDate = _todayDateIso();
+  String? _clockingRequiredEndDate;
+  String? _initialClockingRequiredEndDate;
   String _clockingReminderTime = '09:00';
   String _clockingMissingAlertTime = '10:00';
   String _clockingOpenAlertTime = '18:00';
@@ -178,6 +180,8 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             _clockingRequired = team.clockingRequired;
             _clockingRequiredStartDate =
                 team.clockingRequiredStartDate ?? _todayDateIso();
+            _clockingRequiredEndDate = team.clockingRequiredEndDate;
+            _initialClockingRequiredEndDate = team.clockingRequiredEndDate;
             _clockingReminderTime = team.clockingReminderTime ?? '09:00';
             _clockingMissingAlertTime =
                 team.clockingMissingAlertTime ?? '10:00';
@@ -211,6 +215,8 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             selectedColor = [];
             _clockingRequired = false;
             _clockingRequiredStartDate = _todayDateIso();
+            _clockingRequiredEndDate = null;
+            _initialClockingRequiredEndDate = null;
             _clockingReminderTime = '09:00';
             _clockingMissingAlertTime = '10:00';
             _clockingOpenAlertTime = '18:00';
@@ -339,6 +345,10 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                           requiredStartDate: _clockingRequiredStartDate,
                           onRequiredStartDateChanged: (value) {
                             setState(() => _clockingRequiredStartDate = value);
+                          },
+                          requiredEndDate: _clockingRequiredEndDate,
+                          onRequiredEndDateChanged: (value) {
+                            setState(() => _clockingRequiredEndDate = value);
                           },
                           reminderTime: _clockingReminderTime,
                           onReminderTimeChanged: (value) {
@@ -470,6 +480,11 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
 
   void _onSave() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final clockingDateRangeError = _clockingDateRangeError();
+    if (clockingDateRangeError != null) {
+      AppSnackBar.showWarning(context, clockingDateRangeError);
+      return;
+    }
 
     final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
     final hasBlockedSelfTeamInvite = listInviteFormData.any(
@@ -501,9 +516,13 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         createdByUserId: null,
         clockingRequired: _clockingRequired,
         clockingRequiredStartDate: _clockingRequiredStartDate,
+        clockingRequiredEndDate: _clockingRequiredEndDate,
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
+        clearClockingRequiredEndDate:
+            _initialClockingRequiredEndDate != null &&
+            _clockingRequiredEndDate == null,
         listMember: [],
       );
       _teamBloc.add(UpdateTeamEvent(team));
@@ -518,12 +537,28 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         createdByUserId: currentUserId,
         clockingRequired: _clockingRequired,
         clockingRequiredStartDate: _clockingRequiredStartDate,
+        clockingRequiredEndDate: _clockingRequiredEndDate,
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
       );
       _teamBloc.add(CreateTeamEvent(team, userId: currentUserId));
     }
+  }
+
+  String? _clockingDateRangeError() {
+    final endDate = _clockingRequiredEndDate;
+    if (endDate == null || endDate.trim().isEmpty) {
+      return null;
+    }
+    final start = DateTime.tryParse(_clockingRequiredStartDate);
+    final end = DateTime.tryParse(endDate);
+    if (start == null || end == null || !end.isBefore(start)) {
+      return null;
+    }
+    return _isItalian(context)
+        ? 'La data di fine deve essere uguale o successiva alla data di inizio.'
+        : 'The end date must be after or equal to the start date.';
   }
 
   Widget _buildSectionHeader(
