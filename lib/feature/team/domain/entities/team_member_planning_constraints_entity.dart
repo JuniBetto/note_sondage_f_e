@@ -11,6 +11,7 @@ class TeamMemberPlanningConstraintsEntity {
     this.maxMonthlyHours,
     this.overtimeAllowed,
     this.avoidConsecutiveShifts,
+    this.requiresCoworkerPresence,
     this.minRestHoursBetweenShifts,
     this.maxConsecutiveNightShifts,
     this.maxConsecutiveWeekendShifts,
@@ -28,6 +29,7 @@ class TeamMemberPlanningConstraintsEntity {
   final int? maxMonthlyHours;
   final bool? overtimeAllowed;
   final bool? avoidConsecutiveShifts;
+  final bool? requiresCoworkerPresence;
   final int? minRestHoursBetweenShifts;
   final int? maxConsecutiveNightShifts;
   final int? maxConsecutiveWeekendShifts;
@@ -45,6 +47,7 @@ class TeamMemberPlanningConstraintsEntity {
     int? maxMonthlyHours,
     bool? overtimeAllowed,
     bool? avoidConsecutiveShifts,
+    bool? requiresCoworkerPresence,
     int? minRestHoursBetweenShifts,
     int? maxConsecutiveNightShifts,
     int? maxConsecutiveWeekendShifts,
@@ -64,6 +67,8 @@ class TeamMemberPlanningConstraintsEntity {
       overtimeAllowed: overtimeAllowed ?? this.overtimeAllowed,
       avoidConsecutiveShifts:
           avoidConsecutiveShifts ?? this.avoidConsecutiveShifts,
+      requiresCoworkerPresence:
+          requiresCoworkerPresence ?? this.requiresCoworkerPresence,
       minRestHoursBetweenShifts:
           minRestHoursBetweenShifts ?? this.minRestHoursBetweenShifts,
       maxConsecutiveNightShifts:
