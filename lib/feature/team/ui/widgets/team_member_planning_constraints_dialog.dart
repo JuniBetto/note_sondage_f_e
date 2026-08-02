@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class TeamMemberPlanningConstraintsDialogResult {
   const TeamMemberPlanningConstraintsDialogResult({
@@ -74,6 +75,7 @@ class _TeamMemberPlanningConstraintsDialogState
   late List<_StoredDateRange> _unavailableDateRanges;
   late bool _overtimeAllowed;
   late bool _avoidConsecutiveShifts;
+  late bool _requiresCoworkerPresence;
 
   late final TextEditingController _minDailyCtrl;
   late final TextEditingController _maxDailyCtrl;
@@ -108,6 +110,7 @@ class _TeamMemberPlanningConstraintsDialogState
     );
     _overtimeAllowed = initial?.overtimeAllowed ?? false;
     _avoidConsecutiveShifts = initial?.avoidConsecutiveShifts ?? false;
+    _requiresCoworkerPresence = initial?.requiresCoworkerPresence ?? false;
     _minDailyCtrl = TextEditingController(
       text: initial?.minDailyHours?.toString() ?? '',
     );
@@ -289,6 +292,11 @@ class _TeamMemberPlanningConstraintsDialogState
                   visualDensity: VisualDensity.compact,
                   contentPadding: EdgeInsets.zero,
                   value: _overtimeAllowed,
+                  activeThumbColor: theme.colorScheme.surface,
+                  activeTrackColor: theme.colorScheme.selectionColor,
+                  inactiveThumbColor: theme.colorScheme.cursorColor,
+                  inactiveTrackColor: theme.colorScheme.bottomOutline
+                      ?.withValues(alpha: 0.28),
                   title: Text(
                     _strings.overtimeAllowed,
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -303,6 +311,11 @@ class _TeamMemberPlanningConstraintsDialogState
                   visualDensity: VisualDensity.compact,
                   contentPadding: EdgeInsets.zero,
                   value: _avoidConsecutiveShifts,
+                  activeThumbColor: theme.colorScheme.surface,
+                  activeTrackColor: theme.colorScheme.selectionColor,
+                  inactiveThumbColor: theme.colorScheme.cursorColor,
+                  inactiveTrackColor: theme.colorScheme.bottomOutline
+                      ?.withValues(alpha: 0.28),
                   title: Text(
                     _strings.avoidConsecutiveShifts,
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -311,6 +324,32 @@ class _TeamMemberPlanningConstraintsDialogState
                   ),
                   onChanged: (value) {
                     setState(() => _avoidConsecutiveShifts = value);
+                  },
+                ),
+                SwitchListTile(
+                  visualDensity: VisualDensity.compact,
+                  contentPadding: EdgeInsets.zero,
+                  value: _requiresCoworkerPresence,
+                  activeThumbColor: theme.colorScheme.surface,
+                  activeTrackColor: theme.colorScheme.selectionColor,
+                  inactiveThumbColor: theme.colorScheme.cursorColor,
+                  inactiveTrackColor: theme.colorScheme.bottomOutline
+                      ?.withValues(alpha: 0.28),
+                  title: Text(
+                    _strings.requiresCoworkerPresence,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: isCompact ? 12.5 : 13,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _strings.requiresCoworkerPresenceHelper,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: isCompact ? 11.5 : 12,
+                      height: 1.3,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() => _requiresCoworkerPresence = value);
                   },
                 ),
                 const SizedBox(height: 8),
@@ -342,6 +381,7 @@ class _TeamMemberPlanningConstraintsDialogState
 
   Widget _buildWorkerTypeField(BuildContext context, bool compact) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     PlanningWorkerTypeEntity? selectedWorkerType;
     for (final workerType in _workerTypes) {
       if (workerType.code == _workerType) {
@@ -355,7 +395,27 @@ class _TeamMemberPlanningConstraintsDialogState
         DropdownButtonFormField<String>(
           initialValue: _workerType,
           isDense: true,
-          decoration: _denseInputDecoration(
+          isExpanded: true,
+          menuMaxHeight: 320,
+          borderRadius: BorderRadius.circular(22),
+          dropdownColor: colorScheme.bgNavbarSurface ?? theme.cardColor,
+          icon: Container(
+            margin: const EdgeInsets.only(right: 10),
+            padding: EdgeInsets.all(compact ? 4 : 6),
+            decoration: BoxDecoration(
+              color: colorScheme.selectionColor?.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: colorScheme.selectionColor!.withValues(alpha: 0.18),
+              ),
+            ),
+            child: Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: compact ? 16 : 18,
+              color: colorScheme.cursorColor ?? Colors.grey[600],
+            ),
+          ),
+          decoration: _dropdownInputDecoration(
             _strings.workerTypeLabel,
             compact: compact,
           ),
@@ -500,6 +560,45 @@ class _TeamMemberPlanningConstraintsDialogState
     );
   }
 
+  InputDecoration _dropdownInputDecoration(
+    String label, {
+    required bool compact,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final borderRadius = BorderRadius.circular(18);
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: colorScheme.textfieldFillColor ?? theme.cardColor,
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 16,
+        vertical: compact ? 12 : 16,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: BorderSide(color: colorScheme.bottomOutline!),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: BorderSide(color: colorScheme.bottomOutline!, width: 1.2),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: BorderSide(color: colorScheme.selectionColor!, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: BorderSide(color: colorScheme.error, width: 1.4),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: BorderSide(color: colorScheme.error, width: 2),
+      ),
+    );
+  }
+
   Future<void> _addUnavailableDateRange() async {
     final now = DateTime.now();
     final pickedStart = await showDatePicker(
@@ -563,6 +662,7 @@ class _TeamMemberPlanningConstraintsDialogState
           maxMonthlyHours: _parseInt(_maxMonthlyCtrl.text),
           overtimeAllowed: _overtimeAllowed,
           avoidConsecutiveShifts: _avoidConsecutiveShifts,
+          requiresCoworkerPresence: _requiresCoworkerPresence,
           minRestHoursBetweenShifts: _parseInt(_minRestCtrl.text),
           maxConsecutiveNightShifts: _parseInt(_maxNightsCtrl.text),
           maxConsecutiveWeekendShifts: _parseInt(_maxWeekendsCtrl.text),
@@ -1347,6 +1447,26 @@ class _PlanningConstraintsStrings {
     if (_fr) return 'Éviter les shifts consécutifs';
     if (_es) return 'Evitar turnos consecutivos';
     return 'Avoid consecutive shifts';
+  }
+
+  String get requiresCoworkerPresence {
+    if (_it) return 'Richiede compresenza';
+    if (_fr) return 'Présence simultanée requise';
+    if (_es) return 'Requiere compresencia';
+    return 'Requires coworker presence';
+  }
+
+  String get requiresCoworkerPresenceHelper {
+    if (_it) {
+      return 'Se attivo, l’Auto Planner può assegnare questo membro solo in intervalli completamente sovrapposti ad almeno un altro utente del team.';
+    }
+    if (_fr) {
+      return 'Si activé, l’Auto Planner ne peut attribuer ce membre qu’à des intervalles entièrement superposés à au moins un autre utilisateur de l’équipe.';
+    }
+    if (_es) {
+      return 'Si está activo, el Auto Planner solo podrá asignar a este miembro en intervalos totalmente superpuestos con al menos otro usuario del equipo.';
+    }
+    return 'If enabled, the Auto Planner may assign this member only to intervals fully overlapped by at least one other team user.';
   }
 
   String get operationalNotes {

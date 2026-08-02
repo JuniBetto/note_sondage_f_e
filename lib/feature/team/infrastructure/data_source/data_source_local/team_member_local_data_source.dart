@@ -92,6 +92,7 @@ class TeamMemberLocalDataSource {
       'maxMonthlyHours': constraints.maxMonthlyHours,
       'overtimeAllowed': constraints.overtimeAllowed,
       'avoidConsecutiveShifts': constraints.avoidConsecutiveShifts,
+      'requiresCoworkerPresence': constraints.requiresCoworkerPresence,
       'minRestHoursBetweenShifts': constraints.minRestHoursBetweenShifts,
       'maxConsecutiveNightShifts': constraints.maxConsecutiveNightShifts,
       'maxConsecutiveWeekendShifts': constraints.maxConsecutiveWeekendShifts,
@@ -131,6 +132,7 @@ class TeamMemberLocalDataSource {
         maxMonthlyHours: (json['maxMonthlyHours'] as num?)?.toInt(),
         overtimeAllowed: json['overtimeAllowed'] as bool?,
         avoidConsecutiveShifts: json['avoidConsecutiveShifts'] as bool?,
+        requiresCoworkerPresence: json['requiresCoworkerPresence'] as bool?,
         minRestHoursBetweenShifts: (json['minRestHoursBetweenShifts'] as num?)
             ?.toInt(),
         maxConsecutiveNightShifts: (json['maxConsecutiveNightShifts'] as num?)
