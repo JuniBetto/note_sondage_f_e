@@ -24,12 +24,14 @@ class ShiftCalendarWidget extends StatelessWidget {
     required this.focusedMonth,
     required this.onMonthChanged,
     required this.onDayTap,
+    this.disablePastDays = false,
   });
 
   final List<ShiftAssignmentEntity> assignments;
   final Set<String> syncingAssignmentIds;
   final DateTime focusedMonth;
   final ValueChanged<DateTime> onMonthChanged;
+  final bool disablePastDays;
 
   /// Called with the tapped date and all visible assignments for that day.
   final void Function(DateTime date, List<ShiftAssignmentEntity> assignments)
@@ -154,11 +156,13 @@ class ShiftCalendarWidget extends StatelessWidget {
                 final key = '${date.year}-${date.month}-${date.day}';
                 final dayAssignments = assignMap[key] ?? const [];
                 final isToday = _isToday(date);
+                final isPastDay = disablePastDays && _isPastDate(date);
 
                 return Expanded(
                   child: _DayCell(
                     day: dayNumber,
                     isToday: isToday,
+                    isDisabled: isPastDay,
                     assignments: dayAssignments,
                     syncingAssignmentIds: syncingAssignmentIds,
                     onTap: () => onDayTap(date, dayAssignments),
@@ -176,6 +180,13 @@ class ShiftCalendarWidget extends StatelessWidget {
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;
+  }
+
+  bool _isPastDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final normalized = DateTime(date.year, date.month, date.day);
+    return normalized.isBefore(today);
   }
 
   String _monthName(BuildContext context, DateTime date) {
@@ -328,6 +339,7 @@ class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.day,
     required this.isToday,
+    required this.isDisabled,
     required this.assignments,
     required this.syncingAssignmentIds,
     required this.onTap,
@@ -335,6 +347,7 @@ class _DayCell extends StatelessWidget {
 
   final int day;
   final bool isToday;
+  final bool isDisabled;
   final List<ShiftAssignmentEntity> assignments;
   final Set<String> syncingAssignmentIds;
   final VoidCallback onTap;
@@ -355,18 +368,25 @@ class _DayCell extends StatelessWidget {
     );
 
     return GestureDetector(
-      onTap: onTap,
+      key: Key('shift-calendar-day-$day'),
+      onTap: isDisabled ? null : onTap,
       child: Opacity(
-        opacity: hasSyncingAssignments ? 0.82 : 1,
+        opacity: isDisabled
+            ? 0.42
+            : hasSyncingAssignments
+            ? 0.82
+            : 1,
         child: Container(
           margin: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             color: shiftColor != null
-                ? shiftColor.withValues(alpha: 0.15)
+                ? shiftColor.withValues(alpha: isDisabled ? 0.08 : 0.15)
                 : colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isToday
+              color: isDisabled
+                  ? colorScheme.outlineVariant.withValues(alpha: 0.22)
+                  : isToday
                   ? Theme.of(context).colorScheme.primary
                   : shiftColor != null
                   ? shiftColor.withValues(alpha: 0.4)
@@ -388,7 +408,9 @@ class _DayCell extends StatelessWidget {
                       '$day',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
-                        color: isToday
+                        color: isDisabled
+                            ? colorScheme.outline
+                            : isToday
                             ? Theme.of(context).colorScheme.primary
                             : Theme.of(context).colorScheme.onSurface,
                       ),

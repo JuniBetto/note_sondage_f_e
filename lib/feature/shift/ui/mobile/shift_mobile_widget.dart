@@ -20,6 +20,7 @@ import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_planner_dialog.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview_page.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_profile_manager.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_team_report_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
@@ -506,18 +507,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       );
       if (!context.mounted || !confirmed) return;
 
-      if (existing.isPublic) {
-        shiftBloc.add(
-          DeleteShiftAssignmentEvent(
-            existing.id,
-            relatedAssignmentIds: _relatedPublicAssignments(
-              existing,
-            ).map((assignment) => assignment.id).toSet(),
-          ),
-        );
-      } else {
-        shiftBloc.add(DeleteShiftAssignmentEvent(existing.id));
-      }
+      shiftBloc.add(DeleteShiftAssignmentEvent(existing.id));
       return;
     }
 
@@ -792,6 +782,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     List<ShiftAssignmentEntity> assignments,
   ) async {
     final shiftBloc = context.read<ShiftBloc>();
+    final isPastDate = _isPastDate(date);
     final sortedAssignments = [...assignments]
       ..sort((a, b) {
         final byTime = a.startTime.hour * 60 + a.startTime.minute;
@@ -800,6 +791,15 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       });
 
     if (sortedAssignments.isEmpty) {
+      if (isPastDate) {
+        AppSnackBar.showWarning(
+          context,
+          _isItalian(context)
+              ? 'Non puoi creare nuovi turni in una data precedente a oggi.'
+              : 'You cannot create new shifts on a date before today.',
+        );
+        return;
+      }
       await _openDialogForAssignment(context, date);
       return;
     }
@@ -808,13 +808,22 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       context: context,
       date: date,
       assignments: sortedAssignments,
-      canCreate: true,
+      canCreate: !isPastDate,
       syncingAssignmentIds: shiftBloc.syncingAssignmentIds,
     );
     if (!context.mounted || action == null) return;
 
     switch (action.type) {
       case ShiftDayEntriesActionType.createNew:
+        if (isPastDate) {
+          AppSnackBar.showWarning(
+            context,
+            _isItalian(context)
+                ? 'Non puoi creare nuovi turni in una data precedente a oggi.'
+                : 'You cannot create new shifts on a date before today.',
+          );
+          return;
+        }
         await _openDialogForAssignment(context, date);
         break;
       case ShiftDayEntriesActionType.openExisting:
@@ -1220,6 +1229,12 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     return Localizations.localeOf(context).languageCode == 'it';
   }
 
+  bool _isPastDate(DateTime date) {
+    final today = DateTime(2026, 8, 3);
+    final normalized = DateTime(date.year, date.month, date.day);
+    return normalized.isBefore(today);
+  }
+
   Future<void> _openTeamReport(BuildContext context) async {
     await ShiftTeamReportDialog.show(
       context,
@@ -1244,7 +1259,27 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     }
 
     try {
-      final result = await _shiftRepository.autoPlan(request);
+      final preview = await _shiftRepository.previewAutoPlan(request);
+      if (!mounted || !context.mounted) {
+        return;
+      }
+      final teamName = _manageableTeams
+          .where((team) => team.team.id == request.teamId)
+          .map((team) => team.team.name.trim())
+          .where((name) => name.isNotEmpty)
+          .firstOrNull;
+      final result = await ShiftAutoPlanPreviewPage.show(
+        context,
+        request: request,
+        preview: preview,
+        onConfirm: () =>
+            _shiftRepository.confirmAutoPlan(preview.snapshotToken),
+        teamName: teamName,
+        compact: true,
+      );
+      if (result == null || !mounted || !context.mounted) {
+        return;
+      }
       if (!mounted || !context.mounted) {
         return;
       }

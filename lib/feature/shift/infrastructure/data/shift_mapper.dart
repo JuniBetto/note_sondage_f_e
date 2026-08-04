@@ -174,4 +174,62 @@ class ShiftMapper {
           .toList(),
     );
   }
+
+  static ShiftAutoPlanPreviewEntity autoPlanPreviewFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return ShiftAutoPlanPreviewEntity(
+      snapshotToken: (json['snapshotToken'] as String?) ?? '',
+      fullyFeasible: (json['fullyFeasible'] as bool?) ?? false,
+      createdAssignmentsCountPreview:
+          (json['createdAssignmentsCountPreview'] as num?)?.toInt() ?? 0,
+      preservedAssignmentsCount:
+          (json['preservedAssignmentsCount'] as num?)?.toInt() ?? 0,
+      deletedAssignmentsCountPreview:
+          (json['deletedAssignmentsCountPreview'] as num?)?.toInt() ?? 0,
+      uncoveredSlotsCount: (json['uncoveredSlotsCount'] as num?)?.toInt() ?? 0,
+      warnings: (json['warnings'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList(),
+      days: (json['days'] as List<dynamic>? ?? const [])
+          .map(
+            (item) => autoPlanPreviewDayFromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  static ShiftAutoPlanPreviewDayEntity autoPlanPreviewDayFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return ShiftAutoPlanPreviewDayEntity(
+      date: DateTime.parse(json['date'] as String),
+      items: (json['items'] as List<dynamic>? ?? const [])
+          .map(
+            (item) => autoPlanPreviewAssignmentFromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  static ShiftAutoPlanPreviewAssignmentEntity autoPlanPreviewAssignmentFromJson(
+    Map<String, dynamic> json,
+  ) {
+    final rawAction = (json['action'] as String?)?.trim().toUpperCase();
+    final action = switch (rawAction) {
+      'DELETE' => ShiftAutoPlanPreviewAction.delete,
+      'PRESERVE' => ShiftAutoPlanPreviewAction.preserve,
+      _ => ShiftAutoPlanPreviewAction.create,
+    };
+    return ShiftAutoPlanPreviewAssignmentEntity(
+      action: action,
+      assignment: assignmentFromJson(
+        Map<String, dynamic>.from(json['assignment'] as Map),
+      ),
+    );
+  }
 }

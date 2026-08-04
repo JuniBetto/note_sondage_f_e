@@ -244,4 +244,28 @@ class ShiftRemoteDataSource {
       Map<String, dynamic>.from(response.data),
     );
   }
+
+  Future<ShiftAutoPlanPreviewEntity> previewAutoPlan(
+    ShiftAutoPlanRequestEntity request,
+  ) async {
+    final response = await _dio.post(
+      '/api/aggregate/shift/auto-plan/preview',
+      data: ShiftMapper.autoPlanRequestToJson(request),
+    );
+    return ShiftMapper.autoPlanPreviewFromJson(
+      Map<String, dynamic>.from(response.data),
+    );
+  }
+
+  Future<ShiftAutoPlanResultEntity> confirmAutoPlan(
+    String snapshotToken,
+  ) async {
+    final response = await _dio.post(
+      '/api/aggregate/shift/auto-plan/confirm',
+      data: {'snapshotToken': snapshotToken},
+    );
+    return ShiftMapper.autoPlanResultFromJson(
+      Map<String, dynamic>.from(response.data),
+    );
+  }
 }
