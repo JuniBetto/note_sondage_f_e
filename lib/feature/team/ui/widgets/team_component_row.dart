@@ -148,51 +148,56 @@ class _TeamComponentRowState extends State<TeamComponentRow> {
                                     mainAxisSize: MainAxisSize.max,
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
-                                      DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.avatarTextColor!,
-                                          borderRadius: BorderRadius.circular(
-                                            30,
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 8),
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.avatarTextColor!,
+                                            borderRadius: BorderRadius.circular(
+                                              30,
+                                            ),
                                           ),
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 12.0,
-                                            horizontal: 16,
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            spacing: 8,
-                                            children: [
-                                              if (widget.canManageTeam)
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 8.0,
+                                              horizontal: 16,
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              spacing: 8,
+                                              children: [
+                                                if (widget.canManageTeam)
+                                                  ActionOnUser(
+                                                    iconSize: 28,
+                                                    icon: Icons.edit,
+                                                    color: colorScheme
+                                                        .cursorColor!,
+                                                    onTap: () =>
+                                                        _openUpdateTeam(
+                                                          context,
+                                                        ),
+                                                  ),
                                                 ActionOnUser(
                                                   iconSize: 28,
-                                                  icon: Icons.edit,
-                                                  color:
-                                                      colorScheme.cursorColor!,
-                                                  onTap: () =>
-                                                      _openUpdateTeam(context),
+                                                  icon: widget.isArchived
+                                                      ? Icons.unarchive_outlined
+                                                      : Icons.archive_outlined,
+                                                  color: Colors.blueGrey,
+                                                  onTap: widget.onArchiveTap,
                                                 ),
-                                              ActionOnUser(
-                                                iconSize: 28,
-                                                icon: widget.isArchived
-                                                    ? Icons.unarchive_outlined
-                                                    : Icons.archive_outlined,
-                                                color: Colors.blueGrey,
-                                                onTap: widget.onArchiveTap,
-                                              ),
-                                              if (widget.isOwner)
-                                                ActionOnUser(
-                                                  iconSize: 28,
-                                                  icon: Icons
-                                                      .delete_forever_outlined,
-                                                  color:
-                                                      colorScheme.deleteCard!,
-                                                  onTap: () {
-                                                    _confirmDelete(context);
-                                                  },
-                                                ),
-                                            ],
+                                                if (widget.isOwner)
+                                                  ActionOnUser(
+                                                    iconSize: 28,
+                                                    icon: Icons
+                                                        .delete_forever_outlined,
+                                                    color:
+                                                        colorScheme.deleteCard!,
+                                                    onTap: () {
+                                                      _confirmDelete(context);
+                                                    },
+                                                  ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -270,7 +275,7 @@ class _TeamComponentRowState extends State<TeamComponentRow> {
                       ),
                       Positioned(
                         left: 32,
-                        top: 0,
+                        top: 8,
                         child: CircleAvatar(
                           radius: 32,
                           backgroundColor: Color(widget.colorTeam.toARGB32()),

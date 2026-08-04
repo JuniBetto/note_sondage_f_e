@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -62,6 +63,10 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     _cachedAssignments = _cachedAssignments
         .where((assignment) => !ids.contains(assignment.id))
         .toList();
+  }
+
+  bool _isDeleteAlreadyApplied(Object error) {
+    return error is DioException && error.response?.statusCode == 404;
   }
 
   ShiftBloc(this._repository, this._localDataSource) : super(ShiftInitial()) {
@@ -540,16 +545,20 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
           }
         } catch (e) {
           if (!isClosed) {
-            add(
-              ShiftMutationFailedEvent(
-                message: AppErrorMessageResolver.resolve(
-                  e,
-                  fallback: 'We could not delete the shift right now.',
+            if (_isDeleteAlreadyApplied(e)) {
+              add(ShiftAssignmentDeleteCommittedEvent(assignmentIdsToDelete));
+            } else {
+              add(
+                ShiftMutationFailedEvent(
+                  message: AppErrorMessageResolver.resolve(
+                    e,
+                    fallback: 'We could not delete the shift right now.',
+                  ),
+                  rollbackAssignments: rollbackAssignments,
+                  syncingAssignmentIdsToClear: assignmentIdsToDelete,
                 ),
-                rollbackAssignments: rollbackAssignments,
-                syncingAssignmentIdsToClear: assignmentIdsToDelete,
-              ),
-            );
+              );
+            }
           }
         }
       }());

@@ -107,9 +107,15 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
     _selectedTeamId =
         widget.initialTeamId ??
         (widget.teams.isNotEmpty ? widget.teams.first.team.id : null);
-    final now = DateTime.now();
-    _from = _normalizeDate(widget.initialFrom ?? now);
+    final today = _today;
+    _from = _normalizeDate(widget.initialFrom ?? today);
+    if (_from.isBefore(today)) {
+      _from = today;
+    }
     _to = _normalizeDate(widget.initialTo ?? _from);
+    if (_to.isBefore(_from)) {
+      _to = _from;
+    }
     _clampProfileCountsToSelectedTeam();
   }
 
@@ -436,7 +442,7 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
                         _plannerMode == ShiftAutoPlannerMode.rotation
                             ? _t(
                                 it: 'Persone',
-                                en: 'People',
+                                en: 'People for shift',
                                 fr: 'Personnes',
                                 es: 'Personas',
                               )
@@ -543,7 +549,7 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: firstDate ?? DateTime(2020),
+      firstDate: firstDate ?? _today,
       lastDate: DateTime(2100),
     );
     if (picked != null) {
@@ -585,6 +591,17 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
       );
       return;
     }
+    if (_from.isBefore(_today) || _to.isBefore(_today)) {
+      _showError(
+        _t(
+          it: 'Non puoi pianificare turni in un periodo precedente a oggi.',
+          en: 'You cannot plan shifts in a period before today.',
+          fr: 'Vous ne pouvez pas planifier des shifts sur une période antérieure à aujourd’hui.',
+          es: 'No puedes planificar turnos en un periodo anterior a hoy.',
+        ),
+      );
+      return;
+    }
 
     Navigator.of(context).pop(
       ShiftAutoPlanRequestEntity(
@@ -622,6 +639,8 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
   DateTime _normalizeDate(DateTime value) {
     return DateTime(value.year, value.month, value.day);
   }
+
+  DateTime get _today => _normalizeDate(DateTime.now());
 
   String _formatTime(TimeOfDay value) {
     final hour = value.hour.toString().padLeft(2, '0');
