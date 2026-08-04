@@ -368,6 +368,7 @@ class _DayCell extends StatelessWidget {
     );
 
     return GestureDetector(
+      key: Key('shift-calendar-day-$day'),
       onTap: isDisabled ? null : onTap,
       child: Opacity(
         opacity: isDisabled

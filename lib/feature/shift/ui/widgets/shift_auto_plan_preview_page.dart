@@ -9,7 +9,6 @@ import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview/sh
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview/shift_auto_plan_preview_legend_card.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview/shift_auto_plan_preview_summary_card.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview/shift_auto_plan_preview_warnings_card.dart';
-import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/theme/theme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 

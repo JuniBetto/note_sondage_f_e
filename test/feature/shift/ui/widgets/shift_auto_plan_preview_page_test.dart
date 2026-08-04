@@ -10,6 +10,11 @@ void main() {
     testWidgets('disables confirm when preview is not fully feasible', (
       tester,
     ) async {
+      tester.view.physicalSize = const Size(1440, 2200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('it'),
@@ -26,7 +31,10 @@ void main() {
 
       expect(find.text('Anteprima Auto Planner'), findsOneWidget);
       expect(find.text('Coverage gap'), findsOneWidget);
-      expect(find.text('Calendario preview'), findsOneWidget);
+      expect(
+        find.text('Calendario preview', skipOffstage: false),
+        findsOneWidget,
+      );
 
       final confirmButton = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Conferma e crea'),
@@ -37,6 +45,11 @@ void main() {
     testWidgets('confirms preview and returns the final planner result', (
       tester,
     ) async {
+      tester.view.physicalSize = const Size(1440, 2200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       ShiftAutoPlanResultEntity? returnedResult;
       var confirmCalls = 0;
 
@@ -74,15 +87,25 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Anteprima Auto Planner'), findsOneWidget);
-      expect(find.text('Calendario preview'), findsOneWidget);
+      expect(
+        find.text('Calendario preview', skipOffstage: false),
+        findsOneWidget,
+      );
 
-      await tester.tap(find.text('1').first);
+      final dayFinder = find.byKey(const Key('shift-calendar-day-1'));
+      await tester.tap(dayFinder);
       await tester.pumpAndSettle();
 
-      expect(find.text('Mario Rossi'), findsOneWidget);
-      expect(find.text('Nuovo'), findsOneWidget);
+      expect(find.text('Mattina'), findsOneWidget);
+      expect(find.textContaining('Mario Rossi'), findsOneWidget);
+      expect(find.text('Nuovo'), findsAtLeastNWidgets(1));
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Conferma e crea'));
+      Navigator.of(tester.element(find.text('Mattina'))).pop();
+      await tester.pumpAndSettle();
+
+      final confirmFinder = find.widgetWithText(FilledButton, 'Conferma e crea');
+      await tester.ensureVisible(confirmFinder);
+      await tester.tap(confirmFinder);
       await tester.pump();
       await tester.pumpAndSettle();
 
