@@ -318,6 +318,21 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
               ),
             );
             break;
+          case 'shift_swap':
+            final swapRequestId = item.swapRequestId;
+            if (swapRequestId == null || swapRequestId.isEmpty) {
+              return;
+            }
+            if ((item.swapStage ?? '').toLowerCase() == 'candidate') {
+              await _backendAuth.rejectShiftSwapRequest(
+                swapRequestId: swapRequestId,
+              );
+            } else {
+              await _backendAuth.rejectShiftSwapRequestByManager(
+                swapRequestId: swapRequestId,
+              );
+            }
+            break;
         }
       });
 
@@ -450,6 +465,21 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             ),
           );
           break;
+        case 'shift_swap':
+          final swapRequestId = item.swapRequestId;
+          if (swapRequestId == null || swapRequestId.isEmpty) {
+            return;
+          }
+          if ((item.swapStage ?? '').toLowerCase() == 'candidate') {
+            await _backendAuth.acceptShiftSwapRequest(
+              swapRequestId: swapRequestId,
+            );
+          } else {
+            await _backendAuth.approveShiftSwapRequest(
+              swapRequestId: swapRequestId,
+            );
+          }
+          break;
       }
     });
   }
@@ -532,6 +562,21 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
               item.metadata['shiftAlarmOffsets'],
             ),
           );
+          break;
+        case 'shift_swap':
+          final swapRequestId = item.swapRequestId;
+          if (swapRequestId == null || swapRequestId.isEmpty) {
+            return;
+          }
+          if ((item.swapStage ?? '').toLowerCase() == 'candidate') {
+            await _backendAuth.rejectShiftSwapRequest(
+              swapRequestId: swapRequestId,
+            );
+          } else {
+            await _backendAuth.rejectShiftSwapRequestByManager(
+              swapRequestId: swapRequestId,
+            );
+          }
           break;
       }
     });

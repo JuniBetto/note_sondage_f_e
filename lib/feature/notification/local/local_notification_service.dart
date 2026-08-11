@@ -13,6 +13,7 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 const String _teamInviteCategoryId = 'team_invite_actions';
+const String _teamDecisionCategoryId = 'team_decision_actions';
 const String _shiftReminderChannelId = 'shift_reminders_standard_v1';
 const String _shiftReminderChannelName = 'Shift Reminders';
 const String _shiftReminderChannelDesc =
@@ -141,6 +142,21 @@ class LocalNotificationService {
             ),
           ],
         ),
+        DarwinNotificationCategory(
+          _teamDecisionCategoryId,
+          actions: [
+            DarwinNotificationAction.plain(
+              'approve_clocking_request',
+              'Accetta',
+              options: {DarwinNotificationActionOption.foreground},
+            ),
+            DarwinNotificationAction.plain(
+              'reject_clocking_request',
+              'Rifiuta',
+              options: {DarwinNotificationActionOption.foreground},
+            ),
+          ],
+        ),
       ],
     );
 
@@ -234,7 +250,9 @@ class LocalNotificationService {
   }) async {
     if (!_initialized || !_available || !_supportsLocalNotifications) return;
 
-    final canRespond = item.supportsInviteDecisionFor(currentUserId);
+    final canRespondToInvite = item.supportsInviteDecisionFor(currentUserId);
+    final canRespondToDecision = item.supportsClockingDecision();
+    final canRespond = canRespondToInvite || canRespondToDecision;
     final payload = jsonEncode(item.toJson());
 
     final androidDetails = AndroidNotificationDetails(
@@ -245,25 +263,44 @@ class LocalNotificationService {
       priority: Priority.high,
       icon: 'ic_stat_notify',
       actions: canRespond
-          ? const <AndroidNotificationAction>[
-              AndroidNotificationAction(
-                'accept_team_invite',
-                'Accetta',
-                showsUserInterface: true,
-                cancelNotification: true,
-              ),
-              AndroidNotificationAction(
-                'reject_team_invite',
-                'Rifiuta',
-                showsUserInterface: true,
-                cancelNotification: true,
-              ),
-            ]
+          ? (canRespondToInvite
+                ? const <AndroidNotificationAction>[
+                    AndroidNotificationAction(
+                      'accept_team_invite',
+                      'Accetta',
+                      showsUserInterface: true,
+                      cancelNotification: true,
+                    ),
+                    AndroidNotificationAction(
+                      'reject_team_invite',
+                      'Rifiuta',
+                      showsUserInterface: true,
+                      cancelNotification: true,
+                    ),
+                  ]
+                : const <AndroidNotificationAction>[
+                    AndroidNotificationAction(
+                      'approve_clocking_request',
+                      'Accetta',
+                      showsUserInterface: true,
+                      cancelNotification: true,
+                    ),
+                    AndroidNotificationAction(
+                      'reject_clocking_request',
+                      'Rifiuta',
+                      showsUserInterface: true,
+                      cancelNotification: true,
+                    ),
+                  ])
           : null,
     );
 
     final darwinDetails = DarwinNotificationDetails(
-      categoryIdentifier: canRespond ? _teamInviteCategoryId : null,
+      categoryIdentifier: canRespond
+          ? (canRespondToInvite
+                ? _teamInviteCategoryId
+                : _teamDecisionCategoryId)
+          : null,
       threadIdentifier: item.metadata['teamId'],
       presentAlert: true,
       presentBadge: true,
