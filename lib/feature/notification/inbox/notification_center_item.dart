@@ -149,6 +149,22 @@ class NotificationCenterItem extends Equatable {
     return value;
   }
 
+  String? get swapRequestId {
+    final value = metadata['swapRequestId']?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  String? get swapStage {
+    final value = metadata['swapStage']?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
   String? get requestedDate {
     final value = metadata['requestedDate']?.trim();
     if (value == null || value.isEmpty) {
@@ -221,12 +237,18 @@ class NotificationCenterItem extends Equatable {
       eventType == 'CLOCKING_DECOMMIT_REQUESTED' ||
       eventType == 'CLOCKING_VACATION_REQUESTED' ||
       eventType == 'CLOCKING_PERMISSION_REQUESTED' ||
-      eventType == 'SHIFT_CHANGE_REQUESTED';
+      eventType == 'SHIFT_CHANGE_REQUESTED' ||
+      eventType == 'SHIFT_SWAP_REQUESTED' ||
+      eventType == 'SHIFT_SWAP_MANAGER_REVIEW_REQUESTED';
 
   bool supportsClockingDecision() {
-    return isPendingClockingManagerDecision &&
-        requesterUserId != null &&
-        requestType != null &&
+    if (!isPendingClockingManagerDecision || requestType == null) {
+      return false;
+    }
+    if (requestType == 'shift_swap') {
+      return swapRequestId != null;
+    }
+    return requesterUserId != null &&
         ((requestType == 'shift_change' &&
                 metadata['assignmentId']?.trim().isNotEmpty == true) ||
             (teamName != null && requestedDate != null));

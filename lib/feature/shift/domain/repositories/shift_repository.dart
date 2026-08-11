@@ -81,6 +81,12 @@ abstract class ShiftRepository {
     List<int>? alarmOffsets,
   });
 
+  Future<void> requestAssignmentSwap(
+    String assignmentId, {
+    required String candidateUserId,
+    String? note,
+  });
+
   Future<ShiftAutoPlanResultEntity> autoPlan(
     ShiftAutoPlanRequestEntity request,
   );

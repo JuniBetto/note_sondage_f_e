@@ -233,6 +233,20 @@ class ShiftRemoteDataSource {
     );
   }
 
+  Future<void> requestAssignmentSwap(
+    String assignmentId, {
+    required String candidateUserId,
+    String? note,
+  }) async {
+    await _dio.post(
+      '/api/aggregate/shift/assignments/$assignmentId/request-swap',
+      data: {
+        'candidateFirebaseUid': candidateUserId,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+    );
+  }
+
   Future<ShiftAutoPlanResultEntity> autoPlan(
     ShiftAutoPlanRequestEntity request,
   ) async {

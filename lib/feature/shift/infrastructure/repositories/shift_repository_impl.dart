@@ -248,6 +248,19 @@ class ShiftRepositoryImpl implements ShiftRepository {
   }
 
   @override
+  Future<void> requestAssignmentSwap(
+    String assignmentId, {
+    required String candidateUserId,
+    String? note,
+  }) {
+    return _remote.requestAssignmentSwap(
+      assignmentId,
+      candidateUserId: candidateUserId,
+      note: note,
+    );
+  }
+
+  @override
   Future<ShiftAutoPlanResultEntity> autoPlan(
     ShiftAutoPlanRequestEntity request,
   ) {

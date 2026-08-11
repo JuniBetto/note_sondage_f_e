@@ -122,7 +122,9 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         .toList();
     final selectedTeamId = _selectedCalendarTeamId;
     if (selectedTeamId == null || selectedTeamId.isEmpty) {
-      return visibleAssignments;
+      return visibleAssignments
+          .where((assignment) => assignment.userId == _currentUid)
+          .toList();
     }
     return visibleAssignments
         .where((assignment) => assignment.teamId == selectedTeamId)
@@ -358,6 +360,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     );
   }
 
+  bool _canRequestAssignmentSwap(ShiftAssignmentEntity assignment) {
+    return assignment.isPublic &&
+        ShiftAssignmentAccessPolicy.hasTeamScope(assignment) &&
+        assignment.userId == _currentUid;
+  }
+
   bool _canEditApprovedAssignment(ShiftAssignmentEntity assignment) {
     final canManageAssignment = _canManageAssignment(assignment);
     return ShiftAssignmentAccessPolicy.canEditApprovedAssignment(
@@ -458,6 +466,9 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       canRequestPublicShiftChanges: existing != null
           ? _canRequestAssignmentChange(existing)
           : false,
+      canRequestAssignmentSwap: existing != null
+          ? _canRequestAssignmentSwap(existing)
+          : false,
       hasPendingPublicShiftChangeRequest: existing != null
           ? _hasPendingAssignmentChangeRequest(existing)
           : false,
@@ -471,6 +482,11 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
 
     if (result.requestedChange && existing != null) {
       await _requestAssignmentChange(context, existing, result);
+      return;
+    }
+
+    if (result.requestedSwap && existing != null) {
+      await _requestAssignmentSwap(context, existing, result);
       return;
     }
 
@@ -565,6 +581,45 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         error,
         fallback:
             'Non siamo riusciti a inviare la richiesta di modifica turno.',
+      );
+    }
+  }
+
+  Future<void> _requestAssignmentSwap(
+    BuildContext context,
+    ShiftAssignmentEntity existing,
+    ShiftDayDialogResult result,
+  ) async {
+    final candidateUserId = result.swapCandidateUserId?.trim();
+    if (candidateUserId == null || candidateUserId.isEmpty) {
+      return;
+    }
+    try {
+      await _shiftRepository.requestAssignmentSwap(
+        existing.id,
+        candidateUserId: candidateUserId,
+        note: result.swapNote,
+      );
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackBar.showSuccess(
+        context,
+        _isItalian(context)
+            ? 'La richiesta di sostituzione turno e stata inviata.'
+            : 'The shift swap request has been sent.',
+      );
+      _loadAssignments();
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: _isItalian(context)
+            ? 'Non siamo riusciti a inviare la richiesta di sostituzione turno.'
+            : 'We could not send the shift swap request.',
       );
     }
   }

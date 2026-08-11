@@ -641,6 +641,40 @@ class BackendAuthDataSource {
     );
   }
 
+  Future<void> acceptShiftSwapRequest({required String swapRequestId}) async {
+    await _postShiftChangeDecision(
+      '/api/aggregate/shift/swap-requests/$swapRequestId/accept',
+      const <String, dynamic>{},
+      'accept shift swap request',
+    );
+  }
+
+  Future<void> rejectShiftSwapRequest({required String swapRequestId}) async {
+    await _postShiftChangeDecision(
+      '/api/aggregate/shift/swap-requests/$swapRequestId/reject',
+      const <String, dynamic>{},
+      'reject shift swap request',
+    );
+  }
+
+  Future<void> approveShiftSwapRequest({required String swapRequestId}) async {
+    await _postShiftChangeDecision(
+      '/api/aggregate/shift/swap-requests/$swapRequestId/approve',
+      const <String, dynamic>{},
+      'approve shift swap request',
+    );
+  }
+
+  Future<void> rejectShiftSwapRequestByManager({
+    required String swapRequestId,
+  }) async {
+    await _postShiftChangeDecision(
+      '/api/aggregate/shift/swap-requests/$swapRequestId/reject-manager',
+      const <String, dynamic>{},
+      'reject shift swap request by manager',
+    );
+  }
+
   Future<void> _postClockingDecision(
     String path,
     Map<String, dynamic> data,

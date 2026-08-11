@@ -286,6 +286,13 @@ class _FakeShiftRepository implements ShiftRepository {
   }) => throw UnimplementedError();
 
   @override
+  Future<void> requestAssignmentSwap(
+    String assignmentId, {
+    required String candidateUserId,
+    String? note,
+  }) => throw UnimplementedError();
+
+  @override
   Future<ShiftAssignmentEntity> updateAssignment(
     String assignmentId, {
     String? profileId,

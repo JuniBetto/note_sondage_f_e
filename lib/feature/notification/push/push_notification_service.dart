@@ -23,6 +23,7 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/firebase_options.dart';
 
 const String _backgroundTeamInviteCategoryId = 'team_invite_actions';
+const String _backgroundTeamDecisionCategoryId = 'team_decision_actions';
 
 /// Gestisce i messaggi FCM quando l'app è in background o terminata.
 ///
@@ -91,6 +92,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       notificationItem.eventType == 'TEAM_MEMBER_INVITED' &&
       notificationItem.invitationId != null &&
       (notificationItem.metadata['invitedUserId']?.trim().isNotEmpty ?? false);
+  final canRespondToDecision = notificationItem.supportsClockingDecision();
   final payload = jsonEncode(notificationItem.toJson());
 
   // Nessun testo = niente da mostrare (es. silent sync messages).
@@ -100,9 +102,42 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // 3. Inizializza flutter_local_notifications standalone.
   final plugin = FlutterLocalNotificationsPlugin();
   const androidSettings = AndroidInitializationSettings('ic_stat_notify');
-  const darwinSettings = DarwinInitializationSettings();
+  final darwinSettings = DarwinInitializationSettings(
+    notificationCategories: [
+      DarwinNotificationCategory(
+        _backgroundTeamInviteCategoryId,
+        actions: [
+          DarwinNotificationAction.plain(
+            'accept_team_invite',
+            'Accetta',
+            options: const {DarwinNotificationActionOption.foreground},
+          ),
+          DarwinNotificationAction.plain(
+            'reject_team_invite',
+            'Rifiuta',
+            options: {DarwinNotificationActionOption.foreground},
+          ),
+        ],
+      ),
+      DarwinNotificationCategory(
+        _backgroundTeamDecisionCategoryId,
+        actions: [
+          DarwinNotificationAction.plain(
+            'approve_clocking_request',
+            'Accetta',
+            options: const {DarwinNotificationActionOption.foreground},
+          ),
+          DarwinNotificationAction.plain(
+            'reject_clocking_request',
+            'Rifiuta',
+            options: {DarwinNotificationActionOption.foreground},
+          ),
+        ],
+      ),
+    ],
+  );
   await plugin.initialize(
-    const InitializationSettings(android: androidSettings, iOS: darwinSettings),
+    InitializationSettings(android: androidSettings, iOS: darwinSettings),
     onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
   );
 
@@ -143,12 +178,27 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
                 cancelNotification: true,
               ),
             ]
-          : null,
+          : (canRespondToDecision
+                ? const <AndroidNotificationAction>[
+                    AndroidNotificationAction(
+                      'approve_clocking_request',
+                      'Accetta',
+                      showsUserInterface: true,
+                      cancelNotification: true,
+                    ),
+                    AndroidNotificationAction(
+                      'reject_clocking_request',
+                      'Rifiuta',
+                      showsUserInterface: true,
+                      cancelNotification: true,
+                    ),
+                  ]
+                : null),
     ),
     iOS: DarwinNotificationDetails(
       categoryIdentifier: canRespondToInvite
           ? _backgroundTeamInviteCategoryId
-          : null,
+          : (canRespondToDecision ? _backgroundTeamDecisionCategoryId : null),
       threadIdentifier: notificationItem.metadata['teamId'],
       presentAlert: true,
       presentBadge: true,
@@ -435,7 +485,6 @@ class PushNotificationService {
       );
     }
   }
-
 
   RealtimeNotification _notificationFromMessage(RemoteMessage message) {
     final data = message.data;

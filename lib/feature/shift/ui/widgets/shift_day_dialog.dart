@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/notification/local/local_notification_servi
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_swap_request_dialog.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -353,6 +354,14 @@ String _requestShiftChangeBanner(
 String _requestShiftChangeButton(BuildContext context) =>
     _requestShiftChangeTitle(context);
 
+String _requestShiftSwapButton(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Sostituzione turno',
+  en: 'Shift swap',
+  fr: 'Echange de quart',
+  es: 'Intercambio de turno',
+);
+
 String _pendingShiftChangeButton(BuildContext context) =>
     _localizedShiftDayText(
       context,
@@ -484,29 +493,20 @@ String _visibilityRowLabel(BuildContext context) => _localizedShiftDayText(
   es: 'Visibilidad',
 );
 
-String _yesLabel(BuildContext context) => _localizedShiftDayText(
-  context,
-  it: 'Si',
-  en: 'Yes',
-  fr: 'Oui',
-  es: 'Si',
-);
+String _yesLabel(BuildContext context) =>
+    _localizedShiftDayText(context, it: 'Si', en: 'Yes', fr: 'Oui', es: 'Si');
 
-String _noLabel(BuildContext context) => _localizedShiftDayText(
-  context,
-  it: 'No',
-  en: 'No',
-  fr: 'Non',
-  es: 'No',
-);
+String _noLabel(BuildContext context) =>
+    _localizedShiftDayText(context, it: 'No', en: 'No', fr: 'Non', es: 'No');
 
-String _privateShiftSummaryLabel(BuildContext context) => _localizedShiftDayText(
-  context,
-  it: 'Turno privato',
-  en: 'Private shift',
-  fr: 'Quart prive',
-  es: 'Turno privado',
-);
+String _privateShiftSummaryLabel(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Turno privato',
+      en: 'Private shift',
+      fr: 'Quart prive',
+      es: 'Turno privado',
+    );
 
 String _publicTeamShiftSummaryLabel(BuildContext context) =>
     _localizedShiftDayText(
@@ -586,6 +586,9 @@ class ShiftDayDialogResult {
     this.memberAssignmentPlans = const [],
     this.scheduledDates = const [],
     this.requestedChange = false,
+    this.requestedSwap = false,
+    this.swapCandidateUserId,
+    this.swapNote,
   });
 
   final String? profileId;
@@ -615,6 +618,9 @@ class ShiftDayDialogResult {
   final List<DateTime> scheduledDates;
 
   final bool requestedChange;
+  final bool requestedSwap;
+  final String? swapCandidateUserId;
+  final String? swapNote;
 }
 
 /// Modal bottom-sheet / dialog for assigning or editing a shift on a single day.
@@ -627,6 +633,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
   String? initialTeamId,
   bool canManagePublicShifts = false,
   bool canRequestPublicShiftChanges = false,
+  bool canRequestAssignmentSwap = false,
   bool hasPendingPublicShiftChangeRequest = false,
   bool canEditApprovedPublicShift = false,
 
@@ -642,6 +649,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
     initialTeamId: initialTeamId,
     canManagePublicShifts: canManagePublicShifts,
     canRequestPublicShiftChanges: canRequestPublicShiftChanges,
+    canRequestAssignmentSwap: canRequestAssignmentSwap,
     hasPendingPublicShiftChangeRequest: hasPendingPublicShiftChangeRequest,
     canEditApprovedPublicShift: canEditApprovedPublicShift,
     ownerTeams: ownerTeams,
@@ -677,6 +685,7 @@ class _ShiftDaySheet extends StatefulWidget {
     this.initialTeamId,
     this.canManagePublicShifts = false,
     this.canRequestPublicShiftChanges = false,
+    this.canRequestAssignmentSwap = false,
     this.hasPendingPublicShiftChangeRequest = false,
     this.canEditApprovedPublicShift = false,
     this.ownerTeams = const [],
@@ -690,6 +699,7 @@ class _ShiftDaySheet extends StatefulWidget {
   final String? initialTeamId;
   final bool canManagePublicShifts;
   final bool canRequestPublicShiftChanges;
+  final bool canRequestAssignmentSwap;
   final bool hasPendingPublicShiftChangeRequest;
   final bool canEditApprovedPublicShift;
   final List<TeamEntityForView> ownerTeams;
@@ -747,6 +757,12 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   bool get _requestMode => _requestModeActive;
   bool get _viewOnlyRequestMode =>
       _readOnly && (_canOpenRequestMode || _hasPendingRequest) && !_requestMode;
+  bool get _canOpenSwapRequest =>
+      widget.existing != null &&
+      widget.canRequestAssignmentSwap &&
+      _existingHasTeamScope &&
+      !_requestMode &&
+      !_approvedSelfEditMode;
   bool get _approvedSelfEditMode =>
       widget.existing != null &&
       widget.existing!.isPublic &&
@@ -1149,6 +1165,73 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         isPublic: true,
         teamId: widget.existing?.teamId,
         requestedChange: true,
+      ),
+    );
+  }
+
+  Future<void> _startShiftSwapRequest() async {
+    await _ensureTeamMembersLoaded(_selectedTeam);
+    if (!mounted) {
+      return;
+    }
+    final existing = widget.existing;
+    if (existing == null || _selectedTeam == null) {
+      return;
+    }
+
+    final candidates = _teamMembers
+        .where((member) => member.userId != null)
+        .where((member) => member.userId != existing.userId)
+        .map((member) {
+          final fullName = member.fullName?.trim();
+          final email = member.email.trim();
+          final label = fullName != null && fullName.isNotEmpty
+              ? fullName
+              : email;
+          final subtitle = fullName != null && fullName.isNotEmpty
+              ? email
+              : null;
+          return ShiftSwapCandidateOption(
+            userId: member.userId!,
+            label: label,
+            subtitle: subtitle,
+          );
+        })
+        .toList(growable: false);
+
+    if (candidates.isEmpty) {
+      final message = _localizedShiftDayText(
+        context,
+        it: 'Non ci sono colleghi disponibili in questo team per richiedere uno scambio.',
+        en: 'There are no teammates available in this team for a swap.',
+        fr: 'Aucun collegue disponible dans cette equipe pour demander un echange.',
+        es: 'No hay companeros disponibles en este equipo para solicitar un intercambio.',
+      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+
+    final result = await showShiftSwapRequestDialog(
+      context: context,
+      shiftDateLabel: _formatDateLabel(widget.date),
+      teamName: _resolvedTeamName(context),
+      candidates: candidates,
+    );
+    if (result == null || !mounted) {
+      return;
+    }
+
+    Navigator.of(context).pop(
+      ShiftDayDialogResult(
+        startTime: _startTime,
+        endTime: _endTime,
+        overnight: _overnight,
+        alarmOffsets: _alarmOffsets,
+        requestedSwap: true,
+        swapCandidateUserId: result.candidateUserId,
+        swapNote: result.note,
       ),
     );
   }
@@ -1755,24 +1838,59 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (_canOpenRequestMode ||
+                                  _canOpenSwapRequest ||
                                   _hasPendingRequest) ...[
-                                CustomAppButton(
-                                  onPressed: _hasPendingRequest
-                                      ? null
-                                      : _enterRequestMode,
-                                  type: ButtonType.filled,
-                                  backgroundColor: appPrimary,
-                                  borderRadius: 10,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  isActive: !_hasPendingRequest,
-                                  fullWidth: true,
-                                  child: Text(
-                                    _hasPendingRequest
-                                        ? _pendingShiftChangeButton(context)
-                                        : _requestShiftChangeButton(context),
-                                  ),
+                                Row(
+                                  children: [
+                                    if (_canOpenRequestMode ||
+                                        _hasPendingRequest)
+                                      Expanded(
+                                        child: CustomAppButton(
+                                          onPressed: _hasPendingRequest
+                                              ? null
+                                              : _enterRequestMode,
+                                          type: ButtonType.filled,
+                                          backgroundColor: appPrimary,
+                                          borderRadius: 10,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                          isActive: !_hasPendingRequest,
+                                          fullWidth: true,
+                                          child: Text(
+                                            _hasPendingRequest
+                                                ? _pendingShiftChangeButton(
+                                                    context,
+                                                  )
+                                                : _requestShiftChangeButton(
+                                                    context,
+                                                  ),
+                                          ),
+                                        ),
+                                      ),
+                                    if ((_canOpenRequestMode ||
+                                            _hasPendingRequest) &&
+                                        _canOpenSwapRequest)
+                                      const SizedBox(width: 10),
+                                    if (_canOpenSwapRequest)
+                                      Expanded(
+                                        child: CustomAppButton(
+                                          onPressed: _hasPendingRequest
+                                              ? null
+                                              : _startShiftSwapRequest,
+                                          type: ButtonType.outlined,
+                                          borderRadius: 10,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                          isActive: !_hasPendingRequest,
+                                          fullWidth: true,
+                                          child: Text(
+                                            _requestShiftSwapButton(context),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 if (_hasPendingRequest) ...[
                                   const SizedBox(height: 8),
