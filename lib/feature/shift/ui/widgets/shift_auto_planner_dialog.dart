@@ -62,20 +62,30 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
   String get _languageCode =>
       Localizations.localeOf(context).languageCode.toLowerCase();
 
+  TeamEntityForView? get _selectedTeamView {
+    final selectedId = _selectedTeamId;
+    if (selectedId == null || selectedId.isEmpty) {
+      return null;
+    }
+    for (final team in widget.teams) {
+      if (team.team.id == selectedId) {
+        return team;
+      }
+    }
+    return null;
+  }
+
   int get _selectedTeamMaxPeople {
-    final selectedTeam = widget.teams.cast<TeamEntityForView?>().firstWhere(
-      (entry) => entry?.team.id == _selectedTeamId,
-      orElse: () => null,
-    );
+    final selectedTeam = _selectedTeamView;
     if (selectedTeam == null) {
       return 1;
     }
-    if (selectedTeam.members.isNotEmpty) {
-      return selectedTeam.members.length;
-    }
-    return selectedTeam.team.memberCount > 0
-        ? selectedTeam.team.memberCount
-        : 1;
+    final loadedMembersCount = selectedTeam.members.length;
+    final declaredMemberCount = selectedTeam.team.memberCount;
+    final resolvedCount = loadedMembersCount > declaredMemberCount
+        ? loadedMembersCount
+        : declaredMemberCount;
+    return resolvedCount > 0 ? resolvedCount : 1;
   }
 
   void _clampProfileCountsToSelectedTeam() {
@@ -117,6 +127,23 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
       _to = _from;
     }
     _clampProfileCountsToSelectedTeam();
+  }
+
+  @override
+  void didUpdateWidget(covariant ShiftAutoPlannerDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.teams != widget.teams ||
+        oldWidget.initialTeamId != widget.initialTeamId) {
+      final selectedTeamStillExists = widget.teams.any(
+        (team) => team.team.id == _selectedTeamId,
+      );
+      if (!selectedTeamStillExists) {
+        _selectedTeamId =
+            widget.initialTeamId ??
+            (widget.teams.isNotEmpty ? widget.teams.first.team.id : null);
+      }
+      _clampProfileCountsToSelectedTeam();
+    }
   }
 
   @override

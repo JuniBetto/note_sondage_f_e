@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class ShiftAutoPlanPreviewFooter extends StatelessWidget {
   const ShiftAutoPlanPreviewFooter({
@@ -23,6 +24,8 @@ class ShiftAutoPlanPreviewFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     return Container(
       padding: EdgeInsets.fromLTRB(
         compact ? 12 : 24,
@@ -48,16 +51,20 @@ class ShiftAutoPlanPreviewFooter extends StatelessWidget {
           Expanded(
             child: FilledButton(
               onPressed: submitting || !canConfirm ? null : onConfirm,
+              style: FilledButton.styleFrom(backgroundColor:submitting
+                  ? null : colorScheme.bgsecondary),
               child: submitting
                   ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: theme.colorScheme.onPrimary,
+                        color: colorScheme.onPrimary,
                       ),
                     )
-                  : Text(confirmLabel),
+                  : Text(confirmLabel,style: textTheme.bodyMedium!.copyWith(color:submitting
+                  ? colorScheme.textColor:colorScheme.textInvertedColor)),
+
             ),
           ),
         ],
