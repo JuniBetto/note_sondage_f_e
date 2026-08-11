@@ -1262,6 +1262,78 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get shiftAutoPlanPreviewTitle => 'Apercu Auto Planner';
+
+  @override
+  String get shiftAutoPlanPreviewStatusFeasible => 'Faisable';
+
+  @override
+  String get shiftAutoPlanPreviewStatusNeedsReview => 'A verifier';
+
+  @override
+  String get shiftAutoPlanPreviewReadyDescription =>
+      'Cet apercu est pret : le calendrier ci-dessous montre les shifts prevus avant la confirmation finale.';
+
+  @override
+  String get shiftAutoPlanPreviewNeedsReviewDescription =>
+      'Cet apercu montre des problemes de couverture ou de contraintes. La confirmation reste desactivee tant que ce n\'est pas faisable.';
+
+  @override
+  String get shiftAutoPlanPreviewSummaryTitle => 'Resume';
+
+  @override
+  String get shiftAutoPlanPreviewNewShifts => 'Nouveaux shifts';
+
+  @override
+  String get shiftAutoPlanPreviewPreserved => 'Conserves';
+
+  @override
+  String get shiftAutoPlanPreviewToRemove => 'A supprimer';
+
+  @override
+  String get shiftAutoPlanPreviewUncoveredSlots => 'Couvertures manquantes';
+
+  @override
+  String get shiftAutoPlanPreviewWarningsTitle => 'Avertissements du planner';
+
+  @override
+  String get shiftAutoPlanPreviewCalendarTitle => 'Calendrier preview';
+
+  @override
+  String get shiftAutoPlanPreviewCalendarDescription =>
+      'Touchez un jour pour voir le detail des shifts prevus et des actions planifiees.';
+
+  @override
+  String get shiftAutoPlanPreviewEmpty =>
+      'Aucune modification proposee pour cette periode.';
+
+  @override
+  String get shiftAutoPlanPreviewBack => 'Retour';
+
+  @override
+  String get shiftAutoPlanPreviewConfirmCreate => 'Confirmer et creer';
+
+  @override
+  String get shiftAutoPlanPreviewConfirmError =>
+      'Nous n\'avons pas pu confirmer cet apercu du planner.';
+
+  @override
+  String get shiftAutoPlanPreviewDayDescription =>
+      'Shifts prevus pour cette journee.';
+
+  @override
+  String get shiftAutoPlanPreviewDefaultShiftTitle => 'Shift';
+
+  @override
+  String get shiftAutoPlanPreviewActionNew => 'Nouveau';
+
+  @override
+  String get shiftAutoPlanPreviewActionKeep => 'Garder';
+
+  @override
+  String get shiftAutoPlanPreviewActionRemove => 'Supprimer';
+
+  @override
   String get customProfile => 'Profils personnalisés';
 
   @override

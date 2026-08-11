@@ -1268,6 +1268,10 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           .map((team) => team.team.name.trim())
           .where((name) => name.isNotEmpty)
           .firstOrNull;
+      final teamMembers = _manageableTeams
+          .where((team) => team.team.id == request.teamId)
+          .map((team) => team.members)
+          .firstOrNull;
       final result = await ShiftAutoPlanPreviewPage.show(
         context,
         request: request,
@@ -1275,6 +1279,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         onConfirm: () =>
             _shiftRepository.confirmAutoPlan(preview.snapshotToken),
         teamName: teamName,
+        userLabelsById: _buildPreviewUserLabels(teamMembers),
         compact: true,
       );
       if (result == null || !mounted || !context.mounted) {
@@ -1331,5 +1336,42 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
             : 'We could not generate the automatic shifts.',
       );
     }
+  }
+
+  Map<String, String> _buildPreviewUserLabels(
+    List<TeamMemberforView>? members,
+  ) {
+    final labels = <String, String>{};
+    final combinedMembers = <TeamMemberforView>[
+      ..._teamMembersByTeamId.values.expand((entry) => entry),
+      if (members != null) ...members,
+    ];
+    for (final member in combinedMembers) {
+      final userId = member.teamMember.userId?.trim();
+      if (userId == null || userId.isEmpty) {
+        continue;
+      }
+      final label = _previewUserLabel(member);
+      if (label.isNotEmpty) {
+        labels[userId] = label;
+      }
+    }
+    return labels;
+  }
+
+  String _previewUserLabel(TeamMemberforView member) {
+    final fullName = member.user?.fullName.trim();
+    if (fullName != null && fullName.isNotEmpty) {
+      return fullName;
+    }
+    final initialName = member.teamMember.initialName?.trim();
+    if (initialName != null && initialName.isNotEmpty) {
+      return initialName;
+    }
+    final email = member.teamMember.userEmail.trim();
+    if (email.isNotEmpty) {
+      return email;
+    }
+    return member.teamMember.userId?.trim() ?? '';
   }
 }

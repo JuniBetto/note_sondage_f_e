@@ -9,6 +9,7 @@ import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview/sh
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview/shift_auto_plan_preview_legend_card.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview/shift_auto_plan_preview_summary_card.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview/shift_auto_plan_preview_warnings_card.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/theme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
@@ -19,6 +20,7 @@ class ShiftAutoPlanPreviewPage extends StatefulWidget {
     required this.preview,
     required this.onConfirm,
     this.teamName,
+    this.userLabelsById = const {},
     this.compact = false,
   });
 
@@ -26,6 +28,7 @@ class ShiftAutoPlanPreviewPage extends StatefulWidget {
   final ShiftAutoPlanPreviewEntity preview;
   final Future<ShiftAutoPlanResultEntity> Function() onConfirm;
   final String? teamName;
+  final Map<String, String> userLabelsById;
   final bool compact;
 
   static Future<ShiftAutoPlanResultEntity?> show(
@@ -34,6 +37,7 @@ class ShiftAutoPlanPreviewPage extends StatefulWidget {
     required ShiftAutoPlanPreviewEntity preview,
     required Future<ShiftAutoPlanResultEntity> Function() onConfirm,
     String? teamName,
+    Map<String, String> userLabelsById = const {},
     bool compact = false,
   }) {
     return Navigator.of(context).push<ShiftAutoPlanResultEntity>(
@@ -44,6 +48,7 @@ class ShiftAutoPlanPreviewPage extends StatefulWidget {
           preview: preview,
           onConfirm: onConfirm,
           teamName: teamName,
+          userLabelsById: userLabelsById,
           compact: compact,
         ),
       ),
@@ -59,11 +64,10 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
   bool _submitting = false;
   late DateTime _focusedMonth;
 
-  String get _languageCode =>
-      Localizations.localeOf(context).languageCode.toLowerCase();
-
   bool get _compact =>
       widget.compact || MediaQuery.of(context).size.width < 720;
+
+  AppLocalizations get _loc => AppLocalizations.of(context)!;
 
   String? get _displayTeamName {
     final trimmed = widget.teamName?.trim();
@@ -73,10 +77,36 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
     return trimmed;
   }
 
+  String get _requestTeamId => widget.request.teamId.trim();
+
+  List<ShiftAutoPlanPreviewDayEntity> get _visiblePreviewDays {
+    return widget.preview.days
+        .map((day) {
+          final items = day.items
+              .where(_isVisiblePreviewItem)
+              .toList(growable: false);
+          if (items.isEmpty) {
+            return null;
+          }
+          return ShiftAutoPlanPreviewDayEntity(date: day.date, items: items);
+        })
+        .whereType<ShiftAutoPlanPreviewDayEntity>()
+        .toList(growable: false);
+  }
+
+  int get _visibleCreatedAssignmentsCount =>
+      _countVisibleActions(ShiftAutoPlanPreviewAction.create);
+
+  int get _visiblePreservedAssignmentsCount =>
+      _countVisibleActions(ShiftAutoPlanPreviewAction.preserve);
+
+  int get _visibleDeletedAssignmentsCount =>
+      _countVisibleActions(ShiftAutoPlanPreviewAction.delete);
+
   List<ShiftAssignmentEntity> get _calendarAssignments {
-    final items = widget.preview.days
+    final items = _visiblePreviewDays
         .expand((day) => day.items)
-        .map((item) => item.assignment)
+        .map((item) => _resolveAssignmentUserLabel(item.assignment))
         .toList();
     items.sort((left, right) {
       final byDate = left.shiftDate.compareTo(right.shiftDate);
@@ -126,12 +156,7 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
         leadingWidth: 56,
         centerTitle: true,
         title: Text(
-          _t(
-            it: 'Anteprima Auto Planner',
-            en: 'Auto Planner preview',
-            fr: 'Apercu Auto Planner',
-            es: 'Vista previa Auto Planner',
-          ),
+          _loc.shiftAutoPlanPreviewTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleLarge?.copyWith(
@@ -160,80 +185,35 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
                         compact: _compact,
                         fullyFeasible: preview.fullyFeasible,
                         statusLabel: preview.fullyFeasible
-                            ? _t(
-                                it: 'Fattibile',
-                                en: 'Feasible',
-                                fr: 'Faisable',
-                                es: 'Factible',
-                              )
-                            : _t(
-                                it: 'Da correggere',
-                                en: 'Needs review',
-                                fr: 'A verifier',
-                                es: 'Revisar',
-                              ),
+                            ? _loc.shiftAutoPlanPreviewStatusFeasible
+                            : _loc.shiftAutoPlanPreviewStatusNeedsReview,
                         dateRangeLabel: _formatDateRange(
                           widget.request.from,
                           widget.request.to,
                         ),
                         description: preview.fullyFeasible
-                            ? _t(
-                                it: 'Questa anteprima e pronta: il calendario qui sotto mostra i turni previsti prima della conferma finale.',
-                                en: 'This preview is ready: the calendar below shows the planned shifts before final confirmation.',
-                                fr: 'Cet apercu est pret : le calendrier ci-dessous montre les shifts prevus avant la confirmation finale.',
-                                es: 'Esta vista previa esta lista: el calendario de abajo muestra los turnos previstos antes de la confirmacion final.',
-                              )
-                            : _t(
-                                it: 'L anteprima mostra problemi di copertura o vincoli. Finche non e fattibile, la conferma resta bloccata.',
-                                en: 'This preview shows coverage or constraint issues. Confirmation stays disabled until it is fully feasible.',
-                                fr: 'Cet apercu montre des problemes de couverture ou de contraintes. La confirmation reste desactivee tant que ce n est pas faisable.',
-                                es: 'Esta vista previa muestra problemas de cobertura o restricciones. La confirmacion queda deshabilitada hasta que sea totalmente factible.',
-                              ),
+                            ? _loc.shiftAutoPlanPreviewReadyDescription
+                            : _loc.shiftAutoPlanPreviewNeedsReviewDescription,
                       ),
                       const SizedBox(height: 12),
                       ShiftAutoPlanPreviewSummaryCard(
                         compact: _compact,
-                        title: _t(
-                          it: 'Riepilogo',
-                          en: 'Summary',
-                          fr: 'Resume',
-                          es: 'Resumen',
-                        ),
+                        title: _loc.shiftAutoPlanPreviewSummaryTitle,
                         metrics: [
                           ShiftAutoPlanPreviewSummaryMetric(
-                            label: _t(
-                              it: 'Nuovi turni',
-                              en: 'New shifts',
-                              fr: 'Nouveaux shifts',
-                              es: 'Turnos nuevos',
-                            ),
-                            value: preview.createdAssignmentsCountPreview,
+                            label: _loc.shiftAutoPlanPreviewNewShifts,
+                            value: _visibleCreatedAssignmentsCount,
                           ),
                           ShiftAutoPlanPreviewSummaryMetric(
-                            label: _t(
-                              it: 'Preservati',
-                              en: 'Preserved',
-                              fr: 'Conserves',
-                              es: 'Conservados',
-                            ),
-                            value: preview.preservedAssignmentsCount,
+                            label: _loc.shiftAutoPlanPreviewPreserved,
+                            value: _visiblePreservedAssignmentsCount,
                           ),
                           ShiftAutoPlanPreviewSummaryMetric(
-                            label: _t(
-                              it: 'Da rimuovere',
-                              en: 'To remove',
-                              fr: 'A supprimer',
-                              es: 'A eliminar',
-                            ),
-                            value: preview.deletedAssignmentsCountPreview,
+                            label: _loc.shiftAutoPlanPreviewToRemove,
+                            value: _visibleDeletedAssignmentsCount,
                           ),
                           ShiftAutoPlanPreviewSummaryMetric(
-                            label: _t(
-                              it: 'Coperture mancanti',
-                              en: 'Uncovered slots',
-                              fr: 'Couvertures manquantes',
-                              es: 'Coberturas faltantes',
-                            ),
+                            label: _loc.shiftAutoPlanPreviewUncoveredSlots,
                             value: preview.uncoveredSlotsCount,
                             emphasize: preview.uncoveredSlotsCount > 0,
                           ),
@@ -243,12 +223,7 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
                         const SizedBox(height: 12),
                         ShiftAutoPlanPreviewWarningsCard(
                           compact: _compact,
-                          title: _t(
-                            it: 'Warning planner',
-                            en: 'Planner warnings',
-                            fr: 'Avertissements du planner',
-                            es: 'Advertencias del planner',
-                          ),
+                          title: _loc.shiftAutoPlanPreviewWarningsTitle,
                           warnings: preview.warnings
                               .map(_formatWarning)
                               .toList(growable: false),
@@ -257,18 +232,9 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
                       const SizedBox(height: 12),
                       ShiftAutoPlanPreviewLegendCard(
                         compact: _compact,
-                        title: _t(
-                          it: 'Calendario preview',
-                          en: 'Preview calendar',
-                          fr: 'Calendrier preview',
-                          es: 'Calendario preview',
-                        ),
-                        description: _t(
-                          it: 'Tocca un giorno per vedere il dettaglio dei presunti turni e delle azioni previste.',
-                          en: 'Tap a day to inspect the tentative shifts and their planned actions.',
-                          fr: 'Touchez un jour pour voir le detail des shifts prevus et des actions planifiees.',
-                          es: 'Toca un dia para ver el detalle de los turnos previstos y sus acciones.',
-                        ),
+                        title: _loc.shiftAutoPlanPreviewCalendarTitle,
+                        description:
+                            _loc.shiftAutoPlanPreviewCalendarDescription,
                         createLabel: _actionLabel(
                           ShiftAutoPlanPreviewAction.create,
                         ),
@@ -294,12 +260,7 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
                           });
                         },
                         onDayTap: _openDayPreview,
-                        emptyMessage: _t(
-                          it: 'Nessuna modifica proposta per questo intervallo.',
-                          en: 'No changes were proposed for this range.',
-                          fr: 'Aucune modification proposee pour cette periode.',
-                          es: 'No se propusieron cambios para este intervalo.',
-                        ),
+                        emptyMessage: _loc.shiftAutoPlanPreviewEmpty,
                       ),
                     ],
                   ),
@@ -308,18 +269,8 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
                   compact: _compact,
                   submitting: _submitting,
                   canConfirm: preview.fullyFeasible,
-                  backLabel: _t(
-                    it: 'Indietro',
-                    en: 'Back',
-                    fr: 'Retour',
-                    es: 'Volver',
-                  ),
-                  confirmLabel: _t(
-                    it: 'Conferma e crea',
-                    en: 'Confirm and create',
-                    fr: 'Confirmer et creer',
-                    es: 'Confirmar y crear',
-                  ),
+                  backLabel: _loc.shiftAutoPlanPreviewBack,
+                  confirmLabel: _loc.shiftAutoPlanPreviewConfirmCreate,
                   onBack: () {
                     Navigator.of(context).maybePop();
                   },
@@ -351,12 +302,7 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
       AppSnackBar.showResolvedError(
         context,
         error,
-        fallback: _t(
-          it: 'Non siamo riusciti a confermare questa anteprima del planner.',
-          en: 'We could not confirm this planner preview.',
-          fr: 'Nous n avons pas pu confirmer cet apercu du planner.',
-          es: 'No pudimos confirmar esta vista previa del planner.',
-        ),
+        fallback: _loc.shiftAutoPlanPreviewConfirmError,
       );
       setState(() => _submitting = false);
     }
@@ -372,22 +318,17 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
       context,
       compact: _compact,
       title: _formatDay(date),
-      description: _t(
-        it: 'Presunti turni di questa giornata.',
-        en: 'Tentative shifts for this day.',
-        fr: 'Shifts prevus pour cette journee.',
-        es: 'Turnos previstos para este dia.',
-      ),
+      description: _loc.shiftAutoPlanPreviewDayDescription,
       items: items
           .map(
             (item) => ShiftAutoPlanPreviewDaySheetItem(
               title: ((item.assignment.profileName ?? '').trim().isEmpty)
-                  ? _t(it: 'Turno', en: 'Shift', fr: 'Shift', es: 'Turno')
+                  ? _loc.shiftAutoPlanPreviewDefaultShiftTitle
                   : item.assignment.profileName!.trim(),
               subtitle: [
-                if ((item.assignment.userName ?? '').trim().isNotEmpty)
-                  item.assignment.userName!.trim(),
-                _formatTimeRange(item.assignment),
+                if ((_resolvedUserLabel(item.assignment) ?? '').isNotEmpty)
+                  _resolvedUserLabel(item.assignment)!,
+                _formatTimeRange(_resolveAssignmentUserLabel(item.assignment)),
               ].join(' • '),
               action: item.action,
             ),
@@ -398,9 +339,16 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
   }
 
   List<ShiftAutoPlanPreviewAssignmentEntity> _itemsForDate(DateTime date) {
-    for (final day in widget.preview.days) {
+    for (final day in _visiblePreviewDays) {
       if (_isSameDay(day.date, date)) {
-        final items = [...day.items];
+        final items = day.items
+            .map(
+              (item) => ShiftAutoPlanPreviewAssignmentEntity(
+                action: item.action,
+                assignment: _resolveAssignmentUserLabel(item.assignment),
+              ),
+            )
+            .toList();
         items.sort((left, right) {
           final byStartHour = left.assignment.startTime.hour.compareTo(
             right.assignment.startTime.hour,
@@ -424,6 +372,29 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
     return const [];
   }
 
+  bool _isVisiblePreviewItem(ShiftAutoPlanPreviewAssignmentEntity item) {
+    if (item.action == ShiftAutoPlanPreviewAction.create) {
+      return true;
+    }
+    final assignmentTeamId = item.assignment.teamId?.trim();
+    if (assignmentTeamId == null || assignmentTeamId.isEmpty) {
+      return false;
+    }
+    return assignmentTeamId == _requestTeamId;
+  }
+
+  int _countVisibleActions(ShiftAutoPlanPreviewAction action) {
+    var total = 0;
+    for (final day in _visiblePreviewDays) {
+      for (final item in day.items) {
+        if (item.action == action) {
+          total++;
+        }
+      }
+    }
+    return total;
+  }
+
   bool _isSameDay(DateTime left, DateTime right) {
     return left.year == right.year &&
         left.month == right.month &&
@@ -432,24 +403,11 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
 
   String _actionLabel(ShiftAutoPlanPreviewAction action) {
     return switch (action) {
-      ShiftAutoPlanPreviewAction.create => _t(
-        it: 'Nuovo',
-        en: 'New',
-        fr: 'Nouveau',
-        es: 'Nuevo',
-      ),
-      ShiftAutoPlanPreviewAction.preserve => _t(
-        it: 'Tieni',
-        en: 'Keep',
-        fr: 'Garder',
-        es: 'Mantener',
-      ),
-      ShiftAutoPlanPreviewAction.delete => _t(
-        it: 'Rimuovi',
-        en: 'Remove',
-        fr: 'Supprimer',
-        es: 'Quitar',
-      ),
+      ShiftAutoPlanPreviewAction.create => _loc.shiftAutoPlanPreviewActionNew,
+      ShiftAutoPlanPreviewAction.preserve =>
+        _loc.shiftAutoPlanPreviewActionKeep,
+      ShiftAutoPlanPreviewAction.delete =>
+        _loc.shiftAutoPlanPreviewActionRemove,
     };
   }
 
@@ -459,15 +417,24 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
   }
 
   String _formatWarning(String warning) {
+    var formatted = warning;
     final teamName = _displayTeamName;
-    if (teamName == null) {
-      return warning;
+    if (teamName != null) {
+      formatted = formatted.replaceAll(widget.request.teamId, teamName);
     }
-    return warning.replaceAll(widget.request.teamId, teamName);
+    for (final entry in widget.userLabelsById.entries) {
+      if (entry.key.trim().isEmpty || entry.value.trim().isEmpty) {
+        continue;
+      }
+      formatted = formatted.replaceAll(entry.key, entry.value);
+    }
+    return formatted;
   }
 
   String _formatDay(DateTime date) {
-    final format = DateFormat.yMMMMEEEEd(_languageCode);
+    final format = DateFormat.yMMMMEEEEd(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
     final value = format.format(date);
     return value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
   }
@@ -486,21 +453,27 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
     return '$start - $end$suffix';
   }
 
-  String _t({
-    required String it,
-    required String en,
-    required String fr,
-    required String es,
-  }) {
-    switch (_languageCode) {
-      case 'it':
-        return it;
-      case 'fr':
-        return fr;
-      case 'es':
-        return es;
-      default:
-        return en;
+  ShiftAssignmentEntity _resolveAssignmentUserLabel(
+    ShiftAssignmentEntity assignment,
+  ) {
+    final resolvedLabel = _resolvedUserLabel(assignment);
+    if (resolvedLabel == null) {
+      return assignment;
     }
+    return assignment.copyWith(userName: resolvedLabel);
+  }
+
+  String? _resolvedUserLabel(ShiftAssignmentEntity assignment) {
+    final existingName = assignment.userName?.trim();
+    if (existingName != null && existingName.isNotEmpty) {
+      return existingName;
+    }
+
+    final mappedLabel = widget.userLabelsById[assignment.userId]?.trim();
+    if (mappedLabel != null && mappedLabel.isNotEmpty) {
+      return mappedLabel;
+    }
+
+    return null;
   }
 }

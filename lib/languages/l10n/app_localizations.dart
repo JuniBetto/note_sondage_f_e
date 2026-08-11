@@ -2406,6 +2406,138 @@ abstract class AppLocalizations {
   /// **'+{count} more'**
   String shiftCalendarMoreEntries(int count);
 
+  /// No description provided for @shiftAutoPlanPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto Planner preview'**
+  String get shiftAutoPlanPreviewTitle;
+
+  /// No description provided for @shiftAutoPlanPreviewStatusFeasible.
+  ///
+  /// In en, this message translates to:
+  /// **'Feasible'**
+  String get shiftAutoPlanPreviewStatusFeasible;
+
+  /// No description provided for @shiftAutoPlanPreviewStatusNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs review'**
+  String get shiftAutoPlanPreviewStatusNeedsReview;
+
+  /// No description provided for @shiftAutoPlanPreviewReadyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This preview is ready: the calendar below shows the planned shifts before final confirmation.'**
+  String get shiftAutoPlanPreviewReadyDescription;
+
+  /// No description provided for @shiftAutoPlanPreviewNeedsReviewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This preview shows coverage or constraint issues. Confirmation stays disabled until it is fully feasible.'**
+  String get shiftAutoPlanPreviewNeedsReviewDescription;
+
+  /// No description provided for @shiftAutoPlanPreviewSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get shiftAutoPlanPreviewSummaryTitle;
+
+  /// No description provided for @shiftAutoPlanPreviewNewShifts.
+  ///
+  /// In en, this message translates to:
+  /// **'New shifts'**
+  String get shiftAutoPlanPreviewNewShifts;
+
+  /// No description provided for @shiftAutoPlanPreviewPreserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Preserved'**
+  String get shiftAutoPlanPreviewPreserved;
+
+  /// No description provided for @shiftAutoPlanPreviewToRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'To remove'**
+  String get shiftAutoPlanPreviewToRemove;
+
+  /// No description provided for @shiftAutoPlanPreviewUncoveredSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncovered slots'**
+  String get shiftAutoPlanPreviewUncoveredSlots;
+
+  /// No description provided for @shiftAutoPlanPreviewWarningsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Planner warnings'**
+  String get shiftAutoPlanPreviewWarningsTitle;
+
+  /// No description provided for @shiftAutoPlanPreviewCalendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview calendar'**
+  String get shiftAutoPlanPreviewCalendarTitle;
+
+  /// No description provided for @shiftAutoPlanPreviewCalendarDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day to inspect the tentative shifts and their planned actions.'**
+  String get shiftAutoPlanPreviewCalendarDescription;
+
+  /// No description provided for @shiftAutoPlanPreviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes were proposed for this range.'**
+  String get shiftAutoPlanPreviewEmpty;
+
+  /// No description provided for @shiftAutoPlanPreviewBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get shiftAutoPlanPreviewBack;
+
+  /// No description provided for @shiftAutoPlanPreviewConfirmCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm and create'**
+  String get shiftAutoPlanPreviewConfirmCreate;
+
+  /// No description provided for @shiftAutoPlanPreviewConfirmError.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not confirm this planner preview.'**
+  String get shiftAutoPlanPreviewConfirmError;
+
+  /// No description provided for @shiftAutoPlanPreviewDayDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tentative shifts for this day.'**
+  String get shiftAutoPlanPreviewDayDescription;
+
+  /// No description provided for @shiftAutoPlanPreviewDefaultShiftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get shiftAutoPlanPreviewDefaultShiftTitle;
+
+  /// No description provided for @shiftAutoPlanPreviewActionNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get shiftAutoPlanPreviewActionNew;
+
+  /// No description provided for @shiftAutoPlanPreviewActionKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get shiftAutoPlanPreviewActionKeep;
+
+  /// No description provided for @shiftAutoPlanPreviewActionRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get shiftAutoPlanPreviewActionRemove;
+
   /// No description provided for @customProfile.
   ///
   /// In en, this message translates to:
