@@ -177,6 +177,25 @@ class ClockingRepositoryImpl implements ClockingRepository {
   }
 
   @override
+  Future<ClockingRecordEntity> markSick({
+    String? teamId,
+    required DateTime date,
+    String? targetUserId,
+    String? note,
+  }) async {
+    try {
+      return await _remote.markSick(
+        teamId: teamId,
+        date: date,
+        targetUserId: targetUserId,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to mark sick status: $e');
+    }
+  }
+
+  @override
   Future<int> createManualClockingEntries({
     String? teamId,
     required List<DateTime> dates,
@@ -270,6 +289,19 @@ class ClockingRepositoryImpl implements ClockingRepository {
       );
     } catch (e) {
       throw Exception('Failed to request permission: $e');
+    }
+  }
+
+  @override
+  Future<void> requestSick({
+    required String teamId,
+    required DateTime date,
+    String? note,
+  }) async {
+    try {
+      await _remote.requestSick(teamId: teamId, date: date, note: note);
+    } catch (e) {
+      throw Exception('Failed to request sick status: $e');
     }
   }
 

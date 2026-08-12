@@ -589,6 +589,38 @@ class BackendAuthDataSource {
     );
   }
 
+  Future<void> approveSickRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    String? note,
+  }) async {
+    await _postClockingDecision(
+      '/api/aggregate/clocking/approve-sick-request',
+      {
+        'teamId': teamId,
+        'targetUserId': requesterUserId,
+        'date': requestedDate,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+      'approve sick request',
+    );
+  }
+
+  Future<void> rejectSickRequest({
+    required String teamId,
+    required String requesterUserId,
+    required String requestedDate,
+    String? note,
+  }) async {
+    await _postClockingDecision('/api/aggregate/clocking/reject-sick-request', {
+      'teamId': teamId,
+      'targetUserId': requesterUserId,
+      'date': requestedDate,
+      if (note != null && note.isNotEmpty) 'note': note,
+    }, 'reject sick request');
+  }
+
   Future<void> approveShiftChangeRequest({
     required String assignmentId,
     required String requesterUserId,

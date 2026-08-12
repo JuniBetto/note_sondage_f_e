@@ -6,6 +6,7 @@ enum ClockingStatus {
   decommitted,
   vacation,
   permission,
+  sick,
   absent,
   late;
 
@@ -31,6 +32,9 @@ enum ClockingStatus {
       case 'PERMISSION':
       case 'permission':
         return ClockingStatus.permission;
+      case 'SICK':
+      case 'sick':
+        return ClockingStatus.sick;
     }
 
     return ClockingStatus.values.firstWhere(
@@ -147,8 +151,12 @@ class ClockingRecordEntity {
 
   bool get isPermission => status == ClockingStatus.permission;
 
+  bool get isSick => status == ClockingStatus.sick;
+
+  bool get isFullDayAbsence => isVacation || isSick;
+
   String get clockInFormatted {
-    if (isVacation) return '--:--';
+    if (isFullDayAbsence) return '--:--';
     if (clockInTime == null) return '--:--';
     final h = clockInTime!.hour.toString().padLeft(2, '0');
     final m = clockInTime!.minute.toString().padLeft(2, '0');
@@ -156,7 +164,7 @@ class ClockingRecordEntity {
   }
 
   String get clockOutFormatted {
-    if (isVacation) return '--:--';
+    if (isFullDayAbsence) return '--:--';
     if (clockOutTime == null) return '--:--';
     final h = clockOutTime!.hour.toString().padLeft(2, '0');
     final m = clockOutTime!.minute.toString().padLeft(2, '0');
@@ -191,6 +199,8 @@ class ClockingRecordEntity {
         return 'Vacation';
       case ClockingStatus.permission:
         return 'Permission';
+      case ClockingStatus.sick:
+        return 'Sick';
       case ClockingStatus.absent:
         return 'Absent';
       case ClockingStatus.late:

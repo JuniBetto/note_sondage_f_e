@@ -65,6 +65,19 @@ class _ButtonClockingState extends State<ButtonClocking> {
   bool get _canManageSelectedTeamClocking =>
       _hasResolvedClockingAccessForSelectedTeam && _canManageClocking;
 
+  String _fullDayAbsenceMessage() {
+    switch (Localizations.localeOf(context).languageCode.toLowerCase()) {
+      case 'it':
+        return 'Il giorno selezionato e segnato come ferie o malattia.';
+      case 'fr':
+        return 'La journee selectionnee est marquee comme conge ou maladie.';
+      case 'es':
+        return 'El dia seleccionado esta marcado como vacaciones o baja.';
+      default:
+        return 'The selected day is marked as vacation or sick leave.';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -216,7 +229,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
               final hasApprovedManualClockingRequest =
                   _hasApprovedManualClockingRequest(context);
               final hasVacationOnSelectedDate = recordsForSelectedDate.any(
-                (record) => record.isVacation,
+                (record) => record.isFullDayAbsence,
               );
               final useManualEntryMode =
                   !selectedDateIsToday &&
@@ -926,12 +939,13 @@ class _ButtonClockingState extends State<ButtonClocking> {
         return localization.manualClockingRequiresApproval;
       }
       if (hasVacationOnSelectedDate) {
-        return localization.selectedDayMarkedAsVacation;
+        return _fullDayAbsenceMessage();
       }
       return localization.manualClockingUseInlineForPastDays;
     }
-    if (hasVacationOnSelectedDate || selectedDateRecord?.isVacation == true) {
-      return localization.selectedDayMarkedAsVacation;
+    if (hasVacationOnSelectedDate ||
+        selectedDateRecord?.isFullDayAbsence == true) {
+      return _fullDayAbsenceMessage();
     }
     if (activeRecordForSelectedDate != null) {
       return localization.activeTurnOn(activeRecordForSelectedDate.teamName);
@@ -948,7 +962,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
     required bool hasVacationOnSelectedDate,
   }) {
     if (hasVacationOnSelectedDate) {
-      return localization.selectedDayMarkedAsVacation;
+      return _fullDayAbsenceMessage();
     }
     if (!selectedDateIsToday) {
       return localization.breakOnlyCurrentDay;
@@ -1189,7 +1203,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
               ] else if (hasVacationOnSelectedDate) ...[
                 const SizedBox(height: 10),
                 Text(
-                  localization.selectedDayMarkedAsVacation,
+                  _fullDayAbsenceMessage(),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.orange[800],
                     fontWeight: FontWeight.w700,
@@ -1262,7 +1276,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
     }
 
     final vacationDates = records
-        .where((record) => record.isVacation)
+        .where((record) => record.isFullDayAbsence)
         .map((record) => _normalizeDate(record.date))
         .toSet();
     final conflictingDate = _manualSelectedDates.cast<DateTime?>().firstWhere(
@@ -1270,10 +1284,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
       orElse: () => null,
     );
     if (conflictingDate != null) {
-      AppSnackBar.showWarning(
-        context,
-        localization.selectedDayMarkedAsVacation,
-      );
+      AppSnackBar.showWarning(context, _fullDayAbsenceMessage());
       return;
     }
 
@@ -1303,7 +1314,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
       final newClockOut = date.add(Duration(minutes: clockOutMinutes));
 
       final overlapping = records.where((rec) {
-        if (rec.isVacation) return false;
+        if (rec.isFullDayAbsence) return false;
         final recIn = rec.clockInTime;
         final recOut = rec.clockOutTime;
         if (recIn == null || recOut == null) return false;
@@ -1521,7 +1532,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
   Future<void> _addManualDate(List<ClockingRecordEntity> records) async {
     final localization = AppLocalizations.of(context)!;
     final vacationDates = records
-        .where((record) => record.isVacation)
+        .where((record) => record.isFullDayAbsence)
         .map((record) => _normalizeDate(record.date))
         .toSet();
     final today = _normalizeDate(DateTime.now());
@@ -1560,10 +1571,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
       return;
     }
     if (vacationDates.contains(normalized)) {
-      AppSnackBar.showWarning(
-        context,
-        localization.selectedDayMarkedAsVacation,
-      );
+      AppSnackBar.showWarning(context, _fullDayAbsenceMessage());
       return;
     }
     if (_manualSelectedDates.any((date) => _isSameDay(date, normalized))) {

@@ -6,7 +6,9 @@ import 'package:get_it/get_it.dart';
 import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
+import 'package:note_sondage/feature/notification/realtime/clocking_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
@@ -14,6 +16,7 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_enti
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
+import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments_list.dart';
@@ -53,6 +56,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   final TeamBloc _teamBloc = GetIt.instance<TeamBloc>();
   final TeamMemberBloc _teamMemberBloc = GetIt.instance<TeamMemberBloc>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
+  final ClockingUseCase _clockingUseCase = GetIt.instance<ClockingUseCase>();
   final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
   final UserArchiveService _archiveService =
       GetIt.instance<UserArchiveService>();
@@ -66,6 +70,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   final Map<String, List<RoleEntity>> _rolesByTeamId = {};
   final Set<String> _loadingTeamMemberIds = <String>{};
   final Set<String> _loadingTeamRoleIds = <String>{};
+  Map<String, ShiftAbsenceStatus> _absenceStatusesByKey = const {};
   Set<String> _archivedAssignmentIds = <String>{};
   bool _showArchivedOnly = false;
   bool _tutorialScheduled = false;
@@ -136,6 +141,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     super.initState();
     _loadProfiles();
     _loadAssignments();
+    unawaited(_loadShiftAbsenceStatuses());
     final teamState = _teamBloc.state;
     if (teamState is TeamsLoaded) {
       _teams = teamState.teams;
@@ -188,6 +194,42 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         visibleUserIds: visibleUserIds.isEmpty ? null : visibleUserIds,
       ),
     );
+  }
+
+  Future<void> _loadShiftAbsenceStatuses() async {
+    final first = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+    final last = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
+    final selectedTeamId = _selectedCalendarTeamId?.trim();
+    try {
+      final records = selectedTeamId == null || selectedTeamId.isEmpty
+          ? await _clockingUseCase.getAllRecords()
+          : await _clockingUseCase.getRecordsByTeamId(selectedTeamId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _absenceStatusesByKey = buildShiftAbsenceIndex(
+          records,
+          from: first,
+          to: last,
+          teamId: selectedTeamId,
+          currentUserId: selectedTeamId == null || selectedTeamId.isEmpty
+              ? _currentUid
+              : null,
+        );
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _absenceStatusesByKey = const {};
+      });
+    }
+  }
+
+  Map<String, ShiftAbsenceStatus> _absenceStatusesForDate(DateTime date) {
+    return shiftAbsenceStatusesByUserForDate(_absenceStatusesByKey, date);
   }
 
   void _upsertAssignment(ShiftAssignmentEntity assignment) {
@@ -255,6 +297,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   void _onMonthChanged(DateTime month) {
     setState(() => _focusedMonth = month);
     _loadAssignments();
+    unawaited(_loadShiftAbsenceStatuses());
   }
 
   void _ensureTeamAccessContextLoaded(List<TeamEntity> teams) {
@@ -287,14 +330,23 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   }
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
-    final decision = GetIt.instance<ShiftRealtimeCoordinator>().resolveDecision(
-      notification,
-      currentUserId: _currentUid,
-    );
-    if (!decision.refreshCalendar || !mounted) {
+    final shiftDecision = GetIt.instance<ShiftRealtimeCoordinator>()
+        .resolveDecision(notification, currentUserId: _currentUid);
+    final clockingDecision = GetIt.instance<ClockingRealtimeCoordinator>()
+        .resolveDecision(
+          notification,
+          currentUserId: _currentUid,
+          selectedTeamId: _selectedCalendarTeamId,
+        );
+    if (!mounted) {
       return;
     }
-    _loadAssignments();
+    if (shiftDecision.refreshCalendar) {
+      _loadAssignments();
+    }
+    if (shiftDecision.refreshCalendar || clockingDecision.refreshClocking) {
+      unawaited(_loadShiftAbsenceStatuses());
+    }
   }
 
   /// Consumes any pending deep-link intent queued by [ShiftOpenIntentController]
@@ -460,6 +512,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       allTeams: _teams,
       existing: existing,
       initialTeamId: existing == null ? _selectedCalendarTeamId : null,
+      absenceStatusesByUserId: _absenceStatusesForDate(date),
       canManagePublicShifts: existing == null
           ? _canManageAnyTeam
           : _canManageAssignment(existing),
@@ -846,6 +899,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       context: context,
       date: date,
       assignments: sortedAssignments,
+      absenceStatuses: _absenceStatusesForDate(date).values.toList(),
       canCreate: !isPastDate,
       syncingAssignmentIds: shiftBloc.syncingAssignmentIds,
     );
@@ -1173,6 +1227,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                           _selectedCalendarTeamId = value;
                         });
                         _loadAssignments();
+                        unawaited(_loadShiftAbsenceStatuses());
                       },
                     ),
                   ),
@@ -1237,6 +1292,8 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                               )
                             : ShiftCalendarWidget(
                                 assignments: foregroundAssignments,
+                                absenceStatuses: _absenceStatusesByKey.values
+                                    .toList(growable: false),
                                 syncingAssignmentIds: context
                                     .read<ShiftBloc>()
                                     .syncingAssignmentIds,
@@ -1362,6 +1419,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         _focusedMonth = DateTime(request.from.year, request.from.month, 1);
       });
       _loadAssignments();
+      unawaited(_loadShiftAbsenceStatuses());
 
       if (result.createdAssignmentsCount > 0) {
         final successMessage = isItalian

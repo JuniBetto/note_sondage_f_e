@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_swap_request_dialog.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
@@ -207,6 +208,15 @@ String _notAssignableUntilActiveText(BuildContext context) =>
       en: 'Not assignable until the user becomes active',
       fr: 'Non assignable tant que l\'utilisateur n\'est pas actif',
       es: 'No asignable hasta que el usuario este activo',
+    );
+
+String _noAvailableMembersForDateText(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Nessun membro disponibile per questa data.',
+      en: 'No members available for this date.',
+      fr: 'Aucun membre disponible pour cette date.',
+      es: 'No hay miembros disponibles para esta fecha.',
     );
 
 String _commonShiftLabel(BuildContext context) => _localizedShiftDayText(
@@ -533,12 +543,14 @@ class ShiftTeamMember {
   final String roleLabel;
   final String? fullName;
   final bool isAssignable;
+  final ShiftAbsenceStatus? absenceStatus;
   const ShiftTeamMember({
     required this.userId,
     required this.email,
     required this.roleLabel,
     this.fullName,
     this.isAssignable = true,
+    this.absenceStatus,
   });
 
   String get primaryLabel => email.isNotEmpty
@@ -547,7 +559,41 @@ class ShiftTeamMember {
       ? fullName!.trim()
       : 'Team member';
 
-  String? get secondaryLabel => roleLabel.trim().isNotEmpty ? roleLabel : null;
+  bool get isAvailableForScheduling => absenceStatus == null;
+
+  bool get isSelectable => isAssignable && isAvailableForScheduling;
+
+  String? secondaryLabel(BuildContext context) {
+    final parts = <String>[];
+    if (roleLabel.trim().isNotEmpty) {
+      parts.add(roleLabel);
+    }
+    final statusLabel = absenceStatus?.label(context).trim();
+    if (statusLabel != null && statusLabel.isNotEmpty) {
+      parts.add(statusLabel);
+    }
+    if (parts.isEmpty) {
+      return null;
+    }
+    return parts.join(' • ');
+  }
+
+  String? disabledHint(BuildContext context) {
+    if (!isAssignable) {
+      return _notAssignableUntilActiveText(context);
+    }
+    final statusLabel = absenceStatus?.label(context).trim();
+    if (statusLabel == null || statusLabel.isEmpty) {
+      return null;
+    }
+    return _localizedShiftDayText(
+      context,
+      it: 'Fuori dalla schedulazione: $statusLabel',
+      en: 'Unavailable for scheduling: $statusLabel',
+      fr: 'Indisponible pour la planification : $statusLabel',
+      es: 'No disponible para planificacion: $statusLabel',
+    );
+  }
 
   String displayLabel(BuildContext context) {
     if (email.isNotEmpty) return email;
@@ -555,11 +601,8 @@ class ShiftTeamMember {
     return _defaultTeamMemberLabel(context);
   }
 
-  String get searchLabel => [
-    primaryLabel,
-    secondaryLabel ?? '',
-    fullName ?? '',
-  ].join(' ').toLowerCase();
+  String get searchLabel =>
+      [primaryLabel, roleLabel, fullName ?? ''].join(' ').toLowerCase();
 }
 
 class ShiftMemberAssignmentPlan {
@@ -636,6 +679,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
   bool canRequestAssignmentSwap = false,
   bool hasPendingPublicShiftChangeRequest = false,
   bool canEditApprovedPublicShift = false,
+  Map<String, ShiftAbsenceStatus> absenceStatusesByUserId = const {},
 
   /// Teams where the current user is owner (to enable team assignment).
   List<TeamEntityForView> ownerTeams = const [],
@@ -652,6 +696,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
     canRequestAssignmentSwap: canRequestAssignmentSwap,
     hasPendingPublicShiftChangeRequest: hasPendingPublicShiftChangeRequest,
     canEditApprovedPublicShift: canEditApprovedPublicShift,
+    absenceStatusesByUserId: absenceStatusesByUserId,
     ownerTeams: ownerTeams,
     useDialogLayout: isWideLayout,
   );
@@ -688,6 +733,7 @@ class _ShiftDaySheet extends StatefulWidget {
     this.canRequestAssignmentSwap = false,
     this.hasPendingPublicShiftChangeRequest = false,
     this.canEditApprovedPublicShift = false,
+    this.absenceStatusesByUserId = const {},
     this.ownerTeams = const [],
     this.useDialogLayout = false,
   });
@@ -702,6 +748,7 @@ class _ShiftDaySheet extends StatefulWidget {
   final bool canRequestAssignmentSwap;
   final bool hasPendingPublicShiftChangeRequest;
   final bool canEditApprovedPublicShift;
+  final Map<String, ShiftAbsenceStatus> absenceStatusesByUserId;
   final List<TeamEntityForView> ownerTeams;
   final bool useDialogLayout;
 
@@ -833,12 +880,18 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       final fullName = m.user?.fullName.trim() ?? '';
       final roleLabel = _formatRoleLabel(m.teamMember.roleId);
       final normalizedUserId = m.teamMember.userId?.trim();
+      final resolvedUserId = normalizedUserId?.isNotEmpty == true
+          ? normalizedUserId
+          : null;
       return ShiftTeamMember(
-        userId: normalizedUserId?.isNotEmpty == true ? normalizedUserId : null,
+        userId: resolvedUserId,
         email: email,
         roleLabel: roleLabel,
         fullName: fullName.isNotEmpty ? fullName : m.teamMember.initialName,
-        isAssignable: normalizedUserId?.isNotEmpty == true,
+        isAssignable: resolvedUserId != null,
+        absenceStatus: resolvedUserId == null
+            ? null
+            : widget.absenceStatusesByUserId[resolvedUserId],
       );
     }).toList();
   }
@@ -848,7 +901,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     if (_assignToAllMembers) {
       // all members
       return _teamMembers
-          .where((m) => m.isAssignable && m.userId != null)
+          .where((m) => m.isSelectable && m.userId != null)
           .map((m) => m.userId!)
           .toList();
     }
@@ -856,6 +909,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         .where(
           (member) =>
               member.userId != null &&
+              member.isSelectable &&
               _selectedMemberIds.contains(member.userId),
         )
         .map((member) => member.userId!)
@@ -867,9 +921,9 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       return true;
     }
     if (_assignToAllMembers) {
-      return _teamMembers.isNotEmpty;
+      return _teamMembers.any((member) => member.isSelectable);
     }
-    return _selectedMemberIds.isNotEmpty;
+    return _selectedSpecificMembers.isNotEmpty;
   }
 
   List<ShiftTeamMember> get _selectedSpecificMembers => _teamMembers
@@ -877,7 +931,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         (member) =>
             member.userId != null &&
             _selectedMemberIds.contains(member.userId) &&
-            member.isAssignable,
+            member.isSelectable,
       )
       .toList();
 
@@ -1180,7 +1234,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     }
 
     final candidates = _teamMembers
-        .where((member) => member.userId != null)
+        .where((member) => member.userId != null && member.isSelectable)
         .where((member) => member.userId != existing.userId)
         .map((member) {
           final fullName = member.fullName?.trim();
@@ -1749,7 +1803,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                                   padding: const EdgeInsets.only(bottom: 10),
                                   child: _MemberSpecificProfileTile(
                                     label: member.displayLabel(context),
-                                    subtitle: member.secondaryLabel,
+                                    subtitle: member.secondaryLabel(context),
                                     profiles: widget.profiles,
                                     selectedProfileId:
                                         _memberProfileIds[member.userId!],
@@ -2299,13 +2353,14 @@ class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
             subtitle: _assignToAllMembersSubtitle(context),
             icon: Icons.groups_rounded,
             isSelected: widget.assignToAllMembers,
-            enabled: widget.teamMembers.isNotEmpty,
-            onTap: widget.teamMembers.isEmpty
+            enabled: widget.teamMembers.any((member) => member.isSelectable),
+            onTap: !widget.teamMembers.any((member) => member.isSelectable)
                 ? null
                 : () => widget.onAssignToAllChanged(true),
           ),
           const SizedBox(height: 4),
-          if (widget.teamMembers.isEmpty)
+          if (widget.teamMembers.isEmpty ||
+              !widget.teamMembers.any((member) => member.isSelectable))
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -2342,7 +2397,9 @@ class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
                     child: Text(
                       widget.isLoadingMembers
                           ? _loadingTeamMembersText(context)
-                          : _noMembersForTeamText(context),
+                          : widget.teamMembers.isEmpty
+                          ? _noMembersForTeamText(context)
+                          : _noAvailableMembersForDateText(context),
                       style: theme.textTheme.bodySmall,
                     ),
                   ),
@@ -2356,13 +2413,14 @@ class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
                 child: _MemberRadioTile(
                   uid: member.userId,
                   label: member.displayLabel(context),
-                  subtitle: member.secondaryLabel,
+                  subtitle: member.secondaryLabel(context),
                   icon: Icons.person_outline_rounded,
-                  enabled: member.isAssignable,
+                  enabled: member.isSelectable,
+                  disabledHint: member.disabledHint(context),
                   isSelected:
                       member.userId != null &&
                       widget.selectedMemberIds.contains(member.userId),
-                  onTap: member.userId == null
+                  onTap: member.userId == null || !member.isSelectable
                       ? null
                       : () => widget.onMemberToggled(
                           member.userId!,
@@ -2382,6 +2440,7 @@ class _MemberRadioTile extends StatelessWidget {
     required this.uid,
     required this.label,
     this.subtitle,
+    this.disabledHint,
     required this.icon,
     required this.isSelected,
     this.enabled = true,
@@ -2391,6 +2450,7 @@ class _MemberRadioTile extends StatelessWidget {
   final String? uid;
   final String label;
   final String? subtitle;
+  final String? disabledHint;
   final IconData icon;
   final bool isSelected;
   final bool enabled;
@@ -2466,11 +2526,11 @@ class _MemberRadioTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  if (!enabled)
+                  if (!enabled && disabledHint != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
-                        _notAssignableUntilActiveText(context),
+                        disabledHint!,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: colorScheme.descriptionColor,
                         ),

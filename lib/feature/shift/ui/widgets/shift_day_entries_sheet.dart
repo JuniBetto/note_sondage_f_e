@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
@@ -22,6 +23,7 @@ Future<ShiftDayEntriesAction?> showShiftDayEntriesSheet({
   required BuildContext context,
   required DateTime date,
   required List<ShiftAssignmentEntity> assignments,
+  List<ShiftAbsenceStatus> absenceStatuses = const [],
   required bool canCreate,
   Set<String> syncingAssignmentIds = const <String>{},
 }) {
@@ -35,6 +37,7 @@ Future<ShiftDayEntriesAction?> showShiftDayEntriesSheet({
     builder: (_) => _ShiftDayEntriesSheet(
       dateLabel: dateLabel,
       assignments: assignments,
+      absenceStatuses: absenceStatuses,
       canCreate: canCreate,
       syncingAssignmentIds: syncingAssignmentIds,
     ),
@@ -45,12 +48,14 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
   const _ShiftDayEntriesSheet({
     required this.dateLabel,
     required this.assignments,
+    required this.absenceStatuses,
     required this.canCreate,
     required this.syncingAssignmentIds,
   });
 
   final String dateLabel;
   final List<ShiftAssignmentEntity> assignments;
+  final List<ShiftAbsenceStatus> absenceStatuses;
   final bool canCreate;
   final Set<String> syncingAssignmentIds;
 
@@ -84,6 +89,21 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            if (absenceStatuses.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: absenceStatuses
+                    .map(
+                      (status) => _AbsenceStatusChip(
+                        label: status.label(context),
+                        color: status.color(),
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            ],
             const SizedBox(height: 12),
             Flexible(
               child: SingleChildScrollView(
@@ -95,6 +115,12 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: _AssignmentTile(
                             assignment: assignment,
+                            absenceStatus: absenceStatuses
+                                .where(
+                                  (status) =>
+                                      status.userId == assignment.userId,
+                                )
+                                .firstOrNull,
                             isSyncing: syncingAssignmentIds.contains(
                               assignment.id,
                             ),
@@ -129,9 +155,14 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
 }
 
 class _AssignmentTile extends StatelessWidget {
-  const _AssignmentTile({required this.assignment, this.isSyncing = false});
+  const _AssignmentTile({
+    required this.assignment,
+    this.absenceStatus,
+    this.isSyncing = false,
+  });
 
   final ShiftAssignmentEntity assignment;
+  final ShiftAbsenceStatus? absenceStatus;
   final bool isSyncing;
 
   @override
@@ -147,6 +178,7 @@ class _AssignmentTile extends StatelessWidget {
     final assignee = assignment.userName?.trim().isNotEmpty == true
         ? assignment.userName!
         : assignment.userId;
+    final absenceLabel = absenceStatus?.label(context);
 
     return Opacity(
       opacity: isSyncing ? 0.78 : 1,
@@ -210,7 +242,12 @@ class _AssignmentTile extends StatelessWidget {
                       ),
                     const SizedBox(height: 2),
                     Text(
-                      '$assignee • ${assignment.startTime.format(context)} - ${assignment.endTime.format(context)}',
+                      [
+                        assignee,
+                        if (absenceLabel != null && absenceLabel.isNotEmpty)
+                          absenceLabel,
+                        '${assignment.startTime.format(context)} - ${assignment.endTime.format(context)}',
+                      ].join(' • '),
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
@@ -233,6 +270,32 @@ class _AssignmentTile extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AbsenceStatusChip extends StatelessWidget {
+  const _AbsenceStatusChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

@@ -198,6 +198,8 @@ class ClockingPdfExportService {
         return 'Vacation';
       case ClockingStatus.permission:
         return 'Permission';
+      case ClockingStatus.sick:
+        return 'Sick';
     }
   }
 

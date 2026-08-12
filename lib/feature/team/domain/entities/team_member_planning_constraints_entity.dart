@@ -15,6 +15,9 @@ class TeamMemberPlanningConstraintsEntity {
     this.minRestHoursBetweenShifts,
     this.maxConsecutiveNightShifts,
     this.maxConsecutiveWeekendShifts,
+    this.assignedDailyMinutes,
+    this.assignedWeeklyMinutes,
+    this.assignedMonthlyMinutes,
     this.notes,
   });
 
@@ -33,6 +36,9 @@ class TeamMemberPlanningConstraintsEntity {
   final int? minRestHoursBetweenShifts;
   final int? maxConsecutiveNightShifts;
   final int? maxConsecutiveWeekendShifts;
+  final int? assignedDailyMinutes;
+  final int? assignedWeeklyMinutes;
+  final int? assignedMonthlyMinutes;
   final String? notes;
 
   TeamMemberPlanningConstraintsEntity copyWith({
@@ -51,6 +57,9 @@ class TeamMemberPlanningConstraintsEntity {
     int? minRestHoursBetweenShifts,
     int? maxConsecutiveNightShifts,
     int? maxConsecutiveWeekendShifts,
+    int? assignedDailyMinutes,
+    int? assignedWeeklyMinutes,
+    int? assignedMonthlyMinutes,
     String? notes,
   }) {
     return TeamMemberPlanningConstraintsEntity(
@@ -75,6 +84,11 @@ class TeamMemberPlanningConstraintsEntity {
           maxConsecutiveNightShifts ?? this.maxConsecutiveNightShifts,
       maxConsecutiveWeekendShifts:
           maxConsecutiveWeekendShifts ?? this.maxConsecutiveWeekendShifts,
+      assignedDailyMinutes: assignedDailyMinutes ?? this.assignedDailyMinutes,
+      assignedWeeklyMinutes:
+          assignedWeeklyMinutes ?? this.assignedWeeklyMinutes,
+      assignedMonthlyMinutes:
+          assignedMonthlyMinutes ?? this.assignedMonthlyMinutes,
       notes: notes ?? this.notes,
     );
   }

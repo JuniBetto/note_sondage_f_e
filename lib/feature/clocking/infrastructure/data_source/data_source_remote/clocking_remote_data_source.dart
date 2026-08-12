@@ -235,6 +235,36 @@ class ClockingRemoteDataSource {
     }
   }
 
+  Future<ClockingRecordEntity> markSick({
+    String? teamId,
+    required DateTime date,
+    String? targetUserId,
+    String? note,
+  }) async {
+    try {
+      final formattedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).toIso8601String().split('T').first;
+      final response = await _dio.post(
+        '/api/aggregate/clocking/sick',
+        data: {
+          if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
+          'date': formattedDate,
+          if (targetUserId != null && targetUserId.isNotEmpty)
+            'targetUserId': targetUserId,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return ClockingMapper.fromJson(
+        Map<String, dynamic>.from(response.data as Map<String, dynamic>),
+      );
+    } catch (e) {
+      throw Exception('Failed to mark sick status: $e');
+    }
+  }
+
   Future<int> createManualClockingEntries({
     String? teamId,
     required List<DateTime> dates,
@@ -373,6 +403,30 @@ class ClockingRemoteDataSource {
       );
     } catch (e) {
       throw Exception('Failed to request permission: $e');
+    }
+  }
+
+  Future<void> requestSick({
+    required String teamId,
+    required DateTime date,
+    String? note,
+  }) async {
+    try {
+      final formattedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).toIso8601String().split('T').first;
+      await _dio.post(
+        '/api/aggregate/clocking/request-sick',
+        data: {
+          'teamId': teamId,
+          'date': formattedDate,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to request sick status: $e');
     }
   }
 

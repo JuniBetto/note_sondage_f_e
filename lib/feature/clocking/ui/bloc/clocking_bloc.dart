@@ -43,6 +43,7 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     on<StopBreakEvent>(_onStopBreak);
     on<MarkVacationEvent>(_onMarkVacation);
     on<MarkPermissionEvent>(_onMarkPermission);
+    on<MarkSickEvent>(_onMarkSick);
     on<UpdateClockingRecordEvent>(_onUpdateRecord);
     on<DecommitClockingRecordEvent>(_onDecommitRecord);
     on<CommitClockingRecordEvent>(_onCommitRecord);
@@ -208,6 +209,21 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
         date: event.date,
         startTime: event.startTime,
         endTime: event.endTime,
+        targetUserId: event.targetUserId,
+        note: event.note,
+      ),
+    );
+  }
+
+  Future<void> _onMarkSick(
+    MarkSickEvent event,
+    Emitter<ClockingState> emit,
+  ) async {
+    await _performAction(
+      emit,
+      () => clockingUseCase.markSick(
+        teamId: event.teamId,
+        date: event.date,
         targetUserId: event.targetUserId,
         note: event.note,
       ),

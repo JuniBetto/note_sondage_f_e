@@ -96,6 +96,9 @@ class TeamMemberLocalDataSource {
       'minRestHoursBetweenShifts': constraints.minRestHoursBetweenShifts,
       'maxConsecutiveNightShifts': constraints.maxConsecutiveNightShifts,
       'maxConsecutiveWeekendShifts': constraints.maxConsecutiveWeekendShifts,
+      'assignedDailyMinutes': constraints.assignedDailyMinutes,
+      'assignedWeeklyMinutes': constraints.assignedWeeklyMinutes,
+      'assignedMonthlyMinutes': constraints.assignedMonthlyMinutes,
       'notes': constraints.notes,
     });
   }
@@ -139,6 +142,10 @@ class TeamMemberLocalDataSource {
             ?.toInt(),
         maxConsecutiveWeekendShifts:
             (json['maxConsecutiveWeekendShifts'] as num?)?.toInt(),
+        assignedDailyMinutes: (json['assignedDailyMinutes'] as num?)?.toInt(),
+        assignedWeeklyMinutes: (json['assignedWeeklyMinutes'] as num?)?.toInt(),
+        assignedMonthlyMinutes: (json['assignedMonthlyMinutes'] as num?)
+            ?.toInt(),
         notes: json['notes']?.toString(),
       );
     } catch (_) {

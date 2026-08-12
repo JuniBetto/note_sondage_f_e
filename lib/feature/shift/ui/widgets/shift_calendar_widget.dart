@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/theme/text_theme.dart';
@@ -20,6 +22,7 @@ class ShiftCalendarWidget extends StatelessWidget {
   const ShiftCalendarWidget({
     super.key,
     required this.assignments,
+    this.absenceStatuses = const <ShiftAbsenceStatus>[],
     this.syncingAssignmentIds = const <String>{},
     required this.focusedMonth,
     required this.onMonthChanged,
@@ -28,6 +31,7 @@ class ShiftCalendarWidget extends StatelessWidget {
   });
 
   final List<ShiftAssignmentEntity> assignments;
+  final List<ShiftAbsenceStatus> absenceStatuses;
   final Set<String> syncingAssignmentIds;
   final DateTime focusedMonth;
   final ValueChanged<DateTime> onMonthChanged;
@@ -53,6 +57,11 @@ class ShiftCalendarWidget extends StatelessWidget {
     for (final a in assignments) {
       final key = '${a.shiftDate.year}-${a.shiftDate.month}-${a.shiftDate.day}';
       assignMap.putIfAbsent(key, () => []).add(a);
+    }
+    final absenceMap = <String, List<ShiftAbsenceStatus>>{};
+    for (final status in absenceStatuses) {
+      final key = '${status.date.year}-${status.date.month}-${status.date.day}';
+      absenceMap.putIfAbsent(key, () => []).add(status);
     }
 
     final weekdayOffset = (firstDay.weekday - 1) % 7; // Mon = 0
@@ -155,6 +164,7 @@ class ShiftCalendarWidget extends StatelessWidget {
                 );
                 final key = '${date.year}-${date.month}-${date.day}';
                 final dayAssignments = assignMap[key] ?? const [];
+                final dayAbsenceStatuses = absenceMap[key] ?? const [];
                 final isToday = _isToday(date);
                 final isPastDay = disablePastDays && _isPastDate(date);
 
@@ -164,6 +174,7 @@ class ShiftCalendarWidget extends StatelessWidget {
                     isToday: isToday,
                     isDisabled: isPastDay,
                     assignments: dayAssignments,
+                    absenceStatuses: dayAbsenceStatuses,
                     syncingAssignmentIds: syncingAssignmentIds,
                     onTap: () => onDayTap(date, dayAssignments),
                   ),
@@ -341,6 +352,7 @@ class _DayCell extends StatelessWidget {
     required this.isToday,
     required this.isDisabled,
     required this.assignments,
+    required this.absenceStatuses,
     required this.syncingAssignmentIds,
     required this.onTap,
   });
@@ -349,6 +361,7 @@ class _DayCell extends StatelessWidget {
   final bool isToday;
   final bool isDisabled;
   final List<ShiftAssignmentEntity> assignments;
+  final List<ShiftAbsenceStatus> absenceStatuses;
   final Set<String> syncingAssignmentIds;
   final VoidCallback onTap;
 
@@ -360,9 +373,17 @@ class _DayCell extends StatelessWidget {
     final textTheme = theme.textTheme;
     final appPrimary = colorScheme.primaryColor ?? colorScheme.primary;
     final assignment = assignments.isNotEmpty ? assignments.first : null;
-    final shiftColor = assignment?.displayColor;
+    final firstAbsenceStatus = absenceStatuses.isNotEmpty
+        ? absenceStatuses.first
+        : null;
+    final shiftColor = assignment?.displayColor ?? firstAbsenceStatus?.color();
     final publicCount = assignments.where((item) => item.isPublic).length;
     final hasMore = assignments.length > 2;
+    final extraAbsenceStatuses = absenceStatuses
+        .where(
+          (status) => !assignments.any((item) => item.userId == status.userId),
+        )
+        .toList(growable: false);
     final hasSyncingAssignments = assignments.any(
       (item) => syncingAssignmentIds.contains(item.id),
     );
@@ -445,6 +466,9 @@ class _DayCell extends StatelessWidget {
                   ...assignments.take(2).map((item) {
                     final userBadge = _userBadge(item);
                     final profileBadge = _profileBadge(item);
+                    final assignmentAbsence = absenceStatuses
+                        .where((status) => status.userId == item.userId)
+                        .firstOrNull;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 2),
                       child: Container(
@@ -471,7 +495,7 @@ class _DayCell extends StatelessWidget {
                             Text(
                               _timeRangeLabel(item),
                               textAlign: TextAlign.center,
-                              style: textTheme.largeText.copyWith(
+                              style:(!kIsWeb? textTheme.largeText:textTheme.bodySmall)!.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                               ),
@@ -507,6 +531,17 @@ class _DayCell extends StatelessWidget {
                                         borderAlpha: 0.28,
                                       ),
                                     ),
+                                  if (assignmentAbsence != null)
+                                    Tooltip(
+                                      message: assignmentAbsence.label(context),
+                                      child: _MiniBadge(
+                                        label: assignmentAbsence.compactLabel(
+                                          context,
+                                        ),
+                                        alpha: 0.18,
+                                        borderAlpha: 0.28,
+                                      ),
+                                    ),
                                 ],
                               ),
                             ],
@@ -523,6 +558,47 @@ class _DayCell extends StatelessWidget {
                         color: colorScheme.descriptionColor,
                       ),
                     ),
+                  if (extraAbsenceStatuses.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 3,
+                      runSpacing: 2,
+                      children: extraAbsenceStatuses
+                          .take(2)
+                          .map(
+                            (status) => Tooltip(
+                              message: status.label(context),
+                              child: _MiniBadge(
+                                label: status.compactLabel(context),
+                                alpha: 0.12,
+                                borderAlpha: 0.22,
+                              ),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ],
+                ] else if (absenceStatuses.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 3,
+                    runSpacing: 2,
+                    children: absenceStatuses
+                        .take(2)
+                        .map(
+                          (status) => Tooltip(
+                            message: status.label(context),
+                            child: _MiniBadge(
+                              label: status.compactLabel(context),
+                              alpha: 0.12,
+                              borderAlpha: 0.22,
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
                 ],
               ],
             ),
@@ -602,7 +678,7 @@ class _MiniBadge extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(
-          fontSize: 7,
+          fontSize: (!kIsWeb? 7:12),
           fontWeight: FontWeight.w800,
           color: Colors.white,
           height: 1,

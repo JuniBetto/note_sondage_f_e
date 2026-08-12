@@ -127,6 +127,9 @@ class TeamMemberMapper {
           ?.toInt(),
       maxConsecutiveWeekendShifts: (json['maxConsecutiveWeekendShifts'] as num?)
           ?.toInt(),
+      assignedDailyMinutes: (json['assignedDailyMinutes'] as num?)?.toInt(),
+      assignedWeeklyMinutes: (json['assignedWeeklyMinutes'] as num?)?.toInt(),
+      assignedMonthlyMinutes: (json['assignedMonthlyMinutes'] as num?)?.toInt(),
       notes: json['notes']?.toString(),
     );
   }

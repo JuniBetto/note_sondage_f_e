@@ -236,6 +236,7 @@ class NotificationCenterItem extends Equatable {
       eventType == 'CLOCKING_CLOCKING_REQUESTED' ||
       eventType == 'CLOCKING_DECOMMIT_REQUESTED' ||
       eventType == 'CLOCKING_VACATION_REQUESTED' ||
+      eventType == 'CLOCKING_SICK_REQUESTED' ||
       eventType == 'CLOCKING_PERMISSION_REQUESTED' ||
       eventType == 'SHIFT_CHANGE_REQUESTED' ||
       eventType == 'SHIFT_SWAP_REQUESTED' ||

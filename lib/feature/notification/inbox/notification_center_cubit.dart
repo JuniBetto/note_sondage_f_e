@@ -287,6 +287,17 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
               note: item.metadata['note']?.trim(),
             );
             break;
+          case 'sick':
+            if (teamId == null || teamId.isEmpty || requestedDate == null) {
+              return;
+            }
+            await _backendAuth.rejectSickRequest(
+              teamId: teamId,
+              requesterUserId: requesterUserId,
+              requestedDate: requestedDate,
+              note: item.metadata['note']?.trim(),
+            );
+            break;
           case 'permission':
             if (teamId == null || teamId.isEmpty || requestedDate == null) {
               return;
@@ -434,6 +445,17 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             note: item.metadata['note']?.trim(),
           );
           break;
+        case 'sick':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
+          await _backendAuth.approveSickRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            note: item.metadata['note']?.trim(),
+          );
+          break;
         case 'permission':
           if (teamId == null || teamId.isEmpty || requestedDate == null) {
             return;
@@ -526,6 +548,17 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             return;
           }
           await _backendAuth.rejectVacationRequest(
+            teamId: teamId,
+            requesterUserId: requesterUserId,
+            requestedDate: requestedDate,
+            note: item.metadata['note']?.trim(),
+          );
+          break;
+        case 'sick':
+          if (teamId == null || teamId.isEmpty || requestedDate == null) {
+            return;
+          }
+          await _backendAuth.rejectSickRequest(
             teamId: teamId,
             requesterUserId: requesterUserId,
             requestedDate: requestedDate,

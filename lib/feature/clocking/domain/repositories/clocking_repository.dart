@@ -58,6 +58,13 @@ abstract class ClockingRepository {
     String? note,
   });
 
+  Future<ClockingRecordEntity> markSick({
+    String? teamId,
+    required DateTime date,
+    String? targetUserId,
+    String? note,
+  });
+
   /// Crea una o piu timbrature storiche normali per i giorni selezionati
   Future<int> createManualClockingEntries({
     String? teamId,
@@ -95,6 +102,12 @@ abstract class ClockingRepository {
     required DateTime date,
     required String startTime,
     required String endTime,
+    String? note,
+  });
+
+  Future<void> requestSick({
+    required String teamId,
+    required DateTime date,
     String? note,
   });
 
