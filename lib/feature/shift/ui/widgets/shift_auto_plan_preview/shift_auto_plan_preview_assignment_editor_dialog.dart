@@ -151,7 +151,7 @@ class _ShiftAutoPlanPreviewAssignmentEditorDialogState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
-                value: _selectedUserId,
+                initialValue: _selectedUserId,
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: _localizedPreviewEditorText(
@@ -180,7 +180,7 @@ class _ShiftAutoPlanPreviewAssignmentEditorDialogState
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<ShiftProfileEntity>(
-                value: _selectedProfile,
+                initialValue: _selectedProfile,
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: _localizedPreviewEditorText(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/loading/team_management_loading_spinner.dart';
 
 class ShiftAutoPlanLoadingOverlay extends StatelessWidget {

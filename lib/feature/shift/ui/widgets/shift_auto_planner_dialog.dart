@@ -356,16 +356,16 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
                         )
                       : _t(
                           it:
-                              'Membri disponibili nel periodo: ${_selectedTeamMaxPeople} su ${_selectedTeamTotalPeople}'
+                              'Membri disponibili nel periodo: $_selectedTeamMaxPeople su $_selectedTeamTotalPeople'
                               '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} assenti)' : ''}.',
                           en:
-                              'Available members in the selected range: ${_selectedTeamMaxPeople} of ${_selectedTeamTotalPeople}'
+                              'Available members in the selected range: $_selectedTeamMaxPeople of $_selectedTeamTotalPeople'
                               '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} absent)' : ''}.',
                           fr:
-                              'Membres disponibles sur la periode selectionnee : ${_selectedTeamMaxPeople} sur ${_selectedTeamTotalPeople}'
+                              'Membres disponibles sur la periode selectionnee : $_selectedTeamMaxPeople sur $_selectedTeamTotalPeople'
                               '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} absents)' : ''}.',
                           es:
-                              'Miembros disponibles en el periodo seleccionado: ${_selectedTeamMaxPeople} de ${_selectedTeamTotalPeople}'
+                              'Miembros disponibles en el periodo seleccionado: $_selectedTeamMaxPeople de $_selectedTeamTotalPeople'
                               '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} ausentes)' : ''}.',
                         ),
                   style: theme.textTheme.bodySmall?.copyWith(
