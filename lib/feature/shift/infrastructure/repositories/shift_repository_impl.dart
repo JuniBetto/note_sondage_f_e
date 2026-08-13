@@ -99,6 +99,12 @@ class ShiftRepositoryImpl implements ShiftRepository {
     List<String>? visibleTeamIds,
     List<String>? visibleUserIds,
   }) async {
+    final requestKey = ShiftLocalDataSource.buildAssignmentsRequestKey(
+      from: from,
+      to: to,
+      visibleTeamIds: visibleTeamIds,
+      visibleUserIds: visibleUserIds,
+    );
     try {
       final assignments = await _remote.getAssignments(
         from: from,
@@ -106,24 +112,14 @@ class ShiftRepositoryImpl implements ShiftRepository {
         visibleTeamIds: visibleTeamIds,
         visibleUserIds: visibleUserIds,
       );
-      final cached = await _local.getAssignments();
-      final requestedDays = <String>{
-        for (
-          var day = DateTime(from.year, from.month, from.day);
-          !day.isAfter(DateTime(to.year, to.month, to.day));
-          day = day.add(const Duration(days: 1))
-        )
-          '${day.year}-${day.month}-${day.day}',
-      };
-      final preservedOutsideRange = cached.where((assignment) {
-        final key =
-            '${assignment.shiftDate.year}-${assignment.shiftDate.month}-${assignment.shiftDate.day}';
-        return !requestedDays.contains(key);
-      }).toList();
-      await _local.saveAssignments([...preservedOutsideRange, ...assignments]);
+      await _local.saveAssignments(assignments, requestKey: requestKey);
       return assignments;
     } catch (e) {
-      final cached = await _local.getAssignments(from: from, to: to);
+      final cached = await _local.getAssignments(
+        from: from,
+        to: to,
+        requestKey: requestKey,
+      );
       if (cached.isNotEmpty) {
         return cached;
       }

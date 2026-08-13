@@ -13,6 +13,7 @@ class ShiftAssignmentCreateRequestEntity {
     this.teamId,
     this.teamShiftGroupId,
     this.targetUserId,
+    this.targetUserName,
   });
 
   final DateTime shiftDate;
@@ -26,4 +27,5 @@ class ShiftAssignmentCreateRequestEntity {
   final String? teamId;
   final String? teamShiftGroupId;
   final String? targetUserId;
+  final String? targetUserName;
 }

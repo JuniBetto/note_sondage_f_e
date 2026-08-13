@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -139,6 +140,15 @@ class AssignShiftEvent extends ShiftEvent {
     teamShiftGroupId,
     targetUserId,
   ];
+}
+
+class AssignShiftBatchEvent extends ShiftEvent {
+  final List<ShiftAssignmentCreateRequestEntity> requests;
+
+  AssignShiftBatchEvent({required this.requests});
+
+  @override
+  List<Object?> get props => [requests];
 }
 
 class UpdateShiftAssignmentEvent extends ShiftEvent {
@@ -336,6 +346,15 @@ class ShiftAssigned extends ShiftState {
 
   @override
   List<Object?> get props => [assignment];
+}
+
+class ShiftBatchAssigned extends ShiftState {
+  final int createdCount;
+
+  ShiftBatchAssigned(this.createdCount);
+
+  @override
+  List<Object?> get props => [createdCount];
 }
 
 class ShiftAssignmentUpdated extends ShiftState {
