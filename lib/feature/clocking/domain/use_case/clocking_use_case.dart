@@ -141,6 +141,24 @@ class ClockingUseCase {
     }
   }
 
+  Future<ClockingRecordEntity> markSick({
+    String? teamId,
+    required DateTime date,
+    String? targetUserId,
+    String? note,
+  }) async {
+    try {
+      return await repository.markSick(
+        teamId: teamId,
+        date: date,
+        targetUserId: targetUserId,
+        note: note,
+      );
+    } catch (e) {
+      throw Exception('Failed to mark sick status: $e');
+    }
+  }
+
   Future<int> createManualClockingEntries({
     String? teamId,
     required List<DateTime> dates,
@@ -261,6 +279,18 @@ class ClockingUseCase {
       );
     } catch (e) {
       throw Exception('Failed to request permission: $e');
+    }
+  }
+
+  Future<void> requestSick({
+    required String teamId,
+    required DateTime date,
+    String? note,
+  }) async {
+    try {
+      await repository.requestSick(teamId: teamId, date: date, note: note);
+    } catch (e) {
+      throw Exception('Failed to request sick status: $e');
     }
   }
 

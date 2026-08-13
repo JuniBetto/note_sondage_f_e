@@ -229,6 +229,12 @@ class _FakeShiftRepository implements ShiftRepository {
   ) => throw UnimplementedError();
 
   @override
+  Future<ShiftAutoPlanPreviewEntity> recalculateAutoPlanPreview(
+    String snapshotToken,
+    List<ShiftAutoPlanDraftAssignmentEntity> draftAssignments,
+  ) => throw UnimplementedError();
+
+  @override
   Future<ShiftAutoPlanResultEntity> confirmAutoPlan(String snapshotToken) =>
       throw UnimplementedError();
 

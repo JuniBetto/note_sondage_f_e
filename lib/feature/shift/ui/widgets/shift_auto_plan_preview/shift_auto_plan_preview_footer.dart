@@ -8,17 +8,23 @@ class ShiftAutoPlanPreviewFooter extends StatelessWidget {
     required this.submitting,
     required this.canConfirm,
     required this.backLabel,
+    required this.recalculateLabel,
     required this.confirmLabel,
     required this.onBack,
+    required this.onRecalculate,
     required this.onConfirm,
+    this.canRecalculate = true,
   });
 
   final bool compact;
   final bool submitting;
   final bool canConfirm;
+  final bool canRecalculate;
   final String backLabel;
+  final String recalculateLabel;
   final String confirmLabel;
   final VoidCallback onBack;
+  final VoidCallback onRecalculate;
   final VoidCallback onConfirm;
 
   @override
@@ -49,10 +55,18 @@ class ShiftAutoPlanPreviewFooter extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
+            child: OutlinedButton(
+              onPressed: submitting || !canRecalculate ? null : onRecalculate,
+              child: Text(recalculateLabel),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: FilledButton(
               onPressed: submitting || !canConfirm ? null : onConfirm,
-              style: FilledButton.styleFrom(backgroundColor:submitting
-                  ? null : colorScheme.bgsecondary),
+              style: FilledButton.styleFrom(
+                backgroundColor: submitting ? null : colorScheme.bgsecondary,
+              ),
               child: submitting
                   ? SizedBox(
                       width: 18,
@@ -62,9 +76,14 @@ class ShiftAutoPlanPreviewFooter extends StatelessWidget {
                         color: colorScheme.onPrimary,
                       ),
                     )
-                  : Text(confirmLabel,style: textTheme.bodyMedium!.copyWith(color:submitting
-                  ? colorScheme.textColor:colorScheme.textInvertedColor)),
-
+                  : Text(
+                      confirmLabel,
+                      style: textTheme.bodyMedium!.copyWith(
+                        color: submitting
+                            ? colorScheme.textColor
+                            : colorScheme.textInvertedColor,
+                      ),
+                    ),
             ),
           ),
         ],

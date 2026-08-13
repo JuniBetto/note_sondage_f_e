@@ -212,6 +212,8 @@ class _TeamMemberPlanningConstraintsDialogState
                 const SizedBox(height: 10),
                 Text(_strings.dialogIntro, style: helperStyle),
                 SizedBox(height: sectionSpacing),
+                _buildAssignedHoursSummary(context, isCompact),
+                SizedBox(height: sectionSpacing),
                 _buildWorkerTypeField(context, isCompact),
                 SizedBox(height: sectionSpacing),
                 _ChipSection(
@@ -475,6 +477,76 @@ class _TeamMemberPlanningConstraintsDialogState
     );
   }
 
+  Widget _buildAssignedHoursSummary(BuildContext context, bool compact) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final constraints = widget.initialConstraints;
+    final values = <({String label, int? minutes})>[
+      (
+        label: _strings.assignedDailyHoursLabel,
+        minutes: constraints?.assignedDailyMinutes,
+      ),
+      (
+        label: _strings.assignedWeeklyHoursLabel,
+        minutes: constraints?.assignedWeeklyMinutes,
+      ),
+      (
+        label: _strings.assignedMonthlyHoursLabel,
+        minutes: constraints?.assignedMonthlyMinutes,
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 12 : 14),
+      decoration: BoxDecoration(
+        color:
+            colorScheme.textfieldFillColor?.withValues(alpha: 0.72) ??
+            theme.cardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color:
+              colorScheme.bottomOutline?.withValues(alpha: 0.85) ??
+              theme.dividerColor,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _strings.assignedHoursTitle,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontSize: compact ? 13 : 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _strings.assignedHoursHelper,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: compact ? 11.5 : 12,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: compact ? 8 : 10,
+            runSpacing: compact ? 8 : 10,
+            children: values
+                .map(
+                  (item) => _AssignedHoursTile(
+                    label: item.label,
+                    value: _formatAssignedMinutes(item.minutes),
+                    compact: compact,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUnavailableDateRanges(BuildContext context, bool compact) {
     final theme = Theme.of(context);
     return Column(
@@ -666,6 +738,11 @@ class _TeamMemberPlanningConstraintsDialogState
           minRestHoursBetweenShifts: _parseInt(_minRestCtrl.text),
           maxConsecutiveNightShifts: _parseInt(_maxNightsCtrl.text),
           maxConsecutiveWeekendShifts: _parseInt(_maxWeekendsCtrl.text),
+          assignedDailyMinutes: widget.initialConstraints?.assignedDailyMinutes,
+          assignedWeeklyMinutes:
+              widget.initialConstraints?.assignedWeeklyMinutes,
+          assignedMonthlyMinutes:
+              widget.initialConstraints?.assignedMonthlyMinutes,
           notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
         ),
         workerTypes: _workerTypes,
@@ -699,6 +776,22 @@ class _TeamMemberPlanningConstraintsDialogState
       return null;
     }
     return int.tryParse(value);
+  }
+
+  String _formatAssignedMinutes(int? minutes) {
+    if (minutes == null) {
+      return '--';
+    }
+    if (minutes <= 0) {
+      return _strings.noAssignedHoursValue;
+    }
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    if (remainingMinutes == 0) {
+      return '${hours}h';
+    }
+    final paddedMinutes = remainingMinutes.toString().padLeft(2, '0');
+    return '${hours}h ${paddedMinutes}m';
   }
 
   List<_StoredDateRange> _parseStoredDateRanges(List<String> rawValues) {
@@ -1017,6 +1110,60 @@ class _NumberField extends StatelessWidget {
   }
 }
 
+class _AssignedHoursTile extends StatelessWidget {
+  const _AssignedHoursTile({
+    required this.label,
+    required this.value,
+    required this.compact,
+  });
+
+  final String label;
+  final String value;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      constraints: BoxConstraints(minWidth: compact ? 96 : 120),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 10 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color:
+              colorScheme.bottomOutline?.withValues(alpha: 0.75) ??
+              theme.dividerColor,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontSize: compact ? 10.5 : 12,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontSize: compact ? 17 : 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StoredDateRange {
   const _StoredDateRange(this.start, this.end);
 
@@ -1078,6 +1225,54 @@ class _PlanningConstraintsStrings {
       return 'Aquí puedes definir reglas recurrentes, prioridades y períodos de indisponibilidad que el Auto Planner debe respetar para este miembro.';
     }
     return 'Here you can define recurring rules, priorities, and unavailable periods that the Auto Planner must respect for this member.';
+  }
+
+  String get assignedHoursTitle {
+    if (_it) return 'Ore gia assegnate';
+    if (_fr) return 'Heures deja attribuees';
+    if (_es) return 'Horas ya asignadas';
+    return 'Assigned hours';
+  }
+
+  String get assignedHoursHelper {
+    if (_it) {
+      return 'Riepilogo delle ore gia pianificate per questo membro oggi, in questa settimana e nel mese corrente.';
+    }
+    if (_fr) {
+      return 'Resume des heures deja planifiees pour ce membre aujourd’hui, cette semaine et ce mois-ci.';
+    }
+    if (_es) {
+      return 'Resumen de las horas ya planificadas para este miembro hoy, esta semana y este mes.';
+    }
+    return 'Summary of the hours already scheduled for this member today, this week, and this month.';
+  }
+
+  String get assignedDailyHoursLabel {
+    if (_it) return 'Oggi';
+    if (_fr) return 'Aujourd’hui';
+    if (_es) return 'Hoy';
+    return 'Today';
+  }
+
+  String get assignedWeeklyHoursLabel {
+    if (_it) return 'Settimana';
+    if (_fr) return 'Semaine';
+    if (_es) return 'Semana';
+    return 'Week';
+  }
+
+  String get assignedMonthlyHoursLabel {
+    if (_it) return 'Mese';
+    if (_fr) return 'Mois';
+    if (_es) return 'Mes';
+    return 'Month';
+  }
+
+  String get noAssignedHoursValue {
+    if (_it) return '0h';
+    if (_fr) return '0h';
+    if (_es) return '0h';
+    return '0h';
   }
 
   String get workerTypeLabel {

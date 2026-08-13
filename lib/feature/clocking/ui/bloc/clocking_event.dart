@@ -130,6 +130,23 @@ class MarkPermissionEvent extends ClockingEvent {
   ];
 }
 
+class MarkSickEvent extends ClockingEvent {
+  final String? teamId;
+  final DateTime date;
+  final String? targetUserId;
+  final String? note;
+
+  const MarkSickEvent({
+    required this.teamId,
+    required this.date,
+    this.targetUserId,
+    this.note,
+  });
+
+  @override
+  List<Object?> get props => [teamId, date, targetUserId, note];
+}
+
 class CreateManualClockingEntriesEvent extends ClockingEvent {
   final String? teamId;
   final List<DateTime> dates;

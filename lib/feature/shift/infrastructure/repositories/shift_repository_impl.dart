@@ -275,6 +275,14 @@ class ShiftRepositoryImpl implements ShiftRepository {
   }
 
   @override
+  Future<ShiftAutoPlanPreviewEntity> recalculateAutoPlanPreview(
+    String snapshotToken,
+    List<ShiftAutoPlanDraftAssignmentEntity> draftAssignments,
+  ) {
+    return _remote.recalculateAutoPlanPreview(snapshotToken, draftAssignments);
+  }
+
+  @override
   Future<ShiftAutoPlanResultEntity> confirmAutoPlan(String snapshotToken) {
     return _remote.confirmAutoPlan(snapshotToken);
   }

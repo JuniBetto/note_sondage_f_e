@@ -97,6 +97,14 @@ class _FakeClockingRepository implements ClockingRepository {
   }) => throw UnimplementedError();
 
   @override
+  Future<ClockingRecordEntity> markSick({
+    String? teamId,
+    required DateTime date,
+    String? targetUserId,
+    String? note,
+  }) => throw UnimplementedError();
+
+  @override
   Future<ClockingRecordEntity> markVacation({
     String? teamId,
     required DateTime date,
@@ -132,6 +140,13 @@ class _FakeClockingRepository implements ClockingRepository {
 
   @override
   Future<void> requestVacation({
+    required String teamId,
+    required DateTime date,
+    String? note,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> requestSick({
     required String teamId,
     required DateTime date,
     String? note,

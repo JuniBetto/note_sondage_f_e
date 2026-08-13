@@ -22,8 +22,29 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           home: ShiftAutoPlanPreviewPage(
             request: _request(),
-            preview: _preview(fullyFeasible: false, warnings: ['Coverage gap']),
-            onConfirm: () async => _result(),
+            preview: _preview(
+              fullyFeasible: false,
+              issues: const [
+                ShiftAutoPlanIssueEntity(
+                  code: 'coverage_gap',
+                  severity: ShiftAutoPlanIssueSeverity.blocking,
+                  message: 'Coverage gap',
+                ),
+              ],
+            ),
+            availableProfiles: const [],
+            availableTeamMembers: const [],
+            onRecalculate: (snapshotToken, draftAssignments) async => _preview(
+              fullyFeasible: false,
+              issues: const [
+                ShiftAutoPlanIssueEntity(
+                  code: 'coverage_gap',
+                  severity: ShiftAutoPlanIssueSeverity.blocking,
+                  message: 'Coverage gap',
+                ),
+              ],
+            ),
+            onConfirm: (snapshotToken) async => _result(),
           ),
         ),
       );
@@ -68,7 +89,12 @@ void main() {
                         context,
                         request: _request(),
                         preview: _preview(),
-                        onConfirm: () async {
+                        availableProfiles: const [],
+                        availableTeamMembers: const [],
+                        onRecalculate:
+                            (snapshotToken, draftAssignments) async =>
+                                _preview(),
+                        onConfirm: (snapshotToken) async {
                           confirmCalls++;
                           return _result();
                         },
@@ -103,7 +129,10 @@ void main() {
       Navigator.of(tester.element(find.text('Mattina'))).pop();
       await tester.pumpAndSettle();
 
-      final confirmFinder = find.widgetWithText(FilledButton, 'Conferma e crea');
+      final confirmFinder = find.widgetWithText(
+        FilledButton,
+        'Conferma e crea',
+      );
       await tester.ensureVisible(confirmFinder);
       await tester.tap(confirmFinder);
       await tester.pump();
@@ -137,6 +166,7 @@ ShiftAutoPlanRequestEntity _request() {
 ShiftAutoPlanPreviewEntity _preview({
   bool fullyFeasible = true,
   List<String> warnings = const [],
+  List<ShiftAutoPlanIssueEntity> issues = const [],
 }) {
   return ShiftAutoPlanPreviewEntity(
     snapshotToken: 'snapshot-1',
@@ -146,11 +176,13 @@ ShiftAutoPlanPreviewEntity _preview({
     deletedAssignmentsCountPreview: 0,
     uncoveredSlotsCount: fullyFeasible ? 0 : 1,
     warnings: warnings,
+    issues: issues,
     days: [
       ShiftAutoPlanPreviewDayEntity(
         date: DateTime(2026, 8, 1),
         items: [
           ShiftAutoPlanPreviewAssignmentEntity(
+            previewItemId: 'preview-item-1',
             action: ShiftAutoPlanPreviewAction.create,
             assignment: _assignment(),
           ),

@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -51,13 +56,18 @@ class ShiftAutoPlannerDialog extends StatefulWidget {
 }
 
 class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
+  final ClockingUseCase _clockingUseCase = GetIt.instance<ClockingUseCase>();
   late String? _selectedTeamId;
   late DateTime _from;
   late DateTime _to;
   bool _replaceExistingAssignments = false;
+  bool _loadingAvailability = false;
+  int _availabilityRequestVersion = 0;
   ShiftAutoPlannerMode _plannerMode = ShiftAutoPlannerMode.rotation;
   final Map<String, int> _selectedProfileCounts = <String, int>{};
   final Map<String, int> _selectedProfileSimultaneousCounts = <String, int>{};
+  final Map<String, Set<String>> _absentUserIdsByTeamId =
+      <String, Set<String>>{};
 
   String get _languageCode =>
       Localizations.localeOf(context).languageCode.toLowerCase();
@@ -75,21 +85,49 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
     return null;
   }
 
-  int get _selectedTeamMaxPeople {
+  int get _selectedTeamTotalPeople {
     final selectedTeam = _selectedTeamView;
     if (selectedTeam == null) {
-      return 1;
+      return 0;
     }
     final loadedMembersCount = selectedTeam.members.length;
     final declaredMemberCount = selectedTeam.team.memberCount;
     final resolvedCount = loadedMembersCount > declaredMemberCount
         ? loadedMembersCount
         : declaredMemberCount;
-    return resolvedCount > 0 ? resolvedCount : 1;
+    return resolvedCount > 0 ? resolvedCount : 0;
+  }
+
+  Set<String> get _selectedTeamAbsentUserIds {
+    final selectedTeam = _selectedTeamView;
+    final selectedId = _selectedTeamId?.trim();
+    if (selectedTeam == null || selectedId == null || selectedId.isEmpty) {
+      return const <String>{};
+    }
+    final absent = _absentUserIdsByTeamId[selectedId] ?? const <String>{};
+    final currentMemberIds = selectedTeam.members
+        .map((member) => member.teamMember.userId?.trim() ?? '')
+        .where((userId) => userId.isNotEmpty)
+        .toSet();
+    if (currentMemberIds.isEmpty) {
+      return absent;
+    }
+    return absent.where(currentMemberIds.contains).toSet();
+  }
+
+  int get _selectedTeamMaxPeople {
+    final totalPeople = _selectedTeamTotalPeople;
+    final availablePeople = totalPeople - _selectedTeamAbsentUserIds.length;
+    return availablePeople > 0 ? availablePeople : 0;
   }
 
   void _clampProfileCountsToSelectedTeam() {
     final maxPeople = _selectedTeamMaxPeople;
+    if (maxPeople <= 0) {
+      _selectedProfileCounts.clear();
+      _selectedProfileSimultaneousCounts.clear();
+      return;
+    }
     _selectedProfileCounts.updateAll((_, value) {
       if (value < 1) {
         return 1;
@@ -127,6 +165,7 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
       _to = _from;
     }
     _clampProfileCountsToSelectedTeam();
+    unawaited(_loadAvailabilityForSelection());
   }
 
   @override
@@ -143,6 +182,57 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
             (widget.teams.isNotEmpty ? widget.teams.first.team.id : null);
       }
       _clampProfileCountsToSelectedTeam();
+      unawaited(_loadAvailabilityForSelection());
+    }
+  }
+
+  Future<void> _loadAvailabilityForSelection() async {
+    final selectedTeamId = _selectedTeamId?.trim();
+    final requestVersion = ++_availabilityRequestVersion;
+    if (selectedTeamId == null || selectedTeamId.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loadingAvailability = false;
+        _clampProfileCountsToSelectedTeam();
+      });
+      return;
+    }
+
+    setState(() {
+      _loadingAvailability = true;
+    });
+
+    try {
+      final records = await _clockingUseCase.getRecordsByTeamId(selectedTeamId);
+      if (!mounted || requestVersion != _availabilityRequestVersion) {
+        return;
+      }
+      final statuses = buildShiftAbsenceIndex(
+        records,
+        from: _from,
+        to: _to,
+        teamId: selectedTeamId,
+      );
+      final absentUserIds = statuses.values
+          .map((status) => status.userId.trim())
+          .where((userId) => userId.isNotEmpty)
+          .toSet();
+      setState(() {
+        _loadingAvailability = false;
+        _absentUserIdsByTeamId[selectedTeamId] = absentUserIds;
+        _clampProfileCountsToSelectedTeam();
+      });
+    } catch (_) {
+      if (!mounted || requestVersion != _availabilityRequestVersion) {
+        return;
+      }
+      setState(() {
+        _loadingAvailability = false;
+        _absentUserIdsByTeamId.remove(selectedTeamId);
+        _clampProfileCountsToSelectedTeam();
+      });
     }
   }
 
@@ -251,8 +341,38 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
                     _selectedTeamId = value;
                     _clampProfileCountsToSelectedTeam();
                   });
+                  unawaited(_loadAvailabilityForSelection());
                 },
               ),
+              if (_selectedTeamView != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _loadingAvailability
+                      ? _t(
+                          it: 'Calcolo disponibilita membri nel periodo...',
+                          en: 'Calculating member availability for the selected range...',
+                          fr: 'Calcul de la disponibilite des membres sur la periode selectionnee...',
+                          es: 'Calculando la disponibilidad de miembros en el periodo seleccionado...',
+                        )
+                      : _t(
+                          it:
+                              'Membri disponibili nel periodo: $_selectedTeamMaxPeople su $_selectedTeamTotalPeople'
+                              '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} assenti)' : ''}.',
+                          en:
+                              'Available members in the selected range: $_selectedTeamMaxPeople of $_selectedTeamTotalPeople'
+                              '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} absent)' : ''}.',
+                          fr:
+                              'Membres disponibles sur la periode selectionnee : $_selectedTeamMaxPeople sur $_selectedTeamTotalPeople'
+                              '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} absents)' : ''}.',
+                          es:
+                              'Miembros disponibles en el periodo seleccionado: $_selectedTeamMaxPeople de $_selectedTeamTotalPeople'
+                              '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} ausentes)' : ''}.',
+                        ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.descriptionColor,
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               Wrap(
                 spacing: 12,
@@ -269,7 +389,9 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
                           if (_to.isBefore(_from)) {
                             _to = _from;
                           }
+                          _clampProfileCountsToSelectedTeam();
                         });
+                        unawaited(_loadAvailabilityForSelection());
                       },
                     ),
                   ),
@@ -280,7 +402,11 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
                       initialDate: _to,
                       firstDate: _from,
                       onSelected: (value) {
-                        setState(() => _to = value);
+                        setState(() {
+                          _to = value;
+                          _clampProfileCountsToSelectedTeam();
+                        });
+                        unawaited(_loadAvailabilityForSelection());
                       },
                     ),
                   ),
@@ -404,6 +530,7 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
     final simultaneousCount = _selectedProfileSimultaneousCounts[profile.id];
     final selected = count != null;
     final maxPeople = _selectedTeamMaxPeople;
+    final canSelectPeople = maxPeople > 0;
     final safeCount = count == null
         ? 1
         : (count > maxPeople ? maxPeople : (count < 1 ? 1 : count));
@@ -427,18 +554,22 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
               children: [
                 Checkbox(
                   value: selected,
-                  onChanged: (value) {
-                    setState(() {
-                      if (value == true) {
-                        _selectedProfileCounts[profile.id] = safeCount;
-                        _selectedProfileSimultaneousCounts[profile.id] =
-                            safeSimultaneousCount;
-                      } else {
-                        _selectedProfileCounts.remove(profile.id);
-                        _selectedProfileSimultaneousCounts.remove(profile.id);
-                      }
-                    });
-                  },
+                  onChanged: !canSelectPeople
+                      ? null
+                      : (value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedProfileCounts[profile.id] = safeCount;
+                              _selectedProfileSimultaneousCounts[profile.id] =
+                                  safeSimultaneousCount;
+                            } else {
+                              _selectedProfileCounts.remove(profile.id);
+                              _selectedProfileSimultaneousCounts.remove(
+                                profile.id,
+                              );
+                            }
+                          });
+                        },
                 ),
                 Expanded(
                   child: Column(
@@ -458,10 +589,35 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
                           fontSize: compact ? 11.5 : 12,
                         ),
                       ),
+                      if (!canSelectPeople)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            _loadingAvailability
+                                ? _t(
+                                    it: 'Verifica disponibilita in corso...',
+                                    en: 'Checking availability...',
+                                    fr: 'Verification de la disponibilite...',
+                                    es: 'Comprobando disponibilidad...',
+                                  )
+                                : _t(
+                                    it: 'Nessun membro disponibile nel periodo selezionato.',
+                                    en: 'No members available in the selected range.',
+                                    fr: 'Aucun membre disponible sur la periode selectionnee.',
+                                    es: 'No hay miembros disponibles en el periodo seleccionado.',
+                                  ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.descriptionColor,
+                                ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                if (selected)
+                if (selected && canSelectPeople)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -598,12 +754,19 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
     }
     if (_selectedProfileCounts.isEmpty) {
       _showError(
-        _t(
-          it: 'Seleziona almeno un profilo turno.',
-          en: 'Select at least one shift profile.',
-          fr: 'Sélectionnez au moins un profil de shift.',
-          es: 'Selecciona al menos un perfil de turno.',
-        ),
+        _selectedTeamMaxPeople <= 0
+            ? _t(
+                it: 'Nessun membro disponibile nel periodo selezionato: ferie, malattia e permessi riducono il totale pianificabile.',
+                en: 'No members are available in the selected range: vacation, sick leave and permissions reduce the schedulable total.',
+                fr: 'Aucun membre disponible sur la periode selectionnee : les conges, maladies et autorisations reduisent le total planifiable.',
+                es: 'No hay miembros disponibles en el periodo seleccionado: vacaciones, bajas y permisos reducen el total planificable.',
+              )
+            : _t(
+                it: 'Seleziona almeno un profilo turno.',
+                en: 'Select at least one shift profile.',
+                fr: 'Sélectionnez au moins un profil de shift.',
+                es: 'Selecciona al menos un perfil de turno.',
+              ),
       );
       return;
     }

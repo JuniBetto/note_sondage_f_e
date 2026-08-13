@@ -109,6 +109,84 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   DateTime get _defaultFilterDate =>
       _normalizeDate(widget.selectedDate ?? DateTime.now());
 
+  String _localizedSickLabel() {
+    switch (Localizations.localeOf(context).languageCode.toLowerCase()) {
+      case 'it':
+        return 'Malattia';
+      case 'fr':
+        return 'Maladie';
+      case 'es':
+        return 'Baja medica';
+      default:
+        return 'Sick';
+    }
+  }
+
+  String _localizedRequestSickLabel() {
+    switch (Localizations.localeOf(context).languageCode.toLowerCase()) {
+      case 'it':
+        return 'Richiedi malattia';
+      case 'fr':
+        return 'Demander maladie';
+      case 'es':
+        return 'Solicitar baja';
+      default:
+        return 'Request sick leave';
+    }
+  }
+
+  String _localizedAssignSickTitle() {
+    switch (Localizations.localeOf(context).languageCode.toLowerCase()) {
+      case 'it':
+        return 'Segna malattia al membro';
+      case 'fr':
+        return 'Marquer maladie pour le membre';
+      case 'es':
+        return 'Marcar baja al miembro';
+      default:
+        return 'Mark sick status for member';
+    }
+  }
+
+  String _localizedSelectedDayMarkedAsFullDayAbsence() {
+    switch (Localizations.localeOf(context).languageCode.toLowerCase()) {
+      case 'it':
+        return 'Il giorno selezionato e segnato come ferie o malattia.';
+      case 'fr':
+        return 'La journee selectionnee est marquee comme conge ou maladie.';
+      case 'es':
+        return 'El dia seleccionado esta marcado como vacaciones o baja.';
+      default:
+        return 'The selected day is marked as vacation or sick leave.';
+    }
+  }
+
+  String _localizedSickRequestSentSuccess() {
+    switch (Localizations.localeOf(context).languageCode.toLowerCase()) {
+      case 'it':
+        return 'Richiesta malattia inviata con successo.';
+      case 'fr':
+        return 'Demande maladie envoyee avec succes.';
+      case 'es':
+        return 'Solicitud de baja enviada correctamente.';
+      default:
+        return 'Sick request sent successfully.';
+    }
+  }
+
+  String _localizedSickRequestSentError() {
+    switch (Localizations.localeOf(context).languageCode.toLowerCase()) {
+      case 'it':
+        return 'Impossibile inviare la richiesta di malattia.';
+      case 'fr':
+        return 'Impossible d envoyer la demande maladie.';
+      case 'es':
+        return 'No se pudo enviar la solicitud de baja.';
+      default:
+        return 'Unable to send the sick request.';
+    }
+  }
+
   Future<void> _loadArchivedRecords() async {
     final archived = await _archiveService.loadArchivedIds(
       userId: _currentUserId,
@@ -335,6 +413,27 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                           canManageClocking
                               ? localization.permission
                               : localization.requestPermission,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                    IntrinsicWidth(
+                      child: CustomAppButton(
+                        onPressed: widget.selectedTeamId == null
+                            ? null
+                            : canManageClocking
+                            ? _assignSickToTeamMember
+                            : _requestSickForSelf,
+                        type: ButtonType.outlined,
+                        isActive: true,
+                        fullWidth: false,
+                        leadingIcon: const Icon(Icons.sick_rounded),
+                        child: Text(
+                          canManageClocking
+                              ? _localizedSickLabel()
+                              : _localizedRequestSickLabel(),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -719,6 +818,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
           ClockingStatus.permission,
           localization.permission,
         ),
+        _statusFilterChip(theme, ClockingStatus.sick, _localizedSickLabel()),
       ],
     );
   }
@@ -1253,8 +1353,8 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       if (!_isSameDay(existing.date, clockInAt)) {
         continue;
       }
-      if (existing.isVacation) {
-        return AppLocalizations.of(context)!.selectedDayMarkedAsVacation;
+      if (existing.isFullDayAbsence) {
+        return _localizedSelectedDayMarkedAsFullDayAbsence();
       }
 
       final existingClockIn = existing.clockInTime;
@@ -1702,6 +1802,65 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     }
   }
 
+  Future<void> _requestSickForSelf() async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      _showSnackBar(localization.selectTeamFirst, Colors.orange);
+      return;
+    }
+
+    final noteController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_localizedRequestSickLabel()),
+        content: TextField(
+          controller: noteController,
+          maxLines: 4,
+          decoration: InputDecoration(
+            labelText: localization.note,
+            hintText: localization.optionalRequestNoteHint,
+          ),
+        ),
+        actions: [
+          CustomAppButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            type: ButtonType.text,
+            isActive: false,
+            child: Text(localization.cancel),
+          ),
+          CustomAppButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            type: ButtonType.filled,
+            isActive: true,
+            child: Text(localization.sendRequest),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    try {
+      await _clockingUseCase.requestSick(
+        teamId: teamId,
+        date: widget.selectedDate ?? DateTime.now(),
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
+      );
+      if (!mounted) return;
+      AppSnackBar.showSuccess(context, _localizedSickRequestSentSuccess());
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: _localizedSickRequestSentError(),
+      );
+    }
+  }
+
   Future<void> _requestPermissionForSelf() async {
     final localization = AppLocalizations.of(context)!;
     final teamId = widget.selectedTeamId;
@@ -1864,6 +2023,178 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
         startTime: window.startTime,
         endTime: window.endTime,
         note: window.note,
+      ),
+    );
+  }
+
+  Future<void> _assignSickToTeamMember() async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      _showSnackBar(localization.selectTeamFirst, Colors.orange);
+      return;
+    }
+
+    List<TeamMemberEntity> members;
+    try {
+      members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(e.toString(), Colors.red);
+      return;
+    }
+
+    final assignableMembers =
+        members
+            .where(
+              (member) =>
+                  member.userId != null && member.userId!.trim().isNotEmpty,
+            )
+            .map(
+              (member) => _ClockingAssignableMember(
+                userId: member.userId!.trim(),
+                label: member.initialName?.trim().isNotEmpty == true
+                    ? member.initialName!.trim()
+                    : member.userEmail,
+                email: member.userEmail,
+              ),
+            )
+            .toList()
+          ..sort(
+            (left, right) =>
+                left.label.toLowerCase().compareTo(right.label.toLowerCase()),
+          );
+
+    if (assignableMembers.isEmpty) {
+      _showSnackBar(localization.noAssignableMembersForTeam, Colors.orange);
+      return;
+    }
+
+    final selectedUser = ValueNotifier<String>(assignableMembers.first.userId);
+    final selectedDate = ValueNotifier<DateTime>(
+      DateTime(
+        (widget.selectedDate ?? DateTime.now()).year,
+        (widget.selectedDate ?? DateTime.now()).month,
+        (widget.selectedDate ?? DateTime.now()).day,
+      ),
+    );
+    final noteController = TextEditingController();
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(_localizedAssignSickTitle()),
+          content: StatefulBuilder(
+            builder: (dialogContext, setDialogState) {
+              final activeMember = assignableMembers.firstWhere(
+                (member) => member.userId == selectedUser.value,
+                orElse: () => assignableMembers.first,
+              );
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedUser.value,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: localization.userLabel,
+                        alignLabelWithHint: true,
+                        contentPadding: const EdgeInsets.fromLTRB(
+                          12,
+                          18,
+                          12,
+                          10,
+                        ),
+                      ),
+                      selectedItemBuilder: (context) => assignableMembers
+                          .map(
+                            (member) => _AssignableMemberDropdownLabel(
+                              label: member.label,
+                              email: member.email,
+                            ),
+                          )
+                          .toList(),
+                      items: assignableMembers
+                          .map(
+                            (member) => DropdownMenuItem<String>(
+                              value: member.userId,
+                              child: _AssignableMemberDropdownLabel(
+                                label: member.label,
+                                email: member.email,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setDialogState(() => selectedUser.value = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    CustomAppButton(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: dialogContext,
+                          initialDate: selectedDate.value,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked == null) return;
+                        setDialogState(() => selectedDate.value = picked);
+                      },
+                      type: ButtonType.outlined,
+                      isActive: true,
+                      fullWidth: true,
+                      leadingIcon: const Icon(Icons.calendar_month_rounded),
+                      child: Text(
+                        DateFormat('dd/MM/yyyy').format(selectedDate.value),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: noteController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        labelText: localization.note,
+                        hintText: localization.optionalNoteFor(
+                          activeMember.label,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          actions: [
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              type: ButtonType.text,
+              isActive: false,
+              child: Text(localization.cancel),
+            ),
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              type: ButtonType.filled,
+              isActive: true,
+              child: Text(localization.confirm),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+    context.read<ClockingBloc>().add(
+      MarkSickEvent(
+        teamId: teamId,
+        targetUserId: selectedUser.value,
+        date: selectedDate.value,
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
       ),
     );
   }
@@ -2780,6 +3111,8 @@ Color _statusColor(ClockingStatus status) {
       return Colors.teal;
     case ClockingStatus.permission:
       return Colors.indigo;
+    case ClockingStatus.sick:
+      return Colors.redAccent;
     case ClockingStatus.absent:
       return Colors.grey;
     case ClockingStatus.late:

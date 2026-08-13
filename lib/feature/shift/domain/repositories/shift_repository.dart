@@ -95,5 +95,10 @@ abstract class ShiftRepository {
     ShiftAutoPlanRequestEntity request,
   );
 
+  Future<ShiftAutoPlanPreviewEntity> recalculateAutoPlanPreview(
+    String snapshotToken,
+    List<ShiftAutoPlanDraftAssignmentEntity> draftAssignments,
+  );
+
   Future<ShiftAutoPlanResultEntity> confirmAutoPlan(String snapshotToken);
 }

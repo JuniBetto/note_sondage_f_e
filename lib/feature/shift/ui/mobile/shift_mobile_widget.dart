@@ -6,7 +6,9 @@ import 'package:get_it/get_it.dart';
 import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
+import 'package:note_sondage/feature/notification/realtime/clocking_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
@@ -14,10 +16,12 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_enti
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
+import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments_list.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_loading_overlay.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_planner_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview_page.dart';
@@ -53,6 +57,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   final TeamBloc _teamBloc = GetIt.instance<TeamBloc>();
   final TeamMemberBloc _teamMemberBloc = GetIt.instance<TeamMemberBloc>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
+  final ClockingUseCase _clockingUseCase = GetIt.instance<ClockingUseCase>();
   final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
   final UserArchiveService _archiveService =
       GetIt.instance<UserArchiveService>();
@@ -66,8 +71,10 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   final Map<String, List<RoleEntity>> _rolesByTeamId = {};
   final Set<String> _loadingTeamMemberIds = <String>{};
   final Set<String> _loadingTeamRoleIds = <String>{};
+  Map<String, ShiftAbsenceStatus> _absenceStatusesByKey = const {};
   Set<String> _archivedAssignmentIds = <String>{};
   bool _showArchivedOnly = false;
+  bool _autoPlannerPreviewLoading = false;
   bool _tutorialScheduled = false;
   String? _selectedCalendarTeamId;
 
@@ -132,6 +139,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     super.initState();
     _loadProfiles();
     _loadAssignments();
+    unawaited(_loadShiftAbsenceStatuses());
     final teamState = _teamBloc.state;
     if (teamState is TeamsLoaded) {
       _teams = teamState.teams;
@@ -194,6 +202,42 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         visibleUserIds: visibleUserIds.isEmpty ? null : visibleUserIds,
       ),
     );
+  }
+
+  Future<void> _loadShiftAbsenceStatuses() async {
+    final first = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+    final last = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
+    final selectedTeamId = _selectedCalendarTeamId?.trim();
+    try {
+      final records = selectedTeamId == null || selectedTeamId.isEmpty
+          ? await _clockingUseCase.getAllRecords()
+          : await _clockingUseCase.getRecordsByTeamId(selectedTeamId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _absenceStatusesByKey = buildShiftAbsenceIndex(
+          records,
+          from: first,
+          to: last,
+          teamId: selectedTeamId,
+          currentUserId: selectedTeamId == null || selectedTeamId.isEmpty
+              ? _currentUid
+              : null,
+        );
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _absenceStatusesByKey = const {};
+      });
+    }
+  }
+
+  Map<String, ShiftAbsenceStatus> _absenceStatusesForDate(DateTime date) {
+    return shiftAbsenceStatusesByUserForDate(_absenceStatusesByKey, date);
   }
 
   void _upsertAssignment(ShiftAssignmentEntity assignment) {
@@ -304,14 +348,23 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   }
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
-    final decision = GetIt.instance<ShiftRealtimeCoordinator>().resolveDecision(
-      notification,
-      currentUserId: _currentUid,
-    );
-    if (!decision.refreshCalendar || !mounted) {
+    final shiftDecision = GetIt.instance<ShiftRealtimeCoordinator>()
+        .resolveDecision(notification, currentUserId: _currentUid);
+    final clockingDecision = GetIt.instance<ClockingRealtimeCoordinator>()
+        .resolveDecision(
+          notification,
+          currentUserId: _currentUid,
+          selectedTeamId: _selectedCalendarTeamId,
+        );
+    if (!mounted) {
       return;
     }
-    _loadAssignments();
+    if (shiftDecision.refreshCalendar) {
+      _loadAssignments();
+    }
+    if (shiftDecision.refreshCalendar || clockingDecision.refreshClocking) {
+      unawaited(_loadShiftAbsenceStatuses());
+    }
   }
 
   /// Consumes any pending deep-link intent queued by [ShiftOpenIntentController]
@@ -477,6 +530,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       allTeams: _teams,
       existing: existing,
       initialTeamId: existing == null ? _selectedCalendarTeamId : null,
+      absenceStatusesByUserId: _absenceStatusesForDate(date),
       canManagePublicShifts: existing == null
           ? _canManageAnyTeam
           : _canManageAssignment(existing),
@@ -863,6 +917,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       context: context,
       date: date,
       assignments: sortedAssignments,
+      absenceStatuses: _absenceStatusesForDate(date).values.toList(),
       canCreate: !isPastDate,
       syncingAssignmentIds: shiftBloc.syncingAssignmentIds,
     );
@@ -1091,17 +1146,19 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           },
         ),
       ],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
 
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                /* Icon(
+                Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    /* Icon(
                   Icons.calendar_month_rounded,
                   color: colorScheme.descriptionColor,
                   size: 18,
@@ -1113,145 +1170,156 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                     context,
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),*/
-                // const Spacer(),
-                if (_canManageAnyTeam) ...[
-                  IconButton.outlined(
-                    tooltip: _isItalian(context)
-                        ? 'Generazione automatica turni'
-                        : 'Automatic shift planner',
-                    onPressed: () => _openAutoPlanner(context),
-                    icon: Icon(
-                      Icons.auto_awesome_outlined,
-                      size: 18,
-                      color: colorScheme.textInvertedColor,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: navButtonColor,
-                      side: BorderSide(color: navButtonColor),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton.outlined(
-                    tooltip: loc.shiftTeamReportTooltip,
-                    onPressed: () => _openTeamReport(context),
-                    icon: Icon(
-                      Icons.assessment_outlined,
-                      size: 18,
-                      color: colorScheme.textInvertedColor,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: navButtonColor,
-                      side: BorderSide(color: navButtonColor),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                ],
-                IconButton.outlined(
-                  tooltip: _isItalian(context)
-                      ? 'Profili turno'
-                      : 'Shift profiles',
-                  onPressed: () => _openProfilesSheet(context),
-                  icon: Icon(
-                    Icons.palette_outlined,
-                    color: colorScheme.textInvertedColor,
-                    size: 18,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: navButtonColor,
-                    side: BorderSide(color: navButtonColor),
-                  ),
-                ),
-                if (_canManageAnyTeam) ...[
-                  const SizedBox(width: 6),
-                  Icon(
-                    Icons.admin_panel_settings_outlined,
-                    size: 16,
-                    color: colorScheme.descriptionColor,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (_canManageAnyTeam && !_showArchivedOnly) ...[
-              ShiftCalendarTeamPicker(
-                teams: _manageableTeams,
-                selectedTeamId: _selectedCalendarTeamId,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCalendarTeamId = value;
-                  });
-                  _loadAssignments();
-                },
-              ),
-              const SizedBox(height: 12),
-            ],
-            Showcase(
-              key: _archiveToggleKey,
-              title: _isItalian(context)
-                  ? 'Calendario e archivio'
-                  : 'Calendar and archive',
-              description: _isItalian(context)
-                  ? 'Usa questo selettore per passare dal calendario attivo all\'archivio dei turni nascosti.'
-                  : 'Use this switcher to move between the active calendar and the archive of hidden shifts.',
-              child: ArchiveViewToggle(
-                showArchivedOnly: _showArchivedOnly,
-                primaryCount: foregroundAssignments.length,
-                archivedCount: archivedAssignments.length,
-                primaryLabel: 'Calendario',
-                archivedLabel: 'Archivio',
-                onChanged: (value) {
-                  setState(() => _showArchivedOnly = value);
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Showcase(
-                key: _calendarKey,
-                title: _showArchivedOnly
-                    ? (_isItalian(context) ? 'Archivio turni' : 'Shift archive')
-                    : (_isItalian(context)
-                          ? 'Calendario turni'
-                          : 'Shift calendar'),
-                description: _showArchivedOnly
-                    ? (_isItalian(context)
-                          ? 'Qui ritrovi i turni archiviati e puoi riaprirli quando servono.'
-                          : 'This view shows archived shifts and lets you restore them when needed.')
-                    : (_isItalian(context)
-                          ? 'Tocca un giorno per creare o modificare i turni disponibili in quella data.'
-                          : 'Tap a day to create or edit the shifts available on that date.'),
-                child: _showArchivedOnly
-                    ? ShiftArchivedAssignmentsList(
-                        assignments: archivedAssignments,
-                        compact: false,
-                        onOpen: (assignment) {
-                          _openDialogForAssignment(
-                            context,
-                            assignment.shiftDate,
-                            existing: assignment,
-                          );
-                        },
-                        onRestore: (assignment) {
-                          _setAssignmentArchived(assignment, false);
-                        },
-                      )
-                    : SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: ShiftCalendarWidget(
-                          assignments: foregroundAssignments,
-                          syncingAssignmentIds: context
-                              .read<ShiftBloc>()
-                              .syncingAssignmentIds,
-                          focusedMonth: _focusedMonth,
-                          onMonthChanged: _onMonthChanged,
-                          onDayTap: (date, assignments) =>
-                              _onDayTap(context, date, assignments),
+                    // const Spacer(),
+                    if (_canManageAnyTeam) ...[
+                      IconButton.outlined(
+                        tooltip: _isItalian(context)
+                            ? 'Generazione automatica turni'
+                            : 'Automatic shift planner',
+                        onPressed: () => _openAutoPlanner(context),
+                        icon: Icon(
+                          Icons.auto_awesome_outlined,
+                          size: 18,
+                          color: colorScheme.textInvertedColor,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: navButtonColor,
+                          side: BorderSide(color: navButtonColor),
                         ),
                       ),
-              ),
+                      const SizedBox(width: 6),
+                      IconButton.outlined(
+                        tooltip: loc.shiftTeamReportTooltip,
+                        onPressed: () => _openTeamReport(context),
+                        icon: Icon(
+                          Icons.assessment_outlined,
+                          size: 18,
+                          color: colorScheme.textInvertedColor,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: navButtonColor,
+                          side: BorderSide(color: navButtonColor),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    IconButton.outlined(
+                      tooltip: _isItalian(context)
+                          ? 'Profili turno'
+                          : 'Shift profiles',
+                      onPressed: () => _openProfilesSheet(context),
+                      icon: Icon(
+                        Icons.palette_outlined,
+                        color: colorScheme.textInvertedColor,
+                        size: 18,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: navButtonColor,
+                        side: BorderSide(color: navButtonColor),
+                      ),
+                    ),
+                    if (_canManageAnyTeam) ...[
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.admin_panel_settings_outlined,
+                        size: 16,
+                        color: colorScheme.descriptionColor,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_canManageAnyTeam && !_showArchivedOnly) ...[
+                  ShiftCalendarTeamPicker(
+                    teams: _manageableTeams,
+                    selectedTeamId: _selectedCalendarTeamId,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCalendarTeamId = value;
+                      });
+                      _loadAssignments();
+                      unawaited(_loadShiftAbsenceStatuses());
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Showcase(
+                  key: _archiveToggleKey,
+                  title: _isItalian(context)
+                      ? 'Calendario e archivio'
+                      : 'Calendar and archive',
+                  description: _isItalian(context)
+                      ? 'Usa questo selettore per passare dal calendario attivo all\'archivio dei turni nascosti.'
+                      : 'Use this switcher to move between the active calendar and the archive of hidden shifts.',
+                  child: ArchiveViewToggle(
+                    showArchivedOnly: _showArchivedOnly,
+                    primaryCount: foregroundAssignments.length,
+                    archivedCount: archivedAssignments.length,
+                    primaryLabel: 'Calendario',
+                    archivedLabel: 'Archivio',
+                    onChanged: (value) {
+                      setState(() => _showArchivedOnly = value);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Showcase(
+                    key: _calendarKey,
+                    title: _showArchivedOnly
+                        ? (_isItalian(context)
+                              ? 'Archivio turni'
+                              : 'Shift archive')
+                        : (_isItalian(context)
+                              ? 'Calendario turni'
+                              : 'Shift calendar'),
+                    description: _showArchivedOnly
+                        ? (_isItalian(context)
+                              ? 'Qui ritrovi i turni archiviati e puoi riaprirli quando servono.'
+                              : 'This view shows archived shifts and lets you restore them when needed.')
+                        : (_isItalian(context)
+                              ? 'Tocca un giorno per creare o modificare i turni disponibili in quella data.'
+                              : 'Tap a day to create or edit the shifts available on that date.'),
+                    child: _showArchivedOnly
+                        ? ShiftArchivedAssignmentsList(
+                            assignments: archivedAssignments,
+                            compact: false,
+                            onOpen: (assignment) {
+                              _openDialogForAssignment(
+                                context,
+                                assignment.shiftDate,
+                                existing: assignment,
+                              );
+                            },
+                            onRestore: (assignment) {
+                              _setAssignmentArchived(assignment, false);
+                            },
+                          )
+                        : SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: ShiftCalendarWidget(
+                              assignments: foregroundAssignments,
+                              absenceStatuses: _absenceStatusesByKey.values
+                                  .toList(growable: false),
+                              syncingAssignmentIds: context
+                                  .read<ShiftBloc>()
+                                  .syncingAssignmentIds,
+                              focusedMonth: _focusedMonth,
+                              onMonthChanged: _onMonthChanged,
+                              onDayTap: (date, assignments) =>
+                                  _onDayTap(context, date, assignments),
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (_autoPlannerPreviewLoading)
+            const Positioned.fill(
+              child: ShiftAutoPlanLoadingOverlay(compact: true),
+            ),
+        ],
       ),
     );
   }
@@ -1285,7 +1353,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   }
 
   bool _isPastDate(DateTime date) {
-    final today = DateTime(2026, 8, 3);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final normalized = DateTime(date.year, date.month, date.day);
     return normalized.isBefore(today);
   }
@@ -1314,7 +1383,11 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     }
 
     try {
+      setState(() => _autoPlannerPreviewLoading = true);
       final preview = await _shiftRepository.previewAutoPlan(request);
+      if (mounted) {
+        setState(() => _autoPlannerPreviewLoading = false);
+      }
       if (!mounted || !context.mounted) {
         return;
       }
@@ -1331,8 +1404,12 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         context,
         request: request,
         preview: preview,
-        onConfirm: () =>
-            _shiftRepository.confirmAutoPlan(preview.snapshotToken),
+        availableProfiles: _profiles,
+        availableTeamMembers: teamMembers ?? const <TeamMemberforView>[],
+        onRecalculate: (snapshotToken, draftAssignments) => _shiftRepository
+            .recalculateAutoPlanPreview(snapshotToken, draftAssignments),
+        onConfirm: (snapshotToken) =>
+            _shiftRepository.confirmAutoPlan(snapshotToken),
         teamName: teamName,
         userLabelsById: _buildPreviewUserLabels(teamMembers),
         compact: true,
@@ -1348,6 +1425,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         _focusedMonth = DateTime(request.from.year, request.from.month, 1);
       });
       _loadAssignments();
+      unawaited(_loadShiftAbsenceStatuses());
 
       if (result.createdAssignmentsCount > 0) {
         AppSnackBar.showSuccess(
@@ -1380,6 +1458,9 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         );
       }
     } catch (error) {
+      if (mounted) {
+        setState(() => _autoPlannerPreviewLoading = false);
+      }
       if (!mounted || !context.mounted) {
         return;
       }

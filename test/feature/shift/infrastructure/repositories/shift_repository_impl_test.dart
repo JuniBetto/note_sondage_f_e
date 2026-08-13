@@ -93,6 +93,12 @@ class _FakeShiftRemoteDataSource extends ShiftRemoteDataSource {
     confirmTokens.add(snapshotToken);
     return confirmResult!;
   }
+
+  @override
+  Future<ShiftAutoPlanPreviewEntity> recalculateAutoPlanPreview(
+    String snapshotToken,
+    List<ShiftAutoPlanDraftAssignmentEntity> draftAssignments,
+  ) => throw UnimplementedError();
 }
 
 ShiftAutoPlanRequestEntity _request() {
@@ -120,11 +126,13 @@ ShiftAutoPlanPreviewEntity _preview() {
     deletedAssignmentsCountPreview: 0,
     uncoveredSlotsCount: 0,
     warnings: const [],
+    issues: const [],
     days: [
       ShiftAutoPlanPreviewDayEntity(
         date: DateTime(2026, 8, 1),
         items: [
           ShiftAutoPlanPreviewAssignmentEntity(
+            previewItemId: 'preview-item-1',
             action: ShiftAutoPlanPreviewAction.create,
             assignment: ShiftAssignmentEntity(
               id: 'assignment-1',
