@@ -71,7 +71,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      ShiftAutoPlanResultEntity? returnedResult;
+      ShiftAutoPlanPreviewConfirmationResult? returnedConfirmation;
       var confirmCalls = 0;
 
       await tester.pumpWidget(
@@ -85,20 +85,21 @@ void main() {
                 body: Center(
                   child: FilledButton(
                     onPressed: () async {
-                      returnedResult = await ShiftAutoPlanPreviewPage.show(
-                        context,
-                        request: _request(),
-                        preview: _preview(),
-                        availableProfiles: const [],
-                        availableTeamMembers: const [],
-                        onRecalculate:
-                            (snapshotToken, draftAssignments) async =>
-                                _preview(),
-                        onConfirm: (snapshotToken) async {
-                          confirmCalls++;
-                          return _result();
-                        },
-                      );
+                      returnedConfirmation =
+                          await ShiftAutoPlanPreviewPage.show(
+                            context,
+                            request: _request(),
+                            preview: _preview(),
+                            availableProfiles: const [],
+                            availableTeamMembers: const [],
+                            onRecalculate:
+                                (snapshotToken, draftAssignments) async =>
+                                    _preview(),
+                            onConfirm: (snapshotToken) async {
+                              confirmCalls++;
+                              return _result();
+                            },
+                          );
                     },
                     child: const Text('Open preview'),
                   ),
@@ -139,8 +140,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(confirmCalls, 1);
-      expect(returnedResult?.createdAssignmentsCount, 1);
-      expect(returnedResult?.warnings, isEmpty);
+      expect(returnedConfirmation?.result.createdAssignmentsCount, 1);
+      expect(returnedConfirmation?.result.warnings, isEmpty);
+      expect(returnedConfirmation?.assignments, hasLength(1));
+      expect(returnedConfirmation?.assignments.first.teamId, 'team-1');
       expect(find.text('Anteprima Auto Planner'), findsNothing);
     });
   });

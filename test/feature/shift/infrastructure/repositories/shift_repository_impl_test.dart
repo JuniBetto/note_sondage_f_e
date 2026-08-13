@@ -42,11 +42,113 @@ void main() {
       },
     );
   });
+
+  group('ShiftRepositoryImpl assignments cache', () {
+    test(
+      'getAssignments uses a request-specific local cache fallback',
+      () async {
+        final local = _FakeShiftLocalDataSource();
+        final remote = _FakeShiftRemoteDataSource()
+          ..getAssignmentsError = DioException(
+            requestOptions: RequestOptions(
+              path: '/api/aggregate/shift/assignments',
+            ),
+          );
+        final repository = ShiftRepositoryImpl(local, remote);
+        final assignment = ShiftAssignmentEntity(
+          id: 'assignment-1',
+          userId: 'user-1',
+          userName: 'Mario Rossi',
+          shiftDate: DateTime(2026, 8, 1),
+          teamId: null,
+          teamShiftGroupId: null,
+          profileId: null,
+          profileName: 'Personale',
+          profileColor: '#00AAFF',
+          startTime: const TimeOfDay(hour: 8, minute: 0),
+          endTime: const TimeOfDay(hour: 12, minute: 0),
+          overnight: false,
+          note: null,
+          alarmOffsets: const <int>[],
+          isPublic: false,
+          memberEditUnlocked: false,
+          memberChangeRequestPending: false,
+        );
+        final requestKey = ShiftLocalDataSource.buildAssignmentsRequestKey(
+          from: DateTime(2026, 8, 1),
+          to: DateTime(2026, 8, 31),
+          visibleTeamIds: const <String>['team-1'],
+          visibleUserIds: const <String>['user-1'],
+        );
+        await local.saveAssignments([assignment], requestKey: requestKey);
+
+        final result = await repository.getAssignments(
+          from: DateTime(2026, 8, 1),
+          to: DateTime(2026, 8, 31),
+          visibleTeamIds: const <String>['team-1'],
+          visibleUserIds: const <String>['user-1'],
+        );
+
+        expect(result.map((item) => item.id).toList(), <String>[
+          'assignment-1',
+        ]);
+      },
+    );
+
+    test('getAssignments does not reuse another request cache entry', () async {
+      final local = _FakeShiftLocalDataSource();
+      final remote = _FakeShiftRemoteDataSource()
+        ..getAssignmentsError = DioException(
+          requestOptions: RequestOptions(
+            path: '/api/aggregate/shift/assignments',
+          ),
+        );
+      final repository = ShiftRepositoryImpl(local, remote);
+      final assignment = ShiftAssignmentEntity(
+        id: 'assignment-1',
+        userId: 'user-1',
+        userName: 'Mario Rossi',
+        shiftDate: DateTime(2026, 8, 1),
+        teamId: 'team-1',
+        teamShiftGroupId: 'group-1',
+        profileId: null,
+        profileName: 'Mattina',
+        profileColor: '#00AAFF',
+        startTime: const TimeOfDay(hour: 8, minute: 0),
+        endTime: const TimeOfDay(hour: 12, minute: 0),
+        overnight: false,
+        note: null,
+        alarmOffsets: const <int>[],
+        isPublic: true,
+        memberEditUnlocked: false,
+        memberChangeRequestPending: false,
+      );
+      final oldRequestKey = ShiftLocalDataSource.buildAssignmentsRequestKey(
+        from: DateTime(2026, 8, 1),
+        to: DateTime(2026, 8, 31),
+        visibleTeamIds: const <String>['team-1'],
+        visibleUserIds: const <String>['user-1'],
+      );
+      await local.saveAssignments([assignment], requestKey: oldRequestKey);
+
+      await expectLater(
+        repository.getAssignments(
+          from: DateTime(2026, 8, 1),
+          to: DateTime(2026, 8, 31),
+          visibleTeamIds: null,
+          visibleUserIds: null,
+        ),
+        throwsA(isA<DioException>()),
+      );
+    });
+  });
 }
 
 class _FakeShiftLocalDataSource extends ShiftLocalDataSource {
   final savedProfilesSnapshots = <List<ShiftProfileEntity>>[];
   final savedAssignmentsSnapshots = <List<ShiftAssignmentEntity>>[];
+  final savedAssignmentsRequestKeys = <String>[];
+  final assignmentsByRequestKey = <String, List<ShiftAssignmentEntity>>{};
 
   @override
   Future<void> saveProfiles(List<ShiftProfileEntity> profiles) async {
@@ -54,9 +156,16 @@ class _FakeShiftLocalDataSource extends ShiftLocalDataSource {
   }
 
   @override
-  Future<void> saveAssignments(List<ShiftAssignmentEntity> assignments) async {
+  Future<void> saveAssignments(
+    List<ShiftAssignmentEntity> assignments, {
+    String requestKey = ShiftLocalDataSource.defaultAssignmentsRequestKey,
+  }) async {
     savedAssignmentsSnapshots.add(
       List<ShiftAssignmentEntity>.from(assignments),
+    );
+    savedAssignmentsRequestKeys.add(requestKey);
+    assignmentsByRequestKey[requestKey] = List<ShiftAssignmentEntity>.from(
+      assignments,
     );
   }
 
@@ -67,7 +176,24 @@ class _FakeShiftLocalDataSource extends ShiftLocalDataSource {
   Future<List<ShiftAssignmentEntity>> getAssignments({
     DateTime? from,
     DateTime? to,
-  }) async => const [];
+    String requestKey = ShiftLocalDataSource.defaultAssignmentsRequestKey,
+  }) async => assignmentsByRequestKey[requestKey] ?? const [];
+
+  @override
+  Future<void> invalidateAssignmentCaches({String? keepRequestKey}) async {
+    if (keepRequestKey == null || keepRequestKey.isEmpty) {
+      assignmentsByRequestKey.clear();
+      return;
+    }
+
+    final keptAssignments = List<ShiftAssignmentEntity>.from(
+      assignmentsByRequestKey[keepRequestKey] ??
+          const <ShiftAssignmentEntity>[],
+    );
+    assignmentsByRequestKey
+      ..clear()
+      ..[keepRequestKey] = keptAssignments;
+  }
 }
 
 class _FakeShiftRemoteDataSource extends ShiftRemoteDataSource {
@@ -75,8 +201,23 @@ class _FakeShiftRemoteDataSource extends ShiftRemoteDataSource {
 
   final previewRequests = <ShiftAutoPlanRequestEntity>[];
   final confirmTokens = <String>[];
+  DioException? getAssignmentsError;
+  List<ShiftAssignmentEntity>? assignmentsResult;
   ShiftAutoPlanPreviewEntity? previewResult;
   ShiftAutoPlanResultEntity? confirmResult;
+
+  @override
+  Future<List<ShiftAssignmentEntity>> getAssignments({
+    required DateTime from,
+    required DateTime to,
+    List<String>? visibleTeamIds,
+    List<String>? visibleUserIds,
+  }) async {
+    if (getAssignmentsError != null) {
+      throw getAssignmentsError!;
+    }
+    return assignmentsResult ?? const <ShiftAssignmentEntity>[];
+  }
 
   @override
   Future<ShiftAutoPlanPreviewEntity> previewAutoPlan(

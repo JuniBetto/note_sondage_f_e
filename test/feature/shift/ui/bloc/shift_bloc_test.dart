@@ -329,8 +329,10 @@ class _FakeShiftRepository implements ShiftRepository {
 class SpyShiftLocalDataSource extends ShiftLocalDataSource {
   List<ShiftProfileEntity> storedProfiles = <ShiftProfileEntity>[];
   List<ShiftAssignmentEntity> storedAssignments = <ShiftAssignmentEntity>[];
+  final storedAssignmentsByRequestKey = <String, List<ShiftAssignmentEntity>>{};
   final savedProfileSnapshots = <List<ShiftProfileEntity>>[];
   final savedAssignmentSnapshots = <List<ShiftAssignmentEntity>>[];
+  final savedAssignmentRequestKeys = <String>[];
 
   @override
   Future<List<ShiftProfileEntity>> getProfiles() async => storedProfiles;
@@ -345,12 +347,41 @@ class SpyShiftLocalDataSource extends ShiftLocalDataSource {
   Future<List<ShiftAssignmentEntity>> getAssignments({
     DateTime? from,
     DateTime? to,
-  }) async => storedAssignments;
+    String requestKey = ShiftLocalDataSource.defaultAssignmentsRequestKey,
+  }) async =>
+      storedAssignmentsByRequestKey[requestKey] ??
+      (requestKey == ShiftLocalDataSource.defaultAssignmentsRequestKey
+          ? storedAssignments
+          : const <ShiftAssignmentEntity>[]);
 
   @override
-  Future<void> saveAssignments(List<ShiftAssignmentEntity> assignments) async {
+  Future<void> saveAssignments(
+    List<ShiftAssignmentEntity> assignments, {
+    String requestKey = ShiftLocalDataSource.defaultAssignmentsRequestKey,
+  }) async {
     storedAssignments = List<ShiftAssignmentEntity>.from(assignments);
+    storedAssignmentsByRequestKey[requestKey] =
+        List<ShiftAssignmentEntity>.from(assignments);
     savedAssignmentSnapshots.add(List<ShiftAssignmentEntity>.from(assignments));
+    savedAssignmentRequestKeys.add(requestKey);
+  }
+
+  @override
+  Future<void> invalidateAssignmentCaches({String? keepRequestKey}) async {
+    if (keepRequestKey == null || keepRequestKey.isEmpty) {
+      storedAssignmentsByRequestKey.clear();
+      storedAssignments = <ShiftAssignmentEntity>[];
+      return;
+    }
+
+    final keptAssignments = List<ShiftAssignmentEntity>.from(
+      storedAssignmentsByRequestKey[keepRequestKey] ??
+          const <ShiftAssignmentEntity>[],
+    );
+    storedAssignmentsByRequestKey
+      ..clear()
+      ..[keepRequestKey] = keptAssignments;
+    storedAssignments = keptAssignments;
   }
 }
 
@@ -486,6 +517,72 @@ void main() {
     );
 
     test(
+      'LoadShiftAssignmentsEvent does not emit stale assignments from another request key',
+      () async {
+        final julyDate = DateTime(2026, 7, 20);
+        final augustDate = DateTime(2026, 8, 20);
+        final julyAssignment = _buildAssignment(
+          id: 'assignment-july',
+          userId: 'user-42',
+          shiftDate: julyDate,
+          teamId: 'team-1',
+        );
+        final augustAssignment = _buildAssignment(
+          id: 'assignment-august',
+          userId: 'user-42',
+          shiftDate: augustDate,
+        );
+        final julyCompleter = Completer<List<ShiftAssignmentEntity>>();
+        final augustCompleter = Completer<List<ShiftAssignmentEntity>>();
+        final emittedStates = <ShiftState>[];
+        var requestCount = 0;
+
+        repository.getAssignmentsHandler =
+            ({required from, required to, visibleTeamIds, visibleUserIds}) {
+              requestCount++;
+              if (requestCount == 1) {
+                return julyCompleter.future;
+              }
+              return augustCompleter.future;
+            };
+
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(
+          LoadShiftAssignmentsEvent(
+            from: julyDate,
+            to: julyDate,
+            visibleTeamIds: const <String>['team-1'],
+            visibleUserIds: const <String>['user-42'],
+          ),
+        );
+        await pumpEventQueue();
+        julyCompleter.complete(<ShiftAssignmentEntity>[julyAssignment]);
+        await pumpEventQueue(times: 20);
+
+        emittedStates.clear();
+        bloc.add(LoadShiftAssignmentsEvent(from: augustDate, to: augustDate));
+        await pumpEventQueue(times: 5);
+
+        expect(emittedStates.first, isA<ShiftLoading>());
+
+        augustCompleter.complete(<ShiftAssignmentEntity>[augustAssignment]);
+        await pumpEventQueue(times: 20);
+
+        expect(
+          emittedStates.last,
+          isA<ShiftAssignmentsLoaded>().having(
+            (state) => state.assignments.map((item) => item.id).toList(),
+            'assignment ids',
+            <String>['assignment-august'],
+          ),
+        );
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
       'AssignShiftEvent emits optimistic assignment for current user and then committed assignment',
       () async {
         final shiftDate = DateTime(2026, 7, 20);
@@ -511,8 +608,19 @@ void main() {
               teamShiftGroupId,
               targetUserId,
             }) async => remoteAssignment;
+        repository.getAssignmentsHandler =
+            ({
+              required from,
+              required to,
+              visibleTeamIds,
+              visibleUserIds,
+            }) async => const <ShiftAssignmentEntity>[];
 
         final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(LoadShiftAssignmentsEvent(from: shiftDate, to: shiftDate));
+        await pumpEventQueue(times: 20);
+        emittedStates.clear();
 
         bloc.add(
           AssignShiftEvent(
@@ -555,6 +663,111 @@ void main() {
         expect(
           localDataSource.savedAssignmentSnapshots.last.single.id,
           'server-assignment',
+        );
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
+      'LoadShiftAssignmentsEvent keeps a freshly committed team assignment when an immediate refresh is stale',
+      () async {
+        final shiftDate = DateTime(2026, 7, 21);
+        final emittedStates = <ShiftState>[];
+        final remoteAssignment = _buildAssignment(
+          id: 'server-team-assignment',
+          userId: 'member-7',
+          shiftDate: shiftDate,
+          teamId: 'team-1',
+        );
+        var loadRequestCount = 0;
+
+        repository.getAssignmentsHandler =
+            ({
+              required from,
+              required to,
+              visibleTeamIds,
+              visibleUserIds,
+            }) async {
+              loadRequestCount++;
+              return const <ShiftAssignmentEntity>[];
+            };
+        repository.assignHandler =
+            ({
+              required shiftDate,
+              profileId,
+              startTime,
+              endTime,
+              overnight,
+              note,
+              alarmOffsets,
+              isPublic = false,
+              teamId,
+              teamShiftGroupId,
+              targetUserId,
+            }) async => remoteAssignment;
+
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(
+          LoadShiftAssignmentsEvent(
+            from: shiftDate,
+            to: shiftDate,
+            visibleTeamIds: const <String>['team-1'],
+            visibleUserIds: const <String>['member-7'],
+          ),
+        );
+        await pumpEventQueue(times: 20);
+        emittedStates.clear();
+
+        bloc.add(
+          AssignShiftEvent(
+            shiftDate: shiftDate,
+            startTime: const TimeOfDay(hour: 7, minute: 0),
+            endTime: const TimeOfDay(hour: 15, minute: 0),
+            note: 'Copertura collega',
+            alarmOffsets: const <int>[15],
+            isPublic: true,
+            teamId: 'team-1',
+            teamShiftGroupId: 'group-new',
+            targetUserId: 'member-7',
+          ),
+        );
+        await pumpEventQueue(times: 30);
+
+        expect(
+          emittedStates.last,
+          isA<ShiftAssignmentsLoaded>().having(
+            (state) => state.assignments.single.id,
+            'committed id',
+            'server-team-assignment',
+          ),
+        );
+
+        emittedStates.clear();
+        bloc.add(
+          LoadShiftAssignmentsEvent(
+            from: shiftDate,
+            to: shiftDate,
+            visibleTeamIds: const <String>['team-1'],
+            visibleUserIds: const <String>['member-7'],
+          ),
+        );
+        await pumpEventQueue(times: 20);
+
+        expect(bloc.state, isA<ShiftAssignmentsLoaded>());
+        expect(
+          (bloc.state as ShiftAssignmentsLoaded).assignments
+              .map((assignment) => assignment.id)
+              .toList(),
+          <String>['server-team-assignment'],
+        );
+        expect(loadRequestCount, 2);
+        expect(
+          localDataSource.savedAssignmentSnapshots.last
+              .map((assignment) => assignment.id)
+              .toList(),
+          <String>['server-team-assignment'],
         );
 
         await subscription.cancel();

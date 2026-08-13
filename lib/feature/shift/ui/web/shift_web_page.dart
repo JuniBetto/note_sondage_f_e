@@ -19,6 +19,7 @@ import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.
 import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_assignment_day_visibility.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments_list.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
@@ -100,14 +101,34 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
 
   bool get _canManageAnyTeam => _manageableTeams.isNotEmpty;
 
-  TeamEntityForView? get _selectedCalendarTeam {
-    final selectedId = _selectedCalendarTeamId;
-    if (selectedId == null || selectedId.isEmpty) {
+  TeamEntityForView? _calendarTeamById(String? teamId) {
+    final normalizedTeamId = teamId?.trim();
+    if (normalizedTeamId == null || normalizedTeamId.isEmpty) {
       return null;
     }
-    return _manageableTeams
-        .where((team) => team.team.id == selectedId)
+
+    final manageableTeam = _manageableTeams
+        .where((team) => team.team.id == normalizedTeamId)
         .firstOrNull;
+    if (manageableTeam != null) {
+      return manageableTeam;
+    }
+
+    final rawTeam = _teams
+        .where((team) => team.id == normalizedTeamId)
+        .firstOrNull;
+    if (rawTeam == null) {
+      return null;
+    }
+
+    return TeamEntityForView(
+      team: rawTeam,
+      members: _teamMembersByTeamId[normalizedTeamId] ?? const [],
+    );
+  }
+
+  TeamEntityForView? get _selectedCalendarTeam {
+    return _calendarTeamById(_selectedCalendarTeamId);
   }
 
   List<ShiftAssignmentEntity> _filterAssignmentsForSelectedCalendarTeam(
@@ -176,18 +197,20 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   void _loadAssignments() {
     final first = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     final last = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
-    final selectedTeam = _selectedCalendarTeam;
-    final visibleTeamIds = selectedTeam == null
+    final selectedTeamId = _selectedCalendarTeamId?.trim();
+    final visibleTeamIds = selectedTeamId == null || selectedTeamId.isEmpty
         ? const <String>[]
-        : <String>[
-            selectedTeam.team.id ?? '',
-          ].where((teamId) => teamId.isNotEmpty).toList();
-    final visibleUserIds =
-        (selectedTeam?.members ?? const <TeamMemberforView>[])
-            .map((member) => member.teamMember.userId ?? '')
-            .where((userId) => userId.isNotEmpty && userId != _currentUid)
-            .toSet()
-            .toList();
+        : <String>[selectedTeamId];
+    final selectedMembers = selectedTeamId == null || selectedTeamId.isEmpty
+        ? const <TeamMemberforView>[]
+        : (_teamMembersByTeamId[selectedTeamId] ??
+              _selectedCalendarTeam?.members ??
+              const <TeamMemberforView>[]);
+    final visibleUserIds = selectedMembers
+        .map((member) => member.teamMember.userId ?? '')
+        .where((userId) => userId.isNotEmpty && userId != _currentUid)
+        .toSet()
+        .toList();
     context.read<ShiftBloc>().add(
       LoadShiftAssignmentsEvent(
         from: first,
@@ -252,6 +275,58 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
           .where((id) => !ids.contains(id))
           .toSet();
     });
+  }
+
+  void _applyOptimisticAutoPlanAssignments({
+    required String teamId,
+    required DateTime from,
+    required DateTime to,
+    required List<ShiftAssignmentEntity> assignments,
+  }) {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return;
+    }
+
+    final rangeStart = DateTime(from.year, from.month, from.day);
+    final rangeEnd = DateTime(to.year, to.month, to.day);
+
+    bool isInsideRange(ShiftAssignmentEntity assignment) {
+      final date = DateTime(
+        assignment.shiftDate.year,
+        assignment.shiftDate.month,
+        assignment.shiftDate.day,
+      );
+      return !date.isBefore(rangeStart) && !date.isAfter(rangeEnd);
+    }
+
+    final replacementAssignments = assignments
+        .where((assignment) => assignment.teamId?.trim() == normalizedTeamId)
+        .where(isInsideRange)
+        .toList(growable: false);
+
+    final nextAssignments =
+        _assignments
+            .where(
+              (assignment) =>
+                  assignment.teamId?.trim() != normalizedTeamId ||
+                  !isInsideRange(assignment),
+            )
+            .toList(growable: true)
+          ..addAll(replacementAssignments)
+          ..sort((left, right) {
+            final byDate = left.shiftDate.compareTo(right.shiftDate);
+            if (byDate != 0) {
+              return byDate;
+            }
+            final byHour = left.startTime.hour.compareTo(right.startTime.hour);
+            if (byHour != 0) {
+              return byHour;
+            }
+            return left.startTime.minute.compareTo(right.startTime.minute);
+          });
+
+    setState(() => _assignments = nextAssignments);
   }
 
   void _upsertProfile(ShiftProfileEntity profile) {
@@ -379,12 +454,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       // Fallback: match by date if no assignmentId or not found
       if (existing == null) {
         final matches = _assignments
-            .where(
-              (a) =>
-                  a.shiftDate.year == date.year &&
-                  a.shiftDate.month == date.month &&
-                  a.shiftDate.day == date.day,
-            )
+            .where((a) => isAssignmentVisibleOnDate(a, date))
             .toList();
         if (matches.length == 1) existing = matches.first;
       }
@@ -709,6 +779,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
               teamId: result.isPublic ? result.teamId : null,
               teamShiftGroupId: result.isPublic ? uuid.v4() : null,
               targetUserId: plan.targetUserId,
+              targetUserName: _optimisticTargetUserName(plan.targetUserId),
             ),
           );
         }
@@ -730,6 +801,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
             teamId: result.isPublic ? result.teamId : null,
             teamShiftGroupId: sharedGroupId,
             targetUserId: targetUserId,
+            targetUserName: _optimisticTargetUserName(targetUserId),
           ),
         );
       }
@@ -743,13 +815,6 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     return isItalian
         ? 'Creati $createdCount turni con successo.'
         : 'Created $createdCount shifts successfully.';
-  }
-
-  String _bulkCreateErrorFallback(BuildContext context, int requestedCount) {
-    final isItalian = _isItalian(context);
-    return isItalian
-        ? 'Non siamo riusciti a salvare tutti i $requestedCount turni richiesti. Nessun turno e stato creato.'
-        : 'We could not save all $requestedCount requested shifts. No shifts were created.';
   }
 
   Future<void> _createAssignments(
@@ -783,27 +848,25 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       return;
     }
 
-    try {
-      await _shiftRepository.assignBatch(requests: requests);
-      if (!mounted || !context.mounted) {
-        return;
-      }
-      AppSnackBar.showSuccess(
-        context,
-        _bulkCreateSuccessMessage(context, requests.length),
-      );
-      _loadAssignments();
-    } catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-      AppSnackBar.showResolvedError(
-        context,
-        error,
-        fallback: _bulkCreateErrorFallback(context, requests.length),
-      );
-      _loadAssignments();
+    shiftBloc.add(AssignShiftBatchEvent(requests: requests));
+  }
+
+  String? _optimisticTargetUserName(String? userId) {
+    final normalizedUserId = userId?.trim();
+    if (normalizedUserId == null || normalizedUserId.isEmpty) {
+      return null;
     }
+    for (final members in _teamMembersByTeamId.values) {
+      for (final member in members) {
+        if (member.teamMember.userId?.trim() == normalizedUserId) {
+          final label = _previewUserLabel(member).trim();
+          if (label.isNotEmpty) {
+            return label;
+          }
+        }
+      }
+    }
+    return normalizedUserId == _currentUid ? _currentEmail : null;
   }
 
   bool _hasPendingAssignmentChangeRequest(ShiftAssignmentEntity assignment) {
@@ -1006,6 +1069,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                 _upsertAssignment(state.assignment);
               }
             }
+            if (state is ShiftBatchAssigned) {
+              AppSnackBar.showSuccess(
+                context,
+                _bulkCreateSuccessMessage(context, state.createdCount),
+              );
+            }
             if (state is ShiftAssignmentUpdated) {
               final isSyncing = context
                   .read<ShiftBloc>()
@@ -1035,9 +1104,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                 _teams = state.teams;
                 final selectedTeamId = _selectedCalendarTeamId;
                 if (selectedTeamId != null &&
-                    !_manageableTeams.any(
-                      (team) => team.team.id == selectedTeamId,
-                    )) {
+                    !_teams.any((team) => team.id == selectedTeamId)) {
                   _selectedCalendarTeamId = null;
                 }
               });
@@ -1057,12 +1124,17 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                       : null);
               if (teamId != null) {
                 _loadingTeamMemberIds.remove(teamId);
+                final shouldRefreshAssignments =
+                    _selectedCalendarTeamId?.trim().isNotEmpty == true &&
+                    teamId == _selectedCalendarTeamId?.trim();
                 setState(() {
                   _teamMembersByTeamId[teamId] = state.members
                       .map((member) => TeamMemberforView(teamMember: member))
                       .toList();
                 });
-                _loadAssignments();
+                if (shouldRefreshAssignments) {
+                  _loadAssignments();
+                }
               }
             }
             if (state is TeamMemberError) {
@@ -1415,7 +1487,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
           .where((team) => team.team.id == request.teamId)
           .map((team) => team.members)
           .firstOrNull;
-      final result = await ShiftAutoPlanPreviewPage.show(
+      final confirmation = await ShiftAutoPlanPreviewPage.show(
         context,
         request: request,
         preview: preview,
@@ -1428,16 +1500,24 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
         teamName: teamName,
         userLabelsById: _buildPreviewUserLabels(teamMembers),
       );
-      if (result == null || !mounted || !context.mounted) {
+      if (confirmation == null || !mounted || !context.mounted) {
         return;
       }
+      final result = confirmation.result;
+      final focusedMonth = DateTime(request.from.year, request.from.month, 1);
       if (!mounted || !context.mounted) {
         return;
       }
       setState(() {
         _selectedCalendarTeamId = request.teamId;
-        _focusedMonth = DateTime(request.from.year, request.from.month, 1);
+        _focusedMonth = focusedMonth;
       });
+      _applyOptimisticAutoPlanAssignments(
+        teamId: request.teamId,
+        from: request.from,
+        to: request.to,
+        assignments: confirmation.assignments,
+      );
       _loadAssignments();
       unawaited(_loadShiftAbsenceStatuses());
 

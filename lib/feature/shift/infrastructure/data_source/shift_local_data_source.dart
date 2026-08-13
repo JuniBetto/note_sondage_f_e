@@ -11,6 +11,7 @@ class ShiftLocalDataSource {
   static const String _assignmentsBoxPrefix = 'shift_assignments_box';
   static const String _profilesKey = 'profiles';
   static const String _assignmentsKey = 'assignments';
+  static const String defaultAssignmentsRequestKey = '__default__';
 
   String _suffix() {
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -44,6 +45,34 @@ class ShiftLocalDataSource {
     }
     return Hive.openBox<String>(_assignmentsBoxName);
   }
+
+  static String buildAssignmentsRequestKey({
+    required DateTime from,
+    required DateTime to,
+    List<String>? visibleTeamIds,
+    List<String>? visibleUserIds,
+  }) {
+    final normalizedTeamIds =
+        (visibleTeamIds ?? const <String>[])
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toList()
+          ..sort();
+    final normalizedUserIds =
+        (visibleUserIds ?? const <String>[])
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toList()
+          ..sort();
+
+    return '${from.year}-${from.month}-${from.day}:'
+        '${to.year}-${to.month}-${to.day}:'
+        '${normalizedTeamIds.join(",")}:'
+        '${normalizedUserIds.join(",")}';
+  }
+
+  String _assignmentsCacheKey(String requestKey) =>
+      '$_assignmentsKey::$requestKey';
 
   Future<void> saveProfiles(List<ShiftProfileEntity> profiles) async {
     final box = await _openProfilesBox();
@@ -95,7 +124,10 @@ class ShiftLocalDataSource {
     }).toList();
   }
 
-  Future<void> saveAssignments(List<ShiftAssignmentEntity> assignments) async {
+  Future<void> saveAssignments(
+    List<ShiftAssignmentEntity> assignments, {
+    String requestKey = defaultAssignmentsRequestKey,
+  }) async {
     final box = await _openAssignmentsBox();
     final payload = assignments
         .map(
@@ -120,15 +152,39 @@ class ShiftLocalDataSource {
           },
         )
         .toList();
-    await box.put(_assignmentsKey, jsonEncode(payload));
+    await box.put(_assignmentsCacheKey(requestKey), jsonEncode(payload));
+  }
+
+  Future<void> invalidateAssignmentCaches({String? keepRequestKey}) async {
+    final box = await _openAssignmentsBox();
+    final keepCacheKey = keepRequestKey == null || keepRequestKey.isEmpty
+        ? null
+        : _assignmentsCacheKey(keepRequestKey);
+    final keysToDelete = box.keys
+        .whereType<String>()
+        .where(
+          (key) =>
+              (key == _assignmentsKey ||
+                  key.startsWith('$_assignmentsKey::')) &&
+              key != keepCacheKey,
+        )
+        .toList(growable: false);
+    if (keysToDelete.isNotEmpty) {
+      await box.deleteAll(keysToDelete);
+    }
   }
 
   Future<List<ShiftAssignmentEntity>> getAssignments({
     DateTime? from,
     DateTime? to,
+    String requestKey = defaultAssignmentsRequestKey,
   }) async {
     final box = await _openAssignmentsBox();
-    final raw = box.get(_assignmentsKey);
+    final raw =
+        box.get(_assignmentsCacheKey(requestKey)) ??
+        (requestKey == defaultAssignmentsRequestKey
+            ? box.get(_assignmentsKey)
+            : null);
     if (raw == null || raw.isEmpty) {
       return const <ShiftAssignmentEntity>[];
     }

@@ -16,7 +16,7 @@ void main() {
           statusCode: 400,
           data: <String, dynamic>{
             'errorMessage':
-                'Errore downstream : {"status":400,"message":"Questo utente ha gia un turno personale o dello stesso team che si sovrappone nello stesso intervallo."}',
+                'Errore downstream : {"status":400,"message":"Questo utente ha gia un turno personale o dello stesso team nello stesso giorno o in sovrapposizione con il turno richiesto."}',
           },
         ),
         type: DioExceptionType.badResponse,
@@ -29,7 +29,7 @@ void main() {
 
       expect(
         message,
-        'Questo utente ha gia un turno personale o dello stesso team che si sovrappone nello stesso intervallo.',
+        'Questo utente ha gia un turno personale o dello stesso team nello stesso giorno o in sovrapposizione con il turno richiesto.',
       );
     });
 

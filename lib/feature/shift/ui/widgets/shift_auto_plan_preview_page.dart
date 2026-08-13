@@ -66,7 +66,7 @@ class ShiftAutoPlanPreviewPage extends StatefulWidget {
   final Map<String, String> userLabelsById;
   final bool compact;
 
-  static Future<ShiftAutoPlanResultEntity?> show(
+  static Future<ShiftAutoPlanPreviewConfirmationResult?> show(
     BuildContext context, {
     required ShiftAutoPlanRequestEntity request,
     required ShiftAutoPlanPreviewEntity preview,
@@ -83,7 +83,7 @@ class ShiftAutoPlanPreviewPage extends StatefulWidget {
     Map<String, String> userLabelsById = const {},
     bool compact = false,
   }) {
-    return Navigator.of(context).push<ShiftAutoPlanResultEntity>(
+    return Navigator.of(context).push<ShiftAutoPlanPreviewConfirmationResult>(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (context) => ShiftAutoPlanPreviewPage(
@@ -560,7 +560,14 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pop(result);
+      Navigator.of(context).pop(
+        ShiftAutoPlanPreviewConfirmationResult(
+          result: result,
+          assignments: List<ShiftAssignmentEntity>.unmodifiable(
+            _calendarAssignments,
+          ),
+        ),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -1006,6 +1013,16 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
 
     return null;
   }
+}
+
+class ShiftAutoPlanPreviewConfirmationResult {
+  const ShiftAutoPlanPreviewConfirmationResult({
+    required this.result,
+    required this.assignments,
+  });
+
+  final ShiftAutoPlanResultEntity result;
+  final List<ShiftAssignmentEntity> assignments;
 }
 
 class _PendingChangesCard extends StatelessWidget {

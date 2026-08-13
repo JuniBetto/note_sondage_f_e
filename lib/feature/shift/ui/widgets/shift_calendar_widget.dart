@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_assignment_day_visibility.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/theme/text_theme.dart';
@@ -55,8 +56,17 @@ class ShiftCalendarWidget extends StatelessWidget {
     // Map date → assignments for O(1) lookup
     final assignMap = <String, List<ShiftAssignmentEntity>>{};
     for (final a in assignments) {
-      final key = '${a.shiftDate.year}-${a.shiftDate.month}-${a.shiftDate.day}';
-      assignMap.putIfAbsent(key, () => []).add(a);
+      for (final visibleDate in visibleDatesForAssignment(a)) {
+        final key =
+            '${visibleDate.year}-${visibleDate.month}-${visibleDate.day}';
+        final dayAssignments = assignMap.putIfAbsent(
+          key,
+          () => <ShiftAssignmentEntity>[],
+        );
+        if (!dayAssignments.any((existing) => existing.id == a.id)) {
+          dayAssignments.add(a);
+        }
+      }
     }
     final absenceMap = <String, List<ShiftAbsenceStatus>>{};
     for (final status in absenceStatuses) {
@@ -495,10 +505,14 @@ class _DayCell extends StatelessWidget {
                             Text(
                               _timeRangeLabel(item),
                               textAlign: TextAlign.center,
-                              style:(!kIsWeb? textTheme.largeText:textTheme.bodySmall)!.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
+                              style:
+                                  (!kIsWeb
+                                          ? textTheme.largeText
+                                          : textTheme.bodySmall)!
+                                      .copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -678,7 +692,7 @@ class _MiniBadge extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(
-          fontSize: (!kIsWeb? 7:12),
+          fontSize: (!kIsWeb ? 7 : 12),
           fontWeight: FontWeight.w800,
           color: Colors.white,
           height: 1,
