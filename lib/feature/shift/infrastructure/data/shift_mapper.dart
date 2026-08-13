@@ -191,6 +191,12 @@ class ShiftMapper {
       warnings: (json['warnings'] as List<dynamic>? ?? const [])
           .map((item) => item.toString())
           .toList(),
+      issues: (json['issues'] as List<dynamic>? ?? const [])
+          .map(
+            (item) =>
+                autoPlanIssueFromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList(),
       days: (json['days'] as List<dynamic>? ?? const [])
           .map(
             (item) => autoPlanPreviewDayFromJson(
@@ -226,10 +232,67 @@ class ShiftMapper {
       _ => ShiftAutoPlanPreviewAction.create,
     };
     return ShiftAutoPlanPreviewAssignmentEntity(
+      previewItemId: (json['previewItemId'] as String?) ?? '',
+      sourceAssignmentId: _nullableString(json['sourceAssignmentId']),
       action: action,
       assignment: assignmentFromJson(
         Map<String, dynamic>.from(json['assignment'] as Map),
       ),
     );
+  }
+
+  static ShiftAutoPlanIssueEntity autoPlanIssueFromJson(
+    Map<String, dynamic> json,
+  ) {
+    final rawSeverity = (json['severity'] as String?)?.trim().toUpperCase();
+    final severity = switch (rawSeverity) {
+      'BLOCKING' => ShiftAutoPlanIssueSeverity.blocking,
+      _ => ShiftAutoPlanIssueSeverity.warning,
+    };
+    final shiftDateRaw = _nullableString(json['shiftDate']);
+    return ShiftAutoPlanIssueEntity(
+      code: (json['code'] as String?) ?? '',
+      severity: severity,
+      message: (json['message'] as String?) ?? '',
+      userId: _nullableString(json['userId']),
+      shiftDate: shiftDateRaw == null ? null : DateTime.parse(shiftDateRaw),
+      teamId: _nullableString(json['teamId']),
+      profileId: _nullableString(json['profileId']),
+      profileName: _nullableString(json['profileName']),
+    );
+  }
+
+  static Map<String, dynamic> autoPlanPreviewDraftAssignmentToJson(
+    ShiftAutoPlanDraftAssignmentEntity assignment,
+  ) {
+    String formatTime(TimeOfDay t) =>
+        '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
+    return {
+      'previewItemId': assignment.previewItemId,
+      if (assignment.sourceAssignmentId != null)
+        'sourceAssignmentId': assignment.sourceAssignmentId,
+      'userId': assignment.assignment.userId,
+      'shiftDate': assignment.assignment.shiftDate
+          .toIso8601String()
+          .split('T')
+          .first,
+      if (assignment.assignment.profileId != null)
+        'profileId': assignment.assignment.profileId,
+      if (assignment.assignment.profileName != null)
+        'profileName': assignment.assignment.profileName,
+      if (assignment.assignment.profileColor != null)
+        'profileColor': assignment.assignment.profileColor,
+      'startTime': formatTime(assignment.assignment.startTime),
+      'endTime': formatTime(assignment.assignment.endTime),
+      'overnight': assignment.assignment.overnight,
+      if (assignment.assignment.note != null)
+        'note': assignment.assignment.note,
+      'alarmOffsets': assignment.assignment.alarmOffsets,
+      if (assignment.assignment.teamShiftGroupId != null)
+        'teamShiftGroupId': assignment.assignment.teamShiftGroupId,
+      'memberEditUnlocked': assignment.assignment.memberEditUnlocked,
+      'memberChangeRequestPending':
+          assignment.assignment.memberChangeRequestPending,
+    };
   }
 }

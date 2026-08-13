@@ -127,7 +127,7 @@ class _TeamManagementLoadingSpinnerState
                 color: accent,
                 lineColor: accent.withValues(alpha: 0.75),
                 fontSize: widget.size * 0.07,
-                width: widget.size * 0.78,
+                width: widget.size * 0.9,
                 shadowColor: subtleGlow,
               ),
               if (widget.message case final message?) ...[
@@ -311,40 +311,44 @@ class _MorphingSubtitle extends StatelessWidget {
         children: [
           _AccentLine(color: lineColor, width: width * 0.16 * linePulse),
           SizedBox(width: width * 0.035),
-          Flexible(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var index = 0; index < letters.length; index++)
-                  Transform.translate(
-                    offset: Offset(
-                      0,
-                      math.sin(progress * math.pi * 2 + (index * 0.35)) * 2.2,
-                    ),
-                    child: Text(
-                      letters[index],
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: fontSize,
-                        height: 1,
-                        letterSpacing: fontSize * 0.18,
-                        fontWeight: FontWeight.w700,
-                        color: Color.lerp(
-                          color.withValues(alpha: 0.7),
-                          color,
-                          ((math.sin(progress * math.pi * 2 + index) + 1) / 2),
-                        ),
-                        shadows: [
-                          Shadow(
-                            color: shadowColor.withValues(alpha: 0.55),
-                            blurRadius: 10,
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var index = 0; index < letters.length; index++)
+                    Transform.translate(
+                      offset: Offset(
+                        0,
+                        math.sin(progress * math.pi * 2 + (index * 0.35)) * 2.2,
+                      ),
+                      child: Text(
+                        letters[index],
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: fontSize,
+                          height: 1,
+                          letterSpacing: fontSize * 0.12,
+                          fontWeight: FontWeight.w700,
+                          color: Color.lerp(
+                            color.withValues(alpha: 0.7),
+                            color,
+                            ((math.sin(progress * math.pi * 2 + index) + 1) /
+                                2),
                           ),
-                        ],
+                          shadows: [
+                            Shadow(
+                              color: shadowColor.withValues(alpha: 0.55),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
           SizedBox(width: width * 0.035),

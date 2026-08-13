@@ -20,6 +20,12 @@ Before going live, also verify:
 - the public web domain is added to Firebase / Google authorized domains
 - the client id in [web/index.html](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/web/index.html) is the one you want to keep for production web sign-in
 
+Loader asset note:
+
+- the pre-Flutter loader in [web/index.html](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/note_sondage_f_e/web/index.html) runs before Flutter asset resolution is active
+- for this reason it now tries both the production web-build path `assets/assets/...` and the dev-style path `assets/...`
+- if the centered logo is missing only in production, rebuild and redeploy the frontend image so the updated `index.html` is included
+
 Current public production values:
 
 - marketing:

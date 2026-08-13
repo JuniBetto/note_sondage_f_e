@@ -264,7 +264,12 @@
         </div>
         <div class="tm-mark-wrap">
           <div class="tm-mark-glow"></div>
-          <img class="tm-mark" src="assets/images/logo.png" alt="TeamManagement logo" />
+          <img
+            id="tm-loader-logo"
+            class="tm-mark"
+            src="assets/assets/images/logo.png"
+            alt="TeamManagement logo"
+          />
         </div>
         <div class="tm-word">
           <span>T</span>
@@ -279,6 +284,29 @@
       </div>
     </div>
     <script>
+      (function () {
+        var logo = document.getElementById("tm-loader-logo");
+        if (!logo) return;
+
+        var logoCandidates = [
+          "assets/assets/images/logo.png",
+          "assets/images/logo.png",
+          "assets/assets/images/team_management_logo.svg",
+          "assets/images/team_management_logo.svg",
+        ];
+
+        function loadCandidate(index) {
+          if (index >= logoCandidates.length) return;
+
+          logo.onerror = function () {
+            loadCandidate(index + 1);
+          };
+          logo.src = logoCandidates[index];
+        }
+
+        loadCandidate(0);
+      })();
+
       window.addEventListener("flutter-first-frame", function () {
         document.body.classList.add("app-loaded");
         window.setTimeout(function () {

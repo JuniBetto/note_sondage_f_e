@@ -4,6 +4,8 @@ enum ShiftAutoPlannerMode { rotation, coverage }
 
 enum ShiftAutoPlanPreviewAction { create, preserve, delete }
 
+enum ShiftAutoPlanIssueSeverity { warning, blocking }
+
 class ShiftAutoPlanTemplateEntity {
   const ShiftAutoPlanTemplateEntity({
     required this.profileId,
@@ -50,10 +52,14 @@ class ShiftAutoPlanResultEntity {
 
 class ShiftAutoPlanPreviewAssignmentEntity {
   const ShiftAutoPlanPreviewAssignmentEntity({
+    required this.previewItemId,
+    this.sourceAssignmentId,
     required this.action,
     required this.assignment,
   });
 
+  final String previewItemId;
+  final String? sourceAssignmentId;
   final ShiftAutoPlanPreviewAction action;
   final ShiftAssignmentEntity assignment;
 }
@@ -77,6 +83,7 @@ class ShiftAutoPlanPreviewEntity {
     required this.deletedAssignmentsCountPreview,
     required this.uncoveredSlotsCount,
     required this.warnings,
+    required this.issues,
     required this.days,
   });
 
@@ -87,5 +94,52 @@ class ShiftAutoPlanPreviewEntity {
   final int deletedAssignmentsCountPreview;
   final int uncoveredSlotsCount;
   final List<String> warnings;
+  final List<ShiftAutoPlanIssueEntity> issues;
   final List<ShiftAutoPlanPreviewDayEntity> days;
+}
+
+class ShiftAutoPlanIssueEntity {
+  const ShiftAutoPlanIssueEntity({
+    required this.code,
+    required this.severity,
+    required this.message,
+    this.userId,
+    this.shiftDate,
+    this.teamId,
+    this.profileId,
+    this.profileName,
+  });
+
+  final String code;
+  final ShiftAutoPlanIssueSeverity severity;
+  final String message;
+  final String? userId;
+  final DateTime? shiftDate;
+  final String? teamId;
+  final String? profileId;
+  final String? profileName;
+}
+
+class ShiftAutoPlanDraftAssignmentEntity {
+  const ShiftAutoPlanDraftAssignmentEntity({
+    required this.previewItemId,
+    this.sourceAssignmentId,
+    required this.assignment,
+  });
+
+  final String previewItemId;
+  final String? sourceAssignmentId;
+  final ShiftAssignmentEntity assignment;
+
+  ShiftAutoPlanDraftAssignmentEntity copyWith({
+    String? previewItemId,
+    String? sourceAssignmentId,
+    ShiftAssignmentEntity? assignment,
+  }) {
+    return ShiftAutoPlanDraftAssignmentEntity(
+      previewItemId: previewItemId ?? this.previewItemId,
+      sourceAssignmentId: sourceAssignmentId ?? this.sourceAssignmentId,
+      assignment: assignment ?? this.assignment,
+    );
+  }
 }

@@ -8,11 +8,23 @@ class ShiftAutoPlanPreviewDaySheetItem {
     required this.title,
     required this.subtitle,
     required this.action,
+    this.onEdit,
+    this.onRemove,
+    this.onRestore,
+    this.editLabel,
+    this.removeLabel,
+    this.restoreLabel,
   });
 
   final String title;
   final String subtitle;
   final ShiftAutoPlanPreviewAction action;
+  final VoidCallback? onEdit;
+  final VoidCallback? onRemove;
+  final VoidCallback? onRestore;
+  final String? editLabel;
+  final String? removeLabel;
+  final String? restoreLabel;
 }
 
 Future<void> showShiftAutoPlanPreviewDaySheet(
@@ -23,6 +35,8 @@ Future<void> showShiftAutoPlanPreviewDaySheet(
   required List<ShiftAutoPlanPreviewDaySheetItem> items,
   required String Function(ShiftAutoPlanPreviewAction action)
   actionLabelBuilder,
+  String? primaryActionLabel,
+  VoidCallback? onPrimaryAction,
 }) {
   final theme = Theme.of(context);
   return showModalBottomSheet<void>(
@@ -74,6 +88,16 @@ Future<void> showShiftAutoPlanPreviewDaySheet(
                         .toList(),
                   ),
                 ),
+                if (onPrimaryAction != null && primaryActionLabel != null) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonal(
+                      onPressed: onPrimaryAction,
+                      child: Text(primaryActionLabel),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -126,6 +150,32 @@ class _PreviewItem extends StatelessWidget {
                     fontSize: compact ? 12.5 : 13.5,
                   ),
                 ),
+                if (item.onEdit != null ||
+                    item.onRemove != null ||
+                    item.onRestore != null) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (item.onEdit != null)
+                        OutlinedButton(
+                          onPressed: item.onEdit,
+                          child: Text(item.editLabel ?? 'Edit'),
+                        ),
+                      if (item.onRemove != null)
+                        OutlinedButton(
+                          onPressed: item.onRemove,
+                          child: Text(item.removeLabel ?? 'Remove'),
+                        ),
+                      if (item.onRestore != null)
+                        FilledButton.tonal(
+                          onPressed: item.onRestore,
+                          child: Text(item.restoreLabel ?? 'Restore'),
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

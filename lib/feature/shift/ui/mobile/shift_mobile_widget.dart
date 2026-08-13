@@ -21,6 +21,7 @@ import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dar
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments_list.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_loading_overlay.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_planner_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_auto_plan_preview_page.dart';
@@ -73,6 +74,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   Map<String, ShiftAbsenceStatus> _absenceStatusesByKey = const {};
   Set<String> _archivedAssignmentIds = <String>{};
   bool _showArchivedOnly = false;
+  bool _autoPlannerPreviewLoading = false;
   bool _tutorialScheduled = false;
   String? _selectedCalendarTeamId;
 
@@ -1144,17 +1146,19 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           },
         ),
       ],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
 
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                /* Icon(
+                Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    /* Icon(
                   Icons.calendar_month_rounded,
                   color: colorScheme.descriptionColor,
                   size: 18,
@@ -1166,149 +1170,156 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                     context,
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),*/
-                // const Spacer(),
-                if (_canManageAnyTeam) ...[
-                  IconButton.outlined(
-                    tooltip: _isItalian(context)
-                        ? 'Generazione automatica turni'
-                        : 'Automatic shift planner',
-                    onPressed: () => _openAutoPlanner(context),
-                    icon: Icon(
-                      Icons.auto_awesome_outlined,
-                      size: 18,
-                      color: colorScheme.textInvertedColor,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: navButtonColor,
-                      side: BorderSide(color: navButtonColor),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton.outlined(
-                    tooltip: loc.shiftTeamReportTooltip,
-                    onPressed: () => _openTeamReport(context),
-                    icon: Icon(
-                      Icons.assessment_outlined,
-                      size: 18,
-                      color: colorScheme.textInvertedColor,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: navButtonColor,
-                      side: BorderSide(color: navButtonColor),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                ],
-                IconButton.outlined(
-                  tooltip: _isItalian(context)
-                      ? 'Profili turno'
-                      : 'Shift profiles',
-                  onPressed: () => _openProfilesSheet(context),
-                  icon: Icon(
-                    Icons.palette_outlined,
-                    color: colorScheme.textInvertedColor,
-                    size: 18,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: navButtonColor,
-                    side: BorderSide(color: navButtonColor),
-                  ),
-                ),
-                if (_canManageAnyTeam) ...[
-                  const SizedBox(width: 6),
-                  Icon(
-                    Icons.admin_panel_settings_outlined,
-                    size: 16,
-                    color: colorScheme.descriptionColor,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (_canManageAnyTeam && !_showArchivedOnly) ...[
-              ShiftCalendarTeamPicker(
-                teams: _manageableTeams,
-                selectedTeamId: _selectedCalendarTeamId,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCalendarTeamId = value;
-                  });
-                  _loadAssignments();
-                  unawaited(_loadShiftAbsenceStatuses());
-                },
-              ),
-              const SizedBox(height: 12),
-            ],
-            Showcase(
-              key: _archiveToggleKey,
-              title: _isItalian(context)
-                  ? 'Calendario e archivio'
-                  : 'Calendar and archive',
-              description: _isItalian(context)
-                  ? 'Usa questo selettore per passare dal calendario attivo all\'archivio dei turni nascosti.'
-                  : 'Use this switcher to move between the active calendar and the archive of hidden shifts.',
-              child: ArchiveViewToggle(
-                showArchivedOnly: _showArchivedOnly,
-                primaryCount: foregroundAssignments.length,
-                archivedCount: archivedAssignments.length,
-                primaryLabel: 'Calendario',
-                archivedLabel: 'Archivio',
-                onChanged: (value) {
-                  setState(() => _showArchivedOnly = value);
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Showcase(
-                key: _calendarKey,
-                title: _showArchivedOnly
-                    ? (_isItalian(context) ? 'Archivio turni' : 'Shift archive')
-                    : (_isItalian(context)
-                          ? 'Calendario turni'
-                          : 'Shift calendar'),
-                description: _showArchivedOnly
-                    ? (_isItalian(context)
-                          ? 'Qui ritrovi i turni archiviati e puoi riaprirli quando servono.'
-                          : 'This view shows archived shifts and lets you restore them when needed.')
-                    : (_isItalian(context)
-                          ? 'Tocca un giorno per creare o modificare i turni disponibili in quella data.'
-                          : 'Tap a day to create or edit the shifts available on that date.'),
-                child: _showArchivedOnly
-                    ? ShiftArchivedAssignmentsList(
-                        assignments: archivedAssignments,
-                        compact: false,
-                        onOpen: (assignment) {
-                          _openDialogForAssignment(
-                            context,
-                            assignment.shiftDate,
-                            existing: assignment,
-                          );
-                        },
-                        onRestore: (assignment) {
-                          _setAssignmentArchived(assignment, false);
-                        },
-                      )
-                    : SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: ShiftCalendarWidget(
-                          assignments: foregroundAssignments,
-                          absenceStatuses: _absenceStatusesByKey.values.toList(
-                            growable: false,
-                          ),
-                          syncingAssignmentIds: context
-                              .read<ShiftBloc>()
-                              .syncingAssignmentIds,
-                          focusedMonth: _focusedMonth,
-                          onMonthChanged: _onMonthChanged,
-                          onDayTap: (date, assignments) =>
-                              _onDayTap(context, date, assignments),
+                    // const Spacer(),
+                    if (_canManageAnyTeam) ...[
+                      IconButton.outlined(
+                        tooltip: _isItalian(context)
+                            ? 'Generazione automatica turni'
+                            : 'Automatic shift planner',
+                        onPressed: () => _openAutoPlanner(context),
+                        icon: Icon(
+                          Icons.auto_awesome_outlined,
+                          size: 18,
+                          color: colorScheme.textInvertedColor,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: navButtonColor,
+                          side: BorderSide(color: navButtonColor),
                         ),
                       ),
-              ),
+                      const SizedBox(width: 6),
+                      IconButton.outlined(
+                        tooltip: loc.shiftTeamReportTooltip,
+                        onPressed: () => _openTeamReport(context),
+                        icon: Icon(
+                          Icons.assessment_outlined,
+                          size: 18,
+                          color: colorScheme.textInvertedColor,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: navButtonColor,
+                          side: BorderSide(color: navButtonColor),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    IconButton.outlined(
+                      tooltip: _isItalian(context)
+                          ? 'Profili turno'
+                          : 'Shift profiles',
+                      onPressed: () => _openProfilesSheet(context),
+                      icon: Icon(
+                        Icons.palette_outlined,
+                        color: colorScheme.textInvertedColor,
+                        size: 18,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: navButtonColor,
+                        side: BorderSide(color: navButtonColor),
+                      ),
+                    ),
+                    if (_canManageAnyTeam) ...[
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.admin_panel_settings_outlined,
+                        size: 16,
+                        color: colorScheme.descriptionColor,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_canManageAnyTeam && !_showArchivedOnly) ...[
+                  ShiftCalendarTeamPicker(
+                    teams: _manageableTeams,
+                    selectedTeamId: _selectedCalendarTeamId,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCalendarTeamId = value;
+                      });
+                      _loadAssignments();
+                      unawaited(_loadShiftAbsenceStatuses());
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Showcase(
+                  key: _archiveToggleKey,
+                  title: _isItalian(context)
+                      ? 'Calendario e archivio'
+                      : 'Calendar and archive',
+                  description: _isItalian(context)
+                      ? 'Usa questo selettore per passare dal calendario attivo all\'archivio dei turni nascosti.'
+                      : 'Use this switcher to move between the active calendar and the archive of hidden shifts.',
+                  child: ArchiveViewToggle(
+                    showArchivedOnly: _showArchivedOnly,
+                    primaryCount: foregroundAssignments.length,
+                    archivedCount: archivedAssignments.length,
+                    primaryLabel: 'Calendario',
+                    archivedLabel: 'Archivio',
+                    onChanged: (value) {
+                      setState(() => _showArchivedOnly = value);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Showcase(
+                    key: _calendarKey,
+                    title: _showArchivedOnly
+                        ? (_isItalian(context)
+                              ? 'Archivio turni'
+                              : 'Shift archive')
+                        : (_isItalian(context)
+                              ? 'Calendario turni'
+                              : 'Shift calendar'),
+                    description: _showArchivedOnly
+                        ? (_isItalian(context)
+                              ? 'Qui ritrovi i turni archiviati e puoi riaprirli quando servono.'
+                              : 'This view shows archived shifts and lets you restore them when needed.')
+                        : (_isItalian(context)
+                              ? 'Tocca un giorno per creare o modificare i turni disponibili in quella data.'
+                              : 'Tap a day to create or edit the shifts available on that date.'),
+                    child: _showArchivedOnly
+                        ? ShiftArchivedAssignmentsList(
+                            assignments: archivedAssignments,
+                            compact: false,
+                            onOpen: (assignment) {
+                              _openDialogForAssignment(
+                                context,
+                                assignment.shiftDate,
+                                existing: assignment,
+                              );
+                            },
+                            onRestore: (assignment) {
+                              _setAssignmentArchived(assignment, false);
+                            },
+                          )
+                        : SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: ShiftCalendarWidget(
+                              assignments: foregroundAssignments,
+                              absenceStatuses: _absenceStatusesByKey.values
+                                  .toList(growable: false),
+                              syncingAssignmentIds: context
+                                  .read<ShiftBloc>()
+                                  .syncingAssignmentIds,
+                              focusedMonth: _focusedMonth,
+                              onMonthChanged: _onMonthChanged,
+                              onDayTap: (date, assignments) =>
+                                  _onDayTap(context, date, assignments),
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (_autoPlannerPreviewLoading)
+            const Positioned.fill(
+              child: ShiftAutoPlanLoadingOverlay(compact: true),
+            ),
+        ],
       ),
     );
   }
@@ -1342,7 +1353,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   }
 
   bool _isPastDate(DateTime date) {
-    final today = DateTime(2026, 8, 3);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final normalized = DateTime(date.year, date.month, date.day);
     return normalized.isBefore(today);
   }
@@ -1371,7 +1383,11 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     }
 
     try {
+      setState(() => _autoPlannerPreviewLoading = true);
       final preview = await _shiftRepository.previewAutoPlan(request);
+      if (mounted) {
+        setState(() => _autoPlannerPreviewLoading = false);
+      }
       if (!mounted || !context.mounted) {
         return;
       }
@@ -1388,8 +1404,12 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         context,
         request: request,
         preview: preview,
-        onConfirm: () =>
-            _shiftRepository.confirmAutoPlan(preview.snapshotToken),
+        availableProfiles: _profiles,
+        availableTeamMembers: teamMembers ?? const <TeamMemberforView>[],
+        onRecalculate: (snapshotToken, draftAssignments) => _shiftRepository
+            .recalculateAutoPlanPreview(snapshotToken, draftAssignments),
+        onConfirm: (snapshotToken) =>
+            _shiftRepository.confirmAutoPlan(snapshotToken),
         teamName: teamName,
         userLabelsById: _buildPreviewUserLabels(teamMembers),
         compact: true,
@@ -1438,6 +1458,9 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
         );
       }
     } catch (error) {
+      if (mounted) {
+        setState(() => _autoPlannerPreviewLoading = false);
+      }
       if (!mounted || !context.mounted) {
         return;
       }
