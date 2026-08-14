@@ -5,16 +5,26 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_availability_sondage_draft_request_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_replacement_candidate_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
+import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
+import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
+import 'package:note_sondage/feature/sondage/ui/web/widgets/create_sondage_web.dart';
+import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
 import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_replacement_candidates_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_swap_request_dialog.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/anchored_dropdown_overlay.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
+import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 
 String _localizedShiftDayText(
@@ -372,6 +382,14 @@ String _requestShiftSwapButton(BuildContext context) => _localizedShiftDayText(
   es: 'Intercambio de turno',
 );
 
+String _findReplacementButton(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Cerca sostituto',
+  en: 'Find replacement',
+  fr: 'Trouver un remplacement',
+  es: 'Buscar reemplazo',
+);
+
 String _pendingShiftChangeButton(BuildContext context) =>
     _localizedShiftDayText(
       context,
@@ -680,6 +698,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
   bool hasPendingPublicShiftChangeRequest = false,
   bool canEditApprovedPublicShift = false,
   Map<String, ShiftAbsenceStatus> absenceStatusesByUserId = const {},
+  List<String> suggestedUserIds = const <String>[],
 
   /// Teams where the current user is owner (to enable team assignment).
   List<TeamEntityForView> ownerTeams = const [],
@@ -697,6 +716,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
     hasPendingPublicShiftChangeRequest: hasPendingPublicShiftChangeRequest,
     canEditApprovedPublicShift: canEditApprovedPublicShift,
     absenceStatusesByUserId: absenceStatusesByUserId,
+    suggestedUserIds: suggestedUserIds,
     ownerTeams: ownerTeams,
     useDialogLayout: isWideLayout,
   );
@@ -734,6 +754,7 @@ class _ShiftDaySheet extends StatefulWidget {
     this.hasPendingPublicShiftChangeRequest = false,
     this.canEditApprovedPublicShift = false,
     this.absenceStatusesByUserId = const {},
+    this.suggestedUserIds = const <String>[],
     this.ownerTeams = const [],
     this.useDialogLayout = false,
   });
@@ -749,6 +770,7 @@ class _ShiftDaySheet extends StatefulWidget {
   final bool hasPendingPublicShiftChangeRequest;
   final bool canEditApprovedPublicShift;
   final Map<String, ShiftAbsenceStatus> absenceStatusesByUserId;
+  final List<String> suggestedUserIds;
   final List<TeamEntityForView> ownerTeams;
   final bool useDialogLayout;
 
@@ -761,6 +783,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       GetIt.instance<TeamMemberUseCase>();
   final LocalNotificationService _localNotifications =
       GetIt.instance<LocalNotificationService>();
+  final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
 
   ShiftProfileEntity? _selectedProfile;
   late TimeOfDay _startTime;
@@ -783,6 +806,11 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
   bool _assignToAllMembers = true;
   bool _useMemberSpecificProfiles = false;
   final Map<String, String?> _memberProfileIds = <String, String?>{};
+  bool _loadingReplacementCandidates = false;
+  bool _loadingWorkflowAutoReplaceCandidates = false;
+  List<String> _workflowCompatibleSuggestedUserIds = const <String>[];
+  Map<String, String> _workflowSuggestedCandidateLabels =
+      const <String, String>{};
 
   bool get _hasOwnerTeams => widget.ownerTeams.isNotEmpty;
   bool get _existingHasTeamScope =>
@@ -810,6 +838,15 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       _existingHasTeamScope &&
       !_requestMode &&
       !_approvedSelfEditMode;
+  bool get _canSearchReplacementCandidates =>
+      widget.existing != null &&
+      widget.existing!.isPublic &&
+      _existingHasTeamScope &&
+      !_requestMode &&
+      (widget.canManagePublicShifts ||
+          widget.canRequestPublicShiftChanges ||
+          widget.canRequestAssignmentSwap ||
+          widget.canEditApprovedPublicShift);
   bool get _approvedSelfEditMode =>
       widget.existing != null &&
       widget.existing!.isPublic &&
@@ -823,6 +860,39 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     final teamId = _selectedTeam?.team.id;
     return teamId != null && _loadingTeamIds.contains(teamId);
   }
+
+  List<ShiftTeamMember> get _workflowAutoReplaceMembers {
+    if (_workflowCompatibleSuggestedUserIds.isEmpty) {
+      return const <ShiftTeamMember>[];
+    }
+    final byUserId = <String, ShiftTeamMember>{
+      for (final member in _teamMembers)
+        if (member.userId != null && member.isSelectable)
+          member.userId!: member,
+    };
+    final ordered = <ShiftTeamMember>[];
+    for (final userId in _workflowCompatibleSuggestedUserIds) {
+      final member = byUserId[userId];
+      if (member != null) {
+        ordered.add(member);
+      }
+    }
+    return ordered;
+  }
+
+  ShiftTeamMember? get _primaryWorkflowAutoReplaceMember {
+    final members = _workflowAutoReplaceMembers;
+    if (members.isEmpty) {
+      return null;
+    }
+    return members.first;
+  }
+
+  bool get _canAutoReplaceFromWorkflow =>
+      !_readOnly &&
+      !_requestMode &&
+      widget.existing != null &&
+      _primaryWorkflowAutoReplaceMember?.userId != null;
 
   TeamEntity? _findAnyTeamById(String? teamId) {
     final normalized = teamId?.trim();
@@ -1063,6 +1133,9 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         !widget.canManagePublicShifts &&
         widget.existing != null &&
         widget.existing!.isPublic;
+    if (widget.existing != null && widget.suggestedUserIds.isNotEmpty) {
+      unawaited(_loadWorkflowAutoReplaceCandidates());
+    }
   }
 
   void _enterRequestMode() {
@@ -1097,6 +1170,74 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     return '$day/$month/${date.year}';
+  }
+
+  String _firstWorkflowSuggestedLabel() {
+    for (final value in _workflowSuggestedCandidateLabels.values) {
+      final normalized = value.trim();
+      if (normalized.isNotEmpty) {
+        return normalized;
+      }
+    }
+    return '';
+  }
+
+  String _workflowAutoReplaceTitle(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Copertura dal sondaggio',
+      'fr' => 'Couverture depuis le sondage',
+      'es' => 'Cobertura desde la encuesta',
+      _ => 'Survey coverage',
+    };
+  }
+
+  String _workflowAutoReplaceMessage(BuildContext context) {
+    final primaryMember = _primaryWorkflowAutoReplaceMember;
+    final candidateCount = _workflowAutoReplaceMembers.length;
+    final candidateName =
+        primaryMember?.displayLabel(context) ?? _firstWorkflowSuggestedLabel();
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' =>
+        candidateCount <= 1
+            ? 'Abbiamo trovato un collega disponibile e compatibile dal sondaggio: $candidateName.'
+            : 'Abbiamo trovato $candidateCount colleghi disponibili e compatibili dal sondaggio. Useremo $candidateName come primo candidato senza vincoli.',
+      'fr' =>
+        candidateCount <= 1
+            ? 'Nous avons trouve un collegue disponible et compatible depuis le sondage : $candidateName.'
+            : 'Nous avons trouve $candidateCount collegues disponibles et compatibles depuis le sondage. Nous utiliserons $candidateName comme premier candidat sans contrainte.',
+      'es' =>
+        candidateCount <= 1
+            ? 'Hemos encontrado un companero disponible y compatible desde la encuesta: $candidateName.'
+            : 'Hemos encontrado $candidateCount companeros disponibles y compatibles desde la encuesta. Usaremos a $candidateName como primer candidato sin restricciones.',
+      _ =>
+        candidateCount <= 1
+            ? 'We found one available and compatible teammate from the survey: $candidateName.'
+            : 'We found $candidateCount available and compatible teammates from the survey. We will use $candidateName as the first eligible candidate.',
+    };
+  }
+
+  String _workflowAutoReplaceButtonLabel(BuildContext context) {
+    final primaryMember = _primaryWorkflowAutoReplaceMember;
+    final candidateName =
+        primaryMember?.displayLabel(context) ?? _firstWorkflowSuggestedLabel();
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' =>
+        candidateName.isEmpty
+            ? 'Sostituisci automaticamente'
+            : 'Sostituisci con $candidateName',
+      'fr' =>
+        candidateName.isEmpty
+            ? 'Remplacer automatiquement'
+            : 'Remplacer par $candidateName',
+      'es' =>
+        candidateName.isEmpty
+            ? 'Sustituir automaticamente'
+            : 'Sustituir con $candidateName',
+      _ =>
+        candidateName.isEmpty
+            ? 'Replace automatically'
+            : 'Replace with $candidateName',
+    };
   }
 
   @override
@@ -1164,6 +1305,55 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
     }
   }
 
+  Future<void> _loadWorkflowAutoReplaceCandidates() async {
+    final existing = widget.existing;
+    if (existing == null ||
+        widget.suggestedUserIds.isEmpty ||
+        _loadingWorkflowAutoReplaceCandidates) {
+      return;
+    }
+
+    setState(() {
+      _loadingWorkflowAutoReplaceCandidates = true;
+    });
+    try {
+      final result = await _shiftRepository.findReplacementCandidates(
+        existing.id,
+      );
+      if (!mounted) {
+        return;
+      }
+      final suggestedUserIds = widget.suggestedUserIds
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toSet();
+      final compatibleSuggestedCandidates = result.candidates
+          .where((candidate) => candidate.compatible)
+          .where(
+            (candidate) => suggestedUserIds.contains(candidate.userId.trim()),
+          )
+          .toList(growable: false);
+      setState(() {
+        _workflowCompatibleSuggestedUserIds = compatibleSuggestedCandidates
+            .map((candidate) => candidate.userId.trim())
+            .where((value) => value.isNotEmpty)
+            .toList(growable: false);
+        _workflowSuggestedCandidateLabels = {
+          for (final candidate in compatibleSuggestedCandidates)
+            candidate.userId.trim(): candidate.displayName,
+        };
+        _loadingWorkflowAutoReplaceCandidates = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loadingWorkflowAutoReplaceCandidates = false;
+      });
+    }
+  }
+
   void _applyProfile(ShiftProfileEntity p) {
     setState(() {
       _selectedProfile = p;
@@ -1202,6 +1392,21 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         scheduledDates: _scheduledDates,
       ),
     );
+  }
+
+  Future<void> _autoReplaceFromWorkflow() async {
+    final member = _primaryWorkflowAutoReplaceMember;
+    if (member?.userId == null) {
+      return;
+    }
+    setState(() {
+      _assignToAllMembers = false;
+      _useMemberSpecificProfiles = false;
+      _selectedMemberIds
+        ..clear()
+        ..add(member!.userId!);
+    });
+    await _submitShiftDay();
   }
 
   void _submitShiftChangeRequest() {
@@ -1288,6 +1493,302 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         swapNote: result.note,
       ),
     );
+  }
+
+  Future<void> _openReplacementCandidates() async {
+    final existing = widget.existing;
+    if (existing == null || _loadingReplacementCandidates) {
+      return;
+    }
+
+    setState(() {
+      _loadingReplacementCandidates = true;
+    });
+    try {
+      final response = await _shiftRepository.findReplacementCandidates(
+        existing.id,
+      );
+      if (!mounted) {
+        return;
+      }
+      await showShiftReplacementCandidatesDialog(
+        context: context,
+        result: response,
+        onOpenAvailability: () => _openAvailabilitySondageDraft(response),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: _localizedShiftDayText(
+          context,
+          it: 'Non siamo riusciti a caricare i candidati per la copertura del turno.',
+          en: 'We could not load replacement candidates for this shift.',
+          fr: 'Nous n\'avons pas pu charger les candidats pour couvrir ce quart.',
+          es: 'No hemos podido cargar los candidatos para cubrir este turno.',
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingReplacementCandidates = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _openAvailabilitySondageDraft(
+    ShiftReplacementCandidatesEntity result,
+  ) async {
+    final prefill = _buildAvailabilitySondagePrefill(result);
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    _showAvailabilityDraftLoading();
+
+    try {
+      final draft = await _shiftRepository.createAvailabilitySondageDraft(
+        result.assignmentId,
+        ShiftAvailabilitySondageDraftRequestEntity(
+          title: prefill.question,
+          description: prefill.description,
+          options: prefill.options,
+          allowMultipleResponses: prefill.allowMultipleResponses,
+          expiryDate: prefill.expiryDate,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      await _openAvailabilitySondageEditor(draft);
+      return;
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint(
+          'createAvailabilitySondageDraft fallback triggered: $error\n$stackTrace',
+        );
+      }
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        AppSnackBar.showWarning(
+          context,
+          _localizedShiftDayText(
+            context,
+            it: 'Creazione automatica non riuscita. Apro il form precompilato.',
+            en: 'Automatic draft creation failed. Opening the prefilled form.',
+            fr: 'La creation automatique a echoue. Ouverture du formulaire pre-rempli.',
+            es: 'La creacion automatica ha fallado. Se abre el formulario precargado.',
+          ),
+        );
+      }
+    } finally {
+      if (rootNavigator.mounted && rootNavigator.canPop()) {
+        rootNavigator.pop();
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+    await _openAvailabilitySondagePrefillForm(prefill);
+  }
+
+  void _showAvailabilityDraftLoading() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    _localizedShiftDayText(
+                      dialogContext,
+                      it: 'Sto preparando il draft del sondaggio...',
+                      en: 'Preparing the survey draft...',
+                      fr: 'Preparation du brouillon du sondage...',
+                      es: 'Preparando el borrador de la encuesta...',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openAvailabilitySondageEditor(SondageEntity draft) async {
+    final title = _localizedShiftDayText(
+      context,
+      it: 'Modifica disponibilita',
+      en: 'Edit availability survey',
+      fr: 'Modifier le sondage de disponibilite',
+      es: 'Editar encuesta de disponibilidad',
+    );
+
+    if (MediaQuery.of(context).size.width >= 720) {
+      await CustomDialog(
+        title: title,
+        width: 760,
+        child: CreateSondageWeb(initialSondage: draft),
+      ).show(context);
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: FractionallySizedBox(
+            heightFactor: 0.92,
+            child: CreateSondageMobile(initialSondage: draft),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openAvailabilitySondagePrefillForm(
+    SondageCreatePrefill prefill,
+  ) async {
+    final title = _localizedShiftDayText(
+      context,
+      it: 'Apri disponibilita',
+      en: 'Open availability survey',
+      fr: 'Ouvrir le sondage de disponibilite',
+      es: 'Abrir encuesta de disponibilidad',
+    );
+
+    if (MediaQuery.of(context).size.width >= 720) {
+      await CustomDialog(
+        title: title,
+        width: 760,
+        child: CreateSondageWeb(initialPrefill: prefill),
+      ).show(context);
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: FractionallySizedBox(
+            heightFactor: 0.92,
+            child: CreateSondageMobile(initialPrefill: prefill),
+          ),
+        );
+      },
+    );
+  }
+
+  SondageCreatePrefill _buildAvailabilitySondagePrefill(
+    ShiftReplacementCandidatesEntity result,
+  ) {
+    final shiftDateLabel = _formatDateLabel(result.shiftDate);
+    final startTimeLabel = _formatTimeLabel(result.startTime);
+    final endTimeLabel = _formatTimeLabel(result.endTime);
+    final teamName = result.teamName?.trim();
+    final sourceLabel = result.sourceUserDisplayName?.trim();
+    final question = _localizedShiftDayText(
+      context,
+      it: 'Chi e disponibile per coprire il turno del $shiftDateLabel dalle $startTimeLabel alle $endTimeLabel?',
+      en: 'Who is available to cover the shift on $shiftDateLabel from $startTimeLabel to $endTimeLabel?',
+      fr: 'Qui est disponible pour couvrir le quart du $shiftDateLabel de $startTimeLabel a $endTimeLabel ?',
+      es: 'Quien esta disponible para cubrir el turno del $shiftDateLabel de $startTimeLabel a $endTimeLabel?',
+    );
+
+    final descriptionParts = <String>[
+      _localizedShiftDayText(
+        context,
+        it: 'Turno scoperto da coprire il $shiftDateLabel nella fascia $startTimeLabel - $endTimeLabel${result.overnight ? ' (+1 giorno)' : ''}.',
+        en: 'Open shift to cover on $shiftDateLabel in the $startTimeLabel - $endTimeLabel window${result.overnight ? ' (+1 day)' : ''}.',
+        fr: 'Quart ouvert a couvrir le $shiftDateLabel sur la plage $startTimeLabel - $endTimeLabel${result.overnight ? ' (+1 jour)' : ''}.',
+        es: 'Turno abierto para cubrir el $shiftDateLabel en la franja $startTimeLabel - $endTimeLabel${result.overnight ? ' (+1 dia)' : ''}.',
+      ),
+      if (teamName != null && teamName.isNotEmpty)
+        _localizedShiftDayText(
+          context,
+          it: 'Team: $teamName.',
+          en: 'Team: $teamName.',
+          fr: 'Equipe : $teamName.',
+          es: 'Equipo: $teamName.',
+        ),
+      if (sourceLabel != null && sourceLabel.isNotEmpty)
+        _localizedShiftDayText(
+          context,
+          it: 'Richiesta collegata al turno di $sourceLabel.',
+          en: 'Request linked to $sourceLabel\'s shift.',
+          fr: 'Demande liee au quart de $sourceLabel.',
+          es: 'Solicitud vinculada al turno de $sourceLabel.',
+        ),
+    ];
+
+    DateTime? expiryDate;
+    final now = DateTime.now();
+    final candidateExpiry = DateTime(
+      result.shiftDate.year,
+      result.shiftDate.month,
+      result.shiftDate.day,
+      result.startTime.hour,
+      result.startTime.minute,
+    );
+    if (candidateExpiry.isAfter(now)) {
+      expiryDate = candidateExpiry;
+    }
+
+    return SondageCreatePrefill(
+      question: question,
+      description: descriptionParts.join(' '),
+      teamId: result.teamId,
+      options: <String>[
+        _localizedShiftDayText(
+          context,
+          it: 'Disponibile',
+          en: 'Available',
+          fr: 'Disponible',
+          es: 'Disponible',
+        ),
+        _localizedShiftDayText(
+          context,
+          it: 'Non disponibile',
+          en: 'Not available',
+          fr: 'Indisponible',
+          es: 'No disponible',
+        ),
+      ],
+      expiryDate: expiryDate,
+    );
+  }
+
+  String _formatTimeLabel(TimeOfDay value) {
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 
   @override
@@ -1720,6 +2221,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                         selectedTeam: _selectedTeam,
                         selectedMemberIds: _selectedMemberIds,
                         assignToAllMembers: _assignToAllMembers,
+                        suggestedUserIds: widget.suggestedUserIds.toSet(),
                         teamMembers: _teamMembers,
                         isLoadingMembers: _isSelectedTeamLoading,
                         onTeamChanged: (team) {
@@ -1887,8 +2389,91 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                   // ── Confirm / Close button ────────────────────────────────────
                   SizedBox(
                     width: double.infinity,
-                    child: _readOnly
-                        ? Column(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!_requestMode &&
+                            _canSearchReplacementCandidates) ...[
+                          if (widget.suggestedUserIds.isNotEmpty &&
+                              (_loadingWorkflowAutoReplaceCandidates ||
+                                  _canAutoReplaceFromWorkflow)) ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFF22C55E,
+                                ).withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFF22C55E,
+                                  ).withValues(alpha: 0.24),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _workflowAutoReplaceTitle(context),
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: colorScheme.iconLabel,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _workflowAutoReplaceMessage(context),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.descriptionColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  CustomAppButton(
+                                    onPressed: _canAutoReplaceFromWorkflow
+                                        ? _autoReplaceFromWorkflow
+                                        : null,
+                                    type: ButtonType.filled,
+                                    backgroundColor: const Color(0xFF16A34A),
+                                    borderRadius: 10,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    isActive: _canAutoReplaceFromWorkflow,
+                                    isLoading:
+                                        _loadingWorkflowAutoReplaceCandidates,
+                                    fullWidth: true,
+                                    leadingIcon: const Icon(
+                                      Icons.auto_fix_high_rounded,
+                                      size: 18,
+                                    ),
+                                    child: Text(
+                                      _workflowAutoReplaceButtonLabel(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                          CustomAppButton(
+                            onPressed: _openReplacementCandidates,
+                            type: ButtonType.outlined,
+                            borderRadius: 10,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            isActive: true,
+                            isLoading: _loadingReplacementCandidates,
+                            fullWidth: true,
+                            leadingIcon: const Icon(
+                              Icons.person_search_outlined,
+                              size: 18,
+                            ),
+                            child: Text(_findReplacementButton(context)),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        if (_readOnly)
+                          Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (_canOpenRequestMode ||
@@ -1971,7 +2556,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                               ),
                             ],
                           )
-                        : CustomAppButton(
+                        else
+                          CustomAppButton(
                             onPressed:
                                 (_requestMode
                                     ? !_hasValidTimeRange
@@ -1993,6 +2579,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                                   : loc.save,
                             ),
                           ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -2014,6 +2602,7 @@ class _TeamAssignmentSection extends StatefulWidget {
     required this.selectedTeam,
     required this.selectedMemberIds,
     required this.assignToAllMembers,
+    required this.suggestedUserIds,
     required this.teamMembers,
     required this.isLoadingMembers,
     required this.onTeamChanged,
@@ -2025,6 +2614,7 @@ class _TeamAssignmentSection extends StatefulWidget {
   final TeamEntityForView? selectedTeam;
   final Set<String> selectedMemberIds;
   final bool assignToAllMembers;
+  final Set<String> suggestedUserIds;
   final List<ShiftTeamMember> teamMembers;
   final bool isLoadingMembers;
   final ValueChanged<TeamEntityForView?> onTeamChanged;
@@ -2199,6 +2789,44 @@ class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
       ? _privateShiftDescription(context)
       : _openChangeOrSearchTeamText(context);
 
+  List<ShiftTeamMember> get _prioritizedTeamMembers {
+    final members = widget.teamMembers
+        .where(
+          (member) =>
+              member.isSelectable ||
+              (member.userId != null &&
+                  widget.selectedMemberIds.contains(member.userId)),
+        )
+        .toList(growable: false);
+    members.sort((left, right) {
+      final leftSuggested =
+          left.userId != null && widget.suggestedUserIds.contains(left.userId);
+      final rightSuggested =
+          right.userId != null &&
+          widget.suggestedUserIds.contains(right.userId);
+      if (leftSuggested != rightSuggested) {
+        return leftSuggested ? -1 : 1;
+      }
+      if (left.isSelectable != right.isSelectable) {
+        return left.isSelectable ? -1 : 1;
+      }
+      return left
+          .displayLabel(context)
+          .toLowerCase()
+          .compareTo(right.displayLabel(context).toLowerCase());
+    });
+    return members;
+  }
+
+  List<ShiftTeamMember> get _suggestedMembers => _prioritizedTeamMembers
+      .where(
+        (member) =>
+            member.userId != null &&
+            member.isSelectable &&
+            widget.suggestedUserIds.contains(member.userId),
+      )
+      .toList(growable: false);
+
   @override
   void dispose() {
     _teamSearchController.dispose();
@@ -2226,6 +2854,8 @@ class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final prioritizedMembers = _prioritizedTeamMembers;
+    final suggestedMembers = _suggestedMembers;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2346,6 +2976,27 @@ class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
               color: colorScheme.descriptionColor,
             ),
           ),
+          if (suggestedMembers.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF22C55E).withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: const Color(0xFF22C55E).withValues(alpha: 0.28),
+                ),
+              ),
+              child: Text(
+                _suggestedMembersHint(context, suggestedMembers.length),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.iconLabel,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           _MemberRadioTile(
             uid: null,
@@ -2407,13 +3058,18 @@ class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
               ),
             )
           else
-            ...widget.teamMembers.map(
+            ...prioritizedMembers.map(
               (member) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: _MemberRadioTile(
                   uid: member.userId,
                   label: member.displayLabel(context),
                   subtitle: member.secondaryLabel(context),
+                  badgeLabel:
+                      member.userId != null &&
+                          widget.suggestedUserIds.contains(member.userId)
+                      ? _surveyAvailableBadge(context)
+                      : null,
                   icon: Icons.person_outline_rounded,
                   enabled: member.isSelectable,
                   disabledHint: member.disabledHint(context),
@@ -2433,6 +3089,30 @@ class _TeamAssignmentSectionState extends State<_TeamAssignmentSection> {
       ],
     );
   }
+
+  String _surveyAvailableBadge(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Disponibile nel sondaggio',
+      'fr' => 'Disponible dans le sondage',
+      'es' => 'Disponible en la encuesta',
+      _ => 'Available in survey',
+    };
+  }
+
+  String _suggestedMembersHint(BuildContext context, int count) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' =>
+        count == 1
+            ? '1 collega ha risposto disponibile nel sondaggio collegato. Parti da qui per assegnare la copertura.'
+            : '$count colleghi hanno risposto disponibile nel sondaggio collegato. Parti da qui per assegnare la copertura.',
+      'fr' =>
+        '$count collegue(s) ont repondu disponibles dans le sondage lie. Commencez ici pour attribuer la couverture.',
+      'es' =>
+        '$count companero(s) respondieron disponibles en la encuesta vinculada. Empieza aqui para asignar la cobertura.',
+      _ =>
+        '$count teammate(s) replied available in the linked survey. Start here to assign the coverage.',
+    };
+  }
 }
 
 class _MemberRadioTile extends StatelessWidget {
@@ -2440,6 +3120,7 @@ class _MemberRadioTile extends StatelessWidget {
     required this.uid,
     required this.label,
     this.subtitle,
+    this.badgeLabel,
     this.disabledHint,
     required this.icon,
     required this.isSelected,
@@ -2450,6 +3131,7 @@ class _MemberRadioTile extends StatelessWidget {
   final String? uid;
   final String label;
   final String? subtitle;
+  final String? badgeLabel;
   final String? disabledHint;
   final IconData icon;
   final bool isSelected;
@@ -2501,6 +3183,34 @@ class _MemberRadioTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (badgeLabel != null && badgeLabel!.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF22C55E,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF22C55E,
+                            ).withValues(alpha: 0.24),
+                          ),
+                        ),
+                        child: Text(
+                          badgeLabel!,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: const Color(0xFF166534),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
                   Text(
                     label,
                     style: theme.textTheme.bodySmall?.copyWith(

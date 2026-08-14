@@ -1,8 +1,11 @@
 import '../entities/shift_profile_entity.dart';
 import '../entities/shift_assignment_entity.dart';
 import '../entities/shift_assignment_create_request_entity.dart';
+import '../entities/shift_availability_sondage_draft_request_entity.dart';
 import '../entities/shift_auto_plan_entity.dart';
+import '../entities/shift_replacement_candidate_entity.dart';
 import 'package:flutter/material.dart';
+import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 
 abstract class ShiftRepository {
   Future<List<ShiftProfileEntity>> getProfiles();
@@ -86,6 +89,15 @@ abstract class ShiftRepository {
     required String candidateUserId,
     String? note,
   });
+
+  Future<ShiftReplacementCandidatesEntity> findReplacementCandidates(
+    String assignmentId,
+  );
+
+  Future<SondageEntity> createAvailabilitySondageDraft(
+    String assignmentId,
+    ShiftAvailabilitySondageDraftRequestEntity request,
+  );
 
   Future<ShiftAutoPlanResultEntity> autoPlan(
     ShiftAutoPlanRequestEntity request,

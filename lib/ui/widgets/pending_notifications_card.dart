@@ -277,6 +277,7 @@ class _PendingNotificationTile extends StatelessWidget {
     final teamName = _resolveDisplayTeamName(item);
     final roleCode = item.roleCode;
     final actionRequestNote = item.actionRequestNote;
+    final impactedShiftSummaries = item.impactedShiftSummaries;
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
@@ -377,6 +378,67 @@ class _PendingNotificationTile extends StatelessWidget {
                             ),
                           ),
                         ],
+                        if (impactedShiftSummaries.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFF59E0B,
+                              ).withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(
+                                  0xFFF59E0B,
+                                ).withValues(alpha: 0.26),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _impactedShiftTitle(context),
+                                  style: textTheme.labelMedium?.copyWith(
+                                    color: const Color(0xFFB45309),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                for (final summary in impactedShiftSummaries)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Padding(
+                                          padding: EdgeInsets.only(top: 3),
+                                          child: Icon(
+                                            Icons.event_busy_rounded,
+                                            size: 14,
+                                            color: Color(0xFFB45309),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            summary,
+                                            style: textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme.textColor,
+                                                  height: 1.35,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -471,6 +533,16 @@ class _PendingNotificationTile extends StatelessWidget {
                     ),
                   ],
                 ),
+              ] else if (navigationLabel != null) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => _handleOpen(context),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                    label: Text(navigationLabel),
+                  ),
+                ),
               ] else if (!isSeen) ...[
                 const SizedBox(height: 12),
                 Align(
@@ -516,6 +588,15 @@ class _PendingNotificationTile extends StatelessWidget {
 
   static String? _navigationLabelFor(NotificationCenterItem item) {
     return NotificationNavigation.labelFor(item);
+  }
+
+  static String _impactedShiftTitle(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Turni impattati',
+      'fr' => 'Quarts impactes',
+      'es' => 'Turnos afectados',
+      _ => 'Impacted shifts',
+    };
   }
 
   static String _markAsSeenLabel(BuildContext context) {

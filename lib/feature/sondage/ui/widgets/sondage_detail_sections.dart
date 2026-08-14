@@ -128,12 +128,14 @@ class SondageDetailInfoSection extends StatelessWidget {
     required this.formatDate,
     required this.colorScheme,
     required this.textTheme,
+    this.onOpenLinkedShift,
   });
 
   final SondageEntity sondage;
   final String Function(DateTime value) formatDate;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
+  final VoidCallback? onOpenLinkedShift;
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +191,127 @@ class SondageDetailInfoSection extends StatelessWidget {
               colorScheme: colorScheme,
             ),
           ],
+          if (sondage.isShiftGapAvailabilityWorkflow &&
+              onOpenLinkedShift != null) ...[
+            const Divider(height: 24),
+            _WorkflowLinkCard(
+              title: _linkedShiftTitle(context),
+              description: _linkedShiftDescription(context),
+              actionLabel: _linkedShiftAction(context),
+              colorScheme: colorScheme,
+              textTheme: textTheme,
+              onPressed: onOpenLinkedShift!,
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  String _linkedShiftTitle(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Turno collegato',
+      'fr' => 'Quart lie',
+      'es' => 'Turno vinculado',
+      _ => 'Linked shift',
+    };
+  }
+
+  String _linkedShiftDescription(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' =>
+        'Questo sondaggio nasce da un turno scoperto. Apri il turno per controllare subito il contesto e la copertura.',
+      'fr' =>
+        'Ce sondage provient d un quart non couvert. Ouvrez le quart pour verifier rapidement le contexte et la couverture.',
+      'es' =>
+        'Esta encuesta nace de un turno descubierto. Abre el turno para revisar enseguida el contexto y la cobertura.',
+      _ =>
+        'This survey was created from an uncovered shift. Open the shift to quickly review context and coverage.',
+    };
+  }
+
+  String _linkedShiftAction(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Apri turno collegato',
+      'fr' => 'Ouvrir le quart lie',
+      'es' => 'Abrir turno vinculado',
+      _ => 'Open linked shift',
+    };
+  }
+}
+
+class _WorkflowLinkCard extends StatelessWidget {
+  const _WorkflowLinkCard({
+    required this.title,
+    required this.description,
+    required this.actionLabel,
+    required this.colorScheme,
+    required this.textTheme,
+    required this.onPressed,
+  });
+
+  final String title;
+  final String description;
+  final String actionLabel;
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.secondary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.secondary.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.link_rounded,
+                  size: 20,
+                  color: colorScheme.secondary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.iconLabel,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.descriptionColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: onPressed,
+              icon: const Icon(Icons.event_available_rounded),
+              label: Text(actionLabel),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -433,6 +555,8 @@ class SondageOwnerActionsSection extends StatelessWidget {
     this.onReopen,
     this.onDelete,
     this.onRemind,
+    this.onOpenLinkedShift,
+    this.onAutoReplaceLinkedShift,
   });
 
   final SondageEntity sondage;
@@ -441,63 +565,247 @@ class SondageOwnerActionsSection extends StatelessWidget {
   final VoidCallback? onReopen;
   final VoidCallback? onDelete;
   final VoidCallback? onRemind;
+  final VoidCallback? onOpenLinkedShift;
+  final VoidCallback? onAutoReplaceLinkedShift;
 
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context)!;
-    final theme= Theme.of(context);
-    final colorScheme= theme.colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     if (!sondage.canPublish &&
         !sondage.canClose &&
         !sondage.canReopen &&
         !sondage.canDelete &&
-        onRemind == null) {
+        onRemind == null &&
+        onOpenLinkedShift == null &&
+        onAutoReplaceLinkedShift == null) {
       return const SizedBox.shrink();
     }
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        if (sondage.canPublish)
-          FilledButton.icon(
-            onPressed: onPublish,
-            icon: const Icon(Icons.publish_rounded),
-            label: Text(localization.publish,
-              ),style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.bgNavbarbutton,
-          )
+    final recommendation = _buildWorkflowRecommendation(
+      context,
+      colorScheme,
+      textTheme,
+    );
+
+    return SondageDetailCard(
+      colorScheme: colorScheme,
+      sondageColor: sondage.color,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _actionsTitle(context),
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.iconLabel,
+            ),
           ),
-        if (sondage.canClose)
-          FilledButton.tonalIcon(
-            onPressed: onClose,
-            icon: const Icon(Icons.lock_clock_rounded),
-            label: Text(localization.closeSurvey),
+          if (recommendation != null) ...[
+            const SizedBox(height: 12),
+            recommendation,
+          ],
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              if (sondage.canPublish)
+                FilledButton.icon(
+                  onPressed: onPublish,
+                  icon: const Icon(Icons.publish_rounded),
+                  label: Text(_publishLabel(context, localization)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.bgNavbarbutton,
+                  ),
+                ),
+              if (sondage.canClose)
+                FilledButton.tonalIcon(
+                  onPressed: onClose,
+                  icon: const Icon(Icons.lock_clock_rounded),
+                  label: Text(localization.closeSurvey),
+                ),
+              if (sondage.canReopen && onReopen != null)
+                FilledButton.tonalIcon(
+                  onPressed: onReopen,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(_reopenLabel(context)),
+                ),
+              if (onRemind != null)
+                FilledButton.tonalIcon(
+                  onPressed: onRemind,
+                  icon: const Icon(Icons.notifications_active_rounded),
+                  label: Text(_remindLabel(context)),
+                ),
+              if (onOpenLinkedShift != null)
+                FilledButton.tonalIcon(
+                  onPressed: onOpenLinkedShift,
+                  icon: const Icon(Icons.event_available_rounded),
+                  label: Text(_openLinkedShiftLabel(context)),
+                ),
+              if (onAutoReplaceLinkedShift != null)
+                FilledButton.icon(
+                  onPressed: onAutoReplaceLinkedShift,
+                  icon: const Icon(Icons.auto_fix_high_rounded),
+                  label: Text(_autoReplaceLinkedShiftLabel(context)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16A34A),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              if (sondage.canDelete && onDelete != null)
+                FilledButton.tonalIcon(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: Text(_deleteLabel(context)),
+                ),
+            ],
           ),
-        if (sondage.canReopen && onReopen != null)
-          FilledButton.tonalIcon(
-            onPressed: onReopen,
-            icon: const Icon(Icons.refresh_rounded),
-            label: Text(_reopenLabel(context)),
-          ),
-        if (onRemind != null)
-          FilledButton.tonalIcon(
-            onPressed: onRemind,
-            icon: const Icon(Icons.notifications_active_rounded),
-            label: Text(_remindLabel(context)),
-          ),
-        if (sondage.canDelete && onDelete != null)
-          FilledButton.tonalIcon(
-            onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline_rounded),
-            label: Text(_deleteLabel(context)),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
+  Widget? _buildWorkflowRecommendation(
+    BuildContext context,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
+    if (!sondage.isShiftGapAvailabilityWorkflow) {
+      return null;
+    }
+    final title = _recommendationTitle(context);
+    final description = _recommendationDescription(context);
+    if (title == null || description == null) {
+      return null;
+    }
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.secondary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.secondary.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.auto_awesome_rounded,
+              size: 20,
+              color: colorScheme.secondary,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.iconLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.descriptionColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _actionsTitle(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Azioni',
+      'fr' => 'Actions',
+      'es' => 'Acciones',
+      _ => 'Actions',
+    };
+  }
+
+  String _publishLabel(BuildContext context, AppLocalizations localization) {
+    if (!sondage.isShiftGapAvailabilityWorkflow) {
+      return localization.publish;
+    }
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Pubblica al team',
+      'fr' => 'Publier a l equipe',
+      'es' => 'Publicar al equipo',
+      _ => 'Publish to team',
+    };
+  }
+
+  String? _recommendationTitle(BuildContext context) {
+    if (sondage.canPublish) {
+      return switch (Localizations.localeOf(context).languageCode) {
+        'it' => 'Prossimo passo consigliato',
+        'fr' => 'Prochaine etape recommandee',
+        'es' => 'Siguiente paso recomendado',
+        _ => 'Recommended next step',
+      };
+    }
+    if (onRemind != null && sondage.status == SondageStatus.active) {
+      return switch (Localizations.localeOf(context).languageCode) {
+        'it' => 'Monitoraggio disponibilita',
+        'fr' => 'Suivi des disponibilites',
+        'es' => 'Seguimiento de disponibilidad',
+        _ => 'Availability follow-up',
+      };
+    }
+    return null;
+  }
+
+  String? _recommendationDescription(BuildContext context) {
+    if (sondage.canPublish) {
+      return switch (Localizations.localeOf(context).languageCode) {
+        'it' =>
+          'Pubblica il sondaggio quando testo e opzioni sono pronti, cosi il team puo rispondere subito sulla copertura del turno.',
+        'fr' =>
+          'Publiez le sondage lorsque le texte et les options sont prets afin que l equipe puisse repondre rapidement pour couvrir le quart.',
+        'es' =>
+          'Publica la encuesta cuando el texto y las opciones esten listos para que el equipo pueda responder enseguida sobre la cobertura del turno.',
+        _ =>
+          'Publish the survey once the text and options are ready so the team can respond quickly about shift coverage.',
+      };
+    }
+    if (onRemind != null && sondage.status == SondageStatus.active) {
+      return switch (Localizations.localeOf(context).languageCode) {
+        'it' =>
+          'Se mancano ancora risposte, usa il promemoria per sollecitare i membri del team che non hanno ancora dato disponibilita.',
+        'fr' =>
+          'S il manque encore des reponses, utilisez le rappel pour relancer les membres de l equipe qui n ont pas encore indique leur disponibilite.',
+        'es' =>
+          'Si aun faltan respuestas, usa el recordatorio para avisar a los miembros del equipo que todavia no indicaron su disponibilidad.',
+        _ =>
+          'If responses are still missing, use the reminder to nudge teammates who have not shared their availability yet.',
+      };
+    }
+    return null;
+  }
+
   String _remindLabel(BuildContext context) {
+    if (sondage.isShiftGapAvailabilityWorkflow) {
+      return switch (Localizations.localeOf(context).languageCode) {
+        'it' => 'Sollecita disponibilita',
+        'fr' => 'Relancer les disponibilites',
+        'es' => 'Recordar disponibilidad',
+        _ => 'Remind availability',
+      };
+    }
     return switch (Localizations.localeOf(context).languageCode) {
       'it' => 'Sollecita voto',
       'fr' => 'Relancer le vote',
@@ -512,6 +820,24 @@ class SondageOwnerActionsSection extends StatelessWidget {
       'fr' => 'Supprimer le sondage',
       'es' => 'Eliminar encuesta',
       _ => 'Delete survey',
+    };
+  }
+
+  String _openLinkedShiftLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Apri turno collegato',
+      'fr' => 'Ouvrir le quart lie',
+      'es' => 'Abrir turno vinculado',
+      _ => 'Open linked shift',
+    };
+  }
+
+  String _autoReplaceLinkedShiftLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Sostituisci ora',
+      'fr' => 'Remplacer maintenant',
+      'es' => 'Sustituir ahora',
+      _ => 'Replace now',
     };
   }
 

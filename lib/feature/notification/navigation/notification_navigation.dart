@@ -245,14 +245,18 @@ class NotificationNavigation {
     bool armIntents = false,
   }) {
     final metadata = item.metadata;
+    final workflowContext = item.workflowContext;
     final eventType = item.eventType.toUpperCase();
     final currentUserId = getIt<AuthBloc>().state.user.uid;
-    final teamId = metadata['teamId']?.trim();
+    final teamId = workflowContext.resolvedTeamId;
 
-    if (eventType.contains('CHAT') || metadata.containsKey('conversationId')) {
+    if (workflowContext.pointsToChat ||
+        eventType.contains('CHAT') ||
+        metadata.containsKey('conversationId')) {
       final chatType = metadata['chatType']?.trim().toUpperCase() ?? '';
       final participantAUserId = metadata['participantAUserId']?.trim() ?? '';
       final participantBUserId = metadata['participantBUserId']?.trim() ?? '';
+      final conversationId = workflowContext.resolvedConversationId;
       final directMemberUserId = chatType == 'DIRECT'
           ? (participantAUserId == currentUserId
                 ? participantBUserId
@@ -264,6 +268,8 @@ class NotificationNavigation {
       final queryParameters = <String, String>{
         if (teamId?.isNotEmpty ?? false) 'teamId': teamId!,
         if (directMemberUserId.isNotEmpty) 'memberUserId': directMemberUserId,
+        if (conversationId?.isNotEmpty ?? false)
+          'conversationId': conversationId!,
         'focus': 'latest',
       };
       final path = queryParameters.isEmpty
@@ -272,8 +278,9 @@ class NotificationNavigation {
       return _NotificationDestination.path(path: path, label: 'Apri chat');
     }
 
-    final sondageId = metadata['sondageId']?.trim();
+    final sondageId = workflowContext.resolvedSondageId;
     if ((sondageId?.isNotEmpty ?? false) ||
+        workflowContext.pointsToSondage ||
         eventType.contains('SONDAGE') ||
         eventType.contains('SURVEY')) {
       if (sondageId?.isNotEmpty ?? false) {
@@ -289,12 +296,13 @@ class NotificationNavigation {
       );
     }
 
-    if (eventType.contains('SHIFT') ||
+    if (workflowContext.pointsToShift ||
+        eventType.contains('SHIFT') ||
         metadata.containsKey('shiftId') ||
         metadata.containsKey('assignmentId')) {
-      final assignmentId = metadata['assignmentId']?.trim();
+      final assignmentId = workflowContext.resolvedAssignmentId;
       final shiftDate = metadata['shiftDate']?.trim();
-      final teamId = metadata['teamId']?.trim();
+      final teamId = workflowContext.resolvedTeamId;
       final targetUserId = metadata['targetUserId']?.trim();
       final isPublic = metadata['isPublic']?.trim();
       final profileName = metadata['profileName']?.trim();
@@ -327,14 +335,36 @@ class NotificationNavigation {
       );
     }
 
-    if (eventType.contains('CLOCK') || eventType.contains('TIMBR')) {
+    if (item.supportsImpactedShiftNavigation) {
+      final requestedDate = item.requestedDate?.trim();
+      final requesterUserId = item.requesterUserId?.trim();
+      final requestTeamId = item.metadata['teamId']?.trim();
+      if (armIntents) {
+        getIt<ShiftOpenIntentController>().queue(
+          shiftDate: requestedDate,
+          teamId: requestTeamId,
+          targetUserId: requesterUserId,
+          openDayEntriesWhenAssignmentMissing: true,
+        );
+      }
+      return _NotificationDestination.path(
+        path: RouterPaths.shifts,
+        label: 'Vedi turni impattati',
+      );
+    }
+
+    if (workflowContext.pointsToClocking ||
+        eventType.contains('CLOCK') ||
+        eventType.contains('TIMBR')) {
       return _NotificationDestination.path(
         path: RouterPaths.clocking,
         label: 'Apri timbrature',
       );
     }
 
-    if ((teamId?.isNotEmpty ?? false) || eventType.startsWith('TEAM_')) {
+    if (workflowContext.pointsToTeam ||
+        (teamId?.isNotEmpty ?? false) ||
+        eventType.startsWith('TEAM_')) {
       if (item.hidesTeamDetailFor(currentUserId)) {
         return _NotificationDestination.path(
           path: RouterPaths.team,

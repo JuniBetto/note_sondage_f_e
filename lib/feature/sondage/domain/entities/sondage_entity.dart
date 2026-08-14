@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/feature/notification/shared/workflow_context_metadata.dart';
 
 /// Status possibili di un sondaggio
 enum SondageStatus {
@@ -28,12 +29,14 @@ class SondageOptionEntity {
   final String label;
   final int sortOrder;
   final int voteCount;
+  final List<String> voterUserIds;
 
   const SondageOptionEntity({
     required this.id,
     required this.label,
     required this.sortOrder,
     this.voteCount = 0,
+    this.voterUserIds = const [],
   });
 
   SondageOptionEntity copyWith({
@@ -41,12 +44,14 @@ class SondageOptionEntity {
     String? label,
     int? sortOrder,
     int? voteCount,
+    List<String>? voterUserIds,
   }) {
     return SondageOptionEntity(
       id: id ?? this.id,
       label: label ?? this.label,
       sortOrder: sortOrder ?? this.sortOrder,
       voteCount: voteCount ?? this.voteCount,
+      voterUserIds: voterUserIds ?? this.voterUserIds,
     );
   }
 }
@@ -68,6 +73,11 @@ class SondageEntity {
   final String? teamName;
   final String? description;
   final bool allowMultipleResponses;
+  final String? contextType;
+  final String? contextId;
+  final String? sourceType;
+  final String? sourceId;
+  final String? sourceMessageId;
   final List<SondageOptionEntity> options;
   final String? currentUserOptionId;
   final List<String> currentUserOptionIds;
@@ -95,6 +105,11 @@ class SondageEntity {
     this.teamName,
     this.description,
     this.allowMultipleResponses = false,
+    this.contextType,
+    this.contextId,
+    this.sourceType,
+    this.sourceId,
+    this.sourceMessageId,
     this.options = const [],
     this.currentUserOptionId,
     this.currentUserOptionIds = const [],
@@ -123,6 +138,11 @@ class SondageEntity {
     String? teamName,
     String? description,
     bool? allowMultipleResponses,
+    String? contextType,
+    String? contextId,
+    String? sourceType,
+    String? sourceId,
+    String? sourceMessageId,
     List<SondageOptionEntity>? options,
     String? currentUserOptionId,
     List<String>? currentUserOptionIds,
@@ -151,6 +171,11 @@ class SondageEntity {
       description: description ?? this.description,
       allowMultipleResponses:
           allowMultipleResponses ?? this.allowMultipleResponses,
+      contextType: contextType ?? this.contextType,
+      contextId: contextId ?? this.contextId,
+      sourceType: sourceType ?? this.sourceType,
+      sourceId: sourceId ?? this.sourceId,
+      sourceMessageId: sourceMessageId ?? this.sourceMessageId,
       options: options ?? this.options,
       currentUserOptionId: currentUserOptionId ?? this.currentUserOptionId,
       currentUserOptionIds: currentUserOptionIds ?? this.currentUserOptionIds,
@@ -171,4 +196,78 @@ class SondageEntity {
   /// Percentuale di completamento (risposte / totale domande)
   double get completionRate =>
       totalQuestions > 0 ? responses / totalQuestions : 0.0;
+
+  WorkflowContextMetadata get workflowContext {
+    final metadata = <String, String>{
+      if (teamId != null && teamId!.trim().isNotEmpty) 'teamId': teamId!.trim(),
+      if (id.trim().isNotEmpty) 'sondageId': id.trim(),
+      if (contextType != null && contextType!.trim().isNotEmpty)
+        WorkflowContextMetadata.contextTypeKey: contextType!.trim(),
+      if (contextId != null && contextId!.trim().isNotEmpty)
+        WorkflowContextMetadata.contextIdKey: contextId!.trim(),
+      if (sourceType != null && sourceType!.trim().isNotEmpty)
+        WorkflowContextMetadata.sourceTypeKey: sourceType!.trim(),
+      if (sourceId != null && sourceId!.trim().isNotEmpty)
+        WorkflowContextMetadata.sourceIdKey: sourceId!.trim(),
+      if (sourceMessageId != null && sourceMessageId!.trim().isNotEmpty)
+        WorkflowContextMetadata.sourceMessageIdKey: sourceMessageId!.trim(),
+    };
+    return WorkflowContextMetadata.fromMetadata(metadata);
+  }
+
+  bool get isShiftGapAvailabilityWorkflow {
+    final normalizedSourceType = sourceType?.trim().toLowerCase();
+    if (normalizedSourceType == 'shift_gap_availability') {
+      return true;
+    }
+    return workflowContext.pointsToShift;
+  }
+
+  SondageOptionEntity? get workflowAvailableOption {
+    if (!isShiftGapAvailabilityWorkflow) {
+      return null;
+    }
+    for (final option in options) {
+      if (_matchesAvailabilityLabel(option.label, const {
+        'disponibile',
+        'available',
+        'disponible',
+      })) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  SondageOptionEntity? get workflowUnavailableOption {
+    if (!isShiftGapAvailabilityWorkflow) {
+      return null;
+    }
+    for (final option in options) {
+      if (_matchesAvailabilityLabel(option.label, const {
+        'non_disponibile',
+        'not_available',
+        'indisponible',
+        'no_disponible',
+      })) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  List<String> get workflowAvailableResponderUserIds =>
+      workflowAvailableOption?.voterUserIds ?? const <String>[];
+
+  List<String> get workflowUnavailableResponderUserIds =>
+      workflowUnavailableOption?.voterUserIds ?? const <String>[];
+
+  static bool _matchesAvailabilityLabel(String raw, Set<String> allowed) {
+    final normalized = raw.trim().toLowerCase().replaceAll('-', ' ');
+    if (normalized.isEmpty) {
+      return false;
+    }
+    final compact = normalized.replaceAll(RegExp(r'\s+'), '_');
+    return allowed.contains(compact);
+  }
 }

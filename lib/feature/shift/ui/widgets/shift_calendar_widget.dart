@@ -389,11 +389,9 @@ class _DayCell extends StatelessWidget {
     final shiftColor = assignment?.displayColor ?? firstAbsenceStatus?.color();
     final publicCount = assignments.where((item) => item.isPublic).length;
     final hasMore = assignments.length > 2;
-    final extraAbsenceStatuses = absenceStatuses
-        .where(
-          (status) => !assignments.any((item) => item.userId == status.userId),
-        )
-        .toList(growable: false);
+    final extraAbsenceStatuses = assignments.isEmpty
+        ? absenceStatuses
+        : const <ShiftAbsenceStatus>[];
     final hasSyncingAssignments = assignments.any(
       (item) => syncingAssignmentIds.contains(item.id),
     );
@@ -593,13 +591,13 @@ class _DayCell extends StatelessWidget {
                           .toList(growable: false),
                     ),
                   ],
-                ] else if (absenceStatuses.isNotEmpty) ...[
+                ] else if (extraAbsenceStatuses.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Wrap(
                     alignment: WrapAlignment.center,
                     spacing: 3,
                     runSpacing: 2,
-                    children: absenceStatuses
+                    children: extraAbsenceStatuses
                         .take(2)
                         .map(
                           (status) => Tooltip(

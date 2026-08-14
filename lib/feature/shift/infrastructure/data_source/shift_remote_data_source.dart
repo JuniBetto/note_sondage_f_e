@@ -3,9 +3,13 @@ import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_availability_sondage_draft_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_replacement_candidate_entity.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data/shift_mapper.dart';
 import 'package:flutter/material.dart';
+import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
+import 'package:note_sondage/feature/sondage/infrastructure/data/sondage_mapper.dart';
 
 class ShiftRemoteDataSource {
   final Dio _dio;
@@ -245,6 +249,37 @@ class ShiftRemoteDataSource {
         if (note != null && note.isNotEmpty) 'note': note,
       },
     );
+  }
+
+  Future<ShiftReplacementCandidatesEntity> findReplacementCandidates(
+    String assignmentId,
+  ) async {
+    final response = await _dio.get(
+      '/api/aggregate/shift/assignments/$assignmentId/replacement-candidates',
+    );
+    return ShiftMapper.replacementCandidatesFromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
+  }
+
+  Future<SondageEntity> createAvailabilitySondageDraft(
+    String assignmentId,
+    ShiftAvailabilitySondageDraftRequestEntity request,
+  ) async {
+    final response = await _dio.post(
+      '/api/aggregate/shift/assignments/$assignmentId/availability-sondage',
+      data: {
+        'title': request.title,
+        if (request.description != null &&
+            request.description!.trim().isNotEmpty)
+          'description': request.description!.trim(),
+        'allowMultipleResponses': request.allowMultipleResponses,
+        if (request.expiryDate != null)
+          'expiresAt': request.expiryDate!.toIso8601String(),
+        'options': request.options,
+      },
+    );
+    return SondageMapper.fromJson(Map<String, dynamic>.from(response.data));
   }
 
   Future<ShiftAutoPlanResultEntity> autoPlan(

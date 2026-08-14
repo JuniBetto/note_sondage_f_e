@@ -10,10 +10,13 @@ import 'package:note_sondage/feature/auth/domain/entities/totp_enrollment_secret
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_availability_sondage_draft_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_replacement_candidate_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_local_data_source.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
@@ -219,6 +222,12 @@ class _FakeShiftRepository implements ShiftRepository {
   }) => throw UnimplementedError();
 
   @override
+  Future<SondageEntity> createAvailabilitySondageDraft(
+    String assignmentId,
+    ShiftAvailabilitySondageDraftRequestEntity request,
+  ) => throw UnimplementedError();
+
+  @override
   Future<ShiftAutoPlanResultEntity> autoPlan(
     ShiftAutoPlanRequestEntity request,
   ) => throw UnimplementedError();
@@ -255,6 +264,11 @@ class _FakeShiftRepository implements ShiftRepository {
 
   @override
   Future<void> deleteProfile(String profileId) => throw UnimplementedError();
+
+  @override
+  Future<ShiftReplacementCandidatesEntity> findReplacementCandidates(
+    String assignmentId,
+  ) => throw UnimplementedError();
 
   @override
   Future<List<ShiftAssignmentEntity>> getAssignments({

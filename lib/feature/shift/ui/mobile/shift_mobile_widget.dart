@@ -449,36 +449,173 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     final intentController = GetIt.instance<ShiftOpenIntentController>();
     final intent = intentController.pendingIntent;
     if (intent == null) return;
-    intentController.clear();
-
-    final date = intent.shiftDate;
-    if (date == null) return;
-
-    // Navigate to the correct month first
-    if (date.year != _focusedMonth.year || date.month != _focusedMonth.month) {
-      setState(() => _focusedMonth = date);
+    ShiftAssignmentEntity? existing;
+    if (intent.assignmentId != null) {
+      existing = _assignments
+          .where((a) => a.id == intent.assignmentId)
+          .firstOrNull;
     }
+
+    final date = intent.shiftDate ?? existing?.shiftDate;
+    if (date == null) {
+      return;
+    }
+
+    final normalizedIntentTeamId = intent.teamId?.trim();
+    final shouldChangeTeam =
+        normalizedIntentTeamId != null &&
+        normalizedIntentTeamId.isNotEmpty &&
+        normalizedIntentTeamId != _selectedCalendarTeamId?.trim();
+    final shouldChangeMonth =
+        date.year != _focusedMonth.year || date.month != _focusedMonth.month;
+    if (shouldChangeTeam || shouldChangeMonth) {
+      setState(() {
+        if (shouldChangeTeam) {
+          _selectedCalendarTeamId = normalizedIntentTeamId;
+        }
+        if (shouldChangeMonth) {
+          _focusedMonth = date;
+        }
+      });
+      _loadAssignments();
+      unawaited(_loadShiftAbsenceStatuses());
+      return;
+    }
+
+    intentController.clear();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      ShiftAssignmentEntity? existing;
-      if (intent.assignmentId != null) {
-        existing = _assignments
+      var resolvedAssignment = existing;
+      if (resolvedAssignment == null && intent.assignmentId != null) {
+        resolvedAssignment = _assignments
             .where((a) => a.id == intent.assignmentId)
             .firstOrNull;
       }
       // Fallback: match by date if no assignmentId or not found
-      if (existing == null) {
-        final matches = _assignments
-            .where((a) => isAssignmentVisibleOnDate(a, date))
-            .toList();
-        if (matches.length == 1) existing = matches.first;
+      final dayMatches = _assignments
+          .where((assignment) => isAssignmentVisibleOnDate(assignment, date))
+          .where(
+            (assignment) =>
+                normalizedIntentTeamId == null ||
+                normalizedIntentTeamId.isEmpty ||
+                assignment.teamId?.trim() == normalizedIntentTeamId,
+          )
+          .toList();
+      final focusedUserMatches =
+          intent.targetUserId == null || intent.targetUserId!.trim().isEmpty
+          ? dayMatches
+          : dayMatches
+                .where(
+                  (assignment) =>
+                      assignment.userId.trim() == intent.targetUserId!.trim(),
+                )
+                .toList();
+      if (resolvedAssignment == null) {
+        if (intent.openDayEntriesWhenAssignmentMissing) {
+          resolvedAssignment = null;
+        } else if (focusedUserMatches.length == 1) {
+          resolvedAssignment = focusedUserMatches.first;
+        } else if (dayMatches.length == 1) {
+          resolvedAssignment = dayMatches.first;
+        }
       }
-      if (existing == null && !intent.openDialogWhenAssignmentMissing) {
+      if (resolvedAssignment == null &&
+          intent.openDayEntriesWhenAssignmentMissing &&
+          dayMatches.isNotEmpty) {
+        await _openDayEntriesForIntent(
+          context,
+          date,
+          dayMatches,
+          highlightedUserId: intent.targetUserId,
+        );
         return;
       }
-      await _openDialogForAssignment(context, date, existing: existing);
+      if (resolvedAssignment == null &&
+          !intent.openDialogWhenAssignmentMissing) {
+        return;
+      }
+      if (resolvedAssignment != null && intent.autoReplaceFromWorkflow) {
+        final replaced = await _tryAutoReplaceFromWorkflow(
+          context,
+          resolvedAssignment,
+          intent.preferredUserIds,
+        );
+        if (replaced || !context.mounted) {
+          return;
+        }
+      }
+      await _openDialogForAssignment(
+        context,
+        date,
+        existing: resolvedAssignment,
+        suggestedUserIds: intent.preferredUserIds,
+      );
     });
+  }
+
+  Future<void> _openDayEntriesForIntent(
+    BuildContext context,
+    DateTime date,
+    List<ShiftAssignmentEntity> assignments, {
+    String? highlightedUserId,
+  }) async {
+    final shiftBloc = context.read<ShiftBloc>();
+    final isPastDate = _isPastDate(date);
+    final normalizedHighlightedUserId = highlightedUserId?.trim();
+    final sortedAssignments = [...assignments]
+      ..sort((a, b) {
+        final leftHighlighted =
+            normalizedHighlightedUserId != null &&
+            normalizedHighlightedUserId.isNotEmpty &&
+            a.userId.trim() == normalizedHighlightedUserId;
+        final rightHighlighted =
+            normalizedHighlightedUserId != null &&
+            normalizedHighlightedUserId.isNotEmpty &&
+            b.userId.trim() == normalizedHighlightedUserId;
+        if (leftHighlighted != rightHighlighted) {
+          return leftHighlighted ? -1 : 1;
+        }
+        final byTime = a.startTime.hour * 60 + a.startTime.minute;
+        final otherTime = b.startTime.hour * 60 + b.startTime.minute;
+        return byTime.compareTo(otherTime);
+      });
+    final action = await showShiftDayEntriesSheet(
+      context: context,
+      date: date,
+      assignments: sortedAssignments,
+      absenceStatuses: _absenceStatusesForDate(date).values.toList(),
+      canCreate: !isPastDate,
+      syncingAssignmentIds: shiftBloc.syncingAssignmentIds,
+      highlightedUserIds:
+          normalizedHighlightedUserId == null ||
+              normalizedHighlightedUserId.isEmpty
+          ? const <String>{}
+          : <String>{normalizedHighlightedUserId},
+    );
+    if (!context.mounted || action == null) return;
+
+    switch (action.type) {
+      case ShiftDayEntriesActionType.createNew:
+        if (isPastDate) {
+          AppSnackBar.showWarning(
+            context,
+            _isItalian(context)
+                ? 'Non puoi creare nuovi turni in una data precedente a oggi.'
+                : 'You cannot create new shifts on a date before today.',
+          );
+          return;
+        }
+        await _openDialogForAssignment(context, date);
+        break;
+      case ShiftDayEntriesActionType.openExisting:
+        await _openDialogForAssignment(
+          context,
+          date,
+          existing: action.assignment,
+        );
+        break;
+    }
   }
 
   bool _canManageAssignment(ShiftAssignmentEntity assignment) {
@@ -591,6 +728,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     BuildContext context,
     DateTime date, {
     ShiftAssignmentEntity? existing,
+    List<String> suggestedUserIds = const <String>[],
   }) async {
     final shiftBloc = context.read<ShiftBloc>();
     final result = await showShiftDayDialog(
@@ -617,6 +755,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           ? _canEditApprovedAssignment(existing)
           : false,
       ownerTeams: _manageableTeams,
+      suggestedUserIds: suggestedUserIds,
     );
     if (result == null) return;
     if (!context.mounted) return;
@@ -690,6 +829,76 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     }
 
     await _createAssignments(context, shiftBloc, date, result);
+  }
+
+  Future<bool> _tryAutoReplaceFromWorkflow(
+    BuildContext context,
+    ShiftAssignmentEntity existing,
+    List<String> preferredUserIds,
+  ) async {
+    final preferred = preferredUserIds
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toSet();
+    if (preferred.isEmpty) {
+      return false;
+    }
+    try {
+      final result = await _shiftRepository.findReplacementCandidates(
+        existing.id,
+      );
+      if (!context.mounted) {
+        return false;
+      }
+      final candidate = result.candidates
+          .where((item) => item.compatible)
+          .where((item) => preferred.contains(item.userId.trim()))
+          .firstOrNull;
+      if (candidate == null) {
+        AppSnackBar.showWarning(
+          context,
+          _isItalian(context)
+              ? 'Nessun collega disponibile dal sondaggio e compatibile per questo turno. Apro il dettaglio per scegliere manualmente.'
+              : 'No available survey respondent is compatible with this shift. Opening the detail so you can choose manually.',
+        );
+        return false;
+      }
+
+      context.read<ShiftBloc>().add(
+        UpdateShiftAssignmentEvent(
+          assignmentId: existing.id,
+          profileId: existing.profileId,
+          startTime: existing.startTime,
+          endTime: existing.endTime,
+          overnight: existing.overnight,
+          note: existing.note,
+          alarmOffsets: existing.alarmOffsets,
+          isPublic: existing.isPublic,
+          teamId: existing.teamId,
+          teamShiftGroupId: existing.teamShiftGroupId,
+          targetUserId: candidate.userId,
+        ),
+      );
+      AppSnackBar.showSuccess(
+        context,
+        _isItalian(context)
+            ? 'Sostituzione avviata con ${candidate.displayName}.'
+            : 'Replacement started with ${candidate.displayName}.',
+      );
+      return true;
+    } catch (error) {
+      if (!context.mounted) {
+        return true;
+      }
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: _isItalian(context)
+            ? 'Non siamo riusciti a sostituire automaticamente il turno.'
+            : 'We could not replace the shift automatically.',
+      );
+      return true;
+    }
   }
 
   Future<void> _requestAssignmentChange(

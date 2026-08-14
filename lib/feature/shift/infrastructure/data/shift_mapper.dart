@@ -3,6 +3,7 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entit
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_replacement_candidate_entity.dart';
 
 class ShiftMapper {
   static String? _nullableString(dynamic value) {
@@ -18,6 +19,8 @@ class ShiftMapper {
     final parts = raw.split(':');
     return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
+
+  static TimeOfDay parseTime(String raw) => _parseTime(raw);
 
   static ShiftProfileEntity profileFromJson(Map<String, dynamic> json) {
     final offsets = (json['alarmOffsets'] as List<dynamic>? ?? [])
@@ -259,6 +262,61 @@ class ShiftMapper {
       teamId: _nullableString(json['teamId']),
       profileId: _nullableString(json['profileId']),
       profileName: _nullableString(json['profileName']),
+    );
+  }
+
+  static ShiftReplacementCandidatesEntity replacementCandidatesFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return ShiftReplacementCandidatesEntity(
+      assignmentId: (json['assignmentId'] as String?) ?? '',
+      teamId: _nullableString(json['teamId']),
+      teamName: _nullableString(json['teamName']),
+      sourceUserId: _nullableString(json['sourceUserFirebaseUid']),
+      sourceUserDisplayName: _nullableString(json['sourceUserDisplayName']),
+      shiftDate: DateTime.parse(json['shiftDate'] as String),
+      startTime: _parseTime(json['startTime'] as String),
+      endTime: _parseTime(json['endTime'] as String),
+      overnight: (json['overnight'] as bool?) ?? false,
+      hasCompatibleCandidates:
+          (json['hasCompatibleCandidates'] as bool?) ?? false,
+      candidates: (json['candidates'] as List<dynamic>? ?? const [])
+          .map(
+            (item) => replacementCandidateFromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  static ShiftReplacementCandidateEntity replacementCandidateFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return ShiftReplacementCandidateEntity(
+      userId: (json['firebaseUid'] as String?) ?? '',
+      email: _nullableString(json['email']),
+      fullName: _nullableString(json['fullName']),
+      avatarUrl: _nullableString(json['avatarUrl']),
+      role: _nullableString(json['role']),
+      compatible: (json['compatible'] as bool?) ?? false,
+      incompatibilities:
+          (json['incompatibilities'] as List<dynamic>? ?? const [])
+              .map(
+                (item) => replacementCandidateIssueFromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ),
+              )
+              .toList(),
+    );
+  }
+
+  static ShiftReplacementCandidateIssueEntity replacementCandidateIssueFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return ShiftReplacementCandidateIssueEntity(
+      code: (json['code'] as String?) ?? '',
+      message: (json['message'] as String?) ?? '',
     );
   }
 

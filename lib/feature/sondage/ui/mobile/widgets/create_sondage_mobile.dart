@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
+import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_form.dart';
 
 class CreateSondageMobile extends StatelessWidget {
@@ -7,6 +8,7 @@ class CreateSondageMobile extends StatelessWidget {
   final VoidCallback? onsondageCreated;
   final SondageEntity? initialSondage;
   final bool enableTutorial;
+  final SondageCreatePrefill? initialPrefill;
 
   const CreateSondageMobile({
     super.key,
@@ -14,6 +16,7 @@ class CreateSondageMobile extends StatelessWidget {
     this.sondageId,
     this.initialSondage,
     this.enableTutorial = true,
+    this.initialPrefill,
   });
 
   @override
@@ -25,6 +28,7 @@ class CreateSondageMobile extends StatelessWidget {
         onCreated: onsondageCreated,
         showHeader: false,
         initialSondage: initialSondage,
+        initialPrefill: initialPrefill,
         tutorialId: initialSondage == null && enableTutorial
             ? 'mobile-sondage-create'
             : null,

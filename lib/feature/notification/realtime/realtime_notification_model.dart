@@ -1,3 +1,5 @@
+import 'package:note_sondage/feature/notification/shared/workflow_context_metadata.dart';
+
 class RealtimeNotification {
   final String notificationId;
   final String eventType;
@@ -34,10 +36,13 @@ class RealtimeNotification {
       sourceService: json['sourceService']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       body: json['body']?.toString() ?? '',
-      occurredAt: DateTime.tryParse(json['occurredAt']?.toString() ?? '') ??
+      occurredAt:
+          DateTime.tryParse(json['occurredAt']?.toString() ?? '') ??
           DateTime.now(),
       metadata: metadata,
     );
   }
-}
 
+  WorkflowContextMetadata get workflowContext =>
+      WorkflowContextMetadata.fromMetadata(metadata);
+}

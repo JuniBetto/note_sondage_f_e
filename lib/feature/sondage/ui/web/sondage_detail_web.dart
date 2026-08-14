@@ -7,8 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
+import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
+import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/domain/use_case/sondage_use_case.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
@@ -35,6 +38,7 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
   late final SondageBloc _bloc;
   late final SondageUseCase _sondageUseCase;
   late final TeamMemberUseCase _teamMemberUseCase;
+  late final ShiftRepository _shiftRepository;
   StreamSubscription<RealtimeNotification>? _subscription;
   Timer? _expiryRefreshTimer;
   String? _loadedTeamId;
@@ -56,6 +60,7 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     super.initState();
     _sondageUseCase = getIt<SondageUseCase>();
     _teamMemberUseCase = getIt<TeamMemberUseCase>();
+    _shiftRepository = getIt<ShiftRepository>();
     _bloc = SondageBloc(
       sondageUseCase: getIt<SondageUseCase>(),
       sondageLocalDataSource: getIt(),
@@ -343,12 +348,94 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     }
   }
 
+  Future<void> _openLinkedShift(SondageEntity sondage) async {
+    final assignmentId = sondage.workflowContext.resolvedAssignmentId;
+    if (assignmentId == null || assignmentId.isEmpty) {
+      AppSnackBar.showWarning(context, _linkedShiftUnavailableMessage());
+      return;
+    }
+
+    String? shiftDate;
+    try {
+      final replacementContext = await _shiftRepository
+          .findReplacementCandidates(assignmentId);
+      shiftDate = replacementContext.shiftDate.toIso8601String();
+    } catch (_) {
+      shiftDate = null;
+    }
+
+    getIt<ShiftOpenIntentController>().queue(
+      assignmentId: assignmentId,
+      shiftDate: shiftDate,
+      teamId: sondage.workflowContext.resolvedTeamId,
+      preferredUserIds: sondage.workflowAvailableResponderUserIds,
+      openDialogWhenAssignmentMissing: true,
+    );
+    if (!mounted) {
+      return;
+    }
+    await NotificationNavigation.openShifts(context: context);
+  }
+
+  Future<void> _autoReplaceLinkedShift(SondageEntity sondage) async {
+    final assignmentId = sondage.workflowContext.resolvedAssignmentId;
+    if (assignmentId == null || assignmentId.isEmpty) {
+      AppSnackBar.showWarning(context, _linkedShiftUnavailableMessage());
+      return;
+    }
+    if (sondage.workflowAvailableResponderUserIds.isEmpty) {
+      AppSnackBar.showWarning(context, _noAvailableSurveyResponsesMessage());
+      return;
+    }
+
+    String? shiftDate;
+    try {
+      final replacementContext = await _shiftRepository
+          .findReplacementCandidates(assignmentId);
+      shiftDate = replacementContext.shiftDate.toIso8601String();
+    } catch (_) {
+      shiftDate = null;
+    }
+
+    getIt<ShiftOpenIntentController>().queue(
+      assignmentId: assignmentId,
+      shiftDate: shiftDate,
+      teamId: sondage.workflowContext.resolvedTeamId,
+      preferredUserIds: sondage.workflowAvailableResponderUserIds,
+      autoReplaceFromWorkflow: true,
+      openDialogWhenAssignmentMissing: true,
+    );
+    if (!mounted) {
+      return;
+    }
+    await NotificationNavigation.openShifts(context: context);
+  }
+
   String _reminderSentMessage(int count) {
     return switch (Localizations.localeOf(context).languageCode) {
       'it' => 'Promemoria inviato a $count membro/i.',
       'fr' => 'Rappel envoye a $count membre(s).',
       'es' => 'Recordatorio enviado a $count miembro(s).',
       _ => 'Reminder sent to $count member(s).',
+    };
+  }
+
+  String _linkedShiftUnavailableMessage() {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Questo sondaggio non ha un turno collegato apribile.',
+      'fr' => 'Ce sondage n a pas de quart lie ouvrable.',
+      'es' => 'Esta encuesta no tiene un turno vinculado que se pueda abrir.',
+      _ => 'This survey does not have a linked shift to open.',
+    };
+  }
+
+  String _noAvailableSurveyResponsesMessage() {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Nessun collega ha ancora risposto disponibile nel sondaggio.',
+      'fr' => 'Aucun collegue n a encore repondu disponible dans le sondage.',
+      'es' =>
+        'Ningun companero ha respondido todavia como disponible en la encuesta.',
+      _ => 'No teammate has replied available in the survey yet.',
     };
   }
 
@@ -544,6 +631,13 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
                                     formatDate: _formatDate,
                                     colorScheme: colorScheme,
                                     textTheme: textTheme,
+                                    onOpenLinkedShift:
+                                        sondage
+                                                .workflowContext
+                                                .resolvedAssignmentId !=
+                                            null
+                                        ? () => _openLinkedShift(sondage)
+                                        : null,
                                   );
                                 },
                               );
@@ -610,6 +704,25 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
                                             : null,
                                         onRemind: _canRemindForSurvey(sondage)
                                             ? () => _openReminderDialog(sondage)
+                                            : null,
+                                        onOpenLinkedShift:
+                                            sondage
+                                                    .workflowContext
+                                                    .resolvedAssignmentId !=
+                                                null
+                                            ? () => _openLinkedShift(sondage)
+                                            : null,
+                                        onAutoReplaceLinkedShift:
+                                            sondage
+                                                        .workflowContext
+                                                        .resolvedAssignmentId !=
+                                                    null &&
+                                                sondage
+                                                    .workflowAvailableResponderUserIds
+                                                    .isNotEmpty
+                                            ? () => _autoReplaceLinkedShift(
+                                                sondage,
+                                              )
                                             : null,
                                       );
                                     },

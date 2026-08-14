@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
@@ -16,6 +17,7 @@ import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 import 'package:note_sondage/ui/widgets/time_range_picker.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
+import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
 
 const double _kSondageTeamDropdownMaxHeight = 360;
 
@@ -26,6 +28,7 @@ class SondageCreateForm extends StatefulWidget {
     this.onCloseRequested,
     this.showHeader = true,
     this.initialSondage,
+    this.initialPrefill,
     this.tutorialId,
   });
 
@@ -33,6 +36,7 @@ class SondageCreateForm extends StatefulWidget {
   final VoidCallback? onCloseRequested;
   final bool showHeader;
   final SondageEntity? initialSondage;
+  final SondageCreatePrefill? initialPrefill;
   final String? tutorialId;
 
   @override
@@ -56,6 +60,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   bool _allowMultipleResponses = false;
   bool _hasExpiry = false;
   bool _isSubmitting = false;
+  bool _isPublishingAfterSave = false;
   bool _tutorialScheduled = false;
   bool _expiryEdited = false;
   TimeOfDay _start = const TimeOfDay(hour: 9, minute: 0);
@@ -64,6 +69,20 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   String? _selectedTeamId;
   late Future<List<TeamEntity>> _teamsFuture;
   bool get _isEditing => widget.initialSondage != null;
+  bool get _isShiftGapWorkflowDraft {
+    final initial = widget.initialSondage;
+    if (initial == null) {
+      return false;
+    }
+    return initial.isShiftGapAvailabilityWorkflow;
+  }
+
+  bool get _canSaveAndPublishWorkflowDraft =>
+      _isEditing &&
+      _isShiftGapWorkflowDraft &&
+      _canEditCurrentSondage &&
+      (widget.initialSondage?.canPublish ?? false);
+
   bool get _canEditCurrentSondage {
     final initial = widget.initialSondage;
     if (initial == null) {
@@ -87,7 +106,8 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     super.didUpdateWidget(oldWidget);
     final previousId = oldWidget.initialSondage?.id;
     final currentId = widget.initialSondage?.id;
-    if (previousId != currentId) {
+    if (previousId != currentId ||
+        oldWidget.initialPrefill != widget.initialPrefill) {
       _replaceFormWithInitialData();
     }
   }
@@ -163,6 +183,49 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   void _hydrateForm() {
     final initial = widget.initialSondage;
     if (initial == null) {
+      final prefill = widget.initialPrefill;
+      if (prefill != null) {
+        _questionController.text = prefill.question;
+        _descriptionController.text = prefill.description ?? '';
+        _selectedTeamId = prefill.teamId?.trim().isEmpty == true
+            ? null
+            : prefill.teamId?.trim();
+        _allowMultipleResponses = prefill.allowMultipleResponses;
+        _hasExpiry = prefill.expiryDate != null;
+        if (prefill.expiryDate != null) {
+          final expiry = prefill.expiryDate!;
+          _expiryAnchorDate = DateTime(expiry.year, expiry.month, expiry.day);
+          final suggestedStartMinutes = (expiry.hour * 60 + expiry.minute) - 60;
+          final normalizedStartMinutes = suggestedStartMinutes < 0
+              ? 0
+              : suggestedStartMinutes;
+          _start = TimeOfDay(
+            hour: normalizedStartMinutes ~/ 60,
+            minute: normalizedStartMinutes % 60,
+          );
+          _end = TimeOfDay(hour: expiry.hour, minute: expiry.minute);
+          _expiryEdited = true;
+        }
+
+        final prefilledOptions = prefill.options
+            .map((option) => option.trim())
+            .where((option) => option.isNotEmpty)
+            .toList();
+        final seededOptions = prefilledOptions.isEmpty
+            ? <String>['', '']
+            : <String>[
+                ...prefilledOptions.take(10),
+                if (prefilledOptions.length < 10) '',
+              ];
+        for (final option in seededOptions) {
+          _optionControllers.add(_buildOptionController(option));
+        }
+        while (_optionControllers.length < 2) {
+          _optionControllers.add(_buildOptionController());
+        }
+        return;
+      }
+
       _optionControllers.add(_buildOptionController());
       _optionControllers.add(_buildOptionController());
       return;
@@ -332,11 +395,18 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
 
   bool _isValidTimeRange() => _timeToMinutes(_end) > _timeToMinutes(_start);
 
-  void _submit() {
+  void _clearPublishAfterSaveIntent() {
+    if (_isPublishingAfterSave && mounted) {
+      setState(() => _isPublishingAfterSave = false);
+    }
+  }
+
+  Future<void> _submit() async {
     if (_isSubmitting) {
       return;
     }
     if (_isEditing && !_canEditCurrentSondage) {
+      _clearPublishAfterSaveIntent();
       _showSnackBar(_strings.onlyDraftSurveysCanBeEdited);
       return;
     }
@@ -347,21 +417,26 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     final teamId = _selectedTeamId ?? '';
 
     if (!(_formKey.currentState?.validate() ?? false)) {
+      _clearPublishAfterSaveIntent();
       return;
     }
     if (question.isEmpty) {
+      _clearPublishAfterSaveIntent();
       _showSnackBar(_strings.enterSurveyQuestion);
       return;
     }
     if (teamId.isEmpty) {
+      _clearPublishAfterSaveIntent();
       _showSnackBar(_strings.selectTeamBeforeCreatingSurvey);
       return;
     }
     if (options.length < 2) {
+      _clearPublishAfterSaveIntent();
       _showSnackBar(_strings.addAtLeastTwoOptions);
       return;
     }
     if (_hasExpiry && !_isValidTimeRange()) {
+      _clearPublishAfterSaveIntent();
       _showSnackBar(_strings.endTimeMustBeAfterStartTime);
       return;
     }
@@ -375,6 +450,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         (initialExpiry == null ||
             !resolvedExpiry.isAtSameMomentAs(initialExpiry));
     if (isChangedPastExpiry) {
+      _clearPublishAfterSaveIntent();
       _showSnackBar('La nuova scadenza deve essere nel futuro.');
       return;
     }
@@ -397,6 +473,11 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       teamName: initial?.teamName,
       description: description.isEmpty ? null : description,
       allowMultipleResponses: _allowMultipleResponses,
+      contextType: initial?.contextType,
+      contextId: initial?.contextId,
+      sourceType: initial?.sourceType,
+      sourceId: initial?.sourceId,
+      sourceMessageId: initial?.sourceMessageId,
       options: List.generate(
         options.length,
         (index) => SondageOptionEntity(
@@ -409,26 +490,76 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       ),
       currentUserOptionId: initial?.currentUserOptionId,
       currentUserOptionIds: initial?.currentUserOptionIds ?? const [],
+      voterUserIds: initial?.voterUserIds ?? const [],
       canEdit: initial?.canEdit ?? false,
       canDelete: initial?.canDelete ?? false,
       canPublish: initial?.canPublish ?? false,
       canVote: initial?.canVote ?? false,
       canClose: initial?.canClose ?? false,
+      canReopen: initial?.canReopen ?? false,
     );
+
+    if (_canSaveAndPublishWorkflowDraft && _isPublishingAfterSave) {
+      await _submitAndPublish(payload);
+      return;
+    }
 
     context.read<SondageBloc>().add(
       _isEditing ? UpdateSondageEvent(payload) : CreateSondageEvent(payload),
     );
+  }
 
-    if (_isEditing && widget.onCloseRequested != null) {
-      final onCreated = widget.onCreated;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        widget.onCloseRequested!.call();
-        onCreated?.call();
+  Future<void> _submitAndPublish(SondageEntity payload) async {
+    final bloc = context.read<SondageBloc>();
+    try {
+      final updated = await bloc.sondageUseCase.updateSondage(payload);
+      if (!mounted) {
+        return;
+      }
+      bloc.add(SyncCachedSondageEvent(updated));
+
+      final published = await bloc.sondageUseCase.publishSondage(updated.id);
+      if (!mounted) {
+        return;
+      }
+      bloc.add(SyncCachedSondageEvent(published));
+      if (!bloc.isClosed) {
+        bloc.add(LoadSondagesEvent());
+      }
+      setState(() {
+        _isSubmitting = false;
+        _isPublishingAfterSave = false;
       });
+      _showSnackBar(
+        _strings.shiftGapPublishSuccessMessage,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+      );
+      if (widget.onCloseRequested != null) {
+        widget.onCloseRequested!.call();
+        final onCreated = widget.onCreated;
+        if (onCreated != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onCreated();
+          });
+        }
+      } else {
+        widget.onCreated?.call();
+      }
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isSubmitting = false;
+        _isPublishingAfterSave = false;
+      });
+      _showSnackBar(
+        AppErrorMessageResolver.resolve(
+          e,
+          fallback: _strings.shiftGapPublishErrorMessage,
+        ),
+        backgroundColor: Colors.red,
+      );
     }
   }
 
@@ -700,7 +831,10 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         if (!mounted) {
           return;
         }
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+          _isPublishingAfterSave = false;
+        });
         if (state is SondageCreated) {
           _showSnackBar(
             'Creazione del sondaggio in sincronizzazione...',
@@ -825,6 +959,63 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                   ),
                 ),
                 const SizedBox(height: 20),
+              ],
+              if (_isShiftGapWorkflowDraft) ...[
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: colorScheme.secondary.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: colorScheme.secondary.withValues(
+                              alpha: 0.16,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 20,
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                strings.shiftGapWorkflowTitle,
+                                style: textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: colorScheme.iconLabel,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                strings.shiftGapWorkflowDescription,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.descriptionColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
               ],
               Showcase(
                 key: _questionSectionKey,
@@ -1058,24 +1249,88 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                 key: _submitSectionKey,
                 title: strings.createSurveyTitle,
                 description: strings.createSurveyDescription,
-                child: CustomAppButton(
-                  onPressed:
-                      _isSubmitting || (_isEditing && !_canEditCurrentSondage)
-                      ? null
-                      : _submit,
-                  type: ButtonType.filled,
-                  backgroundColor: colorScheme.secondary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  borderRadius: 16,
-                  isActive: true,
-                  fullWidth: true,
-                  isLoading: _isSubmitting,
-                  child: Text(
-                    _isEditing
-                        ? strings.updateSurveyAction(localization.sondage)
-                        : '${localization.create} ${localization.sondage}',
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_canSaveAndPublishWorkflowDraft) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomAppButton(
+                              onPressed:
+                                  _isSubmitting ||
+                                      (_isEditing && !_canEditCurrentSondage)
+                                  ? null
+                                  : _submit,
+                              type: ButtonType.outlined,
+                              foregroundColor: colorScheme.secondary,
+                              borderColor: colorScheme.secondary,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              borderRadius: 16,
+                              isActive: true,
+                              fullWidth: true,
+                              child: Text(
+                                strings.updateSurveyAction(
+                                  localization.sondage,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomAppButton(
+                              onPressed:
+                                  _isSubmitting ||
+                                      (_isEditing && !_canEditCurrentSondage)
+                                  ? null
+                                  : () {
+                                      setState(
+                                        () => _isPublishingAfterSave = true,
+                                      );
+                                      _submit();
+                                    },
+                              type: ButtonType.filled,
+                              backgroundColor: colorScheme.secondary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              borderRadius: 16,
+                              isActive: true,
+                              fullWidth: true,
+                              isLoading: _isSubmitting,
+                              child: Text(strings.shiftGapSaveAndPublishAction),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        strings.shiftGapSaveAndPublishHelper,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.descriptionColor,
+                        ),
+                      ),
+                    ] else
+                      CustomAppButton(
+                        onPressed:
+                            _isSubmitting ||
+                                (_isEditing && !_canEditCurrentSondage)
+                            ? null
+                            : _submit,
+                        type: ButtonType.filled,
+                        backgroundColor: colorScheme.secondary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        borderRadius: 16,
+                        isActive: true,
+                        fullWidth: true,
+                        isLoading: _isSubmitting,
+                        child: Text(
+                          _isEditing
+                              ? strings.updateSurveyAction(localization.sondage)
+                              : '${localization.create} ${localization.sondage}',
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -1122,6 +1377,8 @@ class _SondageCreateStrings {
     required this.teamAvailableForSurvey,
     required this.editSurveyIntro,
     required this.createSurveyIntro,
+    required this.shiftGapWorkflowTitle,
+    required this.shiftGapWorkflowDescription,
     required this.surveyQuestionTitle,
     required this.surveyQuestionDescription,
     required this.optionalDescription,
@@ -1136,6 +1393,10 @@ class _SondageCreateStrings {
     required this.surveyNoLongerEditable,
     required this.createSurveyTitle,
     required this.createSurveyDescription,
+    required this.shiftGapSaveAndPublishAction,
+    required this.shiftGapSaveAndPublishHelper,
+    required this.shiftGapPublishSuccessMessage,
+    required this.shiftGapPublishErrorMessage,
     required this.editSurveyHeaderBuilder,
     required this.updateSurveyActionBuilder,
   });
@@ -1156,6 +1417,8 @@ class _SondageCreateStrings {
   final String teamAvailableForSurvey;
   final String editSurveyIntro;
   final String createSurveyIntro;
+  final String shiftGapWorkflowTitle;
+  final String shiftGapWorkflowDescription;
   final String surveyQuestionTitle;
   final String surveyQuestionDescription;
   final String optionalDescription;
@@ -1170,6 +1433,10 @@ class _SondageCreateStrings {
   final String surveyNoLongerEditable;
   final String createSurveyTitle;
   final String createSurveyDescription;
+  final String shiftGapSaveAndPublishAction;
+  final String shiftGapSaveAndPublishHelper;
+  final String shiftGapPublishSuccessMessage;
+  final String shiftGapPublishErrorMessage;
   final String Function(String surveyLabel) editSurveyHeaderBuilder;
   final String Function(String surveyLabel) updateSurveyActionBuilder;
 
@@ -1212,6 +1479,9 @@ class _SondageCreateStrings {
         'Update the question, description, options, and target team for this survey.',
     createSurveyIntro:
         'Create a draft with the question, description, options, and target team.',
+    shiftGapWorkflowTitle: 'Shift coverage smart action',
+    shiftGapWorkflowDescription:
+        'This draft was generated to help cover an open shift. You can adjust the survey before publishing it to the team.',
     surveyQuestionTitle: 'Survey question',
     surveyQuestionDescription:
         'Write the main question here and add a short description when you want to give more context.',
@@ -1232,6 +1502,13 @@ class _SondageCreateStrings {
     createSurveyTitle: 'Create survey',
     createSurveyDescription:
         'Once the question, options, and team are ready, use this button to create the survey draft.',
+    shiftGapSaveAndPublishAction: 'Save and publish',
+    shiftGapSaveAndPublishHelper:
+        'Use this action when the survey is ready to be sent to the team for shift coverage.',
+    shiftGapPublishSuccessMessage:
+        'Shift coverage survey published successfully.',
+    shiftGapPublishErrorMessage:
+        'We could not save and publish the survey right now.',
     editSurveyHeaderBuilder: _editHeaderEn,
     updateSurveyActionBuilder: _updateActionEn,
   );
@@ -1259,6 +1536,9 @@ class _SondageCreateStrings {
         'Aggiorna domanda, descrizione, opzioni e team del sondaggio.',
     createSurveyIntro:
         'Crea una bozza con domanda, descrizione, opzioni e team di destinazione.',
+    shiftGapWorkflowTitle: 'Smart Action copertura turno',
+    shiftGapWorkflowDescription:
+        'Questa bozza e stata generata per aiutare a coprire un turno scoperto. Puoi modificarla prima di pubblicarla al team.',
     surveyQuestionTitle: 'Domanda del sondaggio',
     surveyQuestionDescription:
         'Qui scrivi la domanda principale e, se serve, una breve descrizione per dare contesto.',
@@ -1279,6 +1559,13 @@ class _SondageCreateStrings {
     createSurveyTitle: 'Crea il sondaggio',
     createSurveyDescription:
         'Quando domanda, opzioni e team sono pronti, usa questo pulsante per creare la bozza del sondaggio.',
+    shiftGapSaveAndPublishAction: 'Salva e pubblica',
+    shiftGapSaveAndPublishHelper:
+        'Usa questa azione quando il sondaggio e pronto per essere inviato al team e coprire il turno.',
+    shiftGapPublishSuccessMessage:
+        'Sondaggio di copertura turno pubblicato con successo.',
+    shiftGapPublishErrorMessage:
+        'Impossibile salvare e pubblicare il sondaggio in questo momento.',
     editSurveyHeaderBuilder: _editHeaderIt,
     updateSurveyActionBuilder: _updateActionIt,
   );
@@ -1307,6 +1594,9 @@ class _SondageCreateStrings {
         'Mettez à jour la question, la description, les options et l’équipe cible du sondage.',
     createSurveyIntro:
         'Créez un brouillon avec la question, la description, les options et l’équipe cible.',
+    shiftGapWorkflowTitle: 'Action intelligente de couverture',
+    shiftGapWorkflowDescription:
+        'Ce brouillon a ete genere pour aider a couvrir un quart ouvert. Vous pouvez le modifier avant de le publier a l equipe.',
     surveyQuestionTitle: 'Question du sondage',
     surveyQuestionDescription:
         'Saisissez ici la question principale et ajoutez une courte description si vous souhaitez donner plus de contexte.',
@@ -1327,6 +1617,13 @@ class _SondageCreateStrings {
     createSurveyTitle: 'Créer le sondage',
     createSurveyDescription:
         'Quand la question, les options et l’équipe sont prêtes, utilisez ce bouton pour créer le brouillon du sondage.',
+    shiftGapSaveAndPublishAction: 'Enregistrer et publier',
+    shiftGapSaveAndPublishHelper:
+        'Utilisez cette action lorsque le sondage est pret a etre envoye a l equipe pour couvrir le quart.',
+    shiftGapPublishSuccessMessage:
+        'Le sondage de couverture a ete publie avec succes.',
+    shiftGapPublishErrorMessage:
+        'Impossible d enregistrer et publier le sondage pour le moment.',
     editSurveyHeaderBuilder: _editHeaderFr,
     updateSurveyActionBuilder: _updateActionFr,
   );
@@ -1354,6 +1651,9 @@ class _SondageCreateStrings {
         'Actualiza la pregunta, la descripción, las opciones y el equipo de destino de la encuesta.',
     createSurveyIntro:
         'Crea un borrador con la pregunta, la descripción, las opciones y el equipo de destino.',
+    shiftGapWorkflowTitle: 'Smart Action de cobertura',
+    shiftGapWorkflowDescription:
+        'Este borrador se genero para ayudar a cubrir un turno abierto. Puedes ajustarlo antes de publicarlo al equipo.',
     surveyQuestionTitle: 'Pregunta de la encuesta',
     surveyQuestionDescription:
         'Escribe aquí la pregunta principal y añade una breve descripción si quieres dar más contexto.',
@@ -1375,6 +1675,13 @@ class _SondageCreateStrings {
     createSurveyTitle: 'Crear encuesta',
     createSurveyDescription:
         'Cuando la pregunta, las opciones y el equipo estén listos, usa este botón para crear el borrador de la encuesta.',
+    shiftGapSaveAndPublishAction: 'Guardar y publicar',
+    shiftGapSaveAndPublishHelper:
+        'Usa esta accion cuando la encuesta este lista para enviarse al equipo y cubrir el turno.',
+    shiftGapPublishSuccessMessage:
+        'Encuesta de cobertura de turno publicada correctamente.',
+    shiftGapPublishErrorMessage:
+        'No se pudo guardar y publicar la encuesta en este momento.',
     editSurveyHeaderBuilder: _editHeaderEs,
     updateSurveyActionBuilder: _updateActionEs,
   );
