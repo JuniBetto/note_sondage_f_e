@@ -377,6 +377,29 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     await NotificationNavigation.openShifts(context: context);
   }
 
+  void _openLinkedConversation(SondageEntity sondage) {
+    final teamId =
+        sondage.workflowContext.resolvedTeamId ?? sondage.teamId?.trim();
+    final conversationId = sondage.workflowContext.resolvedSourceConversationId;
+    if (teamId == null ||
+        teamId.isEmpty ||
+        conversationId == null ||
+        conversationId.isEmpty) {
+      AppSnackBar.showWarning(context, _linkedConversationUnavailableMessage());
+      return;
+    }
+
+    final path = Uri(
+      path: RouterPaths.chat,
+      queryParameters: <String, String>{
+        'teamId': teamId,
+        'conversationId': conversationId,
+        'focus': 'latest',
+      },
+    ).toString();
+    context.go(path);
+  }
+
   Future<void> _autoReplaceLinkedShift(SondageEntity sondage) async {
     final assignmentId = sondage.workflowContext.resolvedAssignmentId;
     if (assignmentId == null || assignmentId.isEmpty) {
@@ -426,6 +449,16 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
       'fr' => 'Ce sondage n a pas de quart lie ouvrable.',
       'es' => 'Esta encuesta no tiene un turno vinculado que se pueda abrir.',
       _ => 'This survey does not have a linked shift to open.',
+    };
+  }
+
+  String _linkedConversationUnavailableMessage() {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Questo sondaggio non ha una conversazione collegata apribile.',
+      'fr' => 'Ce sondage n a pas de conversation liee ouvrable.',
+      'es' =>
+        'Esta encuesta no tiene una conversacion vinculada que se pueda abrir.',
+      _ => 'This survey does not have a linked conversation to open.',
     };
   }
 
@@ -631,6 +664,13 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
                                     formatDate: _formatDate,
                                     colorScheme: colorScheme,
                                     textTheme: textTheme,
+                                    onOpenLinkedConversation:
+                                        sondage
+                                                .workflowContext
+                                                .resolvedSourceConversationId !=
+                                            null
+                                        ? () => _openLinkedConversation(sondage)
+                                        : null,
                                     onOpenLinkedShift:
                                         sondage
                                                 .workflowContext
@@ -704,6 +744,15 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
                                             : null,
                                         onRemind: _canRemindForSurvey(sondage)
                                             ? () => _openReminderDialog(sondage)
+                                            : null,
+                                        onOpenLinkedConversation:
+                                            sondage
+                                                    .workflowContext
+                                                    .resolvedSourceConversationId !=
+                                                null
+                                            ? () => _openLinkedConversation(
+                                                sondage,
+                                              )
                                             : null,
                                         onOpenLinkedShift:
                                             sondage

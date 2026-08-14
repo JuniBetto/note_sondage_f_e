@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
+import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
@@ -756,6 +758,11 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           : false,
       ownerTeams: _manageableTeams,
       suggestedUserIds: suggestedUserIds,
+      onOpenLinkedConversation:
+          existing != null &&
+              existing.workflowContext.resolvedSourceConversationId != null
+          ? () => _openLinkedConversationForAssignment(existing)
+          : null,
     );
     if (result == null) return;
     if (!context.mounted) return;
@@ -829,6 +836,34 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     }
 
     await _createAssignments(context, shiftBloc, date, result);
+  }
+
+  void _openLinkedConversationForAssignment(ShiftAssignmentEntity assignment) {
+    final teamId = assignment.workflowContext.resolvedTeamId;
+    final conversationId =
+        assignment.workflowContext.resolvedSourceConversationId;
+    if (teamId == null ||
+        teamId.isEmpty ||
+        conversationId == null ||
+        conversationId.isEmpty) {
+      AppSnackBar.showWarning(
+        context,
+        _isItalian(context)
+            ? 'Questo turno non ha una conversazione collegata apribile.'
+            : 'This shift does not have a linked conversation to open.',
+      );
+      return;
+    }
+
+    final path = Uri(
+      path: RouterPaths.sondageChatConversation,
+      queryParameters: <String, String>{
+        'teamId': teamId,
+        'conversationId': conversationId,
+        'focus': 'latest',
+      },
+    ).toString();
+    context.go(path);
   }
 
   Future<bool> _tryAutoReplaceFromWorkflow(
@@ -1005,6 +1040,11 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
               teamShiftGroupId: result.isPublic ? uuid.v4() : null,
               targetUserId: plan.targetUserId,
               targetUserName: _optimisticTargetUserName(plan.targetUserId),
+              contextType: result.contextType,
+              contextId: result.contextId,
+              sourceType: result.sourceType,
+              sourceId: result.sourceId,
+              sourceMessageId: result.sourceMessageId,
             ),
           );
         }
@@ -1027,6 +1067,11 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
             teamShiftGroupId: sharedGroupId,
             targetUserId: targetUserId,
             targetUserName: _optimisticTargetUserName(targetUserId),
+            contextType: result.contextType,
+            contextId: result.contextId,
+            sourceType: result.sourceType,
+            sourceId: result.sourceId,
+            sourceMessageId: result.sourceMessageId,
           ),
         );
       }

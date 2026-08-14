@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/clocking/ui/web/clocking_web.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/web/shift_web_page.dart';
 import 'package:note_sondage/feature/sondage/ui/web/sondage_web.dart';
+import 'package:note_sondage/feature/task/ui/web/task_web_page.dart';
 import 'package:note_sondage/feature/team/ui/web/teams_web.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -50,6 +51,7 @@ class _MainWebState extends State<MainWeb> {
   final GlobalKey _clockingKey = GlobalKey();
   final GlobalKey _sondageKey = GlobalKey();
   final GlobalKey _shiftsKey = GlobalKey();
+  final GlobalKey _tasksKey = GlobalKey();
   final GlobalKey _chatKey = GlobalKey();
   final GlobalKey _contentKey = GlobalKey();
   final GlobalKey _notificationsKey = GlobalKey();
@@ -168,14 +170,27 @@ class _MainWebState extends State<MainWeb> {
                   ),
                 ),
                 _buildShowcase(
+                  showcaseKey: _tasksKey,
+                  title: 'Task',
+                  description: _navDescription(context),
+                  child: SidebarItem(
+                    key: const ValueKey(6),
+                    icon: Icons.task_alt_rounded,
+                    label: 'Task',
+                    index: 6,
+                    isSmallScreen: isExpanded,
+                    lastIndexes: lastIndexes,
+                  ),
+                ),
+                _buildShowcase(
                   showcaseKey: _chatKey,
                   title: 'Chat',
                   description: _navDescription(context),
                   child: SidebarItem(
-                    key: const ValueKey(6),
+                    key: const ValueKey(7),
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Chat',
-                    index: 6,
+                    index: 7,
                     isSmallScreen: isExpanded,
                     lastIndexes: lastIndexes,
                   ),
@@ -229,6 +244,7 @@ class _MainWebState extends State<MainWeb> {
                   value: GetIt.instance<ShiftBloc>(),
                   child: const ShiftWebPage(),
                 ),
+                const TaskWebPage(),
                 ChatWebPage(
                   initialTeamId: widget.chatInitialTeamId,
                   initialMemberUserId: widget.chatInitialMemberUserId,
@@ -358,7 +374,8 @@ class _MainWebState extends State<MainWeb> {
         navIndex == 3 ||
         navIndex == 4 ||
         navIndex == 5 ||
-        navIndex == 6;
+        navIndex == 6 ||
+        navIndex == 7;
   }
 
   bool _isDelegatedTutorialIndex(int navIndex) {
@@ -367,7 +384,8 @@ class _MainWebState extends State<MainWeb> {
         navIndex == 3 ||
         navIndex == 4 ||
         navIndex == 5 ||
-        navIndex == 6;
+        navIndex == 6 ||
+        navIndex == 7;
   }
 
   bool _shouldBypassShowcaseInDebug() {
@@ -380,7 +398,8 @@ class _MainWebState extends State<MainWeb> {
       3 => _clockingKey,
       4 => _sondageKey,
       5 => _shiftsKey,
-      6 => _chatKey,
+      6 => _tasksKey,
+      7 => _chatKey,
       _ => _homeKey,
     };
   }
@@ -391,7 +410,8 @@ class _MainWebState extends State<MainWeb> {
       3 => localizations.clockingInOut,
       4 => localizations.sondage,
       5 => localizations.myShifts,
-      6 => 'Chat',
+      6 => 'Task',
+      7 => 'Chat',
       _ => localizations.home,
     };
   }
@@ -432,6 +452,10 @@ class _MainWebState extends State<MainWeb> {
             ? 'Questa pagina raccoglie i tuoi turni e i relativi dettagli operativi.'
             : 'This page gathers your shifts and their operational details in one place.',
       6 =>
+        isItalian
+            ? 'Qui segui i task operativi del team, con stato, priorita e assegnazione.'
+            : 'Track the team operational tasks here with status, priority, and assignment.',
+      7 =>
         isItalian
             ? 'Qui puoi seguire la conversazione del team e inviare messaggi in tempo reale.'
             : 'Follow the team conversation here and send messages in real time.',

@@ -129,6 +129,7 @@ class SondageDetailInfoSection extends StatelessWidget {
     required this.colorScheme,
     required this.textTheme,
     this.onOpenLinkedShift,
+    this.onOpenLinkedConversation,
   });
 
   final SondageEntity sondage;
@@ -136,6 +137,7 @@ class SondageDetailInfoSection extends StatelessWidget {
   final ColorScheme colorScheme;
   final TextTheme textTheme;
   final VoidCallback? onOpenLinkedShift;
+  final VoidCallback? onOpenLinkedConversation;
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +183,27 @@ class SondageDetailInfoSection extends StatelessWidget {
             textTheme: textTheme,
             colorScheme: colorScheme,
           ),
+          if (_isChatMessageSource) ...[
+            const Divider(height: 24),
+            SondageLabelValue(
+              label: _sourceLabel(context),
+              value: _sourceValue(context),
+              icon: Icons.chat_bubble_outline_rounded,
+              textTheme: textTheme,
+              colorScheme: colorScheme,
+            ),
+            if (onOpenLinkedConversation != null) ...[
+              const Divider(height: 24),
+              _WorkflowLinkCard(
+                title: _linkedConversationTitle(context),
+                description: _linkedConversationDescription(context),
+                actionLabel: _linkedConversationAction(context),
+                colorScheme: colorScheme,
+                textTheme: textTheme,
+                onPressed: onOpenLinkedConversation!,
+              ),
+            ],
+          ],
           if (sondage.expiryDate != null) ...[
             const Divider(height: 24),
             SondageLabelValue(
@@ -206,6 +229,28 @@ class SondageDetailInfoSection extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  bool get _isChatMessageSource {
+    return sondage.workflowContext.normalizedSourceType == 'chat_message';
+  }
+
+  String _sourceLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Origine',
+      'fr' => 'Origine',
+      'es' => 'Origen',
+      _ => 'Source',
+    };
+  }
+
+  String _sourceValue(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Messaggio chat',
+      'fr' => 'Message chat',
+      'es' => 'Mensaje de chat',
+      _ => 'Chat message',
+    };
   }
 
   String _linkedShiftTitle(BuildContext context) {
@@ -236,6 +281,37 @@ class SondageDetailInfoSection extends StatelessWidget {
       'fr' => 'Ouvrir le quart lie',
       'es' => 'Abrir turno vinculado',
       _ => 'Open linked shift',
+    };
+  }
+
+  String _linkedConversationTitle(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Conversazione collegata',
+      'fr' => 'Conversation liee',
+      'es' => 'Conversacion vinculada',
+      _ => 'Linked conversation',
+    };
+  }
+
+  String _linkedConversationDescription(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' =>
+        'Questo oggetto nasce da un messaggio chat. Apri la conversazione per rivedere il contesto originale.',
+      'fr' =>
+        'Cet objet provient d un message chat. Ouvrez la conversation pour revoir le contexte d origine.',
+      'es' =>
+        'Este elemento nace de un mensaje de chat. Abre la conversacion para revisar el contexto original.',
+      _ =>
+        'This item comes from a chat message. Open the conversation to review the original context.',
+    };
+  }
+
+  String _linkedConversationAction(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Apri conversazione collegata',
+      'fr' => 'Ouvrir la conversation liee',
+      'es' => 'Abrir conversacion vinculada',
+      _ => 'Open linked conversation',
     };
   }
 }
@@ -556,6 +632,7 @@ class SondageOwnerActionsSection extends StatelessWidget {
     this.onDelete,
     this.onRemind,
     this.onOpenLinkedShift,
+    this.onOpenLinkedConversation,
     this.onAutoReplaceLinkedShift,
   });
 
@@ -566,6 +643,7 @@ class SondageOwnerActionsSection extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onRemind;
   final VoidCallback? onOpenLinkedShift;
+  final VoidCallback? onOpenLinkedConversation;
   final VoidCallback? onAutoReplaceLinkedShift;
 
   @override
@@ -581,6 +659,7 @@ class SondageOwnerActionsSection extends StatelessWidget {
         !sondage.canDelete &&
         onRemind == null &&
         onOpenLinkedShift == null &&
+        onOpenLinkedConversation == null &&
         onAutoReplaceLinkedShift == null) {
       return const SizedBox.shrink();
     }
@@ -645,6 +724,12 @@ class SondageOwnerActionsSection extends StatelessWidget {
                   onPressed: onOpenLinkedShift,
                   icon: const Icon(Icons.event_available_rounded),
                   label: Text(_openLinkedShiftLabel(context)),
+                ),
+              if (onOpenLinkedConversation != null)
+                FilledButton.tonalIcon(
+                  onPressed: onOpenLinkedConversation,
+                  icon: const Icon(Icons.chat_bubble_outline_rounded),
+                  label: Text(_openLinkedConversationLabel(context)),
                 ),
               if (onAutoReplaceLinkedShift != null)
                 FilledButton.icon(
@@ -829,6 +914,15 @@ class SondageOwnerActionsSection extends StatelessWidget {
       'fr' => 'Ouvrir le quart lie',
       'es' => 'Abrir turno vinculado',
       _ => 'Open linked shift',
+    };
+  }
+
+  String _openLinkedConversationLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Apri conversazione collegata',
+      'fr' => 'Ouvrir la conversation liee',
+      'es' => 'Abrir conversacion vinculada',
+      _ => 'Open linked conversation',
     };
   }
 

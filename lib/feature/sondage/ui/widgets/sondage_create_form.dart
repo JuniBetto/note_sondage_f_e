@@ -457,6 +457,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
 
     setState(() => _isSubmitting = true);
     final initial = widget.initialSondage;
+    final prefill = widget.initialPrefill;
     final payload = SondageEntity(
       id: initial?.id ?? '',
       name: question,
@@ -473,11 +474,11 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       teamName: initial?.teamName,
       description: description.isEmpty ? null : description,
       allowMultipleResponses: _allowMultipleResponses,
-      contextType: initial?.contextType,
-      contextId: initial?.contextId,
-      sourceType: initial?.sourceType,
-      sourceId: initial?.sourceId,
-      sourceMessageId: initial?.sourceMessageId,
+      contextType: initial?.contextType ?? prefill?.contextType,
+      contextId: initial?.contextId ?? prefill?.contextId,
+      sourceType: initial?.sourceType ?? prefill?.sourceType,
+      sourceId: initial?.sourceId ?? prefill?.sourceId,
+      sourceMessageId: initial?.sourceMessageId ?? prefill?.sourceMessageId,
       options: List.generate(
         options.length,
         (index) => SondageOptionEntity(

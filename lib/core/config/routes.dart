@@ -12,6 +12,8 @@ import 'package:note_sondage/feature/shift/ui/mobile/shift_mobile_page.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/sondage_detail_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/web/sondage_detail_web.dart';
+import 'package:note_sondage/feature/task/ui/mobile/task_mobile_page.dart';
+import 'package:note_sondage/feature/task/ui/web/task_web_page.dart';
 import 'package:note_sondage/feature/team/ui/mobile/role_page.dart';
 import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/update_team_mobile.dart';
@@ -58,8 +60,10 @@ int _pathToNavIndex(String path) {
       return 4;
     case RouterPaths.shifts:
       return 5;
-    case RouterPaths.chat:
+    case RouterPaths.tasks:
       return 6;
+    case RouterPaths.chat:
+      return 7;
     default:
       return 0;
   }
@@ -90,6 +94,7 @@ GoRouter createRouter(BuildContext context) {
                 path == RouterPaths.clocking ||
                 path == RouterPaths.sondage ||
                 path == RouterPaths.shifts ||
+                path == RouterPaths.tasks ||
                 path == RouterPaths.chat;
             final isChatPage = path == RouterPaths.chat;
 
@@ -107,7 +112,6 @@ GoRouter createRouter(BuildContext context) {
 
             return NoTransitionPage<void>(
               child: MainWeb(
-
                 chatInitialTeamId: isChatPage
                     ? state.uri.queryParameters['teamId']
                     : null,
@@ -163,6 +167,15 @@ GoRouter createRouter(BuildContext context) {
               name: RouterPaths.chat,
               pageBuilder: (context, state) =>
                   const NoTransitionPage<void>(child: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: RouterPaths.tasks,
+              name: RouterPaths.tasks,
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                child: TaskWebPage(
+                  initialTeamId: state.uri.queryParameters['teamId'],
+                ),
+              ),
             ),
             // Route secondarie — queste passano il child a MainWeb
             GoRoute(
@@ -319,6 +332,15 @@ GoRouter createRouter(BuildContext context) {
             child: BlocProvider<ShiftBloc>.value(
               value: GetIt.instance<ShiftBloc>(),
               child: const ShiftMobilePage(),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: RouterPaths.tasks,
+          name: RouterPaths.tasks,
+          pageBuilder: (context, state) => NoTransitionPage<void>(
+            child: TaskMobilePage(
+              initialTeamId: state.uri.queryParameters['teamId'],
             ),
           ),
         ),
@@ -554,6 +576,7 @@ abstract class RouterPaths {
   static const sondageChat = '/sondage/chat';
   static const sondageChatConversation = '/sondage/chat/conversation';
   static const shifts = '/shifts';
+  static const tasks = '/tasks';
   static const chat = '/chat';
   static const createTeam = '/create_team';
   static const updateTeam = '/update_team';
