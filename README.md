@@ -75,4 +75,5 @@ Per il comportamento funzionale dell'app:
 
 - [flutter-app-flusso-feature.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/flutter-app-flusso-feature.md)
 - [APP_TUTORIAL_SHOWCASE_FLOW.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/APP_TUTORIAL_SHOWCASE_FLOW.md)
-- [TEAMMANAGEMENT_WORKFLOW_ROADMAP.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/TEAMMANAGEMENT_WORKFLOW_ROADMAP.md)
+- [TEAMMANAGEMENT_WORKFLOW_ROADMAP_SMART_ACTION.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/TEAMMANAGEMENT_WORKFLOW_ROADMAP_SMART_ACTION.md)
+- [TEAMMANAGEMENT_WORKFLOW_TECHNICAL_BACKLOG.md](/Users/arthurbetto/Documents/work/projectArthur/note_sondage/TEAMMANAGEMENT_WORKFLOW_TECHNICAL_BACKLOG.md)

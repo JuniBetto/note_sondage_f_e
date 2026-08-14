@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/shared/workflow_context_metadata.dart';
 
 class NotificationCenterItem extends Equatable {
   const NotificationCenterItem({
@@ -89,6 +90,19 @@ class NotificationCenterItem extends Equatable {
       metadata: metadata ?? this.metadata,
     );
   }
+
+  WorkflowContextMetadata get workflowContext =>
+      WorkflowContextMetadata.fromMetadata(metadata);
+
+  String? get contextType => workflowContext.contextType;
+
+  String? get contextId => workflowContext.contextId;
+
+  String? get sourceType => workflowContext.sourceType;
+
+  String? get sourceId => workflowContext.sourceId;
+
+  String? get sourceMessageId => workflowContext.sourceMessageId;
 
   String? get invitationId {
     final value = metadata['invitationId']?.trim();
@@ -195,6 +209,38 @@ class NotificationCenterItem extends Equatable {
       return null;
     }
     return value;
+  }
+
+  int get impactedShiftCount {
+    return int.tryParse(metadata['impactedShiftCount']?.trim() ?? '') ?? 0;
+  }
+
+  List<String> get impactedShiftSummaries {
+    final raw = metadata['impactedShiftSummaries']?.trim();
+    if (raw == null || raw.isEmpty) {
+      return const <String>[];
+    }
+    return raw
+        .split('||')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  bool get hasImpactedShiftSummaries => impactedShiftSummaries.isNotEmpty;
+
+  bool get isApprovedAbsenceDecision =>
+      eventType == 'CLOCKING_VACATION_REQUEST_APPROVED' ||
+      eventType == 'CLOCKING_PERMISSION_REQUEST_APPROVED' ||
+      eventType == 'CLOCKING_SICK_REQUEST_APPROVED';
+
+  bool get supportsImpactedShiftNavigation {
+    if (!isApprovedAbsenceDecision) {
+      return false;
+    }
+    return (metadata['teamId']?.trim().isNotEmpty ?? false) &&
+        (requestedDate?.isNotEmpty ?? false) &&
+        (requesterUserId?.isNotEmpty ?? false);
   }
 
   String? get actionRequestNote {
@@ -306,5 +352,10 @@ class NotificationCenterItem extends Equatable {
     body,
     occurredAt,
     metadata,
+    contextType,
+    contextId,
+    sourceType,
+    sourceId,
+    sourceMessageId,
   ];
 }

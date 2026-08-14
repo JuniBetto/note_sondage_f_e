@@ -9,6 +9,14 @@ class ClockingRealtimeCoordinator {
     'CLOCKING_RECORD_UPDATED',
     'CLOCKING_RECORD_DECOMMITTED',
     'CLOCKING_RECORD_COMMITTED',
+    'CLOCKING_CLOCKING_REQUEST_APPROVED',
+    'CLOCKING_CLOCKING_REQUEST_REJECTED',
+    'CLOCKING_VACATION_REQUEST_APPROVED',
+    'CLOCKING_VACATION_REQUEST_REJECTED',
+    'CLOCKING_PERMISSION_REQUEST_APPROVED',
+    'CLOCKING_PERMISSION_REQUEST_REJECTED',
+    'CLOCKING_SICK_REQUEST_APPROVED',
+    'CLOCKING_SICK_REQUEST_REJECTED',
   };
 
   bool isManagedClockingNotification(RealtimeNotification notification) {
@@ -26,7 +34,10 @@ class ClockingRealtimeCoordinator {
     }
 
     final eventTeamId = notification.metadata['teamId']?.trim() ?? '';
-    final targetUserId = notification.metadata['targetUserId']?.trim() ?? '';
+    final targetUserId =
+        notification.metadata['targetUserId']?.trim() ??
+        notification.metadata['requesterUserId']?.trim() ??
+        '';
     final refreshCurrentTeam =
         selectedTeamId != null &&
         selectedTeamId.isNotEmpty &&

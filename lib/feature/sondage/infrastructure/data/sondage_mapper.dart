@@ -66,6 +66,14 @@ class SondageMapper {
                   (item['voteCount'] as num?)?.toInt() ??
                   (item['votes'] as num?)?.toInt() ??
                   0,
+              voterUserIds: ((item['voterUserIds'] as List?) ?? [])
+                  .map((value) => value?.toString() ?? '')
+                  .map((value) => value.trim())
+                  .where(
+                    (value) =>
+                        value.isNotEmpty && value.toLowerCase() != 'null',
+                  )
+                  .toList(),
             ),
           );
         } else if (item is Map) {
@@ -78,6 +86,14 @@ class SondageMapper {
                   (item['voteCount'] as num?)?.toInt() ??
                   (item['votes'] as num?)?.toInt() ??
                   0,
+              voterUserIds: ((item['voterUserIds'] as List?) ?? [])
+                  .map((value) => value?.toString() ?? '')
+                  .map((value) => value.trim())
+                  .where(
+                    (value) =>
+                        value.isNotEmpty && value.toLowerCase() != 'null',
+                  )
+                  .toList(),
             ),
           );
         }
@@ -123,6 +139,11 @@ class SondageMapper {
       teamName: json['teamName']?.toString(),
       description: description,
       allowMultipleResponses: json['allowMultipleResponses'] == true,
+      contextType: _normalizeOptionalString(json['contextType']),
+      contextId: _normalizeOptionalString(json['contextId']),
+      sourceType: _normalizeOptionalString(json['sourceType']),
+      sourceId: _normalizeOptionalString(json['sourceId']),
+      sourceMessageId: _normalizeOptionalString(json['sourceMessageId']),
       options: options,
       currentUserOptionId: currentUserOptionId,
       currentUserOptionIds: currentUserOptionIds,
@@ -144,6 +165,17 @@ class SondageMapper {
       if (entity.description != null && entity.description!.trim().isNotEmpty)
         'description': entity.description!.trim(),
       'allowMultipleResponses': entity.allowMultipleResponses,
+      if (entity.contextType != null && entity.contextType!.trim().isNotEmpty)
+        'contextType': entity.contextType!.trim(),
+      if (entity.contextId != null && entity.contextId!.trim().isNotEmpty)
+        'contextId': entity.contextId!.trim(),
+      if (entity.sourceType != null && entity.sourceType!.trim().isNotEmpty)
+        'sourceType': entity.sourceType!.trim(),
+      if (entity.sourceId != null && entity.sourceId!.trim().isNotEmpty)
+        'sourceId': entity.sourceId!.trim(),
+      if (entity.sourceMessageId != null &&
+          entity.sourceMessageId!.trim().isNotEmpty)
+        'sourceMessageId': entity.sourceMessageId!.trim(),
       if (entity.expiryDate != null)
         'expiresAt': entity.expiryDate!.toIso8601String(),
       'options': entity.options.map((option) => option.label).toList(),

@@ -26,6 +26,7 @@ Future<ShiftDayEntriesAction?> showShiftDayEntriesSheet({
   List<ShiftAbsenceStatus> absenceStatuses = const [],
   required bool canCreate,
   Set<String> syncingAssignmentIds = const <String>{},
+  Set<String> highlightedUserIds = const <String>{},
 }) {
   final dateLabel = DateFormat.yMd(
     Localizations.localeOf(context).toLanguageTag(),
@@ -40,6 +41,7 @@ Future<ShiftDayEntriesAction?> showShiftDayEntriesSheet({
       absenceStatuses: absenceStatuses,
       canCreate: canCreate,
       syncingAssignmentIds: syncingAssignmentIds,
+      highlightedUserIds: highlightedUserIds,
     ),
   );
 }
@@ -51,6 +53,7 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
     required this.absenceStatuses,
     required this.canCreate,
     required this.syncingAssignmentIds,
+    required this.highlightedUserIds,
   });
 
   final String dateLabel;
@@ -58,6 +61,7 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
   final List<ShiftAbsenceStatus> absenceStatuses;
   final bool canCreate;
   final Set<String> syncingAssignmentIds;
+  final Set<String> highlightedUserIds;
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +73,18 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
     final borderColor = colorScheme.borderColor ?? colorScheme.outlineVariant;
     final mediaQuery = MediaQuery.of(context);
     final maxHeight = mediaQuery.size.height * 0.8;
+    final assignmentUserIds = assignments
+        .map((assignment) => assignment.userId.trim())
+        .where((userId) => userId.isNotEmpty)
+        .toSet();
+    final hasHighlightedAssignments = assignments.any(
+      (assignment) => highlightedUserIds.contains(assignment.userId.trim()),
+    );
+    final visibleAbsenceStatuses = assignmentUserIds.isEmpty
+        ? absenceStatuses
+        : absenceStatuses
+              .where((status) => assignmentUserIds.contains(status.userId))
+              .toList(growable: false);
     return SafeArea(
       child: Container(
         constraints: BoxConstraints(maxHeight: maxHeight),
@@ -89,12 +105,12 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            if (absenceStatuses.isNotEmpty) ...[
+            if (visibleAbsenceStatuses.isNotEmpty) ...[
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: absenceStatuses
+                children: visibleAbsenceStatuses
                     .map(
                       (status) => _AbsenceStatusChip(
                         label: status.label(context),
@@ -102,6 +118,28 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
                       ),
                     )
                     .toList(growable: false),
+              ),
+            ],
+            if (hasHighlightedAssignments) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF16A34A).withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF16A34A).withValues(alpha: 0.22),
+                  ),
+                ),
+                child: Text(
+                  _impactedBannerLabel(context),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF166534),
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
+                ),
               ),
             ],
             const SizedBox(height: 12),
@@ -115,7 +153,7 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: _AssignmentTile(
                             assignment: assignment,
-                            absenceStatus: absenceStatuses
+                            absenceStatus: visibleAbsenceStatuses
                                 .where(
                                   (status) =>
                                       status.userId == assignment.userId,
@@ -123,6 +161,9 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
                                 .firstOrNull,
                             isSyncing: syncingAssignmentIds.contains(
                               assignment.id,
+                            ),
+                            isHighlighted: highlightedUserIds.contains(
+                              assignment.userId.trim(),
                             ),
                           ),
                         ),
@@ -152,6 +193,19 @@ class _ShiftDayEntriesSheet extends StatelessWidget {
       ),
     );
   }
+
+  String _impactedBannerLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' =>
+        'Questi sono i turni impattati dalla tua assenza approvata per questo giorno.',
+      'fr' =>
+        'Voici les quarts impactes par votre absence approuvee pour cette journee.',
+      'es' =>
+        'Estos son los turnos afectados por tu ausencia aprobada para este dia.',
+      _ =>
+        'These are the shifts impacted by your approved absence for this day.',
+    };
+  }
 }
 
 class _AssignmentTile extends StatelessWidget {
@@ -159,11 +213,13 @@ class _AssignmentTile extends StatelessWidget {
     required this.assignment,
     this.absenceStatus,
     this.isSyncing = false,
+    this.isHighlighted = false,
   });
 
   final ShiftAssignmentEntity assignment;
   final ShiftAbsenceStatus? absenceStatus;
   final bool isSyncing;
+  final bool isHighlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -179,6 +235,7 @@ class _AssignmentTile extends StatelessWidget {
         ? assignment.userName!
         : assignment.userId;
     final absenceLabel = absenceStatus?.label(context);
+    final highlightColor = const Color(0xFF16A34A);
 
     return Opacity(
       opacity: isSyncing ? 0.78 : 1,
@@ -189,10 +246,15 @@ class _AssignmentTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: assignment.displayColor.withValues(alpha: 0.12),
+            color: isHighlighted
+                ? highlightColor.withValues(alpha: 0.10)
+                : assignment.displayColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: assignment.displayColor.withValues(alpha: 0.35),
+              color: isHighlighted
+                  ? highlightColor.withValues(alpha: 0.35)
+                  : assignment.displayColor.withValues(alpha: 0.35),
+              width: isHighlighted ? 1.4 : 1,
             ),
           ),
           child: Row(
@@ -216,6 +278,27 @@ class _AssignmentTile extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    if (isHighlighted)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: highlightColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            _impactedShiftChipLabel(context),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: highlightColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
                     if (isSyncing)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
@@ -273,6 +356,15 @@ class _AssignmentTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _impactedShiftChipLabel(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Impattato',
+      'fr' => 'Impacte',
+      'es' => 'Afectado',
+      _ => 'Impacted',
+    };
   }
 }
 

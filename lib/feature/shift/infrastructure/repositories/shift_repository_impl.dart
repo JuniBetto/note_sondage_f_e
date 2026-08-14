@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_availability_sondage_draft_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_replacement_candidate_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_local_data_source.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remote_data_source.dart';
+import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 
 class ShiftRepositoryImpl implements ShiftRepository {
   final ShiftLocalDataSource _local;
@@ -254,6 +257,21 @@ class ShiftRepositoryImpl implements ShiftRepository {
       candidateUserId: candidateUserId,
       note: note,
     );
+  }
+
+  @override
+  Future<ShiftReplacementCandidatesEntity> findReplacementCandidates(
+    String assignmentId,
+  ) {
+    return _remote.findReplacementCandidates(assignmentId);
+  }
+
+  @override
+  Future<SondageEntity> createAvailabilitySondageDraft(
+    String assignmentId,
+    ShiftAvailabilitySondageDraftRequestEntity request,
+  ) {
+    return _remote.createAvailabilitySondageDraft(assignmentId, request);
   }
 
   @override
