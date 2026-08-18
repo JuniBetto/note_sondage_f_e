@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/task/ui/task_ui_support.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_summary_chip.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_search_field.dart';
 
 class TaskWorkspaceHeader extends StatelessWidget {
   const TaskWorkspaceHeader({
     super.key,
-    required this.locale,
     required this.embedded,
     required this.teams,
     required this.selectedTeamId,
@@ -24,7 +23,6 @@ class TaskWorkspaceHeader extends StatelessWidget {
     required this.onSearchChanged,
   });
 
-  final String locale;
   final bool embedded;
   final List<TeamEntity> teams;
   final String? selectedTeamId;
@@ -43,6 +41,7 @@ class TaskWorkspaceHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final borderColor = colorScheme.borderColor ?? colorScheme.outlineVariant;
 
     return LayoutBuilder(
@@ -78,16 +77,14 @@ class TaskWorkspaceHeader extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _HeaderTextBlock(locale: locale),
+                        const _HeaderTextBlock(),
                         const SizedBox(height: 14),
                         FilledButton.icon(
                           onPressed: canManageSelectedTeam
                               ? onCreateTask
                               : null,
                           icon: const Icon(Icons.add_task_rounded),
-                          label: Text(
-                            taskText(locale, it: 'Nuovo task', en: 'New task'),
-                          ),
+                          label: Text(l10n.taskNewTaskAction),
                         ),
                       ],
                     )
@@ -95,16 +92,14 @@ class TaskWorkspaceHeader extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _HeaderTextBlock(locale: locale)),
+                        const Expanded(child: _HeaderTextBlock()),
                         const SizedBox(width: 16),
                         FilledButton.icon(
                           onPressed: canManageSelectedTeam
                               ? onCreateTask
                               : null,
                           icon: const Icon(Icons.add_task_rounded),
-                          label: Text(
-                            taskText(locale, it: 'Nuovo task', en: 'New task'),
-                          ),
+                          label: Text(l10n.taskNewTaskAction),
                         ),
                       ],
                     ),
@@ -115,28 +110,24 @@ class TaskWorkspaceHeader extends StatelessWidget {
                   runSpacing: 10,
                   children: [
                     TaskSummaryChip(
-                      label: taskText(locale, it: 'Totali', en: 'Total'),
+                      label: l10n.taskSummaryTotal,
                       value: totalTasks,
                       color: colorScheme.primary,
                     ),
                     TaskSummaryChip(
-                      label: taskText(locale, it: 'Aperti', en: 'Open'),
+                      label: l10n.taskSummaryOpen,
                       value: openTasks,
-                      color: Colors.blue,
+                      color: colorScheme.infoColor,
                     ),
                     TaskSummaryChip(
-                      label: taskText(
-                        locale,
-                        it: 'In corso',
-                        en: 'In progress',
-                      ),
+                      label: l10n.taskStatusInProgress,
                       value: inProgressTasks,
-                      color: Colors.orange,
+                      color: colorScheme.warningColor,
                     ),
                     TaskSummaryChip(
-                      label: taskText(locale, it: 'Completati', en: 'Done'),
+                      label: l10n.taskSummaryDone,
                       value: doneTasks,
-                      color: Colors.green,
+                      color: colorScheme.successColor,
                     ),
                   ],
                 ),
@@ -147,7 +138,7 @@ class TaskWorkspaceHeader extends StatelessWidget {
                       DropdownButtonFormField<String>(
                         initialValue: selectedTeamId,
                         decoration: InputDecoration(
-                          labelText: taskText(locale, it: 'Team', en: 'Team'),
+                          labelText: l10n.taskTeamLabel,
                         ),
                         items: teams
                             .map(
@@ -162,11 +153,7 @@ class TaskWorkspaceHeader extends StatelessWidget {
                       const SizedBox(height: 12),
                       AppSearchField(
                         controller: searchController,
-                        hintText: taskText(
-                          locale,
-                          it: 'Cerca per titolo, descrizione o assegnatario',
-                          en: 'Search by title, description, or assignee',
-                        ),
+                        hintText: l10n.taskSearchHint,
                         onChanged: onSearchChanged,
                       ),
                       if (embedded) ...[
@@ -178,13 +165,7 @@ class TaskWorkspaceHeader extends StatelessWidget {
                                 ? onCreateTask
                                 : null,
                             icon: const Icon(Icons.add_task_rounded),
-                            label: Text(
-                              taskText(
-                                locale,
-                                it: 'Nuovo task',
-                                en: 'New task',
-                              ),
-                            ),
+                            label: Text(l10n.taskNewTaskAction),
                           ),
                         ),
                       ],
@@ -198,7 +179,7 @@ class TaskWorkspaceHeader extends StatelessWidget {
                         child: DropdownButtonFormField<String>(
                           initialValue: selectedTeamId,
                           decoration: InputDecoration(
-                            labelText: taskText(locale, it: 'Team', en: 'Team'),
+                            labelText: l10n.taskTeamLabel,
                           ),
                           items: teams
                               .map(
@@ -216,11 +197,7 @@ class TaskWorkspaceHeader extends StatelessWidget {
                         flex: 4,
                         child: AppSearchField(
                           controller: searchController,
-                          hintText: taskText(
-                            locale,
-                            it: 'Cerca per titolo, descrizione o assegnatario',
-                            en: 'Search by title, description, or assignee',
-                          ),
+                          hintText: l10n.taskSearchHint,
                           onChanged: onSearchChanged,
                         ),
                       ),
@@ -231,7 +208,7 @@ class TaskWorkspaceHeader extends StatelessWidget {
                               ? onCreateTask
                               : null,
                           icon: const Icon(Icons.add_task_rounded),
-                          label: Text(taskText(locale, it: 'Nuovo', en: 'New')),
+                          label: Text(l10n.taskNewTaskActionShort),
                         ),
                       ],
                     ],
@@ -251,35 +228,26 @@ class TaskWorkspaceHeader extends StatelessWidget {
 }
 
 class _HeaderTextBlock extends StatelessWidget {
-  const _HeaderTextBlock({required this.locale});
-
-  final String locale;
+  const _HeaderTextBlock();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          taskText(
-            locale,
-            it: 'Task operativi del team',
-            en: 'Team operational tasks',
-          ),
+          l10n.taskHeaderTitle,
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          taskText(
-            locale,
-            it: 'Organizza attivita operative, follow-up e azioni nate da chat, turni o esigenze del team.',
-            en: 'Organize operational work, follow-ups, and actions coming from chat, shifts, or team needs.',
-          ),
+          l10n.taskHeaderSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),

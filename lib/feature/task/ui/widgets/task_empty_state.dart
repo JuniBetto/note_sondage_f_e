@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/task/ui/task_ui_support.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class TaskEmptyState extends StatelessWidget {
   const TaskEmptyState({
     super.key,
-    required this.locale,
     required this.canManageSelectedTeam,
+    this.isArchivedView = false,
   });
 
-  final String locale;
   final bool canManageSelectedTeam;
+  final bool isArchivedView;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -35,14 +36,18 @@ class TaskEmptyState extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.task_alt_rounded,
+                isArchivedView
+                    ? Icons.inventory_2_outlined
+                    : Icons.task_alt_rounded,
                 color: colorScheme.primary,
                 size: 28,
               ),
             ),
             const SizedBox(height: 14),
             Text(
-              taskText(locale, it: 'Nessun task attivo', en: 'No active tasks'),
+              isArchivedView
+                  ? l10n.taskEmptyArchivedTitle
+                  : l10n.taskEmptyActiveTitle,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
@@ -50,15 +55,11 @@ class TaskEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              taskText(
-                locale,
-                it: canManageSelectedTeam
-                    ? 'Per questo team non ci sono task attivi. Puoi crearne uno da qui o dalla chat.'
-                    : 'Per questo team non ci sono task attivi al momento.',
-                en: canManageSelectedTeam
-                    ? 'There are no active tasks for this team yet. You can create one here or from chat.'
-                    : 'There are no active tasks for this team right now.',
-              ),
+              isArchivedView
+                  ? l10n.taskEmptyArchivedSubtitle
+                  : (canManageSelectedTeam
+                        ? l10n.taskEmptyActiveSubtitleManage
+                        : l10n.taskEmptyActiveSubtitleReadOnly),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,

@@ -2030,4 +2030,210 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileTwoFactorSendFailedMessage =>
       'We could not send a new verification email right now. Please try again.';
+
+  @override
+  String get taskPageTitle => 'Task';
+
+  @override
+  String get taskPriorityLow => 'Low';
+
+  @override
+  String get taskPriorityMedium => 'Medium';
+
+  @override
+  String get taskPriorityHigh => 'High';
+
+  @override
+  String get taskStatusOpen => 'Open';
+
+  @override
+  String get taskStatusInProgress => 'In progress';
+
+  @override
+  String get taskStatusBlocked => 'Blocked';
+
+  @override
+  String get taskStatusDone => 'Done';
+
+  @override
+  String get taskStatusCanceled => 'Canceled';
+
+  @override
+  String get taskHeaderTitle => 'Team operational tasks';
+
+  @override
+  String get taskHeaderSubtitle =>
+      'Organize operational work, follow-ups, and actions coming from chat, shifts, or team needs.';
+
+  @override
+  String get taskNewTaskAction => 'New task';
+
+  @override
+  String get taskNewTaskActionShort => 'New';
+
+  @override
+  String get taskSummaryTotal => 'Total';
+
+  @override
+  String get taskSummaryOpen => 'Open';
+
+  @override
+  String get taskSummaryDone => 'Done';
+
+  @override
+  String get taskTeamLabel => 'Team';
+
+  @override
+  String get taskSearchHint => 'Search by title, description, or assignee';
+
+  @override
+  String get taskFilterActive => 'Active';
+
+  @override
+  String get taskFilterArchived => 'Archived';
+
+  @override
+  String get taskNoTeamsAvailable => 'No teams are available for tasks.';
+
+  @override
+  String get taskLoadTeamTasksError => 'Unable to load team tasks.';
+
+  @override
+  String get taskLoadArchivedTasksError => 'Unable to load archived tasks.';
+
+  @override
+  String get taskCreatePermissionDenied =>
+      'Only owners, admins, or roles with Admin/Manage permissions can create tasks.';
+
+  @override
+  String get taskCreateSuccess => 'Task created successfully.';
+
+  @override
+  String get taskUpdateSuccess => 'Task updated.';
+
+  @override
+  String get taskAssignedLabel => 'Assigned';
+
+  @override
+  String get taskArchivedLabel => 'Archived';
+
+  @override
+  String get taskDueDateLabel => 'Due date';
+
+  @override
+  String get taskDueDateNotSet => 'Not set';
+
+  @override
+  String get taskNoDueDate => 'No due date';
+
+  @override
+  String get taskCreatedByLabel => 'Created by';
+
+  @override
+  String get taskUpdatedLabel => 'Updated';
+
+  @override
+  String get taskSourceChatMessage => 'Source: chat message';
+
+  @override
+  String get taskOpenLinkedConversation => 'Open linked conversation';
+
+  @override
+  String get taskUpdateStatusLabel => 'Update status';
+
+  @override
+  String get taskUpdateStatusError => 'Unable to update task status.';
+
+  @override
+  String get taskEditAction => 'Edit task';
+
+  @override
+  String get taskArchiveAction => 'Archive task';
+
+  @override
+  String get taskRestoreAction => 'Restore task';
+
+  @override
+  String get taskArchiveSuccess => 'Task archived.';
+
+  @override
+  String get taskArchiveError => 'Unable to archive the task.';
+
+  @override
+  String get taskRestoreSuccess => 'Task restored.';
+
+  @override
+  String get taskRestoreError => 'Unable to restore the task.';
+
+  @override
+  String get taskEmptyArchivedTitle => 'No archived tasks';
+
+  @override
+  String get taskEmptyActiveTitle => 'No active tasks';
+
+  @override
+  String get taskEmptyArchivedSubtitle =>
+      'Archived tasks for this team will show up here.';
+
+  @override
+  String get taskEmptyActiveSubtitleManage =>
+      'There are no active tasks for this team yet. You can create one here or from chat.';
+
+  @override
+  String get taskEmptyActiveSubtitleReadOnly =>
+      'There are no active tasks for this team right now.';
+
+  @override
+  String get taskSaveError =>
+      'Unable to save the task. Please try again shortly.';
+
+  @override
+  String get taskContextSectionTitle => 'Context';
+
+  @override
+  String get taskContextSectionSubtitle =>
+      'Define the team and the task content.';
+
+  @override
+  String get taskSelectTeamError => 'Select a team';
+
+  @override
+  String get taskTitleLabel => 'Title';
+
+  @override
+  String get taskTitleRequiredError => 'Title is required';
+
+  @override
+  String get taskDescriptionLabel => 'Description';
+
+  @override
+  String get taskPlanningSectionTitle => 'Planning';
+
+  @override
+  String get taskPlanningSectionSubtitle => 'Set priority and due date.';
+
+  @override
+  String get taskPriorityLabel => 'Priority';
+
+  @override
+  String get taskAssignmentSectionTitle => 'Assignment';
+
+  @override
+  String get taskAssignmentSectionSubtitle => 'Choose who owns the task.';
+
+  @override
+  String get taskAssignToLabel => 'Assign to';
+
+  @override
+  String get taskUnassignedOption => 'Unassigned';
+
+  @override
+  String get taskSourceChatBanner =>
+      'This task will keep the link to the source chat message.';
+
+  @override
+  String get taskSaveChangesAction => 'Save changes';
+
+  @override
+  String get taskCreateAction => 'Create task';
 }

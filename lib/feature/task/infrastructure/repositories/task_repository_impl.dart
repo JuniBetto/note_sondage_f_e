@@ -16,6 +16,11 @@ class TaskRepositoryImpl implements TaskRepository {
   }
 
   @override
+  Future<List<TaskEntity>> getArchivedTasksByTeam(String teamId) {
+    return _remote.getArchivedTasksByTeam(teamId);
+  }
+
+  @override
   Future<TaskEntity> getTaskById(String taskId) {
     return _remote.getTaskById(taskId);
   }
@@ -41,5 +46,10 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<TaskEntity> archiveTask(String taskId) {
     return _remote.archiveTask(taskId);
+  }
+
+  @override
+  Future<TaskEntity> unarchiveTask(String taskId) {
+    return _remote.unarchiveTask(taskId);
   }
 }

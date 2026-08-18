@@ -11,6 +11,7 @@ import 'package:note_sondage/feature/task/domain/entities/task_update_request_en
 import 'package:note_sondage/feature/task/ui/task_ui_support.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_editor_section_card.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class TaskAssigneeOption {
@@ -239,7 +240,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
   }
 
   Future<void> _handleSubmit() async {
-    final locale = Localizations.localeOf(context).languageCode;
+    final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -308,11 +309,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
         context,
         AppErrorMessageResolver.resolve(
           error,
-          fallback: taskText(
-            locale,
-            it: 'Impossibile salvare il task. Riprova tra poco.',
-            en: 'Unable to save the task. Please try again shortly.',
-          ),
+          fallback: l10n.taskSaveError,
         ),
       );
     } finally {
@@ -327,12 +324,12 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final locale = Localizations.localeOf(context).languageCode;
+    final l10n = AppLocalizations.of(context)!;
     final teamItems = widget.availableTeams
         .where((team) => team.id != null && team.id!.trim().isNotEmpty)
         .toList(growable: false);
     final dueDateLabel = _selectedDueAt == null
-        ? _text(locale, it: 'Nessuna scadenza', en: 'No due date')
+        ? l10n.taskNoDueDate
         : DateFormat(
             'dd/MM/yyyy HH:mm',
             Localizations.localeOf(context).toLanguageTag(),
@@ -345,9 +342,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          _isEditing
-              ? _text(locale, it: 'Modifica task', en: 'Edit task')
-              : _text(locale, it: 'Nuovo task', en: 'New task'),
+          _isEditing ? l10n.taskEditAction : l10n.taskNewTaskAction,
         ),
         actions: [
           IconButton(
@@ -364,18 +359,14 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             children: [
               TaskEditorSectionCard(
-                title: taskText(locale, it: 'Contesto', en: 'Context'),
-                subtitle: taskText(
-                  locale,
-                  it: 'Definisci team e contenuto del task.',
-                  en: 'Define the team and the task content.',
-                ),
+                title: l10n.taskContextSectionTitle,
+                subtitle: l10n.taskContextSectionSubtitle,
                 child: Column(
                   children: [
                     DropdownButtonFormField<String>(
                       initialValue: _selectedTeamId,
                       decoration: InputDecoration(
-                        labelText: _text(locale, it: 'Team', en: 'Team'),
+                        labelText: l10n.taskTeamLabel,
                       ),
                       items: teamItems
                           .map(
@@ -397,11 +388,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                             },
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return _text(
-                            locale,
-                            it: 'Seleziona un team',
-                            en: 'Select a team',
-                          );
+                          return l10n.taskSelectTeamError;
                         }
                         return null;
                       },
@@ -410,15 +397,11 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                     TextFormField(
                       controller: _titleController,
                       decoration: InputDecoration(
-                        labelText: _text(locale, it: 'Titolo', en: 'Title'),
+                        labelText: l10n.taskTitleLabel,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return _text(
-                            locale,
-                            it: 'Il titolo e obbligatorio',
-                            en: 'Title is required',
-                          );
+                          return l10n.taskTitleRequiredError;
                         }
                         return null;
                       },
@@ -429,11 +412,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                       minLines: 3,
                       maxLines: 5,
                       decoration: InputDecoration(
-                        labelText: _text(
-                          locale,
-                          it: 'Descrizione',
-                          en: 'Description',
-                        ),
+                        labelText: l10n.taskDescriptionLabel,
                         alignLabelWithHint: true,
                       ),
                     ),
@@ -442,28 +421,20 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
               ),
               const SizedBox(height: 16),
               TaskEditorSectionCard(
-                title: taskText(locale, it: 'Pianificazione', en: 'Planning'),
-                subtitle: taskText(
-                  locale,
-                  it: 'Imposta priorita e scadenza.',
-                  en: 'Set priority and due date.',
-                ),
+                title: l10n.taskPlanningSectionTitle,
+                subtitle: l10n.taskPlanningSectionSubtitle,
                 child: Column(
                   children: [
                     DropdownButtonFormField<TaskPriority>(
                       initialValue: _selectedPriority,
                       decoration: InputDecoration(
-                        labelText: _text(
-                          locale,
-                          it: 'Priorita',
-                          en: 'Priority',
-                        ),
+                        labelText: l10n.taskPriorityLabel,
                       ),
                       items: TaskPriority.values
                           .map(
                             (priority) => DropdownMenuItem<TaskPriority>(
                               value: priority,
-                              child: Text(_priorityLabel(priority, locale)),
+                              child: Text(taskPriorityLabel(priority, context)),
                             ),
                           )
                           .toList(growable: false),
@@ -479,9 +450,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                     const SizedBox(height: 14),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        _text(locale, it: 'Scadenza', en: 'Due date'),
-                      ),
+                      title: Text(l10n.taskDueDateLabel),
                       subtitle: Text(dueDateLabel),
                       trailing: Wrap(
                         spacing: 8,
@@ -507,12 +476,8 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
               ),
               const SizedBox(height: 16),
               TaskEditorSectionCard(
-                title: taskText(locale, it: 'Assegnazione', en: 'Assignment'),
-                subtitle: taskText(
-                  locale,
-                  it: 'Scegli chi segue il task.',
-                  en: 'Choose who owns the task.',
-                ),
+                title: l10n.taskAssignmentSectionTitle,
+                subtitle: l10n.taskAssignmentSectionSubtitle,
                 child: Column(
                   children: [
                     if (_loadingAssignees)
@@ -523,22 +488,12 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                     DropdownButtonFormField<String>(
                       initialValue: _selectedAssigneeUserId,
                       decoration: InputDecoration(
-                        labelText: _text(
-                          locale,
-                          it: 'Assegna a',
-                          en: 'Assign to',
-                        ),
+                        labelText: l10n.taskAssignToLabel,
                       ),
                       items: [
                         DropdownMenuItem<String>(
                           value: null,
-                          child: Text(
-                            _text(
-                              locale,
-                              it: 'Non assegnato',
-                              en: 'Unassigned',
-                            ),
-                          ),
+                          child: Text(l10n.taskUnassignedOption),
                         ),
                         ..._assignees.map(
                           (assignee) => DropdownMenuItem<String>(
@@ -577,11 +532,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                     child: Padding(
                       padding: const EdgeInsets.all(14),
                       child: Text(
-                        _text(
-                          locale,
-                          it: 'Questo task manterra il collegamento al messaggio chat sorgente.',
-                          en: 'This task will keep the link to the source chat message.',
-                        ),
+                        l10n.taskSourceChatBanner,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
@@ -599,8 +550,8 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                     : const Icon(Icons.check_rounded),
                 label: Text(
                   _isEditing
-                      ? _text(locale, it: 'Salva modifiche', en: 'Save changes')
-                      : _text(locale, it: 'Crea task', en: 'Create task'),
+                      ? l10n.taskSaveChangesAction
+                      : l10n.taskCreateAction,
                 ),
               ),
             ],
@@ -611,31 +562,8 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
   }
 }
 
-String _priorityLabel(TaskPriority priority, String locale) {
-  return switch (priority) {
-    TaskPriority.low => _text(locale, it: 'Bassa', en: 'Low'),
-    TaskPriority.medium => _text(locale, it: 'Media', en: 'Medium'),
-    TaskPriority.high => _text(locale, it: 'Alta', en: 'High'),
-  };
-}
-
 bool _isCompact(BuildContext context) {
   final mediaQuery = MediaQuery.of(context);
   return mediaQuery.size.width < 760 ||
       defaultTargetPlatform != TargetPlatform.macOS;
-}
-
-String _text(
-  String locale, {
-  required String it,
-  required String en,
-  String? fr,
-  String? es,
-}) {
-  return switch (locale) {
-    'it' => it,
-    'fr' => fr ?? en,
-    'es' => es ?? en,
-    _ => en,
-  };
 }

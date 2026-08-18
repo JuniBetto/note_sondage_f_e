@@ -23,6 +23,18 @@ class TaskRemoteDataSource {
         .toList(growable: false);
   }
 
+  Future<List<TaskEntity>> getArchivedTasksByTeam(String teamId) async {
+    final response = await _dio.get(
+      '/api/tasks/archived',
+      queryParameters: {'teamId': teamId},
+    );
+    final data = response.data as List<dynamic>? ?? const <dynamic>[];
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(TaskMapper.fromJson)
+        .toList(growable: false);
+  }
+
   Future<TaskEntity> getTaskById(String taskId) async {
     final response = await _dio.get('/api/tasks/$taskId');
     return TaskMapper.fromJson(Map<String, dynamic>.from(response.data));
@@ -57,6 +69,11 @@ class TaskRemoteDataSource {
 
   Future<TaskEntity> archiveTask(String taskId) async {
     final response = await _dio.post('/api/tasks/$taskId/archive');
+    return TaskMapper.fromJson(Map<String, dynamic>.from(response.data));
+  }
+
+  Future<TaskEntity> unarchiveTask(String taskId) async {
+    final response = await _dio.post('/api/tasks/$taskId/unarchive');
     return TaskMapper.fromJson(Map<String, dynamic>.from(response.data));
   }
 }

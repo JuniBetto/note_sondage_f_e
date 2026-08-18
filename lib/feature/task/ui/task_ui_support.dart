@@ -3,59 +3,44 @@ import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_priority.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
-String taskText(
-  String locale, {
-  required String it,
-  required String en,
-  String? fr,
-  String? es,
-}) {
-  return switch (locale) {
-    'it' => it,
-    'fr' => fr ?? en,
-    'es' => es ?? en,
-    _ => en,
-  };
-}
-
-String taskPriorityLabel(TaskPriority priority, String locale) {
+String taskPriorityLabel(TaskPriority priority, BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
   return switch (priority) {
-    TaskPriority.low => taskText(locale, it: 'Bassa', en: 'Low'),
-    TaskPriority.medium => taskText(locale, it: 'Media', en: 'Medium'),
-    TaskPriority.high => taskText(locale, it: 'Alta', en: 'High'),
+    TaskPriority.low => l10n.taskPriorityLow,
+    TaskPriority.medium => l10n.taskPriorityMedium,
+    TaskPriority.high => l10n.taskPriorityHigh,
   };
 }
 
-String taskStatusLabel(TaskStatus status, String locale) {
+String taskStatusLabel(TaskStatus status, BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
   return switch (status) {
-    TaskStatus.open => taskText(locale, it: 'Aperto', en: 'Open'),
-    TaskStatus.inProgress => taskText(
-      locale,
-      it: 'In corso',
-      en: 'In progress',
-    ),
-    TaskStatus.blocked => taskText(locale, it: 'Bloccato', en: 'Blocked'),
-    TaskStatus.done => taskText(locale, it: 'Completato', en: 'Done'),
-    TaskStatus.canceled => taskText(locale, it: 'Annullato', en: 'Canceled'),
+    TaskStatus.open => l10n.taskStatusOpen,
+    TaskStatus.inProgress => l10n.taskStatusInProgress,
+    TaskStatus.blocked => l10n.taskStatusBlocked,
+    TaskStatus.done => l10n.taskStatusDone,
+    TaskStatus.canceled => l10n.taskStatusCanceled,
   };
 }
 
-Color taskPriorityColor(TaskPriority priority) {
+Color taskPriorityColor(TaskPriority priority, ColorScheme colorScheme) {
   return switch (priority) {
-    TaskPriority.low => Colors.green,
-    TaskPriority.medium => Colors.orange,
-    TaskPriority.high => Colors.red,
+    TaskPriority.low => colorScheme.successColor,
+    TaskPriority.medium => colorScheme.warningColor,
+    TaskPriority.high => colorScheme.errorColor,
   };
 }
 
-Color taskStatusColor(TaskStatus status) {
+Color taskStatusColor(TaskStatus status, ColorScheme colorScheme) {
   return switch (status) {
-    TaskStatus.open => Colors.blue,
-    TaskStatus.inProgress => Colors.orange,
-    TaskStatus.blocked => Colors.red,
-    TaskStatus.done => Colors.green,
-    TaskStatus.canceled => Colors.grey,
+    TaskStatus.open => colorScheme.infoColor,
+    TaskStatus.inProgress => colorScheme.warningColor,
+    TaskStatus.blocked => colorScheme.errorColor,
+    TaskStatus.done => colorScheme.successColor,
+    TaskStatus.canceled => colorScheme.onSurfaceVariant,
   };
 }
 

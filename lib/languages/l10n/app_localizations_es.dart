@@ -2050,4 +2050,215 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get profileTwoFactorSendFailedMessage =>
       'No pudimos enviar un nuevo correo de verificación en este momento. Inténtalo de nuevo.';
+
+  @override
+  String get taskPageTitle => 'Tareas';
+
+  @override
+  String get taskPriorityLow => 'Baja';
+
+  @override
+  String get taskPriorityMedium => 'Media';
+
+  @override
+  String get taskPriorityHigh => 'Alta';
+
+  @override
+  String get taskStatusOpen => 'Abierto';
+
+  @override
+  String get taskStatusInProgress => 'En curso';
+
+  @override
+  String get taskStatusBlocked => 'Bloqueado';
+
+  @override
+  String get taskStatusDone => 'Completado';
+
+  @override
+  String get taskStatusCanceled => 'Cancelado';
+
+  @override
+  String get taskHeaderTitle => 'Tareas operativas del equipo';
+
+  @override
+  String get taskHeaderSubtitle =>
+      'Organiza el trabajo operativo, los seguimientos y las acciones que surgen del chat, los turnos o las necesidades del equipo.';
+
+  @override
+  String get taskNewTaskAction => 'Nueva tarea';
+
+  @override
+  String get taskNewTaskActionShort => 'Nueva';
+
+  @override
+  String get taskSummaryTotal => 'Total';
+
+  @override
+  String get taskSummaryOpen => 'Abiertas';
+
+  @override
+  String get taskSummaryDone => 'Completadas';
+
+  @override
+  String get taskTeamLabel => 'Equipo';
+
+  @override
+  String get taskSearchHint => 'Buscar por título, descripción o asignado';
+
+  @override
+  String get taskFilterActive => 'Activas';
+
+  @override
+  String get taskFilterArchived => 'Archivadas';
+
+  @override
+  String get taskNoTeamsAvailable => 'No hay equipos disponibles para tareas.';
+
+  @override
+  String get taskLoadTeamTasksError =>
+      'No se pudieron cargar las tareas del equipo.';
+
+  @override
+  String get taskLoadArchivedTasksError =>
+      'No se pudieron cargar las tareas archivadas.';
+
+  @override
+  String get taskCreatePermissionDenied =>
+      'Solo los propietarios, administradores o roles con permisos Admin/Manage pueden crear tareas.';
+
+  @override
+  String get taskCreateSuccess => 'Tarea creada correctamente.';
+
+  @override
+  String get taskUpdateSuccess => 'Tarea actualizada.';
+
+  @override
+  String get taskAssignedLabel => 'Asignado';
+
+  @override
+  String get taskArchivedLabel => 'Archivado';
+
+  @override
+  String get taskDueDateLabel => 'Vencimiento';
+
+  @override
+  String get taskDueDateNotSet => 'No definida';
+
+  @override
+  String get taskNoDueDate => 'Sin vencimiento';
+
+  @override
+  String get taskCreatedByLabel => 'Creado por';
+
+  @override
+  String get taskUpdatedLabel => 'Actualizado';
+
+  @override
+  String get taskSourceChatMessage => 'Origen: mensaje de chat';
+
+  @override
+  String get taskOpenLinkedConversation => 'Abrir conversación vinculada';
+
+  @override
+  String get taskUpdateStatusLabel => 'Actualizar estado';
+
+  @override
+  String get taskUpdateStatusError =>
+      'No se pudo actualizar el estado de la tarea.';
+
+  @override
+  String get taskEditAction => 'Editar tarea';
+
+  @override
+  String get taskArchiveAction => 'Archivar tarea';
+
+  @override
+  String get taskRestoreAction => 'Restaurar tarea';
+
+  @override
+  String get taskArchiveSuccess => 'Tarea archivada.';
+
+  @override
+  String get taskArchiveError => 'No se pudo archivar la tarea.';
+
+  @override
+  String get taskRestoreSuccess => 'Tarea restaurada.';
+
+  @override
+  String get taskRestoreError => 'No se pudo restaurar la tarea.';
+
+  @override
+  String get taskEmptyArchivedTitle => 'No hay tareas archivadas';
+
+  @override
+  String get taskEmptyActiveTitle => 'No hay tareas activas';
+
+  @override
+  String get taskEmptyArchivedSubtitle =>
+      'Las tareas archivadas de este equipo aparecerán aquí.';
+
+  @override
+  String get taskEmptyActiveSubtitleManage =>
+      'Todavía no hay tareas activas para este equipo. Puedes crear una aquí o desde el chat.';
+
+  @override
+  String get taskEmptyActiveSubtitleReadOnly =>
+      'Actualmente no hay tareas activas para este equipo.';
+
+  @override
+  String get taskSaveError =>
+      'No se pudo guardar la tarea. Inténtalo de nuevo en breve.';
+
+  @override
+  String get taskContextSectionTitle => 'Contexto';
+
+  @override
+  String get taskContextSectionSubtitle =>
+      'Define el equipo y el contenido de la tarea.';
+
+  @override
+  String get taskSelectTeamError => 'Selecciona un equipo';
+
+  @override
+  String get taskTitleLabel => 'Título';
+
+  @override
+  String get taskTitleRequiredError => 'El título es obligatorio';
+
+  @override
+  String get taskDescriptionLabel => 'Descripción';
+
+  @override
+  String get taskPlanningSectionTitle => 'Planificación';
+
+  @override
+  String get taskPlanningSectionSubtitle =>
+      'Define la prioridad y el vencimiento.';
+
+  @override
+  String get taskPriorityLabel => 'Prioridad';
+
+  @override
+  String get taskAssignmentSectionTitle => 'Asignación';
+
+  @override
+  String get taskAssignmentSectionSubtitle =>
+      'Elige quién se encarga de la tarea.';
+
+  @override
+  String get taskAssignToLabel => 'Asignar a';
+
+  @override
+  String get taskUnassignedOption => 'Sin asignar';
+
+  @override
+  String get taskSourceChatBanner =>
+      'Esta tarea mantendrá el enlace al mensaje de chat de origen.';
+
+  @override
+  String get taskSaveChangesAction => 'Guardar cambios';
+
+  @override
+  String get taskCreateAction => 'Crear tarea';
 }

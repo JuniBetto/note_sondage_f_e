@@ -171,12 +171,12 @@ class _MainWebState extends State<MainWeb> {
                 ),
                 _buildShowcase(
                   showcaseKey: _tasksKey,
-                  title: 'Task',
+                  title: localizations.taskPageTitle,
                   description: _navDescription(context),
                   child: SidebarItem(
                     key: const ValueKey(6),
                     icon: Icons.task_alt_rounded,
-                    label: 'Task',
+                    label: localizations.taskPageTitle,
                     index: 6,
                     isSmallScreen: isExpanded,
                     lastIndexes: lastIndexes,
@@ -410,7 +410,7 @@ class _MainWebState extends State<MainWeb> {
       3 => localizations.clockingInOut,
       4 => localizations.sondage,
       5 => localizations.myShifts,
-      6 => 'Task',
+      6 => localizations.taskPageTitle,
       7 => 'Chat',
       _ => localizations.home,
     };

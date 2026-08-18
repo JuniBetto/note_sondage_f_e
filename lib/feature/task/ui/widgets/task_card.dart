@@ -2,23 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/ui/task_ui_support.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_meta_chip.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 class TaskCard extends StatelessWidget {
-  const TaskCard({
-    super.key,
-    required this.task,
-    required this.locale,
-    required this.onTap,
-  });
+  const TaskCard({super.key, required this.task, required this.onTap});
 
   final TaskEntity task;
-  final String locale;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
@@ -80,12 +76,12 @@ class TaskCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   TaskMetaChip(
-                    label: taskStatusLabel(task.status, locale),
-                    color: taskStatusColor(task.status),
+                    label: taskStatusLabel(task.status, context),
+                    color: taskStatusColor(task.status, colorScheme),
                   ),
                   TaskMetaChip(
-                    label: taskPriorityLabel(task.priority, locale),
-                    color: taskPriorityColor(task.priority),
+                    label: taskPriorityLabel(task.priority, context),
+                    color: taskPriorityColor(task.priority, colorScheme),
                   ),
                   if (task.assigneeDisplayName?.trim().isNotEmpty == true)
                     TaskMetaChip(
@@ -101,11 +97,7 @@ class TaskCard extends StatelessWidget {
                     child: _TaskInfoLine(
                       icon: Icons.schedule_rounded,
                       value: task.dueAt == null
-                          ? taskText(
-                              locale,
-                              it: 'Senza scadenza',
-                              en: 'No due date',
-                            )
+                          ? l10n.taskNoDueDate
                           : taskDateTimeLabel(task.dueAt!, context),
                     ),
                   ),

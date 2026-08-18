@@ -13,6 +13,10 @@ class TaskUseCase {
     return _repository.getTasksByTeam(teamId);
   }
 
+  Future<List<TaskEntity>> getArchivedTasksByTeam(String teamId) {
+    return _repository.getArchivedTasksByTeam(teamId);
+  }
+
   Future<TaskEntity> getTaskById(String taskId) {
     return _repository.getTaskById(taskId);
   }
@@ -34,5 +38,9 @@ class TaskUseCase {
 
   Future<TaskEntity> archiveTask(String taskId) {
     return _repository.archiveTask(taskId);
+  }
+
+  Future<TaskEntity> unarchiveTask(String taskId) {
+    return _repository.unarchiveTask(taskId);
   }
 }

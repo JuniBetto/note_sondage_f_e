@@ -25,7 +25,9 @@ import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dar
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 
 class TaskWorkspace extends StatefulWidget {
   const TaskWorkspace({super.key, this.initialTeamId, this.embedded = false});
@@ -45,7 +47,10 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
 
   String? _selectedTeamId;
   List<TaskEntity> _tasks = const <TaskEntity>[];
+  List<TaskEntity> _archivedTasks = const <TaskEntity>[];
   bool _loadingTasks = false;
+  bool _loadingArchivedTasks = false;
+  bool _showArchived = false;
   bool _loadingAccess = false;
   Map<String, List<TeamMemberEntity>> _membersByTeamId =
       const <String, List<TeamMemberEntity>>{};
@@ -107,8 +112,6 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     return null;
   }
 
-  String get _locale => Localizations.localeOf(context).languageCode;
-
   String get _currentUid => context.read<AuthBloc>().state.user.uid.trim();
 
   String get _currentEmail =>
@@ -159,7 +162,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     setState(() {
       _selectedTeamId = nextTeamId;
     });
-    unawaited(_loadTasksForSelectedTeam());
+    unawaited(_refreshTasks());
   }
 
   Future<void> _ensureAccessContextLoadedForTeams(
@@ -270,11 +273,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       }
       AppSnackBar.showError(
         context,
-        _text(
-          _locale,
-          it: 'Impossibile caricare i task del team.',
-          en: 'Unable to load team tasks.',
-        ),
+        AppLocalizations.of(context)!.taskLoadTeamTasksError,
       );
     } finally {
       if (mounted) {
@@ -283,6 +282,46 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
         });
       }
     }
+  }
+
+  Future<void> _loadArchivedTasksForSelectedTeam() async {
+    final teamId = _selectedTeamId?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      return;
+    }
+    setState(() {
+      _loadingArchivedTasks = true;
+    });
+    try {
+      final tasks = await _taskUseCase.getArchivedTasksByTeam(teamId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _archivedTasks = tasks;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showError(
+        context,
+        AppLocalizations.of(context)!.taskLoadArchivedTasksError,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingArchivedTasks = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshTasks() {
+    return Future.wait([
+      _loadTasksForSelectedTeam(),
+      _loadArchivedTasksForSelectedTeam(),
+    ]);
   }
 
   bool _canManageTeam(TeamEntity team) {
@@ -360,18 +399,12 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   }
 
   Future<void> _openCreateTask() async {
+    final l10n = AppLocalizations.of(context)!;
     final manageableTeams = _teams
         .where(_canManageTeam)
         .toList(growable: false);
     if (manageableTeams.isEmpty) {
-      AppSnackBar.showWarning(
-        context,
-        _text(
-          _locale,
-          it: 'Solo owner, admin o ruoli con permessi Admin/Manage possono creare task.',
-          en: 'Only owners, admins, or roles with Admin/Manage permissions can create tasks.',
-        ),
-      );
+      AppSnackBar.showWarning(context, l10n.taskCreatePermissionDenied);
       return;
     }
     final createdTask = await showTaskEditorSheet(
@@ -389,14 +422,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     if (!mounted || createdTask == null) {
       return;
     }
-    AppSnackBar.showSuccess(
-      context,
-      _text(
-        _locale,
-        it: 'Task creato con successo.',
-        en: 'Task created successfully.',
-      ),
-    );
+    AppSnackBar.showSuccess(context, l10n.taskCreateSuccess);
     if (createdTask.teamId == _selectedTeamId) {
       await _loadTasksForSelectedTeam();
     }
@@ -407,6 +433,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   }
 
   Future<void> _openEditTask(TaskEntity task) async {
+    final l10n = AppLocalizations.of(context)!;
     final selectedTeam = _selectedTeam;
     if (selectedTeam == null || !_canManageTeam(selectedTeam)) {
       return;
@@ -425,16 +452,12 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     if (!mounted || updated == null) {
       return;
     }
-    AppSnackBar.showSuccess(
-      context,
-      _text(_locale, it: 'Task aggiornato.', en: 'Task updated.'),
-    );
+    AppSnackBar.showSuccess(context, l10n.taskUpdateSuccess);
     await _loadTasksForSelectedTeam();
   }
 
   Future<void> _openTaskDetail(TaskEntity initialTask) async {
     TaskEntity latestTask = initialTask;
-    final locale = _locale;
     final result = await showModalBottomSheet<_TaskDetailAction>(
       context: context,
       isScrollControlled: true,
@@ -443,8 +466,12 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setModalState) {
-            final canChangeStatus = _canChangeStatus(latestTask);
-            final canEdit = _canEditTask(latestTask);
+            final l10n = AppLocalizations.of(sheetContext)!;
+            final isArchivedTask = latestTask.isArchived;
+            final canChangeStatus =
+                !isArchivedTask && _canChangeStatus(latestTask);
+            final canEdit = !isArchivedTask && _canEditTask(latestTask);
+            final canRestore = isArchivedTask && _canEditTask(latestTask);
             return FractionallySizedBox(
               heightFactor: MediaQuery.of(sheetContext).size.width < 760
                   ? 0.88
@@ -488,24 +515,37 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                               TaskMetaChip(
                                 label: taskStatusLabel(
                                   latestTask.status,
-                                  locale,
+                                  sheetContext,
                                 ),
-                                color: taskStatusColor(latestTask.status),
+                                color: taskStatusColor(
+                                  latestTask.status,
+                                  Theme.of(sheetContext).colorScheme,
+                                ),
                               ),
                               TaskMetaChip(
                                 label: taskPriorityLabel(
                                   latestTask.priority,
-                                  locale,
+                                  sheetContext,
                                 ),
-                                color: taskPriorityColor(latestTask.priority),
+                                color: taskPriorityColor(
+                                  latestTask.priority,
+                                  Theme.of(sheetContext).colorScheme,
+                                ),
                               ),
                               if (latestTask.assigneeDisplayName != null)
                                 TaskMetaChip(
                                   label:
-                                      '${taskText(locale, it: 'Assegnato', en: 'Assigned')}: ${latestTask.assigneeDisplayName}',
+                                      '${l10n.taskAssignedLabel}: ${latestTask.assigneeDisplayName}',
                                   color: Theme.of(
                                     sheetContext,
                                   ).colorScheme.primary,
+                                ),
+                              if (isArchivedTask)
+                                TaskMetaChip(
+                                  label: l10n.taskArchivedLabel,
+                                  color: Theme.of(
+                                    sheetContext,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                             ],
                           ),
@@ -515,28 +555,16 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                           if (latestTask.description?.trim().isNotEmpty == true)
                             const SizedBox(height: 18),
                           _TaskDetailRow(
-                            label: _text(
-                              locale,
-                              it: 'Scadenza',
-                              en: 'Due date',
-                            ),
+                            label: l10n.taskDueDateLabel,
                             value: latestTask.dueAt == null
-                                ? _text(
-                                    locale,
-                                    it: 'Non impostata',
-                                    en: 'Not set',
-                                  )
+                                ? l10n.taskDueDateNotSet
                                 : taskDateTimeLabel(
                                     latestTask.dueAt!,
                                     sheetContext,
                                   ),
                           ),
                           _TaskDetailRow(
-                            label: _text(
-                              locale,
-                              it: 'Creato da',
-                              en: 'Created by',
-                            ),
+                            label: l10n.taskCreatedByLabel,
                             value:
                                 latestTask.createdByDisplayName
                                         ?.trim()
@@ -546,11 +574,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                                 : latestTask.createdByUserId,
                           ),
                           _TaskDetailRow(
-                            label: _text(
-                              locale,
-                              it: 'Aggiornato',
-                              en: 'Updated',
-                            ),
+                            label: l10n.taskUpdatedLabel,
                             value: taskDateTimeLabel(
                               latestTask.updatedAt,
                               sheetContext,
@@ -582,11 +606,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        _text(
-                                          locale,
-                                          it: 'Origine: messaggio chat',
-                                          en: 'Source: chat message',
-                                        ),
+                                        l10n.taskSourceChatMessage,
                                         style: Theme.of(sheetContext)
                                             .textTheme
                                             .titleSmall
@@ -613,11 +633,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                                               Icons.chat_bubble_outline_rounded,
                                             ),
                                             label: Text(
-                                              _text(
-                                                locale,
-                                                it: 'Apri conversazione collegata',
-                                                en: 'Open linked conversation',
-                                              ),
+                                              l10n.taskOpenLinkedConversation,
                                             ),
                                           ),
                                         ),
@@ -631,18 +647,14 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                             DropdownButtonFormField<TaskStatus>(
                               initialValue: latestTask.status,
                               decoration: InputDecoration(
-                                labelText: _text(
-                                  locale,
-                                  it: 'Aggiorna stato',
-                                  en: 'Update status',
-                                ),
+                                labelText: l10n.taskUpdateStatusLabel,
                               ),
                               items: allowedTaskStatuses(latestTask)
                                   .map(
                                     (status) => DropdownMenuItem<TaskStatus>(
                                       value: status,
                                       child: Text(
-                                        taskStatusLabel(status, locale),
+                                        taskStatusLabel(status, sheetContext),
                                       ),
                                     ),
                                   )
@@ -671,11 +683,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                                   }
                                   AppSnackBar.showError(
                                     context,
-                                    _text(
-                                      locale,
-                                      it: 'Impossibile aggiornare lo stato del task.',
-                                      en: 'Unable to update task status.',
-                                    ),
+                                    l10n.taskUpdateStatusError,
                                   );
                                 }
                               },
@@ -687,13 +695,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                                 sheetContext,
                               ).pop(_TaskDetailAction.edit),
                               icon: const Icon(Icons.edit_outlined),
-                              label: Text(
-                                _text(
-                                  locale,
-                                  it: 'Modifica task',
-                                  en: 'Edit task',
-                                ),
-                              ),
+                              label: Text(l10n.taskEditAction),
                             ),
                           if (canEdit)
                             Padding(
@@ -703,14 +705,16 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                                   sheetContext,
                                 ).pop(_TaskDetailAction.archive),
                                 icon: const Icon(Icons.archive_outlined),
-                                label: Text(
-                                  _text(
-                                    locale,
-                                    it: 'Archivia task',
-                                    en: 'Archive task',
-                                  ),
-                                ),
+                                label: Text(l10n.taskArchiveAction),
                               ),
+                            ),
+                          if (canRestore)
+                            FilledButton.tonalIcon(
+                              onPressed: () => Navigator.of(
+                                sheetContext,
+                              ).pop(_TaskDetailAction.restore),
+                              icon: const Icon(Icons.unarchive_outlined),
+                              label: Text(l10n.taskRestoreAction),
                             ),
                         ],
                       ),
@@ -725,7 +729,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     );
 
     if (!mounted || result == null) {
-      await _loadTasksForSelectedTeam();
+      await _refreshTasks();
       return;
     }
 
@@ -736,6 +740,9 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       case _TaskDetailAction.archive:
         await _archiveTask(latestTask);
         break;
+      case _TaskDetailAction.restore:
+        await _restoreTask(latestTask);
+        break;
       case _TaskDetailAction.openLinkedChat:
         _openLinkedChat(latestTask);
         break;
@@ -743,28 +750,36 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   }
 
   Future<void> _archiveTask(TaskEntity task) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       await _taskUseCase.archiveTask(task.id);
       if (!mounted) {
         return;
       }
-      AppSnackBar.showSuccess(
-        context,
-        _text(_locale, it: 'Task archiviato.', en: 'Task archived.'),
-      );
-      await _loadTasksForSelectedTeam();
+      AppSnackBar.showSuccess(context, l10n.taskArchiveSuccess);
+      await _refreshTasks();
     } catch (_) {
       if (!mounted) {
         return;
       }
-      AppSnackBar.showError(
-        context,
-        _text(
-          _locale,
-          it: 'Impossibile archiviare il task.',
-          en: 'Unable to archive the task.',
-        ),
-      );
+      AppSnackBar.showError(context, l10n.taskArchiveError);
+    }
+  }
+
+  Future<void> _restoreTask(TaskEntity task) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await _taskUseCase.unarchiveTask(task.id);
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showSuccess(context, l10n.taskRestoreSuccess);
+      await _refreshTasks();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showError(context, l10n.taskRestoreError);
     }
   }
 
@@ -788,12 +803,21 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final teamState = context.watch<TeamBloc>().state;
     final teams = _teamsFromState(teamState);
     final selectedTeam = _selectedTeamFrom(teams);
     final canManageSelectedTeam =
         selectedTeam != null && _canManageTeam(selectedTeam);
     final filteredTasks = _applyTaskSearch(_tasks);
+    final filteredArchivedTasks = _applyTaskSearch(_archivedTasks);
+    final displayedTasks = _showArchived ? filteredArchivedTasks : filteredTasks;
+    final isLoadingDisplayed = _showArchived
+        ? _loadingArchivedTasks
+        : _loadingTasks;
+    final displayedSourceEmpty = _showArchived
+        ? _archivedTasks.isEmpty
+        : _tasks.isEmpty;
     final openTasks = filteredTasks
         .where((task) => task.status == TaskStatus.open)
         .length;
@@ -813,11 +837,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            _text(
-              _locale,
-              it: 'Non ci sono team disponibili per i task.',
-              en: 'No teams are available for tasks.',
-            ),
+            l10n.taskNoTeamsAvailable,
             textAlign: TextAlign.center,
           ),
         ),
@@ -838,7 +858,6 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
               child: TaskWorkspaceHeader(
-                locale: _locale,
                 embedded: widget.embedded,
                 teams: teams,
                 selectedTeamId: _selectedTeamId,
@@ -849,7 +868,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                   setState(() {
                     _selectedTeamId = value;
                   });
-                  unawaited(_loadTasksForSelectedTeam());
+                  unawaited(_refreshTasks());
                 },
                 canManageSelectedTeam: canManageSelectedTeam,
                 onCreateTask: _openCreateTask,
@@ -866,30 +885,47 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                 },
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ArchiveViewToggle(
+                  showArchivedOnly: _showArchived,
+                  primaryCount: filteredTasks.length,
+                  archivedCount: filteredArchivedTasks.length,
+                  primaryLabel: l10n.taskFilterActive,
+                  archivedLabel: l10n.taskFilterArchived,
+                  onChanged: (value) {
+                    setState(() {
+                      _showArchived = value;
+                    });
+                  },
+                ),
+              ),
+            ),
             Expanded(
               child: RefreshIndicator(
-                onRefresh: _loadTasksForSelectedTeam,
-                child: _loadingTasks && _tasks.isEmpty
+                onRefresh: _refreshTasks,
+                child: isLoadingDisplayed && displayedSourceEmpty
                     ? const Center(child: CircularProgressIndicator())
-                    : filteredTasks.isEmpty
+                    : displayedTasks.isEmpty
                     ? ListView(
                         padding: const EdgeInsets.all(24),
                         children: [
                           TaskEmptyState(
-                            locale: _locale,
                             canManageSelectedTeam: canManageSelectedTeam,
+                            isArchivedView: _showArchived,
                           ),
                         ],
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        itemCount: filteredTasks.length,
+                        itemCount: displayedTasks.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
-                          final task = filteredTasks[index];
+                          final task = displayedTasks[index];
                           return TaskCard(
                             task: task,
-                            locale: _locale,
                             onTap: () => _openTaskDetail(task),
                           );
                         },
@@ -903,7 +939,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   }
 }
 
-enum _TaskDetailAction { edit, archive, openLinkedChat }
+enum _TaskDetailAction { edit, archive, restore, openLinkedChat }
 
 class _TaskDetailRow extends StatelessWidget {
   const _TaskDetailRow({required this.label, required this.value});
@@ -930,19 +966,4 @@ class _TaskDetailRow extends StatelessWidget {
       ),
     );
   }
-}
-
-String _text(
-  String locale, {
-  required String it,
-  required String en,
-  String? fr,
-  String? es,
-}) {
-  return switch (locale) {
-    'it' => it,
-    'fr' => fr ?? en,
-    'es' => es ?? en,
-    _ => en,
-  };
 }
