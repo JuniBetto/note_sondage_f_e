@@ -1,4 +1,4 @@
-ios_deployment_target = '13.0'
+ios_deployment_target = '15.6'
 
 platform :ios, ios_deployment_target
 require 'pathname'
