@@ -6,6 +6,7 @@ class NotificationPreferencesEntity {
   final bool clockingAlertsEnabled;
   final bool shiftAlertsEnabled;
   final bool chatMessagesEnabled;
+  final bool taskRemindersEnabled;
 
   const NotificationPreferencesEntity({
     required this.emailEnabled,
@@ -15,6 +16,7 @@ class NotificationPreferencesEntity {
     required this.clockingAlertsEnabled,
     required this.shiftAlertsEnabled,
     required this.chatMessagesEnabled,
+    required this.taskRemindersEnabled,
   });
 
   static const defaults = NotificationPreferencesEntity(
@@ -25,6 +27,7 @@ class NotificationPreferencesEntity {
     clockingAlertsEnabled: true,
     shiftAlertsEnabled: true,
     chatMessagesEnabled: true,
+    taskRemindersEnabled: true,
   );
 
   factory NotificationPreferencesEntity.fromJson(Map<String, dynamic> json) {
@@ -43,6 +46,7 @@ class NotificationPreferencesEntity {
       clockingAlertsEnabled: readBool('clockingAlertsEnabled', true),
       shiftAlertsEnabled: readBool('shiftAlertsEnabled', true),
       chatMessagesEnabled: readBool('chatMessagesEnabled', true),
+      taskRemindersEnabled: readBool('taskRemindersEnabled', true),
     );
   }
 
@@ -55,6 +59,7 @@ class NotificationPreferencesEntity {
       'clockingAlertsEnabled': clockingAlertsEnabled,
       'shiftAlertsEnabled': shiftAlertsEnabled,
       'chatMessagesEnabled': chatMessagesEnabled,
+      'taskRemindersEnabled': taskRemindersEnabled,
     };
   }
 
@@ -66,6 +71,7 @@ class NotificationPreferencesEntity {
     bool? clockingAlertsEnabled,
     bool? shiftAlertsEnabled,
     bool? chatMessagesEnabled,
+    bool? taskRemindersEnabled,
   }) {
     return NotificationPreferencesEntity(
       emailEnabled: emailEnabled ?? this.emailEnabled,
@@ -77,6 +83,7 @@ class NotificationPreferencesEntity {
           clockingAlertsEnabled ?? this.clockingAlertsEnabled,
       shiftAlertsEnabled: shiftAlertsEnabled ?? this.shiftAlertsEnabled,
       chatMessagesEnabled: chatMessagesEnabled ?? this.chatMessagesEnabled,
+      taskRemindersEnabled: taskRemindersEnabled ?? this.taskRemindersEnabled,
     );
   }
 }

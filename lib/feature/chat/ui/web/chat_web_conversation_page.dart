@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 
 class ChatWebConversationPage extends StatefulWidget {
   const ChatWebConversationPage({
@@ -31,6 +32,9 @@ class ChatWebConversationPage extends StatefulWidget {
 }
 
 class _ChatWebConversationPageState extends State<ChatWebConversationPage> {
+  // Deve restare allineato all'indice della Chat nell'IndexedStack di
+  // MainWeb (vedi _pathToNavIndex in routes.dart e main_web.dart).
+  static const int _chatNavIndex = 7;
   final GlobalKey _headerKey = GlobalKey();
   final GlobalKey _timelineKey = GlobalKey();
   final GlobalKey _composerKey = GlobalKey();
@@ -41,7 +45,7 @@ class _ChatWebConversationPageState extends State<ChatWebConversationPage> {
   @override
   void dispose() {
     AppTutorialController.unregisterTutorial('web-chat-conversation');
-    AppTutorialController.unregisterTutorial('web-main-6');
+    AppTutorialController.unregisterTutorial('web-main-$_chatNavIndex');
     super.dispose();
   }
 
@@ -89,8 +93,13 @@ class _ChatWebConversationPageState extends State<ChatWebConversationPage> {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
     final hasDirectTarget = widget.memberName?.trim().isNotEmpty == true;
+    final isChatTabActive =
+        context.watch<NavigationBloc>().state == _chatNavIndex;
     if (_tutorialContentReady) {
       _registerTutorials(context);
+      if (isChatTabActive) {
+        _scheduleTutorial();
+      }
     }
 
     return BlocListener<TeamBloc, TeamState>(
@@ -172,7 +181,7 @@ class _ChatWebConversationPageState extends State<ChatWebConversationPage> {
       ),
     );
     AppTutorialController.registerReplayAction(
-      tutorialId: 'web-main-6',
+      tutorialId: 'web-main-$_chatNavIndex',
       action: () => AppTutorialController.replayRegistered(
         context: context,
         tutorialId: 'web-chat-conversation',
@@ -186,7 +195,6 @@ class _ChatWebConversationPageState extends State<ChatWebConversationPage> {
         _tutorialContentReady = true;
       });
     }
-    _scheduleTutorial();
   }
 
   void _scheduleTutorial() {
@@ -200,6 +208,14 @@ class _ChatWebConversationPageState extends State<ChatWebConversationPage> {
       }
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) {
+        return;
+      }
+      // La Chat vive dentro l'IndexedStack di MainWeb ed è quindi montata
+      // anche quando un'altra scheda è quella visibile: senza questo
+      // controllo il tutorial partirebbe (e verrebbe segnato come "visto")
+      // mentre l'utente sta ancora guardando un'altra pagina.
+      if (context.read<NavigationBloc>().state != _chatNavIndex) {
+        _tutorialScheduled = false;
         return;
       }
       await AppTutorialController.showIfNeeded(

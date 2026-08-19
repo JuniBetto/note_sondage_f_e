@@ -23,7 +23,7 @@ class TeamHiveModelAdapter extends TypeAdapter<TeamHiveModel> {
       createdByUserId: fields[3] as String,
       createdAt: fields[4] as String,
       color: fields[5] as String?,
-      clockingRequired: fields[6] as bool? ?? false,
+      clockingRequired: fields[6] as bool,
       clockingRequiredStartDate: fields[7] as String?,
       clockingReminderTime: fields[8] as String?,
       clockingMissingAlertTime: fields[9] as String?,

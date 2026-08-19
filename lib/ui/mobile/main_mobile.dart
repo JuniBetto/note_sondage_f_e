@@ -11,7 +11,6 @@ import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
-import 'package:note_sondage/ui/mobile/widgets/header_page.dart';
 import 'package:note_sondage/ui/mobile/widgets/home/home_dashboard_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/settings_mobile.dart';
 import 'package:note_sondage/ui/widgets/navigation_bar.dart';
@@ -79,29 +78,15 @@ class _MainMobileState extends State<MainMobile> {
           unawaited(_handleAndroidBack());
         },
         child: Scaffold(
-          appBar: HeaderPage(
-            showBackButton: false,
-            title: switch (navBarItem) {
-              1 => loc.team,
-              2 => loc.settings,
-              3 => loc.clockingInOut,
-              4 => loc.sondageChat,
-              int() => loc.home,
-            },
-            closeAction: _supportsTutorial(navBarItem)
-                ? IconButton(
-                    tooltip: loc.reviewTutorial,
-                    onPressed: () => _replayTutorialForIndex(navBarItem),
-                    icon: const Icon(Icons.help_outline_rounded),
-                  )
-                : null,
-          ),
           backgroundColor: colorScheme.homePrimary,
-          body: _buildShowcase(
-            showcaseKey: _bodyKey,
-            title: _pageTitle(loc, navBarItem),
-            description: _pageDescription(context, navBarItem),
-            child: body,
+          body: SafeArea(
+            bottom: false,
+            child: _buildShowcase(
+              showcaseKey: _bodyKey,
+              title: _pageTitle(loc, navBarItem),
+              description: _pageDescription(context, navBarItem),
+              child: body,
+            ),
           ),
           bottomNavigationBar: _buildShowcase(
             showcaseKey: _navigationBarKey,
@@ -109,6 +94,17 @@ class _MainMobileState extends State<MainMobile> {
             description: _navigationDescription(context),
             child: const NavigationBarWidget(key: Key('mobile_navigation_bar')),
           ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+          floatingActionButton: _supportsTutorial(navBarItem)
+              ? Tooltip(
+                  message: loc.reviewTutorial,
+                  child: FloatingActionButton.small(
+                    heroTag: 'reviewTutorialFab',
+                    onPressed: () => _replayTutorialForIndex(navBarItem),
+                    child: const Icon(Icons.help_outline_rounded),
+                  ),
+                )
+              : null,
         ),
       ),
     );

@@ -1,3 +1,5 @@
+import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
+import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
 import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_entity.dart';
 import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_remote/clocking_remote_data_source.dart';
 import 'package:note_sondage/feature/home/domain/entities/dashboard_entity.dart';
@@ -6,6 +8,9 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_enti
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remote_data_source.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/infrastructure/data_source/data_source_remote/sondage_remote_data_source.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
+import 'package:note_sondage/feature/task/infrastructure/data_source/task_remote_data_source.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/team_mapper.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_remote/team_remote_data_source.dart';
@@ -16,17 +21,23 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required SondageRemoteDataSource sondageRemote,
     required ClockingRemoteDataSource clockingRemote,
     required ShiftRemoteDataSource shiftRemote,
+    required TaskRemoteDataSource taskRemote,
+    required ChatRemoteDataSource chatRemote,
     required String Function() currentUserIdProvider,
   }) : _teamRemote = teamRemote,
        _sondageRemote = sondageRemote,
        _clockingRemote = clockingRemote,
        _shiftRemote = shiftRemote,
+       _taskRemote = taskRemote,
+       _chatRemote = chatRemote,
        _currentUserIdProvider = currentUserIdProvider;
 
   final TeamRemoteDataSource _teamRemote;
   final SondageRemoteDataSource _sondageRemote;
   final ClockingRemoteDataSource _clockingRemote;
   final ShiftRemoteDataSource _shiftRemote;
+  final TaskRemoteDataSource _taskRemote;
+  final ChatRemoteDataSource _chatRemote;
   final String Function() _currentUserIdProvider;
   Future<_DashboardSnapshot>? _snapshotFuture;
 
@@ -40,6 +51,17 @@ class DashboardRepositoryImpl implements DashboardRepository {
       0,
       (sum, team) => sum + team.memberCount,
     );
+    final myOpenTasks = snapshot.myTasks
+        .where(
+          (task) =>
+              task.status != TaskStatus.done &&
+              task.status != TaskStatus.canceled,
+        )
+        .length;
+    final unreadChatMessages = snapshot.chatEntries.fold<int>(
+      0,
+      (sum, entry) => sum + entry.value.unreadCount,
+    );
 
     return DashboardStats(
       activeTeams: teams.length,
@@ -47,6 +69,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
       activeSurveys: snapshot.activeSurveyCount,
       todayClocking: todayClocking.length,
       todayShifts: myShifts.length,
+      myOpenTasks: myOpenTasks,
+      unreadChatMessages: unreadChatMessages,
     );
   }
 
@@ -100,8 +124,15 @@ class DashboardRepositoryImpl implements DashboardRepository {
       );
     }
 
-    // Shift activities
-    for (final s in shifts) {
+    // Shift activities (only today's, so the feed reflects genuinely recent
+    // activity instead of being flooded by the whole month's assignments)
+    final todayShifts = shifts.where(
+      (s) =>
+          s.shiftDate.year == now.year &&
+          s.shiftDate.month == now.month &&
+          s.shiftDate.day == now.day,
+    );
+    for (final s in todayShifts) {
       activities.add(
         RecentActivity(
           id: 'shift_${s.id}',
@@ -137,9 +168,41 @@ class DashboardRepositoryImpl implements DashboardRepository {
       }
     }
 
-    // Sort by most recent first, keep top 10
+    // Task activities (my open tasks)
+    for (final task in snapshot.myTasks) {
+      if (task.status == TaskStatus.done ||
+          task.status == TaskStatus.canceled) {
+        continue;
+      }
+      activities.add(
+        RecentActivity(
+          id: 'task_${task.id}',
+          title: task.title.isNotEmpty ? task.title : 'Task',
+          subtitle: task.teamId == null ? 'Personal task' : 'Team task',
+          type: RecentActivityType.taskAssigned,
+          timestamp: task.updatedAt,
+        ),
+      );
+    }
+
+    // Chat activities (last message per team conversation)
+    for (final entry in snapshot.chatEntries) {
+      final summary = entry.value;
+      if (summary.lastMessageAt == null || !summary.hasUnread) continue;
+      activities.add(
+        RecentActivity(
+          id: 'chat_${summary.conversationId}',
+          title: 'Chat — ${entry.key.name}',
+          subtitle: summary.lastMessagePreview,
+          type: RecentActivityType.chatMessage,
+          timestamp: summary.lastMessageAt!,
+        ),
+      );
+    }
+
+    // Sort by most recent first, keep top 12
     activities.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    return activities.take(10).toList();
+    return activities.take(12).toList();
   }
 
   String _padTime(int v) => v.toString().padLeft(2, '0');
@@ -177,6 +240,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
             visibleUserIds: currentUserId.isEmpty ? null : [currentUserId],
           )
           .catchError((_) => <ShiftAssignmentEntity>[]),
+      _taskRemote.getMyTasks().catchError((_) => <TaskEntity>[]),
     ]);
 
     final dashboardSummaries = results[0] as List<Map<String, dynamic>>;
@@ -197,13 +261,31 @@ class DashboardRepositoryImpl implements DashboardRepository {
       return sum;
     });
 
+    final chatEntries = (await Future.wait(teams.map(_loadChatSummary)))
+        .whereType<MapEntry<TeamEntity, ChatTeamConversationSummaryEntity>>()
+        .toList();
+
     return _DashboardSnapshot(
       teams: teams,
       sondages: results[1] as List<SondageEntity>,
       todayClocking: results[2] as List<ClockingRecordEntity>,
       myShifts: results[3] as List<ShiftAssignmentEntity>,
+      myTasks: results[4] as List<TaskEntity>,
+      chatEntries: chatEntries,
       activeSurveyCount: activeSurveyCount,
     );
+  }
+
+  Future<MapEntry<TeamEntity, ChatTeamConversationSummaryEntity>?>
+  _loadChatSummary(TeamEntity team) async {
+    final teamId = team.id?.trim();
+    if (teamId == null || teamId.isEmpty) return null;
+    try {
+      final summary = await _chatRemote.getTeamConversationSummary(teamId);
+      return MapEntry(team, summary);
+    } catch (_) {
+      return null;
+    }
   }
 }
 
@@ -213,6 +295,8 @@ class _DashboardSnapshot {
     required this.sondages,
     required this.todayClocking,
     required this.myShifts,
+    required this.myTasks,
+    required this.chatEntries,
     required this.activeSurveyCount,
   });
 
@@ -220,5 +304,8 @@ class _DashboardSnapshot {
   final List<SondageEntity> sondages;
   final List<ClockingRecordEntity> todayClocking;
   final List<ShiftAssignmentEntity> myShifts;
+  final List<TaskEntity> myTasks;
+  final List<MapEntry<TeamEntity, ChatTeamConversationSummaryEntity>>
+  chatEntries;
   final int activeSurveyCount;
 }

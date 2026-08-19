@@ -44,6 +44,16 @@ Color taskStatusColor(TaskStatus status, ColorScheme colorScheme) {
   };
 }
 
+double taskStatusProgress(TaskStatus status) {
+  return switch (status) {
+    TaskStatus.open => 0.0,
+    TaskStatus.blocked => 0.25,
+    TaskStatus.inProgress => 0.6,
+    TaskStatus.done => 1.0,
+    TaskStatus.canceled => 1.0,
+  };
+}
+
 String taskDateTimeLabel(DateTime value, BuildContext context) {
   return DateFormat(
     'dd/MM/yyyy HH:mm',

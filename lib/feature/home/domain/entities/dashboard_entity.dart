@@ -7,6 +7,8 @@ class DashboardStats {
   final int todayShifts;
   final int completedSurveys;
   final int pendingInvitations;
+  final int myOpenTasks;
+  final int unreadChatMessages;
 
   const DashboardStats({
     this.activeTeams = 0,
@@ -16,6 +18,8 @@ class DashboardStats {
     this.todayShifts = 0,
     this.completedSurveys = 0,
     this.pendingInvitations = 0,
+    this.myOpenTasks = 0,
+    this.unreadChatMessages = 0,
   });
 
   DashboardStats copyWith({
@@ -26,6 +30,8 @@ class DashboardStats {
     int? todayShifts,
     int? completedSurveys,
     int? pendingInvitations,
+    int? myOpenTasks,
+    int? unreadChatMessages,
   }) {
     return DashboardStats(
       activeTeams: activeTeams ?? this.activeTeams,
@@ -35,6 +41,8 @@ class DashboardStats {
       todayShifts: todayShifts ?? this.todayShifts,
       completedSurveys: completedSurveys ?? this.completedSurveys,
       pendingInvitations: pendingInvitations ?? this.pendingInvitations,
+      myOpenTasks: myOpenTasks ?? this.myOpenTasks,
+      unreadChatMessages: unreadChatMessages ?? this.unreadChatMessages,
     );
   }
 }
@@ -64,4 +72,6 @@ enum RecentActivityType {
   clockIn,
   clockOut,
   shiftAssigned,
+  taskAssigned,
+  chatMessage,
 }

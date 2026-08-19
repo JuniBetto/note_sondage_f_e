@@ -35,6 +35,24 @@ class TaskRemoteDataSource {
         .toList(growable: false);
   }
 
+  Future<List<TaskEntity>> getMyTasks() async {
+    final response = await _dio.get('/api/tasks/mine');
+    final data = response.data as List<dynamic>? ?? const <dynamic>[];
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(TaskMapper.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<List<TaskEntity>> getMyArchivedTasks() async {
+    final response = await _dio.get('/api/tasks/mine/archived');
+    final data = response.data as List<dynamic>? ?? const <dynamic>[];
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(TaskMapper.fromJson)
+        .toList(growable: false);
+  }
+
   Future<TaskEntity> getTaskById(String taskId) async {
     final response = await _dio.get('/api/tasks/$taskId');
     return TaskMapper.fromJson(Map<String, dynamic>.from(response.data));
@@ -75,5 +93,9 @@ class TaskRemoteDataSource {
   Future<TaskEntity> unarchiveTask(String taskId) async {
     final response = await _dio.post('/api/tasks/$taskId/unarchive');
     return TaskMapper.fromJson(Map<String, dynamic>.from(response.data));
+  }
+
+  Future<void> deleteTaskPermanently(String taskId) async {
+    await _dio.delete('/api/tasks/$taskId');
   }
 }

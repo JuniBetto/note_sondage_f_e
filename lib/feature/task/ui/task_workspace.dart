@@ -5,17 +5,26 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/core/error/error_logger.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_text_size.dart';
 
 import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
+import 'package:note_sondage/feature/task/ui/bloc/task_bloc.dart';
+import 'package:note_sondage/feature/task/ui/bloc/task_text_size_cubit.dart';
+import 'package:note_sondage/feature/task/ui/task_density_scope.dart';
 import 'package:note_sondage/feature/task/ui/task_editor_sheet.dart';
 import 'package:note_sondage/feature/task/ui/task_ui_support.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_calendar_view.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_card.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_detail_panel.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_empty_state.dart';
-import 'package:note_sondage/feature/task/ui/widgets/task_meta_chip.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_status_filter_bar.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_table_view.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_timeline_view.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_workspace_header.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
@@ -26,8 +35,12 @@ import 'package:note_sondage/feature/team/domain/use_case/team_member/team_membe
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
-import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
+
+const _kSplitViewBreakpoint = 900.0;
+
+enum TaskViewMode { list, table, timeline, calendar }
 
 class TaskWorkspace extends StatefulWidget {
   const TaskWorkspace({super.key, this.initialTeamId, this.embedded = false});
@@ -41,6 +54,15 @@ class TaskWorkspace extends StatefulWidget {
 
 class _TaskWorkspaceState extends State<TaskWorkspace> {
   final TaskUseCase _taskUseCase = GetIt.instance<TaskUseCase>();
+  // Mutazioni (create/update/status/archive) passano dal bloc, non
+  // direttamente dallo use case, cosi che TaskAlarmScheduler osservi ogni
+  // cambiamento e schedula/cancelli i promemoria — stesso ruolo di ShiftBloc
+  // per ShiftAlarmScheduler.
+  final TaskBloc _taskBloc = GetIt.instance<TaskBloc>();
+  // Lets the user shrink/grow all text in the compact/mobile layout to fit
+  // more content on screen (see TaskTextSizeToggle in TaskWorkspaceHeader).
+  final TaskTextSizeCubit _taskTextSizeCubit =
+      GetIt.instance<TaskTextSizeCubit>();
   final TeamMemberUseCase _teamMemberUseCase =
       GetIt.instance<TeamMemberUseCase>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
@@ -60,6 +82,10 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   Set<String> _pendingRoleTeamIds = <String>{};
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  TaskStatus? _selectedStatusFilter;
+  String? _selectedTaskId;
+  TaskViewMode _viewMode = TaskViewMode.list;
+  DateTime _timelineWeekStart = mondayOfWeek(DateTime.now());
 
   @override
   void initState() {
@@ -71,6 +97,10 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       final teams = _teams;
       _syncSelectedTeamWithTeams(teams);
       unawaited(_ensureAccessContextLoadedForTeams(teams));
+      // _syncSelectedTeamWithTeams only refreshes when the selection actually
+      // changes; "My Tasks" (null) is now the resting default, so the very
+      // first load needs an explicit kick here.
+      unawaited(_refreshTasks());
     });
   }
 
@@ -144,6 +174,36 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
         .toList(growable: false);
   }
 
+  List<TaskEntity> _applyStatusFilter(List<TaskEntity> tasks) {
+    final status = _selectedStatusFilter;
+    if (status == null) {
+      return tasks;
+    }
+    return tasks.where((task) => task.status == status).toList(growable: false);
+  }
+
+  TaskEntity? _findTaskById(String? taskId) {
+    if (taskId == null || taskId.isEmpty) {
+      return null;
+    }
+    for (final task in _tasks) {
+      if (task.id == taskId) {
+        return task;
+      }
+    }
+    for (final task in _archivedTasks) {
+      if (task.id == taskId) {
+        return task;
+      }
+    }
+    return null;
+  }
+
+  /// Mirrors Shift's default: unless a specific [widget.initialTeamId] was
+  /// requested (or the user already picked a team), the page opens on "My
+  /// Tasks" (no team selected) rather than forcing a team — auto-picking
+  /// `teams.first` could silently land on a team the user can't manage,
+  /// which the now-filtered picker wouldn't even list.
   void _syncSelectedTeamWithTeams(List<TeamEntity> teams) {
     if (teams.isEmpty) {
       return;
@@ -155,12 +215,13 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
               : null);
     final exists =
         candidate != null && teams.any((team) => team.id?.trim() == candidate);
-    final nextTeamId = exists ? candidate : teams.first.id!.trim();
+    final nextTeamId = exists ? candidate : null;
     if (_selectedTeamId == nextTeamId) {
       return;
     }
     setState(() {
       _selectedTeamId = nextTeamId;
+      _selectedTaskId = null;
     });
     unawaited(_refreshTasks());
   }
@@ -205,22 +266,35 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       final futures = <Future<void>>[];
       for (final teamId in memberTeamIdsToLoad) {
         futures.add(
-          _teamMemberUseCase.getAllMembersByTeamId(teamId).then((members) {
-            _membersByTeamId = <String, List<TeamMemberEntity>>{
-              ..._membersByTeamId,
-              teamId: members,
-            };
-          }),
+          _teamMemberUseCase
+              .getAllMembersByTeamId(teamId)
+              .then((members) {
+                _membersByTeamId = <String, List<TeamMemberEntity>>{
+                  ..._membersByTeamId,
+                  teamId: members,
+                };
+              })
+              .catchError((Object error, StackTrace stack) {
+                // A single slow/failed team must not crash the whole page;
+                // that team is simply treated as "not manageable" until a
+                // later retry succeeds (mirrors ShiftWebPage's behaviour).
+                ErrorLogger.log(error, stack);
+              }),
         );
       }
       for (final teamId in roleTeamIdsToLoad) {
         futures.add(
-          _roleUseCase.getAllRolesByTeamId(teamId).then((roles) {
-            _rolesByTeamId = <String, List<RoleEntity>>{
-              ..._rolesByTeamId,
-              teamId: roles,
-            };
-          }),
+          _roleUseCase
+              .getAllRolesByTeamId(teamId)
+              .then((roles) {
+                _rolesByTeamId = <String, List<RoleEntity>>{
+                  ..._rolesByTeamId,
+                  teamId: roles,
+                };
+              })
+              .catchError((Object error, StackTrace stack) {
+                ErrorLogger.log(error, stack);
+              }),
         );
       }
       if (futures.isNotEmpty) {
@@ -251,14 +325,39 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
 
   Future<void> _loadTasksForSelectedTeam() async {
     final teamId = _selectedTeamId?.trim();
-    if (teamId == null || teamId.isEmpty) {
-      return;
+    final isMyTasksMode = teamId == null || teamId.isEmpty;
+    if (_tasks.isEmpty) {
+      // Paint instantly from the local cache while the network fetch below
+      // runs, instead of showing a blank/loading state on every switch.
+      final cached = await _taskUseCase.getLocalOnly();
+      if (!mounted) {
+        return;
+      }
+      final cachedSlice = isMyTasksMode
+          ? cached
+                .where(
+                  (task) =>
+                      !task.isArchived &&
+                      (task.createdByUserId == _currentUid ||
+                          task.assigneeUserId == _currentUid),
+                )
+                .toList(growable: false)
+          : cached
+                .where((task) => task.teamId == teamId && !task.isArchived)
+                .toList(growable: false);
+      if (cachedSlice.isNotEmpty) {
+        setState(() {
+          _tasks = cachedSlice;
+        });
+      }
     }
     setState(() {
       _loadingTasks = true;
     });
     try {
-      final tasks = await _taskUseCase.getTasksByTeam(teamId);
+      final tasks = isMyTasksMode
+          ? await _taskUseCase.getMyTasks(_currentUid)
+          : await _taskUseCase.getTasksByTeam(teamId);
       if (!mounted) {
         return;
       }
@@ -286,14 +385,37 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
 
   Future<void> _loadArchivedTasksForSelectedTeam() async {
     final teamId = _selectedTeamId?.trim();
-    if (teamId == null || teamId.isEmpty) {
-      return;
+    final isMyTasksMode = teamId == null || teamId.isEmpty;
+    if (_archivedTasks.isEmpty) {
+      final cached = await _taskUseCase.getLocalOnly();
+      if (!mounted) {
+        return;
+      }
+      final cachedSlice = isMyTasksMode
+          ? cached
+                .where(
+                  (task) =>
+                      task.isArchived &&
+                      (task.createdByUserId == _currentUid ||
+                          task.assigneeUserId == _currentUid),
+                )
+                .toList(growable: false)
+          : cached
+                .where((task) => task.teamId == teamId && task.isArchived)
+                .toList(growable: false);
+      if (cachedSlice.isNotEmpty) {
+        setState(() {
+          _archivedTasks = cachedSlice;
+        });
+      }
     }
     setState(() {
       _loadingArchivedTasks = true;
     });
     try {
-      final tasks = await _taskUseCase.getArchivedTasksByTeam(teamId);
+      final tasks = isMyTasksMode
+          ? await _taskUseCase.getMyArchivedTasks(_currentUid)
+          : await _taskUseCase.getArchivedTasksByTeam(teamId);
       if (!mounted) {
         return;
       }
@@ -354,19 +476,38 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     return permissions.contains('ADMIN') || permissions.contains('MANAGE');
   }
 
+  /// Resolves the task's own team (not necessarily [_selectedTeamId] — a
+  /// cross-team view like "My Tasks" shows tasks from several teams at once).
+  TeamEntity? _teamForTask(TaskEntity task) {
+    final teamId = task.teamId?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      return null;
+    }
+    return _teams.where((team) => team.id?.trim() == teamId).firstOrNull;
+  }
+
+  /// A personal (team-less) task is manageable only by its creator; a team
+  /// task follows the team's own management-role check.
+  bool _canManageTask(TaskEntity task) {
+    if (task.isPersonal) {
+      return task.createdByUserId.trim() == _currentUid;
+    }
+    final team = _teamForTask(task);
+    return team != null && _canManageTeam(team);
+  }
+
   bool _canChangeStatus(TaskEntity task) {
-    final selectedTeam = _selectedTeam;
-    if (selectedTeam != null && _canManageTeam(selectedTeam)) {
+    if (_canManageTask(task)) {
       return true;
+    }
+    if (task.isPersonal) {
+      return false;
     }
     return task.assigneeUserId?.trim().isNotEmpty == true &&
         task.assigneeUserId!.trim() == _currentUid;
   }
 
-  bool _canEditTask(TaskEntity task) {
-    final selectedTeam = _selectedTeam;
-    return selectedTeam != null && _canManageTeam(selectedTeam);
-  }
+  bool _canEditTask(TaskEntity task) => _canManageTask(task);
 
   Future<List<TaskAssigneeOption>> _loadAssigneeOptions(String teamId) async {
     final members =
@@ -403,21 +544,21 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     final manageableTeams = _teams
         .where(_canManageTeam)
         .toList(growable: false);
-    if (manageableTeams.isEmpty) {
-      AppSnackBar.showWarning(context, l10n.taskCreatePermissionDenied);
-      return;
-    }
+    // A personal task is always creatable regardless of team management
+    // rights, so — unlike before — an empty manageableTeams list no longer
+    // blocks task creation; it only limits which teams the form can offer.
     final createdTask = await showTaskEditorSheet(
       context: context,
       availableTeams: manageableTeams,
       loadAssignees: _loadAssigneeOptions,
-      onCreate: _taskUseCase.createTask,
-      onUpdate: (task, request) => _taskUseCase.updateTask(task.id, request),
+      onCreate: _taskBloc.createTask,
+      onUpdate: (task, request) => _taskBloc.updateTask(task.id, request),
       actorUserId: _currentUid,
       actorDisplayName: _actorDisplayName,
-      initialDraft: _selectedTeamId != null
-          ? TaskCreateRequestEntity(teamId: _selectedTeamId!, title: '')
-          : null,
+      // Always pass an explicit draft (teamId may legitimately be null,
+      // meaning "personal") so the editor doesn't fall back to defaulting
+      // the team dropdown to the first available manageable team.
+      initialDraft: TaskCreateRequestEntity(teamId: _selectedTeamId, title: ''),
     );
     if (!mounted || createdTask == null) {
       return;
@@ -427,6 +568,15 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       await _loadTasksForSelectedTeam();
     }
     if (!mounted) {
+      return;
+    }
+    setState(() {
+      _selectedTaskId = createdTask.id;
+    });
+    if (MediaQuery.of(context).size.width >= _kSplitViewBreakpoint) {
+      // Wide layout already shows the task in the persistent side panel via
+      // the selection above; opening the bottom-sheet on top would be
+      // redundant.
       return;
     }
     await _openTaskDetail(createdTask);
@@ -442,8 +592,8 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       context: context,
       availableTeams: [selectedTeam],
       loadAssignees: _loadAssigneeOptions,
-      onCreate: _taskUseCase.createTask,
-      onUpdate: (task, request) => _taskUseCase.updateTask(task.id, request),
+      onCreate: _taskBloc.createTask,
+      onUpdate: (task, request) => _taskBloc.updateTask(task.id, request),
       actorUserId: _currentUid,
       actorDisplayName: _actorDisplayName,
       existingTask: task,
@@ -456,6 +606,47 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     await _loadTasksForSelectedTeam();
   }
 
+  /// Applies a status change without leaving the persistent side panel
+  /// (wide/desktop layout only — the mobile bottom sheet manages its own
+  /// local copy while it is open).
+  Future<void> _handleInlineStatusChange(
+    TaskEntity task,
+    TaskStatus nextStatus,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final rollbackTasks = List<TaskEntity>.from(_tasks);
+    final optimisticTask = task.copyWith(status: nextStatus);
+    setState(() {
+      _tasks = [
+        for (final existing in _tasks)
+          if (existing.id == task.id) optimisticTask else existing,
+      ];
+    });
+    try {
+      final updated = await _taskBloc.updateTaskStatus(
+        task.id,
+        nextStatus,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _tasks = [
+          for (final existing in _tasks)
+            if (existing.id == updated.id) updated else existing,
+        ];
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _tasks = rollbackTasks;
+      });
+      AppSnackBar.showError(context, l10n.taskUpdateStatusError);
+    }
+  }
+
   Future<void> _openTaskDetail(TaskEntity initialTask) async {
     TaskEntity latestTask = initialTask;
     final result = await showModalBottomSheet<_TaskDetailAction>(
@@ -464,14 +655,26 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setModalState) {
-            final l10n = AppLocalizations.of(sheetContext)!;
+        return BlocBuilder<TaskTextSizeCubit, TaskTextSize>(
+          bloc: _taskTextSizeCubit,
+          builder: (blocContext, textSize) {
+            return MediaQuery(
+              data: MediaQuery.of(sheetContext).copyWith(
+                textScaler: TextScaler.linear(textSize.scaleFactor),
+              ),
+              child: TaskDensityScope(
+                scale: textSize.scaleFactor,
+                child: StatefulBuilder(
+                builder: (sheetContext, setModalState) {
+                  final l10n = AppLocalizations.of(sheetContext)!;
             final isArchivedTask = latestTask.isArchived;
             final canChangeStatus =
                 !isArchivedTask && _canChangeStatus(latestTask);
             final canEdit = !isArchivedTask && _canEditTask(latestTask);
             final canRestore = isArchivedTask && _canEditTask(latestTask);
+            final canDeletePermanently =
+                _canEditTask(latestTask) &&
+                (isArchivedTask || latestTask.status == TaskStatus.canceled);
             return FractionallySizedBox(
               heightFactor: MediaQuery.of(sheetContext).size.width < 760
                   ? 0.88
@@ -497,230 +700,73 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                       ),
                     ),
                     Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.all(20),
-                        children: [
-                          Text(
-                            latestTask.title,
-                            style: Theme.of(sheetContext)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.w800),
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: [
-                              TaskMetaChip(
-                                label: taskStatusLabel(
-                                  latestTask.status,
-                                  sheetContext,
-                                ),
-                                color: taskStatusColor(
-                                  latestTask.status,
-                                  Theme.of(sheetContext).colorScheme,
-                                ),
-                              ),
-                              TaskMetaChip(
-                                label: taskPriorityLabel(
-                                  latestTask.priority,
-                                  sheetContext,
-                                ),
-                                color: taskPriorityColor(
-                                  latestTask.priority,
-                                  Theme.of(sheetContext).colorScheme,
-                                ),
-                              ),
-                              if (latestTask.assigneeDisplayName != null)
-                                TaskMetaChip(
-                                  label:
-                                      '${l10n.taskAssignedLabel}: ${latestTask.assigneeDisplayName}',
-                                  color: Theme.of(
-                                    sheetContext,
-                                  ).colorScheme.primary,
-                                ),
-                              if (isArchivedTask)
-                                TaskMetaChip(
-                                  label: l10n.taskArchivedLabel,
-                                  color: Theme.of(
-                                    sheetContext,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          if (latestTask.description?.trim().isNotEmpty == true)
-                            Text(latestTask.description!.trim()),
-                          if (latestTask.description?.trim().isNotEmpty == true)
-                            const SizedBox(height: 18),
-                          _TaskDetailRow(
-                            label: l10n.taskDueDateLabel,
-                            value: latestTask.dueAt == null
-                                ? l10n.taskDueDateNotSet
-                                : taskDateTimeLabel(
-                                    latestTask.dueAt!,
-                                    sheetContext,
-                                  ),
-                          ),
-                          _TaskDetailRow(
-                            label: l10n.taskCreatedByLabel,
-                            value:
-                                latestTask.createdByDisplayName
-                                        ?.trim()
-                                        .isNotEmpty ==
-                                    true
-                                ? latestTask.createdByDisplayName!.trim()
-                                : latestTask.createdByUserId,
-                          ),
-                          _TaskDetailRow(
-                            label: l10n.taskUpdatedLabel,
-                            value: taskDateTimeLabel(
-                              latestTask.updatedAt,
-                              sheetContext,
-                            ),
-                          ),
-                          if (latestTask.workflowMetadata?.sourceMessageId
-                                  ?.trim()
-                                  .isNotEmpty ==
-                              true)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    sheetContext,
-                                  ).colorScheme.primary.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Theme.of(sheetContext)
-                                        .colorScheme
-                                        .primary
-                                        .withValues(alpha: 0.2),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        l10n.taskSourceChatMessage,
-                                        style: Theme.of(sheetContext)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                      if (latestTask.workflowMetadata?.contextId
-                                              ?.trim()
-                                              .isNotEmpty ==
-                                          true)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 10,
-                                          ),
-                                          child: OutlinedButton.icon(
-                                            onPressed: () {
-                                              Navigator.of(sheetContext).pop(
-                                                _TaskDetailAction
-                                                    .openLinkedChat,
-                                              );
-                                            },
-                                            icon: const Icon(
-                                              Icons.chat_bubble_outline_rounded,
-                                            ),
-                                            label: Text(
-                                              l10n.taskOpenLinkedConversation,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 18),
-                          if (canChangeStatus)
-                            DropdownButtonFormField<TaskStatus>(
-                              initialValue: latestTask.status,
-                              decoration: InputDecoration(
-                                labelText: l10n.taskUpdateStatusLabel,
-                              ),
-                              items: allowedTaskStatuses(latestTask)
-                                  .map(
-                                    (status) => DropdownMenuItem<TaskStatus>(
-                                      value: status,
-                                      child: Text(
-                                        taskStatusLabel(status, sheetContext),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(growable: false),
-                              onChanged: (nextStatus) async {
-                                if (nextStatus == null ||
-                                    nextStatus == latestTask.status) {
-                                  return;
-                                }
-                                try {
-                                  final updated = await _taskUseCase
-                                      .updateTaskStatus(
-                                        latestTask.id,
-                                        nextStatus,
-                                      );
-                                  if (!mounted) {
-                                    return;
-                                  }
-                                  setState(() {
-                                    latestTask = updated;
-                                  });
-                                  setModalState(() {});
-                                } catch (error) {
-                                  if (!mounted) {
-                                    return;
-                                  }
-                                  AppSnackBar.showError(
-                                    context,
-                                    l10n.taskUpdateStatusError,
-                                  );
-                                }
-                              },
-                            ),
-                          const SizedBox(height: 18),
-                          if (canEdit)
-                            FilledButton.tonalIcon(
-                              onPressed: () => Navigator.of(
+                      child: TaskDetailPanel(
+                        task: latestTask,
+                        canChangeStatus: canChangeStatus,
+                        canEdit: canEdit,
+                        canRestore: canRestore,
+                        canDeletePermanently: canDeletePermanently,
+                        onStatusChange: (nextStatus) async {
+                          final rollbackTask = latestTask;
+                          setModalState(() {
+                            latestTask = latestTask.copyWith(
+                              status: nextStatus,
+                            );
+                          });
+                          try {
+                            final updated = await _taskBloc
+                                .updateTaskStatus(latestTask.id, nextStatus);
+                            if (!mounted) {
+                              return;
+                            }
+                            setModalState(() {
+                              latestTask = updated;
+                            });
+                          } catch (_) {
+                            if (!mounted) {
+                              return;
+                            }
+                            setModalState(() {
+                              latestTask = rollbackTask;
+                            });
+                            AppSnackBar.showError(
+                              context,
+                              l10n.taskUpdateStatusError,
+                            );
+                          }
+                        },
+                        onEdit: canEdit
+                            ? () => Navigator.of(
                                 sheetContext,
-                              ).pop(_TaskDetailAction.edit),
-                              icon: const Icon(Icons.edit_outlined),
-                              label: Text(l10n.taskEditAction),
-                            ),
-                          if (canEdit)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 10),
-                              child: OutlinedButton.icon(
-                                onPressed: () => Navigator.of(
-                                  sheetContext,
-                                ).pop(_TaskDetailAction.archive),
-                                icon: const Icon(Icons.archive_outlined),
-                                label: Text(l10n.taskArchiveAction),
-                              ),
-                            ),
-                          if (canRestore)
-                            FilledButton.tonalIcon(
-                              onPressed: () => Navigator.of(
+                              ).pop(_TaskDetailAction.edit)
+                            : null,
+                        onArchive: canEdit
+                            ? () => Navigator.of(
                                 sheetContext,
-                              ).pop(_TaskDetailAction.restore),
-                              icon: const Icon(Icons.unarchive_outlined),
-                              label: Text(l10n.taskRestoreAction),
-                            ),
-                        ],
+                              ).pop(_TaskDetailAction.archive)
+                            : null,
+                        onRestore: canRestore
+                            ? () => Navigator.of(
+                                sheetContext,
+                              ).pop(_TaskDetailAction.restore)
+                            : null,
+                        onDeletePermanently: canDeletePermanently
+                            ? () => Navigator.of(
+                                sheetContext,
+                              ).pop(_TaskDetailAction.deletePermanently)
+                            : null,
+                        onOpenLinkedChat: () => Navigator.of(
+                          sheetContext,
+                        ).pop(_TaskDetailAction.openLinkedChat),
+                        onClose: () => Navigator.of(sheetContext).pop(),
                       ),
                     ),
                   ],
                 ),
+              ),
+            );
+                },
+              ),
               ),
             );
           },
@@ -743,6 +789,9 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       case _TaskDetailAction.restore:
         await _restoreTask(latestTask);
         break;
+      case _TaskDetailAction.deletePermanently:
+        await _deleteTaskPermanently(latestTask);
+        break;
       case _TaskDetailAction.openLinkedChat:
         _openLinkedChat(latestTask);
         break;
@@ -751,35 +800,94 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
 
   Future<void> _archiveTask(TaskEntity task) async {
     final l10n = AppLocalizations.of(context)!;
+    final rollbackTasks = List<TaskEntity>.from(_tasks);
+    final rollbackArchived = List<TaskEntity>.from(_archivedTasks);
+    final optimisticTask = task.copyWith(archivedAt: DateTime.now());
+    setState(() {
+      _tasks = _tasks.where((existing) => existing.id != task.id).toList();
+      _archivedTasks = [..._archivedTasks, optimisticTask];
+    });
     try {
-      await _taskUseCase.archiveTask(task.id);
+      final archived = await _taskBloc.archiveTask(task.id);
       if (!mounted) {
         return;
       }
+      setState(() {
+        _archivedTasks = [
+          for (final existing in _archivedTasks)
+            if (existing.id == archived.id) archived else existing,
+        ];
+      });
       AppSnackBar.showSuccess(context, l10n.taskArchiveSuccess);
-      await _refreshTasks();
     } catch (_) {
       if (!mounted) {
         return;
       }
+      setState(() {
+        _tasks = rollbackTasks;
+        _archivedTasks = rollbackArchived;
+      });
       AppSnackBar.showError(context, l10n.taskArchiveError);
     }
   }
 
   Future<void> _restoreTask(TaskEntity task) async {
     final l10n = AppLocalizations.of(context)!;
+    final rollbackTasks = List<TaskEntity>.from(_tasks);
+    final rollbackArchived = List<TaskEntity>.from(_archivedTasks);
+    final optimisticTask = task.copyWith(clearArchivedAt: true);
+    setState(() {
+      _archivedTasks = _archivedTasks
+          .where((existing) => existing.id != task.id)
+          .toList();
+      _tasks = [..._tasks, optimisticTask];
+    });
     try {
-      await _taskUseCase.unarchiveTask(task.id);
+      final restored = await _taskBloc.unarchiveTask(task.id);
       if (!mounted) {
         return;
       }
+      setState(() {
+        _tasks = [
+          for (final existing in _tasks)
+            if (existing.id == restored.id) restored else existing,
+        ];
+      });
       AppSnackBar.showSuccess(context, l10n.taskRestoreSuccess);
-      await _refreshTasks();
     } catch (_) {
       if (!mounted) {
         return;
       }
+      setState(() {
+        _tasks = rollbackTasks;
+        _archivedTasks = rollbackArchived;
+      });
       AppSnackBar.showError(context, l10n.taskRestoreError);
+    }
+  }
+
+  Future<void> _deleteTaskPermanently(TaskEntity task) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await _taskBloc.deleteTaskPermanently(task);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _tasks = _tasks.where((existing) => existing.id != task.id).toList();
+        _archivedTasks = _archivedTasks
+            .where((existing) => existing.id != task.id)
+            .toList();
+        if (_selectedTaskId == task.id) {
+          _selectedTaskId = null;
+        }
+      });
+      AppSnackBar.showSuccess(context, l10n.taskDeletePermanentlySuccess);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showError(context, l10n.taskDeletePermanentlyError);
     }
   }
 
@@ -801,15 +909,82 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     context.go(path);
   }
 
+  void _selectTask(TaskEntity task) {
+    setState(() {
+      _selectedTaskId = task.id;
+    });
+  }
+
+  void _clearTaskSelection() {
+    if (_selectedTaskId == null) {
+      return;
+    }
+    setState(() {
+      _selectedTaskId = null;
+    });
+  }
+
+  Widget _buildDetailPanelCard(BuildContext context, {required TaskEntity task}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isArchivedTask = task.isArchived;
+    final canChangeStatus = !isArchivedTask && _canChangeStatus(task);
+    final canEdit = !isArchivedTask && _canEditTask(task);
+    final canRestore = isArchivedTask && _canEditTask(task);
+    final canDeletePermanently =
+        _canEditTask(task) &&
+        (isArchivedTask || task.status == TaskStatus.canceled);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.borderColor ?? colorScheme.outlineVariant,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.05),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: TaskDetailPanel(
+        key: ValueKey(task.id),
+        task: task,
+        canChangeStatus: canChangeStatus,
+        canEdit: canEdit,
+        canRestore: canRestore,
+        canDeletePermanently: canDeletePermanently,
+        onStatusChange: (nextStatus) =>
+            _handleInlineStatusChange(task, nextStatus),
+        onEdit: canEdit ? () => _openEditTask(task) : null,
+        onArchive: canEdit ? () => _archiveTask(task) : null,
+        onRestore: canRestore ? () => _restoreTask(task) : null,
+        onDeletePermanently: canDeletePermanently
+            ? () => _deleteTaskPermanently(task)
+            : null,
+        onOpenLinkedChat: () => _openLinkedChat(task),
+        onClose: _clearTaskSelection,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final teamState = context.watch<TeamBloc>().state;
     final teams = _teamsFromState(teamState);
+    // Only teams the user can manage are selectable/shown in the picker —
+    // mirrors Shift's team filtering exactly.
+    final manageableTeams = teams.where(_canManageTeam).toList(growable: false);
     final selectedTeam = _selectedTeamFrom(teams);
+    // "My Tasks" (no team selected) always allows creating a personal task;
+    // a specific team requires management rights on that team.
     final canManageSelectedTeam =
-        selectedTeam != null && _canManageTeam(selectedTeam);
-    final filteredTasks = _applyTaskSearch(_tasks);
+        _selectedTeamId == null ||
+        (selectedTeam != null && _canManageTeam(selectedTeam));
+    final searchFilteredActiveTasks = _applyTaskSearch(_tasks);
+    final filteredTasks = _applyStatusFilter(searchFilteredActiveTasks);
     final filteredArchivedTasks = _applyTaskSearch(_archivedTasks);
     final displayedTasks = _showArchived ? filteredArchivedTasks : filteredTasks;
     final isLoadingDisplayed = _showArchived
@@ -818,30 +993,16 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     final displayedSourceEmpty = _showArchived
         ? _archivedTasks.isEmpty
         : _tasks.isEmpty;
-    final openTasks = filteredTasks
-        .where((task) => task.status == TaskStatus.open)
-        .length;
-    final inProgressTasks = filteredTasks
-        .where((task) => task.status == TaskStatus.inProgress)
-        .length;
-    final doneTasks = filteredTasks
-        .where((task) => task.status == TaskStatus.done)
-        .length;
+    final countsByStatus = <TaskStatus, int>{
+      for (final status in TaskStatus.values)
+        status: searchFilteredActiveTasks
+            .where((task) => task.status == status)
+            .length,
+    };
+    final selectedTask = _findTaskById(_selectedTaskId);
 
     if (teamState is TeamLoading && teams.isEmpty) {
       return const Center(child: CircularProgressIndicator());
-    }
-
-    if (teams.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            l10n.taskNoTeamsAvailable,
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
     }
 
     return BlocListener<TeamBloc, TeamState>(
@@ -853,117 +1014,257 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       child: SafeArea(
         top: !widget.embedded,
         bottom: widget.embedded,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-              child: TaskWorkspaceHeader(
-                embedded: widget.embedded,
-                teams: teams,
-                selectedTeamId: _selectedTeamId,
-                onTeamChanged: (value) {
-                  if (value == null || value == _selectedTeamId) {
-                    return;
-                  }
-                  setState(() {
-                    _selectedTeamId = value;
-                  });
-                  unawaited(_refreshTasks());
-                },
-                canManageSelectedTeam: canManageSelectedTeam,
-                onCreateTask: _openCreateTask,
-                loadingAccess: _loadingAccess,
-                totalTasks: filteredTasks.length,
-                openTasks: openTasks,
-                inProgressTasks: inProgressTasks,
-                doneTasks: doneTasks,
-                searchController: _searchController,
-                onSearchChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: ArchiveViewToggle(
-                  showArchivedOnly: _showArchived,
-                  primaryCount: filteredTasks.length,
-                  archivedCount: filteredArchivedTasks.length,
-                  primaryLabel: l10n.taskFilterActive,
-                  archivedLabel: l10n.taskFilterArchived,
-                  onChanged: (value) {
-                    setState(() {
-                      _showArchived = value;
-                    });
-                  },
-                ),
-              ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _refreshTasks,
-                child: isLoadingDisplayed && displayedSourceEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : displayedTasks.isEmpty
-                    ? ListView(
-                        padding: const EdgeInsets.all(24),
-                        children: [
-                          TaskEmptyState(
-                            canManageSelectedTeam: canManageSelectedTeam,
-                            isArchivedView: _showArchived,
-                          ),
-                        ],
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        itemCount: displayedTasks.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final task = displayedTasks[index];
-                          return TaskCard(
-                            task: task,
-                            onTap: () => _openTaskDetail(task),
-                          );
-                        },
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isSplitView = constraints.maxWidth >= _kSplitViewBreakpoint;
+
+            final taskListArea = RefreshIndicator(
+              onRefresh: _refreshTasks,
+              child: isLoadingDisplayed && displayedSourceEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : displayedTasks.isEmpty
+                  ? ListView(
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        TaskEmptyState(
+                          canManageSelectedTeam: canManageSelectedTeam,
+                          isArchivedView: _showArchived,
+                        ),
+                      ],
+                    )
+                  : _viewMode == TaskViewMode.table
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: _HorizontalScrollIfNarrow(
+                        minWidth: 640,
+                        child: TaskTableView(
+                          tasks: displayedTasks,
+                          selectedTaskId: isSplitView
+                              ? selectedTask?.id
+                              : null,
+                          onTaskTap: (task) => isSplitView
+                              ? _selectTask(task)
+                              : _openTaskDetail(task),
+                        ),
                       ),
-              ),
-            ),
-          ],
+                    )
+                  : _viewMode == TaskViewMode.timeline
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: TaskTimelineView(
+                        tasks: displayedTasks,
+                        weekStart: _timelineWeekStart,
+                        onWeekStartChanged: (value) {
+                          setState(() {
+                            _timelineWeekStart = value;
+                          });
+                        },
+                        selectedTaskId: isSplitView
+                            ? selectedTask?.id
+                            : null,
+                        onTaskTap: (task) => isSplitView
+                            ? _selectTask(task)
+                            : _openTaskDetail(task),
+                      ),
+                    )
+                  : _viewMode == TaskViewMode.calendar
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: TaskCalendarView(
+                        tasks: displayedTasks,
+                        weekStart: _timelineWeekStart,
+                        onWeekStartChanged: (value) {
+                          setState(() {
+                            _timelineWeekStart = value;
+                          });
+                        },
+                        selectedTaskId: isSplitView ? selectedTask?.id : null,
+                        onTaskTap: (task) => isSplitView
+                            ? _selectTask(task)
+                            : _openTaskDetail(task),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        0,
+                        16,
+                        isSplitView ? 16 : 24,
+                      ),
+                      itemCount: displayedTasks.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final task = displayedTasks[index];
+                        return TaskCard(
+                          task: task,
+                          selected:
+                              isSplitView && task.id == selectedTask?.id,
+                          onTap: () => isSplitView
+                              ? _selectTask(task)
+                              : _openTaskDetail(task),
+                        );
+                      },
+                    ),
+            );
+
+            final showDetailPanel = isSplitView && selectedTask != null;
+
+            final content = Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                  child: TaskWorkspaceHeader(
+                    embedded: widget.embedded,
+                    teams: manageableTeams,
+                    selectedTeamId: _selectedTeamId,
+                    onTeamChanged: (value) {
+                      if (value == _selectedTeamId) {
+                        return;
+                      }
+                      setState(() {
+                        _selectedTeamId = value;
+                        _selectedTaskId = null;
+                      });
+                      unawaited(_refreshTasks());
+                    },
+                    canManageSelectedTeam: canManageSelectedTeam,
+                    onCreateTask: _openCreateTask,
+                    loadingAccess: _loadingAccess,
+                    viewMode: _viewMode,
+                    onViewModeChanged: (value) {
+                      setState(() {
+                        _viewMode = value;
+                      });
+                    },
+                    searchController: _searchController,
+                    onSearchChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: TaskStatusFilterBar(
+                    totalCount: searchFilteredActiveTasks.length,
+                    countsByStatus: countsByStatus,
+                    selectedStatus: _selectedStatusFilter,
+                    showArchived: _showArchived,
+                    archivedCount: filteredArchivedTasks.length,
+                    onStatusSelected: (status) {
+                      setState(() {
+                        _selectedStatusFilter = status;
+                        _showArchived = false;
+                      });
+                    },
+                    onArchivedSelected: () {
+                      setState(() {
+                        _showArchived = true;
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: !showDetailPanel
+                      ? taskListArea
+                      : GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          // Tapping anywhere that isn't a task card or the
+                          // detail panel itself (the panel absorbs its own
+                          // taps below) clears the selection and closes it.
+                          onTap: _clearTaskSelection,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(flex: 3, child: taskListArea),
+                              const SizedBox(width: 16),
+                              SizedBox(
+                                width: 380,
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    0,
+                                    0,
+                                    16,
+                                    16,
+                                  ),
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () {},
+                                    child: _buildDetailPanelCard(
+                                      context,
+                                      task: selectedTask,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                ),
+              ],
+            );
+
+            if (isSplitView) {
+              return content;
+            }
+
+            // Compact/mobile layout only: split view has enough room that
+            // shrinking/growing text to fit more content isn't the point.
+            return BlocBuilder<TaskTextSizeCubit, TaskTextSize>(
+              bloc: _taskTextSizeCubit,
+              builder: (context, textSize) {
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(textSize.scaleFactor),
+                  ),
+                  child: TaskDensityScope(
+                    scale: textSize.scaleFactor,
+                    child: content,
+                  ),
+                );
+              },
+            );
+          },
         ),
       ),
     );
   }
 }
 
-enum _TaskDetailAction { edit, archive, restore, openLinkedChat }
+enum _TaskDetailAction { edit, archive, restore, deletePermanently, openLinkedChat }
 
-class _TaskDetailRow extends StatelessWidget {
-  const _TaskDetailRow({required this.label, required this.value});
+/// Lets [child] size itself normally on wide layouts; on narrow ones (mobile,
+/// or a compact web window) it enforces [minWidth] and scrolls horizontally
+/// instead of squeezing multi-column content unreadably.
+class _HorizontalScrollIfNarrow extends StatelessWidget {
+  const _HorizontalScrollIfNarrow({
+    required this.minWidth,
+    required this.child,
+  });
 
-  final String label;
-  final String value;
+  final double minWidth;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= minWidth) {
+          return child;
+        }
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: minWidth,
+            height: constraints.maxHeight,
+            child: child,
           ),
-          const SizedBox(height: 4),
-          Text(value, style: Theme.of(context).textTheme.bodyLarge),
-        ],
-      ),
+        );
+      },
     );
   }
 }
+
+
+

@@ -2,6 +2,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:note_sondage/core/utils/app_constant.dart';
 import 'package:note_sondage/feature/clocking/infrastructure/data/hive_models/clocking_hive_model.dart';
 import 'package:note_sondage/feature/sondage/infrastructure/data/hive_models/sondage_hive_model.dart';
+import 'package:note_sondage/feature/task/infrastructure/data/hive_models/task_hive_model.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/hive_models/permission_hive_model.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/hive_models/role_hive_model.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/hive_models/team_hive_model.dart';
@@ -26,6 +27,7 @@ class HiveInitializer {
       Hive.registerAdapter(UserHiveModelAdapter());
       Hive.registerAdapter(SondageHiveModelAdapter());
       Hive.registerAdapter(ClockingHiveModelAdapter());
+      Hive.registerAdapter(TaskHiveModelAdapter());
 
       // Open boxes with unique names
       // await Future.wait([Hive.openBox<AppConfigModel>(appConfigBox)]);

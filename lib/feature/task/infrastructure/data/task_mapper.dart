@@ -1,6 +1,7 @@
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_priority.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_reminder_anchor.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_update_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_workflow_metadata_entity.dart';
@@ -11,13 +12,14 @@ class TaskMapper {
   static TaskEntity fromJson(Map<String, dynamic> json) {
     return TaskEntity(
       id: json['id']?.toString().trim() ?? '',
-      teamId: json['teamId']?.toString().trim() ?? '',
+      teamId: _trimOrNull(json['teamId']),
       title: json['title']?.toString().trim() ?? '',
       description: _trimOrNull(json['description']),
       status: TaskStatusWireValue.fromWireValue(json['status']?.toString()),
       priority: TaskPriorityWireValue.fromWireValue(
         json['priority']?.toString(),
       ),
+      startAt: _parseDateTime(json['startAt']),
       dueAt: _parseDateTime(json['dueAt']),
       assigneeUserId: _trimOrNull(json['assigneeUserId']),
       assigneeDisplayName: _trimOrNull(json['assigneeDisplayName']),
@@ -28,18 +30,34 @@ class TaskMapper {
       archivedAt: _parseDateTime(json['archivedAt']),
       createdAt: _parseDateTime(json['createdAt']) ?? DateTime.now(),
       updatedAt: _parseDateTime(json['updatedAt']) ?? DateTime.now(),
+      reminderOffsets: _reminderOffsetsFromJson(json['reminderOffsets']),
+      reminderAnchor: TaskReminderAnchorWireValue.fromWireValue(
+        json['reminderAnchor']?.toString(),
+      ),
     );
+  }
+
+  static List<int> _reminderOffsetsFromJson(Object? raw) {
+    if (raw is! List) {
+      return const <int>[];
+    }
+    return raw
+        .map((value) => int.tryParse(value.toString().trim()))
+        .whereType<int>()
+        .toList(growable: false);
   }
 
   static Map<String, dynamic> createRequestToJson(
     TaskCreateRequestEntity request,
   ) {
     return <String, dynamic>{
-      'teamId': request.teamId,
+      if (_hasText(request.teamId)) 'teamId': request.teamId!.trim(),
       'title': request.title.trim(),
       if (_hasText(request.description))
         'description': request.description!.trim(),
       'priority': request.priority.wireValue,
+      if (request.startAt != null)
+        'startAt': request.startAt!.toIso8601String(),
       if (request.dueAt != null) 'dueAt': request.dueAt!.toIso8601String(),
       if (_hasText(request.assigneeUserId))
         'assigneeUserId': request.assigneeUserId!.trim(),
@@ -51,6 +69,9 @@ class TaskMapper {
         'createdByDisplayName': request.createdByDisplayName!.trim(),
       if (request.workflowMetadata != null)
         'workflowMetadata': workflowMetadataToJson(request.workflowMetadata!),
+      if (request.reminderOffsets.isNotEmpty)
+        'reminderOffsets': request.reminderOffsets,
+      'reminderAnchor': request.reminderAnchor.wireValue,
     };
   }
 
@@ -61,13 +82,20 @@ class TaskMapper {
       if (_hasText(request.title)) 'title': request.title!.trim(),
       if (request.description != null) 'description': request.description,
       if (request.priority != null) 'priority': request.priority!.wireValue,
+      if (request.startAt != null)
+        'startAt': request.startAt!.toIso8601String(),
       if (request.dueAt != null) 'dueAt': request.dueAt!.toIso8601String(),
       if (_hasText(request.assigneeUserId))
         'assigneeUserId': request.assigneeUserId!.trim(),
       if (_hasText(request.assigneeDisplayName))
         'assigneeDisplayName': request.assigneeDisplayName!.trim(),
+      'clearStartAt': request.clearStartAt,
       'clearDueAt': request.clearDueAt,
       'clearAssignee': request.clearAssignee,
+      if (request.reminderOffsets != null)
+        'reminderOffsets': request.reminderOffsets,
+      if (request.reminderAnchor != null)
+        'reminderAnchor': request.reminderAnchor!.wireValue,
     };
   }
 

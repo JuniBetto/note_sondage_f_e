@@ -9,12 +9,24 @@ class TaskUseCase {
 
   final TaskRepository _repository;
 
+  Future<List<TaskEntity>> getLocalOnly() {
+    return _repository.getLocalOnly();
+  }
+
   Future<List<TaskEntity>> getTasksByTeam(String teamId) {
     return _repository.getTasksByTeam(teamId);
   }
 
   Future<List<TaskEntity>> getArchivedTasksByTeam(String teamId) {
     return _repository.getArchivedTasksByTeam(teamId);
+  }
+
+  Future<List<TaskEntity>> getMyTasks(String currentUserId) {
+    return _repository.getMyTasks(currentUserId);
+  }
+
+  Future<List<TaskEntity>> getMyArchivedTasks(String currentUserId) {
+    return _repository.getMyArchivedTasks(currentUserId);
   }
 
   Future<TaskEntity> getTaskById(String taskId) {
@@ -42,5 +54,9 @@ class TaskUseCase {
 
   Future<TaskEntity> unarchiveTask(String taskId) {
     return _repository.unarchiveTask(taskId);
+  }
+
+  Future<void> deleteTaskPermanently(String taskId) {
+    return _repository.deleteTaskPermanently(taskId);
   }
 }

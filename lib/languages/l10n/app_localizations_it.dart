@@ -296,6 +296,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get save => 'Salvare';
 
   @override
+  String get selectDateRange => 'Seleziona periodo';
+
+  @override
+  String get selectDateRangeHint => 'Tocca una data di inizio, poi una di fine';
+
+  @override
   String get editRoleManager => 'Modifica permesso';
 
   @override
@@ -523,6 +529,13 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get assignmentsUpdatesAndShiftReminders =>
       'Assegnazioni, aggiornamenti e promemoria turni';
+
+  @override
+  String get taskNotifications => 'Notifiche task';
+
+  @override
+  String get taskNotificationsSubtitle =>
+      'Promemoria per i task assegnati a te o in scadenza';
 
   @override
   String get debugTools => 'Strumenti debug';
@@ -827,6 +840,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get totalMembers => 'Membri totali';
+
+  @override
+  String get myOpenTasks => 'Task aperti';
+
+  @override
+  String get unreadChatMessages => 'Messaggi non letti';
 
   @override
   String get viewAll => 'Vedi tutto';
@@ -2110,6 +2129,29 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskFilterArchived => 'Archiviati';
 
   @override
+  String get taskFilterAll => 'Tutti';
+
+  @override
+  String get taskSelectTaskPrompt =>
+      'Seleziona un task dalla lista per vederne i dettagli.';
+
+  @override
+  String get taskViewModeList => 'Vista lista';
+
+  @override
+  String get taskViewModeTable => 'Vista tabella';
+
+  @override
+  String get taskViewModeTimeline => 'Vista timeline';
+
+  @override
+  String get taskViewModeCalendar => 'Vista calendario';
+
+  @override
+  String get taskTimelineEmptyState =>
+      'Nessun task con data di inizio o scadenza in questo intervallo.';
+
+  @override
   String get taskNoTeamsAvailable => 'Non ci sono team disponibili per i task.';
 
   @override
@@ -2134,6 +2176,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskArchivedLabel => 'Archiviato';
+
+  @override
+  String get taskStartDateLabel => 'Data di inizio';
+
+  @override
+  String get taskStartAfterDueError =>
+      'La data di inizio non puo essere successiva alla scadenza.';
 
   @override
   String get taskDueDateLabel => 'Scadenza';
@@ -2183,6 +2232,22 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskRestoreError => 'Impossibile ripristinare il task.';
+
+  @override
+  String get taskDeletePermanentlyAction => 'Elimina definitivamente';
+
+  @override
+  String get taskDeletePermanentlyTitle => 'Eliminare definitivamente il task?';
+
+  @override
+  String get taskDeletePermanentlyMessage =>
+      'Questa azione non puo essere annullata. Il task sara rimosso definitivamente dal sistema.';
+
+  @override
+  String get taskDeletePermanentlySuccess => 'Task eliminato definitivamente.';
+
+  @override
+  String get taskDeletePermanentlyError => 'Impossibile eliminare il task.';
 
   @override
   String get taskEmptyArchivedTitle => 'Nessun task archiviato';
@@ -2254,4 +2319,21 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskCreateAction => 'Crea task';
+
+  @override
+  String get taskCloseAction => 'Chiudi';
+
+  @override
+  String get taskMyTasksTitle => 'I miei task';
+
+  @override
+  String get taskMyTasksSubtitle =>
+      'Task assegnati a te o creati da te, in tutti i team piu quelli personali';
+
+  @override
+  String get taskPersonalToggleLabel => 'Task personale';
+
+  @override
+  String get taskPersonalToggleSubtitle =>
+      'Non legato a nessun team: visibile e gestibile solo da te';
 }

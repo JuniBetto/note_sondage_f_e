@@ -28,6 +28,8 @@ const String _shiftAlarmRingtoneRawSound = 'shift_alarm_ringtone';
 const String _pendingNotificationActionsKey = 'pending_notification_actions';
 const String _shiftNotificationsEnabledKey = 'shift_notifications_enabled';
 const String _scheduledShiftAlarmIdsKey = 'scheduled_shift_alarm_ids';
+const String _taskNotificationsEnabledKey = 'task_notifications_enabled';
+const String _scheduledTaskAlarmIdsKey = 'scheduled_task_alarm_ids';
 const String _shiftAlarmTypeKey = 'shift_alarm_type';
 const String _shiftAlarmFeedbackKey = 'shift_alarm_feedback';
 const String _shiftAlarmDurationSecondsKey = 'shift_alarm_duration_seconds';
@@ -975,6 +977,250 @@ class LocalNotificationService {
     final fallbackId = _shiftFallbackNotificationId(shiftId);
     await _cancelNotificationSafely(fallbackId);
     await _forgetScheduledShiftAlarmId(fallbackId);
+  }
+
+  // ── Task Alarm ──────────────────────────────────────────────────────────
+  // Stessa infrastruttura di canali/allarme di Shift (channel Android/iOS,
+  // alarm type, feedback vibrazione/suoneria, durata) per un'esperienza
+  // identica, ma con toggle di attivazione e id schedulati separati cosi che
+  // disabilitare le notifiche turni non cancelli i promemoria task (e
+  // viceversa). A differenza degli shift, un offset gia passato viene
+  // semplicemente saltato: non ha senso far suonare un allarme "immediato"
+  // di fallback per un task scaduto da tempo.
+
+  Future<bool> areTaskNotificationsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_taskNotificationsEnabledKey) ?? true;
+  }
+
+  Future<void> setTaskNotificationsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_taskNotificationsEnabledKey, enabled);
+    if (!enabled) {
+      final scheduledIds =
+          prefs
+              .getStringList(_scheduledTaskAlarmIdsKey)
+              ?.map(int.tryParse)
+              .whereType<int>()
+              .toList() ??
+          const <int>[];
+      for (final notifId in scheduledIds) {
+        await _cancelNotificationSafely(notifId);
+      }
+      await prefs.remove(_scheduledTaskAlarmIdsKey);
+    }
+  }
+
+  /// Schedula le notifiche locali per un task in base agli [alarmOffsets],
+  /// ancorate a [anchorTime] (scadenza o inizio del task, a seconda di come
+  /// e configurato il promemoria). Cancella eventuali allarmi precedenti per
+  /// lo stesso [taskId].
+  Future<void> scheduleTaskAlarms({
+    required String taskId,
+    required String taskTitle,
+    required DateTime anchorTime,
+    required List<int> alarmOffsets,
+  }) async {
+    if (!_initialized || !_available || !_supportsLocalNotifications) return;
+    if (!await areTaskNotificationsEnabled()) {
+      debugPrint('[TaskAlarm] Skipped $taskId: task notifications disabled.');
+      return;
+    }
+    if (alarmOffsets.isEmpty) {
+      debugPrint('[TaskAlarm] Skipped $taskId: no alarm offsets.');
+      return;
+    }
+
+    final alarmType = await getShiftAlarmType();
+    final alarmFeedback = await getShiftAlarmFeedback();
+    final durationSeconds = await getShiftAlarmDurationSeconds();
+
+    if (_isWeb) {
+      await cancelTaskAlarms(taskId: taskId, alarmOffsets: alarmOffsets);
+      final now = DateTime.now();
+
+      for (final offsetMinutes in alarmOffsets) {
+        final alarmAt = anchorTime.add(Duration(minutes: offsetMinutes));
+        if (alarmAt.isBefore(now)) {
+          debugPrint(
+            '[TaskAlarm] Skip web offset $offsetMinutes for $taskId: $alarmAt already passed.',
+          );
+          continue;
+        }
+
+        final minutesBefore = offsetMinutes.abs();
+        final notifId = '${taskId}_$offsetMinutes'.hashCode;
+        final title = '⏰ Task tra $minutesBefore min';
+        final body = taskTitle.isNotEmpty
+            ? 'Task "$taskTitle" entro le ${_formatTime(anchorTime)}'
+            : 'Un tuo task e in scadenza tra $minutesBefore minuti';
+
+        await _scheduleWebNotification(
+          id: notifId,
+          title: title,
+          body: body,
+          scheduledAt: alarmAt,
+          payload: jsonEncode({
+            'notificationId': notifId.toString(),
+            'eventType': 'TASK_ALARM',
+            'sourceService': 'task_web',
+            'title': title,
+            'body': body,
+            'occurredAt': alarmAt.toIso8601String(),
+            'metadata': {
+              'taskId': taskId,
+              'anchorAt': anchorTime.toIso8601String(),
+              'taskTitle': taskTitle,
+            },
+          }),
+          autoCloseAfter: _resolveWebNotificationAutoClose(
+            alarmType: alarmType,
+            durationSeconds: durationSeconds,
+          ),
+        );
+        debugPrint('[TaskAlarm] Scheduled web alarm $notifId at $alarmAt');
+      }
+      return;
+    }
+
+    final config = _resolveShiftNotificationConfig(
+      alarmType: alarmType,
+      feedback: alarmFeedback,
+      durationSeconds: durationSeconds,
+    );
+    await _ensureShiftNotificationChannel(
+      alarmType: alarmType,
+      feedback: alarmFeedback,
+      durationSeconds: durationSeconds,
+    );
+
+    // Cancella prima i vecchi allarmi per questo task
+    await cancelTaskAlarms(taskId: taskId, alarmOffsets: alarmOffsets);
+
+    final now = tz.TZDateTime.now(tz.local);
+
+    for (final offsetMinutes in alarmOffsets) {
+      // offsetMinutes e negativo (es. -30 = 30 min prima)
+      final alarmTime = tz.TZDateTime.from(
+        anchorTime.add(Duration(minutes: offsetMinutes)),
+        tz.local,
+      );
+
+      if (alarmTime.isBefore(now)) {
+        debugPrint(
+          '[TaskAlarm] Skip offset $offsetMinutes for $taskId: $alarmTime already passed.',
+        );
+        continue;
+      }
+
+      final minutesBefore = offsetMinutes.abs();
+      final notifId = '${taskId}_$offsetMinutes'.hashCode;
+      final title = '⏰ Task tra $minutesBefore min';
+      final body = taskTitle.isNotEmpty
+          ? 'Task "$taskTitle" entro le ${_formatTime(anchorTime)}'
+          : 'Un tuo task e in scadenza tra $minutesBefore minuti';
+
+      final androidDetails = AndroidNotificationDetails(
+        config.channel.id,
+        config.channel.name,
+        channelDescription: config.channel.description,
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: config.playSound,
+        sound: config.sound,
+        enableVibration: config.enableVibration,
+        vibrationPattern: config.enableVibration
+            ? _buildAlarmVibrationPattern(durationSeconds)
+            : null,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: config.fullScreenIntent,
+        timeoutAfter: alarmType == ShiftAlarmType.alarm
+            ? durationSeconds * 1000
+            : null,
+        icon: 'ic_stat_notify',
+        ongoing: false,
+        autoCancel: true,
+        visibility: NotificationVisibility.public,
+      );
+
+      final darwinDetails = _buildDarwinShiftNotificationDetails(
+        alarmType: alarmType,
+        feedback: alarmFeedback,
+        durationSeconds: durationSeconds,
+      );
+
+      try {
+        await _plugin.zonedSchedule(
+          notifId,
+          title,
+          body,
+          alarmTime,
+          NotificationDetails(android: androidDetails, iOS: darwinDetails),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: jsonEncode({
+            'notificationId': notifId.toString(),
+            'eventType': 'TASK_ALARM',
+            'sourceService': 'task',
+            'title': title,
+            'body': body,
+            'occurredAt': alarmTime.toIso8601String(),
+            'metadata': {
+              'taskId': taskId,
+              'anchorAt': anchorTime.toIso8601String(),
+              'taskTitle': taskTitle,
+            },
+          }),
+        );
+        await _rememberScheduledTaskAlarmId(notifId);
+        debugPrint('[TaskAlarm] Scheduled alarm $notifId at $alarmTime');
+      } catch (e) {
+        debugPrint('[TaskAlarm] Failed to schedule $notifId: $e');
+      }
+    }
+  }
+
+  /// Cancella tutti gli allarmi schedulati per un task.
+  Future<void> cancelTaskAlarms({
+    required String taskId,
+    required List<int> alarmOffsets,
+  }) async {
+    if (!_initialized || !_available || !_supportsLocalNotifications) return;
+    if (_isWeb) {
+      for (final offset in alarmOffsets) {
+        final notifId = '${taskId}_$offset'.hashCode;
+        _cancelWebScheduledNotification(notifId);
+      }
+      return;
+    }
+    for (final offset in alarmOffsets) {
+      final notifId = '${taskId}_$offset'.hashCode;
+      await _cancelNotificationSafely(notifId);
+      await _forgetScheduledTaskAlarmId(notifId);
+    }
+  }
+
+  Future<void> _rememberScheduledTaskAlarmId(int notifId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = List<String>.from(
+      prefs.getStringList(_scheduledTaskAlarmIdsKey) ?? const <String>[],
+    );
+    final raw = notifId.toString();
+    if (!ids.contains(raw)) {
+      ids.add(raw);
+      await prefs.setStringList(_scheduledTaskAlarmIdsKey, ids);
+    }
+  }
+
+  Future<void> _forgetScheduledTaskAlarmId(int notifId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = List<String>.from(
+      prefs.getStringList(_scheduledTaskAlarmIdsKey) ?? const <String>[],
+    );
+    ids.remove(notifId.toString());
+    await prefs.setStringList(_scheduledTaskAlarmIdsKey, ids);
   }
 
   Future<void> setShiftNotificationsEnabled(bool enabled) async {

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/task/ui/widgets/task_summary_chip.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_text_size_toggle.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_view_mode_toggle.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_search_field.dart';
+
+import '../task_workspace.dart';
 
 class TaskWorkspaceHeader extends StatelessWidget {
   const TaskWorkspaceHeader({
@@ -15,10 +19,8 @@ class TaskWorkspaceHeader extends StatelessWidget {
     required this.canManageSelectedTeam,
     required this.onCreateTask,
     required this.loadingAccess,
-    required this.totalTasks,
-    required this.openTasks,
-    required this.inProgressTasks,
-    required this.doneTasks,
+    required this.viewMode,
+    required this.onViewModeChanged,
     required this.searchController,
     required this.onSearchChanged,
   });
@@ -30,222 +32,82 @@ class TaskWorkspaceHeader extends StatelessWidget {
   final bool canManageSelectedTeam;
   final VoidCallback onCreateTask;
   final bool loadingAccess;
-  final int totalTasks;
-  final int openTasks;
-  final int inProgressTasks;
-  final int doneTasks;
+  final TaskViewMode viewMode;
+  final ValueChanged<TaskViewMode> onViewModeChanged;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  Widget _buildTeamPicker(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final borderColor = colorScheme.borderColor ?? colorScheme.outlineVariant;
+    final pickerTeams = teams
+        .where((team) => team.id != null && team.id!.isNotEmpty)
+        .map(
+          (team) =>
+              TeamEntityForView(team: team, members: <TeamMemberforView>[]),
+        )
+        .toList(growable: false);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 760;
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                colorScheme.primary.withValues(alpha: 0.10),
-                colorScheme.surface,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withValues(alpha: 0.05),
-                blurRadius: 28,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!embedded) ...[
-                  if (isCompact)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _HeaderTextBlock(),
-                        const SizedBox(height: 14),
-                        FilledButton.icon(
-                          onPressed: canManageSelectedTeam
-                              ? onCreateTask
-                              : null,
-                          icon: const Icon(Icons.add_task_rounded),
-                          label: Text(l10n.taskNewTaskAction),
-                        ),
-                      ],
-                    )
-                  else
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Expanded(child: _HeaderTextBlock()),
-                        const SizedBox(width: 16),
-                        FilledButton.icon(
-                          onPressed: canManageSelectedTeam
-                              ? onCreateTask
-                              : null,
-                          icon: const Icon(Icons.add_task_rounded),
-                          label: Text(l10n.taskNewTaskAction),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 18),
-                ],
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    TaskSummaryChip(
-                      label: l10n.taskSummaryTotal,
-                      value: totalTasks,
-                      color: colorScheme.primary,
-                    ),
-                    TaskSummaryChip(
-                      label: l10n.taskSummaryOpen,
-                      value: openTasks,
-                      color: colorScheme.infoColor,
-                    ),
-                    TaskSummaryChip(
-                      label: l10n.taskStatusInProgress,
-                      value: inProgressTasks,
-                      color: colorScheme.warningColor,
-                    ),
-                    TaskSummaryChip(
-                      label: l10n.taskSummaryDone,
-                      value: doneTasks,
-                      color: colorScheme.successColor,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                if (isCompact)
-                  Column(
-                    children: [
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedTeamId,
-                        decoration: InputDecoration(
-                          labelText: l10n.taskTeamLabel,
-                        ),
-                        items: teams
-                            .map(
-                              (team) => DropdownMenuItem<String>(
-                                value: team.id!.trim(),
-                                child: Text(team.name),
-                              ),
-                            )
-                            .toList(growable: false),
-                        onChanged: onTeamChanged,
-                      ),
-                      const SizedBox(height: 12),
-                      AppSearchField(
-                        controller: searchController,
-                        hintText: l10n.taskSearchHint,
-                        onChanged: onSearchChanged,
-                      ),
-                      if (embedded) ...[
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: FilledButton.icon(
-                            onPressed: canManageSelectedTeam
-                                ? onCreateTask
-                                : null,
-                            icon: const Icon(Icons.add_task_rounded),
-                            label: Text(l10n.taskNewTaskAction),
-                          ),
-                        ),
-                      ],
-                    ],
-                  )
-                else
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: DropdownButtonFormField<String>(
-                          initialValue: selectedTeamId,
-                          decoration: InputDecoration(
-                            labelText: l10n.taskTeamLabel,
-                          ),
-                          items: teams
-                              .map(
-                                (team) => DropdownMenuItem<String>(
-                                  value: team.id!.trim(),
-                                  child: Text(team.name),
-                                ),
-                              )
-                              .toList(growable: false),
-                          onChanged: onTeamChanged,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 4,
-                        child: AppSearchField(
-                          controller: searchController,
-                          hintText: l10n.taskSearchHint,
-                          onChanged: onSearchChanged,
-                        ),
-                      ),
-                      if (embedded) ...[
-                        const SizedBox(width: 12),
-                        FilledButton.icon(
-                          onPressed: canManageSelectedTeam
-                              ? onCreateTask
-                              : null,
-                          icon: const Icon(Icons.add_task_rounded),
-                          label: Text(l10n.taskNewTaskActionShort),
-                        ),
-                      ],
-                    ],
-                  ),
-                if (loadingAccess)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 14),
-                    child: LinearProgressIndicator(minHeight: 2),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
+    return ShiftCalendarTeamPicker(
+      teams: pickerTeams,
+      selectedTeamId: selectedTeamId,
+      includePersonalOption: true,
+      personalOptionTitle: l10n.taskMyTasksTitle,
+      personalOptionSubtitle: l10n.taskMyTasksSubtitle,
+      triggerSubtitle: l10n.changeOrSearchTeam,
+      teamFallbackSubtitle: l10n.teamAvailableForClocking,
+      onChanged: onTeamChanged,
     );
   }
-}
 
-class _HeaderTextBlock extends StatelessWidget {
-  const _HeaderTextBlock();
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildNewTaskButton(BuildContext context, {bool short = false}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final navButtonColor =
+        colorScheme.bgNavbarbutton ?? colorScheme.primaryColor ?? colorScheme.primary;
+    final onNavButtonColor = colorScheme.textInvertedColor ?? Colors.white;
 
-    return Column(
+    return FilledButton.icon(
+      onPressed: canManageSelectedTeam ? onCreateTask : null,
+      style: FilledButton.styleFrom(backgroundColor: navButtonColor),
+      icon: Icon(Icons.add_task_rounded, color: onNavButtonColor),
+      label: Text(
+        short ? l10n.taskNewTaskActionShort : l10n.taskNewTaskAction,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: onNavButtonColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBanner(BuildContext context, {required bool isCompact}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    final accent = colorScheme.primaryColor ?? colorScheme.primary;
+
+    final iconChip = Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(Icons.checklist_rounded, color: accent, size: 24),
+    );
+
+    final textBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           l10n.taskHeaderTitle,
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w800,
+            color: colorScheme.iconLabel,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 2),
         Text(
           l10n.taskHeaderSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -253,6 +115,147 @@ class _HeaderTextBlock extends StatelessWidget {
           ),
         ),
       ],
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: colorScheme.bgNavbarSurface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: isCompact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    iconChip,
+                    const SizedBox(width: 14),
+                    Expanded(child: textBlock),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _buildNewTaskButton(context),
+              ],
+            )
+          : Row(
+              children: [
+                iconChip,
+                const SizedBox(width: 14),
+                Expanded(child: textBlock),
+                const SizedBox(width: 16),
+                _buildNewTaskButton(context),
+              ],
+            ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 760;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!embedded) ...[
+              _buildBanner(context, isCompact: isCompact),
+              const SizedBox(height: 16),
+            ],
+            if (isCompact)
+              Column(
+                children: [
+                  _buildTeamPicker(context),
+                  const SizedBox(height: 12),
+                  AppSearchField(
+                    controller: searchController,
+                    hintText: l10n.taskSearchHint,
+                    onChanged: onSearchChanged,
+                  ),
+                  const SizedBox(height: 12),
+                  if (embedded)
+                    Row(
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: _buildNewTaskButton(context),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Wrap(
+                            alignment: WrapAlignment.end,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              const TaskTextSizeToggle(),
+                              TaskViewModeToggle(
+                                viewMode: viewMode,
+                                onChanged: onViewModeChanged,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        const TaskTextSizeToggle(),
+                        TaskViewModeToggle(
+                          viewMode: viewMode,
+                          onChanged: onViewModeChanged,
+                        ),
+                      ],
+                    ),
+                ],
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: _buildTeamPicker(context)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 4,
+                    child: AppSearchField(
+                      controller: searchController,
+                      hintText: l10n.taskSearchHint,
+                      onChanged: onSearchChanged,
+                    ),
+                  ),
+                  if (embedded) ...[
+                    const SizedBox(width: 12),
+                    _buildNewTaskButton(context, short: true),
+                  ],
+                  const SizedBox(width: 12),
+                  TaskViewModeToggle(
+                    viewMode: viewMode,
+                    onChanged: onViewModeChanged,
+                  ),
+                ],
+              ),
+            if (loadingAccess)
+              const Padding(
+                padding: EdgeInsets.only(top: 14),
+                child: LinearProgressIndicator(minHeight: 2),
+              ),
+          ],
+        );
+      },
     );
   }
 }

@@ -1,40 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
+import 'package:note_sondage/feature/task/ui/task_density_scope.dart';
 import 'package:note_sondage/feature/task/ui/task_ui_support.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_meta_chip.dart';
-import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/avatar_app.dart';
 
 class TaskCard extends StatelessWidget {
-  const TaskCard({super.key, required this.task, required this.onTap});
+  const TaskCard({
+    super.key,
+    required this.task,
+    required this.onTap,
+    this.selected = false,
+  });
 
   final TaskEntity task;
   final VoidCallback onTap;
+  final bool selected;
+
+  String _initialsFor(String value) {
+    final parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty);
+    if (parts.isEmpty) {
+      return '?';
+    }
+    return parts.map((part) => part[0].toUpperCase()).take(2).join();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final statusColor = taskStatusColor(task.status, colorScheme);
+    final accent = colorScheme.primaryColor ?? colorScheme.primary;
+    final assignee = task.assigneeDisplayName?.trim();
+    final dueAt = task.dueAt;
+    final scale = TaskDensityScope.of(context);
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
       child: Ink(
         decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
+          color: selected ? accent.withValues(alpha: 0.06) : colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: colorScheme.borderColor ?? colorScheme.outlineVariant,
+            color: selected
+                ? accent
+                : (colorScheme.borderColor ?? colorScheme.outlineVariant),
+            width: selected ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
               color: colorScheme.shadow.withValues(alpha: 0.05),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(16 * scale),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -42,72 +70,74 @@ class TaskCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          task.title,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        if (task.description?.trim().isNotEmpty == true) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            task.description!.trim(),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: colorScheme.onSurfaceVariant),
-                          ),
-                        ],
-                      ],
+                    child: Text(
+                      task.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  if (dueAt != null) ...[
+                    SizedBox(width: 10 * scale),
+                    _DatePill(date: dueAt),
+                  ],
                 ],
               ),
-              const SizedBox(height: 14),
+              if (task.description?.trim().isNotEmpty == true) ...[
+                SizedBox(height: 4 * scale),
+                Text(
+                  task.description!.trim(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              SizedBox(height: 12 * scale),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 8 * scale,
+                runSpacing: 8 * scale,
                 children: [
                   TaskMetaChip(
                     label: taskStatusLabel(task.status, context),
-                    color: taskStatusColor(task.status, colorScheme),
+                    color: statusColor,
                   ),
                   TaskMetaChip(
                     label: taskPriorityLabel(task.priority, context),
                     color: taskPriorityColor(task.priority, colorScheme),
                   ),
-                  if (task.assigneeDisplayName?.trim().isNotEmpty == true)
-                    TaskMetaChip(
-                      label: task.assigneeDisplayName!.trim(),
-                      color: colorScheme.primary,
-                    ),
                 ],
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14 * scale),
               Row(
                 children: [
-                  Expanded(
-                    child: _TaskInfoLine(
-                      icon: Icons.schedule_rounded,
-                      value: task.dueAt == null
-                          ? l10n.taskNoDueDate
-                          : taskDateTimeLabel(task.dueAt!, context),
-                    ),
+                  AvatarApp(
+                    initials: assignee?.isNotEmpty == true
+                        ? _initialsFor(assignee!)
+                        : '?',
+                    size: 26 * scale,
+                    backgroundColor: assignee?.isNotEmpty == true
+                        ? (colorScheme.avatarBg ?? Colors.grey)
+                        : (colorScheme.avatarBg ?? Colors.grey).withValues(
+                            alpha: 0.5,
+                          ),
+                    textColor: colorScheme.avatarTextColor ?? Colors.white,
                   ),
-                  if (task.createdByDisplayName?.trim().isNotEmpty == true)
-                    Expanded(
-                      child: _TaskInfoLine(
-                        icon: Icons.person_outline_rounded,
-                        value: task.createdByDisplayName!.trim(),
+                  SizedBox(width: 10 * scale),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: taskStatusProgress(task.status),
+                        minHeight: (6 * scale).clamp(3, 12),
+                        backgroundColor: colorScheme.voteBarBackground,
+                        valueColor: AlwaysStoppedAnimation<Color>(statusColor),
                       ),
                     ),
+                  ),
                 ],
               ),
             ],
@@ -118,30 +148,30 @@ class TaskCard extends StatelessWidget {
   }
 }
 
-class _TaskInfoLine extends StatelessWidget {
-  const _TaskInfoLine({required this.icon, required this.value});
+class _DatePill extends StatelessWidget {
+  const _DatePill({required this.date});
 
-  final IconData icon;
-  final String value;
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
+    final accent = colorScheme.primaryColor ?? colorScheme.primary;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final scale = TaskDensityScope.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 4 * scale),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        DateFormat.MMMd(locale).format(date),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: accent,
+          fontWeight: FontWeight.w700,
         ),
-      ],
+      ),
     );
   }
 }

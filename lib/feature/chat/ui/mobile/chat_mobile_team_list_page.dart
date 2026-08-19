@@ -30,10 +30,21 @@ class ChatMobileTeamListPage extends StatefulWidget {
     super.key,
     this.initialTeamId,
     this.isActive = false,
+    this.isTabTransitioning = false,
   });
 
   final String? initialTeamId;
   final bool isActive;
+
+  /// True while the parent tab controller is still animating between tabs.
+  ///
+  /// The chat sub-tab is built eagerly (it's part of a plain [TabBarView]
+  /// `children` list), so [isActive] can flip to true before the swipe
+  /// settles. Starting the tutorial while still transitioning races with
+  /// the tab-change listener that dismisses any active showcase, so the
+  /// tutorial gets marked as "seen" moments after being killed and never
+  /// shows again. We wait until the transition ends before auto-starting.
+  final bool isTabTransitioning;
 
   @override
   State<ChatMobileTeamListPage> createState() => _ChatMobileTeamListPageState();
@@ -440,12 +451,13 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
     final initialTeamId = widget.initialTeamId?.trim();
     if (_tutorialScheduled ||
         !widget.isActive ||
+        widget.isTabTransitioning ||
         (initialTeamId != null && initialTeamId.isNotEmpty)) {
       return;
     }
     _tutorialScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || !widget.isActive) {
+      if (!mounted || !widget.isActive || widget.isTabTransitioning) {
         return;
       }
       await AppTutorialController.showIfNeeded(

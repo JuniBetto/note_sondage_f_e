@@ -56,7 +56,11 @@ import 'package:note_sondage/feature/team/domain/use_case/team_member/team_membe
 import 'package:note_sondage/feature/team/domain/use_case/user/user_use_case.dart';
 import 'package:note_sondage/feature/task/domain/repositories/task_repository.dart';
 import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
+import 'package:note_sondage/feature/task/infrastructure/data_source/data_source_local/task_local_data_source.dart';
 import 'package:note_sondage/feature/task/infrastructure/data_source/task_remote_data_source.dart';
+import 'package:note_sondage/feature/task/notification/task_alarm_scheduler.dart';
+import 'package:note_sondage/feature/task/ui/bloc/task_bloc.dart';
+import 'package:note_sondage/feature/task/ui/bloc/task_text_size_cubit.dart';
 import 'package:note_sondage/feature/task/infrastructure/repositories/task_repository_impl.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/permission_local_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/role_local_data_source.dart';
@@ -185,6 +189,9 @@ void _registerDataSources() {
   getIt.registerLazySingleton<TaskRemoteDataSource>(
     () => TaskRemoteDataSource(),
   );
+  getIt.registerLazySingleton<TaskLocalDataSource>(
+    () => TaskLocalDataSource(),
+  );
 }
 
 // ==================== REPOSITORIES ====================
@@ -255,7 +262,10 @@ void _registerRepositories() {
   );
 
   getIt.registerLazySingleton<TaskRepository>(
-    () => TaskRepositoryImpl(getIt<TaskRemoteDataSource>()),
+    () => TaskRepositoryImpl(
+      getIt<TaskLocalDataSource>(),
+      getIt<TaskRemoteDataSource>(),
+    ),
   );
 
   // Dashboard
@@ -265,6 +275,8 @@ void _registerRepositories() {
       sondageRemote: getIt<SondageRemoteDataSource>(),
       clockingRemote: getIt<ClockingRemoteDataSource>(),
       shiftRemote: getIt<ShiftRemoteDataSource>(),
+      taskRemote: getIt<TaskRemoteDataSource>(),
+      chatRemote: getIt<ChatRemoteDataSource>(),
       currentUserIdProvider: () => getIt<AuthBloc>().state.user.uid,
     ),
   );
@@ -368,6 +380,20 @@ void _registerBlocs() {
       clockingUseCase: getIt<ClockingUseCase>(),
       clockingLocalDataSource: getIt<ClockingLocalDataSource>(),
     ),
+  );
+
+  // Task come LazySingleton per poter essere osservato da TaskAlarmScheduler
+  getIt.registerLazySingleton<TaskBloc>(
+    () => TaskBloc(getIt<TaskUseCase>()),
+  );
+  getIt.registerLazySingleton<TaskAlarmScheduler>(
+    () => TaskAlarmScheduler(
+      taskBloc: getIt<TaskBloc>(),
+      localNotifications: getIt<LocalNotificationService>(),
+    ),
+  );
+  getIt.registerLazySingleton<TaskTextSizeCubit>(
+    () => TaskTextSizeCubit()..load(),
   );
 
   // Dashboard - Singleton per condividere lo stato tra widget

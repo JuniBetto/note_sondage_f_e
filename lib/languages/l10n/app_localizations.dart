@@ -618,6 +618,18 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get save;
 
+  /// No description provided for @selectDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Select range'**
+  String get selectDateRange;
+
+  /// No description provided for @selectDateRangeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a start date, then an end date'**
+  String get selectDateRangeHint;
+
   /// No description provided for @editRoleManager.
   ///
   /// In en, this message translates to:
@@ -1043,6 +1055,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Assignments, updates and shift reminders'**
   String get assignmentsUpdatesAndShiftReminders;
+
+  /// No description provided for @taskNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Notifications'**
+  String get taskNotifications;
+
+  /// No description provided for @taskNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders for tasks assigned to you or with an upcoming due date'**
+  String get taskNotificationsSubtitle;
 
   /// No description provided for @debugTools.
   ///
@@ -1613,6 +1637,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total Members'**
   String get totalMembers;
+
+  /// No description provided for @myOpenTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Tasks'**
+  String get myOpenTasks;
+
+  /// No description provided for @unreadChatMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread Messages'**
+  String get unreadChatMessages;
 
   /// No description provided for @viewAll.
   ///
@@ -3802,6 +3838,48 @@ abstract class AppLocalizations {
   /// **'Archived'**
   String get taskFilterArchived;
 
+  /// No description provided for @taskFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get taskFilterAll;
+
+  /// No description provided for @taskSelectTaskPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a task from the list to see its details.'**
+  String get taskSelectTaskPrompt;
+
+  /// No description provided for @taskViewModeList.
+  ///
+  /// In en, this message translates to:
+  /// **'List view'**
+  String get taskViewModeList;
+
+  /// No description provided for @taskViewModeTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Table view'**
+  String get taskViewModeTable;
+
+  /// No description provided for @taskViewModeTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline view'**
+  String get taskViewModeTimeline;
+
+  /// No description provided for @taskViewModeCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar view'**
+  String get taskViewModeCalendar;
+
+  /// No description provided for @taskTimelineEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks with a start or due date in this range.'**
+  String get taskTimelineEmptyState;
+
   /// No description provided for @taskNoTeamsAvailable.
   ///
   /// In en, this message translates to:
@@ -3849,6 +3927,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Archived'**
   String get taskArchivedLabel;
+
+  /// No description provided for @taskStartDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get taskStartDateLabel;
+
+  /// No description provided for @taskStartAfterDueError.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date must not be after the due date.'**
+  String get taskStartAfterDueError;
 
   /// No description provided for @taskDueDateLabel.
   ///
@@ -3945,6 +4035,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to restore the task.'**
   String get taskRestoreError;
+
+  /// No description provided for @taskDeletePermanentlyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get taskDeletePermanentlyAction;
+
+  /// No description provided for @taskDeletePermanentlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete task permanently?'**
+  String get taskDeletePermanentlyTitle;
+
+  /// No description provided for @taskDeletePermanentlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone. The task will be permanently removed from the system.'**
+  String get taskDeletePermanentlyMessage;
+
+  /// No description provided for @taskDeletePermanentlySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task permanently deleted.'**
+  String get taskDeletePermanentlySuccess;
+
+  /// No description provided for @taskDeletePermanentlyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to delete the task.'**
+  String get taskDeletePermanentlyError;
 
   /// No description provided for @taskEmptyArchivedTitle.
   ///
@@ -4077,6 +4197,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create task'**
   String get taskCreateAction;
+
+  /// No description provided for @taskCloseAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get taskCloseAction;
+
+  /// No description provided for @taskMyTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Tasks'**
+  String get taskMyTasksTitle;
+
+  /// No description provided for @taskMyTasksSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks assigned to you or created by you, across every team plus personal ones'**
+  String get taskMyTasksSubtitle;
+
+  /// No description provided for @taskPersonalToggleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal task'**
+  String get taskPersonalToggleLabel;
+
+  /// No description provided for @taskPersonalToggleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not tied to any team — visible and manageable only by you'**
+  String get taskPersonalToggleSubtitle;
 }
 
 class _AppLocalizationsDelegate
