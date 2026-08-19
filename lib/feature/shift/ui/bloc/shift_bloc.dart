@@ -1021,6 +1021,11 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       alarmOffsets: alarmOffsets,
       profile: selectedProfile,
       isPublic: request.isPublic,
+      contextType: request.contextType,
+      contextId: request.contextId,
+      sourceType: request.sourceType,
+      sourceId: request.sourceId,
+      sourceMessageId: request.sourceMessageId,
     );
   }
 
@@ -1066,6 +1071,11 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       alarmOffsets: alarmOffsets,
       profile: selectedProfile ?? previous.profile,
       isPublic: event.isPublic,
+      contextType: previous.contextType,
+      contextId: previous.contextId,
+      sourceType: previous.sourceType,
+      sourceId: previous.sourceId,
+      sourceMessageId: previous.sourceMessageId,
     );
   }
 

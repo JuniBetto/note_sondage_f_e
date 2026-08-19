@@ -149,6 +149,11 @@ class ShiftLocalDataSource {
             'isPublic': assignment.isPublic,
             'memberEditUnlocked': assignment.memberEditUnlocked,
             'memberChangeRequestPending': assignment.memberChangeRequestPending,
+            'contextType': assignment.contextType,
+            'contextId': assignment.contextId,
+            'sourceType': assignment.sourceType,
+            'sourceId': assignment.sourceId,
+            'sourceMessageId': assignment.sourceMessageId,
           },
         )
         .toList();
@@ -215,6 +220,11 @@ class ShiftLocalDataSource {
         memberEditUnlocked: (map['memberEditUnlocked'] as bool?) ?? false,
         memberChangeRequestPending:
             (map['memberChangeRequestPending'] as bool?) ?? false,
+        contextType: _nullableString(map['contextType']),
+        contextId: _nullableString(map['contextId']),
+        sourceType: _nullableString(map['sourceType']),
+        sourceId: _nullableString(map['sourceId']),
+        sourceMessageId: _nullableString(map['sourceMessageId']),
       );
     }).toList();
 

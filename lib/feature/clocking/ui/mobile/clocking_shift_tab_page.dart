@@ -5,6 +5,7 @@ import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/mobile/shift_mobile_widget.dart';
+import 'package:note_sondage/feature/task/ui/mobile/task_mobile_widget.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 
@@ -13,7 +14,7 @@ import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 class ClockingShiftTabPage extends StatefulWidget {
   const ClockingShiftTabPage({super.key});
 
-  /// Set this to 1 before navigating to index 3 to land directly on Shifts.
+  /// Set this before navigating to index 3 to land directly on a specific tab.
   /// It is reset to 0 after the first build so subsequent navigations start
   /// on the default Clocking tab.
   static int requestedInitialTab = 0;
@@ -32,7 +33,7 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
     final initialTab = ClockingShiftTabPage.requestedInitialTab;
     ClockingShiftTabPage.requestedInitialTab = 0; // reset for next navigation
     _tabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
       initialIndex: initialTab,
     );
@@ -60,7 +61,9 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
         context: context,
         tutorialId: _tabController.index == 0
             ? 'mobile-clocking'
-            : 'mobile-shifts',
+            : _tabController.index == 1
+            ? 'mobile-shifts'
+            : 'mobile-tasks',
       ),
     );
 
@@ -75,6 +78,7 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
               setToUpdate: setState,
               childTab1: Text(loc.clockingInOut),
               childTab2: Text(loc.myShifts),
+              childTab3: const Text('Task'),
             ),
 
             const SizedBox(height: 8),
@@ -94,6 +98,7 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
                     value: GetIt.instance<ShiftBloc>(),
                     child: const ShiftMobileWidget(),
                   ),
+                  const TaskMobileWidget(),
                 ],
               ),
             ),

@@ -296,6 +296,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get save => 'Salvare';
 
   @override
+  String get selectDateRange => 'Seleziona periodo';
+
+  @override
+  String get selectDateRangeHint => 'Tocca una data di inizio, poi una di fine';
+
+  @override
   String get editRoleManager => 'Modifica permesso';
 
   @override
@@ -523,6 +529,13 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get assignmentsUpdatesAndShiftReminders =>
       'Assegnazioni, aggiornamenti e promemoria turni';
+
+  @override
+  String get taskNotifications => 'Notifiche task';
+
+  @override
+  String get taskNotificationsSubtitle =>
+      'Promemoria per i task assegnati a te o in scadenza';
 
   @override
   String get debugTools => 'Strumenti debug';
@@ -827,6 +840,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get totalMembers => 'Membri totali';
+
+  @override
+  String get myOpenTasks => 'Task aperti';
+
+  @override
+  String get unreadChatMessages => 'Messaggi non letti';
 
   @override
   String get viewAll => 'Vedi tutto';
@@ -2047,4 +2066,274 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get profileTwoFactorSendFailedMessage =>
       'Non siamo riusciti a inviare una nuova email di verifica in questo momento. Riprova.';
+
+  @override
+  String get taskPageTitle => 'Task';
+
+  @override
+  String get taskPriorityLow => 'Bassa';
+
+  @override
+  String get taskPriorityMedium => 'Media';
+
+  @override
+  String get taskPriorityHigh => 'Alta';
+
+  @override
+  String get taskStatusOpen => 'Aperto';
+
+  @override
+  String get taskStatusInProgress => 'In corso';
+
+  @override
+  String get taskStatusBlocked => 'Bloccato';
+
+  @override
+  String get taskStatusDone => 'Completato';
+
+  @override
+  String get taskStatusCanceled => 'Annullato';
+
+  @override
+  String get taskHeaderTitle => 'Task operativi del team';
+
+  @override
+  String get taskHeaderSubtitle =>
+      'Organizza attivita operative, follow-up e azioni nate da chat, turni o esigenze del team.';
+
+  @override
+  String get taskNewTaskAction => 'Nuovo task';
+
+  @override
+  String get taskNewTaskActionShort => 'Nuovo';
+
+  @override
+  String get taskSummaryTotal => 'Totali';
+
+  @override
+  String get taskSummaryOpen => 'Aperti';
+
+  @override
+  String get taskSummaryDone => 'Completati';
+
+  @override
+  String get taskTeamLabel => 'Team';
+
+  @override
+  String get taskSearchHint => 'Cerca per titolo, descrizione o assegnatario';
+
+  @override
+  String get taskFilterActive => 'Attivi';
+
+  @override
+  String get taskFilterArchived => 'Archiviati';
+
+  @override
+  String get taskFilterAll => 'Tutti';
+
+  @override
+  String get taskSelectTaskPrompt =>
+      'Seleziona un task dalla lista per vederne i dettagli.';
+
+  @override
+  String get taskViewModeList => 'Vista lista';
+
+  @override
+  String get taskViewModeTable => 'Vista tabella';
+
+  @override
+  String get taskViewModeTimeline => 'Vista timeline';
+
+  @override
+  String get taskViewModeCalendar => 'Vista calendario';
+
+  @override
+  String get taskTimelineEmptyState =>
+      'Nessun task con data di inizio o scadenza in questo intervallo.';
+
+  @override
+  String get taskNoTeamsAvailable => 'Non ci sono team disponibili per i task.';
+
+  @override
+  String get taskLoadTeamTasksError => 'Impossibile caricare i task del team.';
+
+  @override
+  String get taskLoadArchivedTasksError =>
+      'Impossibile caricare i task archiviati.';
+
+  @override
+  String get taskCreatePermissionDenied =>
+      'Solo owner, admin o ruoli con permessi Admin/Manage possono creare task.';
+
+  @override
+  String get taskCreateSuccess => 'Task creato con successo.';
+
+  @override
+  String get taskUpdateSuccess => 'Task aggiornato.';
+
+  @override
+  String get taskAssignedLabel => 'Assegnato';
+
+  @override
+  String get taskArchivedLabel => 'Archiviato';
+
+  @override
+  String get taskStartDateLabel => 'Data di inizio';
+
+  @override
+  String get taskStartAfterDueError =>
+      'La data di inizio non puo essere successiva alla scadenza.';
+
+  @override
+  String get taskDueDateLabel => 'Scadenza';
+
+  @override
+  String get taskDueDateNotSet => 'Non impostata';
+
+  @override
+  String get taskNoDueDate => 'Nessuna scadenza';
+
+  @override
+  String get taskCreatedByLabel => 'Creato da';
+
+  @override
+  String get taskUpdatedLabel => 'Aggiornato';
+
+  @override
+  String get taskSourceChatMessage => 'Origine: messaggio chat';
+
+  @override
+  String get taskOpenLinkedConversation => 'Apri conversazione collegata';
+
+  @override
+  String get taskUpdateStatusLabel => 'Aggiorna stato';
+
+  @override
+  String get taskUpdateStatusError =>
+      'Impossibile aggiornare lo stato del task.';
+
+  @override
+  String get taskEditAction => 'Modifica task';
+
+  @override
+  String get taskArchiveAction => 'Archivia task';
+
+  @override
+  String get taskRestoreAction => 'Ripristina task';
+
+  @override
+  String get taskArchiveSuccess => 'Task archiviato.';
+
+  @override
+  String get taskArchiveError => 'Impossibile archiviare il task.';
+
+  @override
+  String get taskRestoreSuccess => 'Task ripristinato.';
+
+  @override
+  String get taskRestoreError => 'Impossibile ripristinare il task.';
+
+  @override
+  String get taskDeletePermanentlyAction => 'Elimina definitivamente';
+
+  @override
+  String get taskDeletePermanentlyTitle => 'Eliminare definitivamente il task?';
+
+  @override
+  String get taskDeletePermanentlyMessage =>
+      'Questa azione non puo essere annullata. Il task sara rimosso definitivamente dal sistema.';
+
+  @override
+  String get taskDeletePermanentlySuccess => 'Task eliminato definitivamente.';
+
+  @override
+  String get taskDeletePermanentlyError => 'Impossibile eliminare il task.';
+
+  @override
+  String get taskEmptyArchivedTitle => 'Nessun task archiviato';
+
+  @override
+  String get taskEmptyActiveTitle => 'Nessun task attivo';
+
+  @override
+  String get taskEmptyArchivedSubtitle =>
+      'I task archiviati di questo team compariranno qui.';
+
+  @override
+  String get taskEmptyActiveSubtitleManage =>
+      'Per questo team non ci sono task attivi. Puoi crearne uno da qui o dalla chat.';
+
+  @override
+  String get taskEmptyActiveSubtitleReadOnly =>
+      'Per questo team non ci sono task attivi al momento.';
+
+  @override
+  String get taskSaveError => 'Impossibile salvare il task. Riprova tra poco.';
+
+  @override
+  String get taskContextSectionTitle => 'Contesto';
+
+  @override
+  String get taskContextSectionSubtitle =>
+      'Definisci team e contenuto del task.';
+
+  @override
+  String get taskSelectTeamError => 'Seleziona un team';
+
+  @override
+  String get taskTitleLabel => 'Titolo';
+
+  @override
+  String get taskTitleRequiredError => 'Il titolo e obbligatorio';
+
+  @override
+  String get taskDescriptionLabel => 'Descrizione';
+
+  @override
+  String get taskPlanningSectionTitle => 'Pianificazione';
+
+  @override
+  String get taskPlanningSectionSubtitle => 'Imposta priorita e scadenza.';
+
+  @override
+  String get taskPriorityLabel => 'Priorita';
+
+  @override
+  String get taskAssignmentSectionTitle => 'Assegnazione';
+
+  @override
+  String get taskAssignmentSectionSubtitle => 'Scegli chi segue il task.';
+
+  @override
+  String get taskAssignToLabel => 'Assegna a';
+
+  @override
+  String get taskUnassignedOption => 'Non assegnato';
+
+  @override
+  String get taskSourceChatBanner =>
+      'Questo task manterra il collegamento al messaggio chat sorgente.';
+
+  @override
+  String get taskSaveChangesAction => 'Salva modifiche';
+
+  @override
+  String get taskCreateAction => 'Crea task';
+
+  @override
+  String get taskCloseAction => 'Chiudi';
+
+  @override
+  String get taskMyTasksTitle => 'I miei task';
+
+  @override
+  String get taskMyTasksSubtitle =>
+      'Task assegnati a te o creati da te, in tutti i team piu quelli personali';
+
+  @override
+  String get taskPersonalToggleLabel => 'Task personale';
+
+  @override
+  String get taskPersonalToggleSubtitle =>
+      'Non legato a nessun team: visibile e gestibile solo da te';
 }

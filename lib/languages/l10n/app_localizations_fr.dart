@@ -297,6 +297,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get save => 'Enregister';
 
   @override
+  String get selectDateRange => 'Selectionner une periode';
+
+  @override
+  String get selectDateRangeHint =>
+      'Touchez une date de debut, puis une date de fin';
+
+  @override
   String get editRoleManager => 'Modificier permission';
 
   @override
@@ -524,6 +531,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get assignmentsUpdatesAndShiftReminders =>
       'Affectations, mises à jour et rappels de service';
+
+  @override
+  String get taskNotifications => 'Notifications de tâches';
+
+  @override
+  String get taskNotificationsSubtitle =>
+      'Rappels pour les tâches qui vous sont assignées ou proches de l\'échéance';
 
   @override
   String get debugTools => 'Outils de débogage';
@@ -830,6 +844,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get totalMembers => 'Membres totaux';
+
+  @override
+  String get myOpenTasks => 'Tâches ouvertes';
+
+  @override
+  String get unreadChatMessages => 'Messages non lus';
 
   @override
   String get viewAll => 'Voir tout';
@@ -2055,4 +2075,279 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get profileTwoFactorSendFailedMessage =>
       'Nous n\'avons pas pu envoyer un nouvel e-mail de vérification pour le moment. Veuillez réessayer.';
+
+  @override
+  String get taskPageTitle => 'Tâches';
+
+  @override
+  String get taskPriorityLow => 'Faible';
+
+  @override
+  String get taskPriorityMedium => 'Moyenne';
+
+  @override
+  String get taskPriorityHigh => 'Élevée';
+
+  @override
+  String get taskStatusOpen => 'Ouvert';
+
+  @override
+  String get taskStatusInProgress => 'En cours';
+
+  @override
+  String get taskStatusBlocked => 'Bloqué';
+
+  @override
+  String get taskStatusDone => 'Terminé';
+
+  @override
+  String get taskStatusCanceled => 'Annulé';
+
+  @override
+  String get taskHeaderTitle => 'Tâches opérationnelles de l\'équipe';
+
+  @override
+  String get taskHeaderSubtitle =>
+      'Organisez le travail opérationnel, les suivis et les actions issues du chat, des tours ou des besoins de l\'équipe.';
+
+  @override
+  String get taskNewTaskAction => 'Nouvelle tâche';
+
+  @override
+  String get taskNewTaskActionShort => 'Nouveau';
+
+  @override
+  String get taskSummaryTotal => 'Total';
+
+  @override
+  String get taskSummaryOpen => 'Ouvertes';
+
+  @override
+  String get taskSummaryDone => 'Terminées';
+
+  @override
+  String get taskTeamLabel => 'Équipe';
+
+  @override
+  String get taskSearchHint => 'Rechercher par titre, description ou assigné';
+
+  @override
+  String get taskFilterActive => 'Actives';
+
+  @override
+  String get taskFilterArchived => 'Archivées';
+
+  @override
+  String get taskFilterAll => 'Toutes';
+
+  @override
+  String get taskSelectTaskPrompt =>
+      'Sélectionnez une tâche dans la liste pour voir ses détails.';
+
+  @override
+  String get taskViewModeList => 'Vue liste';
+
+  @override
+  String get taskViewModeTable => 'Vue tableau';
+
+  @override
+  String get taskViewModeTimeline => 'Vue chronologique';
+
+  @override
+  String get taskViewModeCalendar => 'Vue calendrier';
+
+  @override
+  String get taskTimelineEmptyState =>
+      'Aucune tâche avec une date de début ou d\'échéance dans cette période.';
+
+  @override
+  String get taskNoTeamsAvailable =>
+      'Aucune équipe disponible pour les tâches.';
+
+  @override
+  String get taskLoadTeamTasksError =>
+      'Impossible de charger les tâches de l\'équipe.';
+
+  @override
+  String get taskLoadArchivedTasksError =>
+      'Impossible de charger les tâches archivées.';
+
+  @override
+  String get taskCreatePermissionDenied =>
+      'Seuls les propriétaires, administrateurs ou rôles avec permissions Admin/Manage peuvent créer des tâches.';
+
+  @override
+  String get taskCreateSuccess => 'Tâche créée avec succès.';
+
+  @override
+  String get taskUpdateSuccess => 'Tâche mise à jour.';
+
+  @override
+  String get taskAssignedLabel => 'Assigné';
+
+  @override
+  String get taskArchivedLabel => 'Archivé';
+
+  @override
+  String get taskStartDateLabel => 'Date de début';
+
+  @override
+  String get taskStartAfterDueError =>
+      'La date de début ne doit pas être postérieure à l\'échéance.';
+
+  @override
+  String get taskDueDateLabel => 'Échéance';
+
+  @override
+  String get taskDueDateNotSet => 'Non définie';
+
+  @override
+  String get taskNoDueDate => 'Aucune échéance';
+
+  @override
+  String get taskCreatedByLabel => 'Créé par';
+
+  @override
+  String get taskUpdatedLabel => 'Mis à jour';
+
+  @override
+  String get taskSourceChatMessage => 'Origine : message de chat';
+
+  @override
+  String get taskOpenLinkedConversation => 'Ouvrir la conversation liée';
+
+  @override
+  String get taskUpdateStatusLabel => 'Mettre à jour le statut';
+
+  @override
+  String get taskUpdateStatusError =>
+      'Impossible de mettre à jour le statut de la tâche.';
+
+  @override
+  String get taskEditAction => 'Modifier la tâche';
+
+  @override
+  String get taskArchiveAction => 'Archiver la tâche';
+
+  @override
+  String get taskRestoreAction => 'Restaurer la tâche';
+
+  @override
+  String get taskArchiveSuccess => 'Tâche archivée.';
+
+  @override
+  String get taskArchiveError => 'Impossible d\'archiver la tâche.';
+
+  @override
+  String get taskRestoreSuccess => 'Tâche restaurée.';
+
+  @override
+  String get taskRestoreError => 'Impossible de restaurer la tâche.';
+
+  @override
+  String get taskDeletePermanentlyAction => 'Supprimer definitivement';
+
+  @override
+  String get taskDeletePermanentlyTitle =>
+      'Supprimer definitivement la tache ?';
+
+  @override
+  String get taskDeletePermanentlyMessage =>
+      'Cette action est irreversible. La tache sera definitivement supprimee du systeme.';
+
+  @override
+  String get taskDeletePermanentlySuccess => 'Tache supprimee definitivement.';
+
+  @override
+  String get taskDeletePermanentlyError => 'Impossible de supprimer la tache.';
+
+  @override
+  String get taskEmptyArchivedTitle => 'Aucune tâche archivée';
+
+  @override
+  String get taskEmptyActiveTitle => 'Aucune tâche active';
+
+  @override
+  String get taskEmptyArchivedSubtitle =>
+      'Les tâches archivées de cette équipe apparaîtront ici.';
+
+  @override
+  String get taskEmptyActiveSubtitleManage =>
+      'Il n\'y a pas encore de tâches actives pour cette équipe. Vous pouvez en créer une ici ou depuis le chat.';
+
+  @override
+  String get taskEmptyActiveSubtitleReadOnly =>
+      'Il n\'y a actuellement aucune tâche active pour cette équipe.';
+
+  @override
+  String get taskSaveError =>
+      'Impossible d\'enregistrer la tâche. Réessayez bientôt.';
+
+  @override
+  String get taskContextSectionTitle => 'Contexte';
+
+  @override
+  String get taskContextSectionSubtitle =>
+      'Définissez l\'équipe et le contenu de la tâche.';
+
+  @override
+  String get taskSelectTeamError => 'Sélectionnez une équipe';
+
+  @override
+  String get taskTitleLabel => 'Titre';
+
+  @override
+  String get taskTitleRequiredError => 'Le titre est obligatoire';
+
+  @override
+  String get taskDescriptionLabel => 'Description';
+
+  @override
+  String get taskPlanningSectionTitle => 'Planification';
+
+  @override
+  String get taskPlanningSectionSubtitle =>
+      'Définissez la priorité et l\'échéance.';
+
+  @override
+  String get taskPriorityLabel => 'Priorité';
+
+  @override
+  String get taskAssignmentSectionTitle => 'Attribution';
+
+  @override
+  String get taskAssignmentSectionSubtitle => 'Choisissez qui suit la tâche.';
+
+  @override
+  String get taskAssignToLabel => 'Assigner à';
+
+  @override
+  String get taskUnassignedOption => 'Non assigné';
+
+  @override
+  String get taskSourceChatBanner =>
+      'Cette tâche conservera le lien vers le message de chat source.';
+
+  @override
+  String get taskSaveChangesAction => 'Enregistrer les modifications';
+
+  @override
+  String get taskCreateAction => 'Créer une tâche';
+
+  @override
+  String get taskCloseAction => 'Fermer';
+
+  @override
+  String get taskMyTasksTitle => 'Mes tâches';
+
+  @override
+  String get taskMyTasksSubtitle =>
+      'Tâches qui vous sont assignées ou que vous avez créées, dans toutes les équipes, plus les tâches personnelles';
+
+  @override
+  String get taskPersonalToggleLabel => 'Tâche personnelle';
+
+  @override
+  String get taskPersonalToggleSubtitle =>
+      'Non liée à une équipe — visible et gérable uniquement par vous';
 }

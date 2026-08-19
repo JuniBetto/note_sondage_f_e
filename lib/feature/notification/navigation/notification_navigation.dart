@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/auth/domain/entities/auth_user_entity.dart'
 import 'package:note_sondage/feature/auth/ui/bloc/app_lifecycle_bloc.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
+import 'package:note_sondage/feature/task/navigation/task_open_intent_controller.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
@@ -360,6 +361,21 @@ class NotificationNavigation {
         path: RouterPaths.clocking,
         label: 'Apri timbrature',
       );
+    }
+
+    if (eventType.startsWith('TASK_') || metadata.containsKey('taskId')) {
+      final taskId = metadata['taskId']?.trim();
+      if (armIntents && (taskId?.isNotEmpty ?? false)) {
+        getIt<TaskOpenIntentController>().queue(taskId: taskId!);
+      }
+      final queryParameters = <String, String>{
+        if (teamId?.isNotEmpty ?? false) 'teamId': teamId!,
+      };
+      final path = queryParameters.isEmpty
+          ? RouterPaths.tasks
+          : Uri(path: RouterPaths.tasks, queryParameters: queryParameters)
+              .toString();
+      return _NotificationDestination.path(path: path, label: 'Apri task');
     }
 
     if (workflowContext.pointsToTeam ||

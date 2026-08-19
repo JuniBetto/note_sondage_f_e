@@ -211,66 +211,124 @@ class _HomeWebState extends State<HomeWeb> {
                                     ),
                                   ),
                                   const SizedBox(width: 14),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.task_alt_rounded,
+                                      label: l.myOpenTasks,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.myOpenTasks ?? 0}',
+                                      color: Colors.pink,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.chat_bubble_outline_rounded,
+                                      label: l.unreadChatMessages,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.unreadChatMessages ?? 0}',
+                                      color: Colors.cyan,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
                                   const Expanded(child: SizedBox()),
                                 ],
                               ),
                             ],
                           )
-                        : Row(
+                        : Column(
                             children: [
-                              Expanded(
-                                child: _StatCard(
-                                  icon: Icons.group_rounded,
-                                  label: l.activeTeams,
-                                  value: isLoading
-                                      ? null
-                                      : '${stats?.activeTeams ?? 0}',
-                                  color: Colors.indigo,
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.group_rounded,
+                                      label: l.activeTeams,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.activeTeams ?? 0}',
+                                      color: Colors.indigo,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.people_rounded,
+                                      label: l.totalMembers,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.totalMembers ?? 0}',
+                                      color: Colors.teal,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.checklist_rounded,
+                                      label: l.activeSurveys,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.activeSurveys ?? 0}',
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.timer_rounded,
+                                      label: l.todayClocking,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.todayClocking ?? 0}',
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _StatCard(
-                                  icon: Icons.people_rounded,
-                                  label: l.totalMembers,
-                                  value: isLoading
-                                      ? null
-                                      : '${stats?.totalMembers ?? 0}',
-                                  color: Colors.teal,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _StatCard(
-                                  icon: Icons.checklist_rounded,
-                                  label: l.activeSurveys,
-                                  value: isLoading
-                                      ? null
-                                      : '${stats?.activeSurveys ?? 0}',
-                                  color: Colors.orange,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _StatCard(
-                                  icon: Icons.timer_rounded,
-                                  label: l.todayClocking,
-                                  value: isLoading
-                                      ? null
-                                      : '${stats?.todayClocking ?? 0}',
-                                  color: Colors.blue,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _StatCard(
-                                  icon: Icons.calendar_month_rounded,
-                                  label: l.myShifts,
-                                  value: isLoading
-                                      ? null
-                                      : '${stats?.todayShifts ?? 0}',
-                                  color: Colors.purple,
-                                ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.calendar_month_rounded,
+                                      label: l.myShifts,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.todayShifts ?? 0}',
+                                      color: Colors.purple,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.task_alt_rounded,
+                                      label: l.myOpenTasks,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.myOpenTasks ?? 0}',
+                                      color: Colors.pink,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.chat_bubble_outline_rounded,
+                                      label: l.unreadChatMessages,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.unreadChatMessages ?? 0}',
+                                      color: Colors.cyan,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  const Expanded(child: SizedBox()),
+                                ],
                               ),
                             ],
                           ),
@@ -662,6 +720,22 @@ class _QuickActionsCard extends StatelessWidget {
             color: Colors.purple,
             onTap: () => navBloc.add(NavigationPositionChanged(5)),
           ),
+          const SizedBox(height: 8),
+          _ActionTile(
+            icon: Icons.task_alt_rounded,
+            label: l.taskPageTitle,
+            subtitle: l.taskMyTasksSubtitle,
+            color: Colors.pink,
+            onTap: () => navBloc.add(NavigationPositionChanged(6)),
+          ),
+          const SizedBox(height: 8),
+          _ActionTile(
+            icon: Icons.chat_bubble_outline_rounded,
+            label: l.chatTitle,
+            subtitle: l.chatListDescriptionWeb,
+            color: Colors.cyan,
+            onTap: () => navBloc.add(NavigationPositionChanged(7)),
+          ),
         ],
       ),
     );
@@ -789,6 +863,10 @@ class _RecentActivityCard extends StatelessWidget {
         return Icons.check_circle_outline_rounded;
       case RecentActivityType.shiftAssigned:
         return Icons.calendar_month_rounded;
+      case RecentActivityType.taskAssigned:
+        return Icons.task_alt_rounded;
+      case RecentActivityType.chatMessage:
+        return Icons.chat_bubble_outline_rounded;
     }
   }
 
@@ -807,6 +885,10 @@ class _RecentActivityCard extends StatelessWidget {
         return Colors.teal;
       case RecentActivityType.shiftAssigned:
         return Colors.purple;
+      case RecentActivityType.taskAssigned:
+        return Colors.pink;
+      case RecentActivityType.chatMessage:
+        return Colors.cyan;
     }
   }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_shift_tab_page.dart';
 import 'package:note_sondage/feature/home/domain/entities/dashboard_entity.dart';
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
@@ -111,6 +113,30 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
                         label: l.myShifts,
                         value: isLoading ? null : '${stats?.todayShifts ?? 0}',
                         color: Colors.purple,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _MobileStatCard(
+                        icon: Icons.task_alt_rounded,
+                        label: l.myOpenTasks,
+                        value: isLoading ? null : '${stats?.myOpenTasks ?? 0}',
+                        color: Colors.pink,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MobileStatCard(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        label: l.unreadChatMessages,
+                        value: isLoading
+                            ? null
+                            : '${stats?.unreadChatMessages ?? 0}',
+                        color: Colors.cyan,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -379,7 +405,11 @@ class _MobileQuickActions extends StatelessWidget {
                   onTap: () => navBloc.add(NavigationPositionChanged(4)),
                 ),
               ),
-              const SizedBox(width: 10),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
               Expanded(
                 child: _QuickActionButton(
                   icon: Icons.calendar_month_rounded,
@@ -389,6 +419,24 @@ class _MobileQuickActions extends StatelessWidget {
                     ClockingShiftTabPage.requestedInitialTab = 1;
                     navBloc.add(NavigationPositionChanged(3));
                   },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QuickActionButton(
+                  icon: Icons.task_alt_rounded,
+                  label: l.taskPageTitle,
+                  color: Colors.pink,
+                  onTap: () => context.push(RouterPaths.tasks),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QuickActionButton(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  label: l.chatTitle,
+                  color: Colors.cyan,
+                  onTap: () => context.push(RouterPaths.sondageChat),
                 ),
               ),
             ],
@@ -482,6 +530,10 @@ class _MobileRecentActivity extends StatelessWidget {
         return Icons.check_circle_outline_rounded;
       case RecentActivityType.shiftAssigned:
         return Icons.calendar_month_rounded;
+      case RecentActivityType.taskAssigned:
+        return Icons.task_alt_rounded;
+      case RecentActivityType.chatMessage:
+        return Icons.chat_bubble_outline_rounded;
     }
   }
 
@@ -500,6 +552,10 @@ class _MobileRecentActivity extends StatelessWidget {
         return Colors.teal;
       case RecentActivityType.shiftAssigned:
         return Colors.purple;
+      case RecentActivityType.taskAssigned:
+        return Colors.pink;
+      case RecentActivityType.chatMessage:
+        return Colors.cyan;
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_availability_sondage_draft_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_replacement_candidate_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
@@ -521,6 +522,49 @@ String _visibilityRowLabel(BuildContext context) => _localizedShiftDayText(
   es: 'Visibilidad',
 );
 
+String _sourceRowLabel(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Origine',
+  en: 'Source',
+  fr: 'Origine',
+  es: 'Origen',
+);
+
+String _chatMessageSourceValue(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Messaggio chat',
+  en: 'Chat message',
+  fr: 'Message chat',
+  es: 'Mensaje de chat',
+);
+
+String _sourceMessageTitle(BuildContext context) => _localizedShiftDayText(
+  context,
+  it: 'Origine chat',
+  en: 'Chat source',
+  fr: 'Origine chat',
+  es: 'Origen chat',
+);
+
+String _sourceMessageDescription(
+  BuildContext context,
+) => _localizedShiftDayText(
+  context,
+  it: 'Questo turno nasce da un messaggio chat. Puoi completare i campi mancanti prima di salvarlo.',
+  en: 'This shift comes from a chat message. You can complete the missing fields before saving it.',
+  fr: 'Ce quart provient d un message chat. Vous pouvez completer les champs manquants avant de l enregistrer.',
+  es: 'Este turno nace de un mensaje de chat. Puedes completar los campos que faltan antes de guardarlo.',
+);
+
+String _openLinkedConversationButtonLabel(BuildContext context) =>
+    _localizedShiftDayText(
+      context,
+      it: 'Apri conversazione collegata',
+      en: 'Open linked conversation',
+      fr: 'Ouvrir la conversation liee',
+      es: 'Abrir conversacion vinculada',
+    );
+
 String _yesLabel(BuildContext context) =>
     _localizedShiftDayText(context, it: 'Si', en: 'Yes', fr: 'Oui', es: 'Si');
 
@@ -650,6 +694,11 @@ class ShiftDayDialogResult {
     this.requestedSwap = false,
     this.swapCandidateUserId,
     this.swapNote,
+    this.contextType,
+    this.contextId,
+    this.sourceType,
+    this.sourceId,
+    this.sourceMessageId,
   });
 
   final String? profileId;
@@ -682,6 +731,11 @@ class ShiftDayDialogResult {
   final bool requestedSwap;
   final String? swapCandidateUserId;
   final String? swapNote;
+  final String? contextType;
+  final String? contextId;
+  final String? sourceType;
+  final String? sourceId;
+  final String? sourceMessageId;
 }
 
 /// Modal bottom-sheet / dialog for assigning or editing a shift on a single day.
@@ -691,6 +745,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
   required List<ShiftProfileEntity> profiles,
   List<TeamEntity> allTeams = const [],
   ShiftAssignmentEntity? existing,
+  ShiftAssignmentCreateRequestEntity? initialDraft,
   String? initialTeamId,
   bool canManagePublicShifts = false,
   bool canRequestPublicShiftChanges = false,
@@ -699,6 +754,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
   bool canEditApprovedPublicShift = false,
   Map<String, ShiftAbsenceStatus> absenceStatusesByUserId = const {},
   List<String> suggestedUserIds = const <String>[],
+  VoidCallback? onOpenLinkedConversation,
 
   /// Teams where the current user is owner (to enable team assignment).
   List<TeamEntityForView> ownerTeams = const [],
@@ -709,6 +765,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
     profiles: profiles,
     allTeams: allTeams,
     existing: existing,
+    initialDraft: initialDraft,
     initialTeamId: initialTeamId,
     canManagePublicShifts: canManagePublicShifts,
     canRequestPublicShiftChanges: canRequestPublicShiftChanges,
@@ -717,6 +774,7 @@ Future<ShiftDayDialogResult?> showShiftDayDialog({
     canEditApprovedPublicShift: canEditApprovedPublicShift,
     absenceStatusesByUserId: absenceStatusesByUserId,
     suggestedUserIds: suggestedUserIds,
+    onOpenLinkedConversation: onOpenLinkedConversation,
     ownerTeams: ownerTeams,
     useDialogLayout: isWideLayout,
   );
@@ -747,6 +805,7 @@ class _ShiftDaySheet extends StatefulWidget {
     required this.profiles,
     this.allTeams = const [],
     this.existing,
+    this.initialDraft,
     this.initialTeamId,
     this.canManagePublicShifts = false,
     this.canRequestPublicShiftChanges = false,
@@ -755,6 +814,7 @@ class _ShiftDaySheet extends StatefulWidget {
     this.canEditApprovedPublicShift = false,
     this.absenceStatusesByUserId = const {},
     this.suggestedUserIds = const <String>[],
+    this.onOpenLinkedConversation,
     this.ownerTeams = const [],
     this.useDialogLayout = false,
   });
@@ -763,6 +823,7 @@ class _ShiftDaySheet extends StatefulWidget {
   final List<ShiftProfileEntity> profiles;
   final List<TeamEntity> allTeams;
   final ShiftAssignmentEntity? existing;
+  final ShiftAssignmentCreateRequestEntity? initialDraft;
   final String? initialTeamId;
   final bool canManagePublicShifts;
   final bool canRequestPublicShiftChanges;
@@ -771,6 +832,7 @@ class _ShiftDaySheet extends StatefulWidget {
   final bool canEditApprovedPublicShift;
   final Map<String, ShiftAbsenceStatus> absenceStatusesByUserId;
   final List<String> suggestedUserIds;
+  final VoidCallback? onOpenLinkedConversation;
   final List<TeamEntityForView> ownerTeams;
   final bool useDialogLayout;
 
@@ -893,6 +955,16 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       !_requestMode &&
       widget.existing != null &&
       _primaryWorkflowAutoReplaceMember?.userId != null;
+  bool get _isChatMessageWorkflowSource {
+    final draftSourceType = widget.initialDraft?.sourceType
+        ?.trim()
+        .toLowerCase();
+    if (draftSourceType == 'chat_message') {
+      return true;
+    }
+    return widget.existing?.workflowContext.normalizedSourceType ==
+        'chat_message';
+  }
 
   TeamEntity? _findAnyTeamById(String? teamId) {
     final normalized = teamId?.trim();
@@ -1109,13 +1181,34 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         }
       }
     } else {
-      _startTime = const TimeOfDay(hour: 7, minute: 0);
-      _endTime = const TimeOfDay(hour: 16, minute: 0);
-      _overnight = false;
-      _alarmOffsets = [-30, -15];
-      _isPublic = false;
+      final initialDraft = widget.initialDraft;
+      _selectedProfile = initialDraft?.profileId == null
+          ? null
+          : widget.profiles
+                .where((profile) => profile.id == initialDraft!.profileId)
+                .firstOrNull;
+      _startTime =
+          initialDraft?.startTime ??
+          _selectedProfile?.startTime ??
+          const TimeOfDay(hour: 7, minute: 0);
+      _endTime =
+          initialDraft?.endTime ??
+          _selectedProfile?.endTime ??
+          const TimeOfDay(hour: 16, minute: 0);
+      _overnight =
+          initialDraft?.overnight ?? _selectedProfile?.overnight ?? false;
+      _alarmOffsets =
+          initialDraft?.alarmOffsets != null &&
+              initialDraft!.alarmOffsets!.isNotEmpty
+          ? List<int>.from(initialDraft.alarmOffsets!)
+          : (_selectedProfile?.alarmOffsets.isNotEmpty ?? false)
+          ? List<int>.from(_selectedProfile!.alarmOffsets)
+          : [-30, -15];
+      _isPublic = initialDraft?.isPublic ?? false;
       _rangeEndDate = widget.date;
-      final initialTeamId = widget.initialTeamId?.trim();
+      _noteCtrl.text = initialDraft?.note?.trim() ?? '';
+      final initialTeamId =
+          initialDraft?.teamId?.trim() ?? widget.initialTeamId?.trim();
       if (initialTeamId != null && initialTeamId.isNotEmpty) {
         _selectedTeam = widget.ownerTeams
             .where((team) => team.team.id == initialTeamId)
@@ -1123,6 +1216,11 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         if (_selectedTeam != null) {
           unawaited(_ensureTeamMembersLoaded(_selectedTeam));
         }
+      }
+      final initialTargetUserId = initialDraft?.targetUserId?.trim();
+      if (initialTargetUserId != null && initialTargetUserId.isNotEmpty) {
+        _assignToAllMembers = false;
+        _selectedMemberIds.add(initialTargetUserId);
       }
     }
     _requestModeActive = false;
@@ -1390,6 +1488,11 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         targetUserIds: _resolvedTargetUserIds,
         memberAssignmentPlans: _memberAssignmentPlans,
         scheduledDates: _scheduledDates,
+        contextType: widget.initialDraft?.contextType,
+        contextId: widget.initialDraft?.contextId,
+        sourceType: widget.initialDraft?.sourceType,
+        sourceId: widget.initialDraft?.sourceId,
+        sourceMessageId: widget.initialDraft?.sourceMessageId,
       ),
     );
   }
@@ -1988,6 +2091,12 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       hasTeamScope:
                           _isTeamScopedSelection || _existingHasTeamScope,
                       alarmOffsets: _alarmOffsets,
+                      isChatMessageSource:
+                          widget
+                              .existing
+                              ?.workflowContext
+                              .normalizedSourceType ==
+                          'chat_message',
                     ),
                     const SizedBox(height: 20),
                   ] else ...[
@@ -2209,6 +2318,70 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       ),
                       maxLines: 2,
                     ),
+                    if (_isChatMessageWorkflowSource) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: appPrimary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: appPrimary.withValues(alpha: 0.22),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              size: 18,
+                              color: appPrimary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _sourceMessageTitle(context),
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: appPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _sourceMessageDescription(context),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.descriptionColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (widget.onOpenLinkedConversation != null) ...[
+                        const SizedBox(height: 10),
+                        CustomAppButton(
+                          onPressed: widget.onOpenLinkedConversation,
+                          type: ButtonType.outlined,
+                          borderRadius: 10,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          isActive: true,
+                          fullWidth: true,
+                          leadingIcon: const Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 18,
+                          ),
+                          child: Text(
+                            _openLinkedConversationButtonLabel(context),
+                          ),
+                        ),
+                      ],
+                    ],
                     // ── Team assignment (managers: create + edit of public shifts) ──
                     if (!_requestMode &&
                         _hasOwnerTeams &&
@@ -2641,6 +2814,7 @@ class _ShiftViewSection extends StatelessWidget {
     required this.isPublic,
     required this.hasTeamScope,
     required this.alarmOffsets,
+    required this.isChatMessageSource,
   });
 
   final ThemeData theme;
@@ -2657,6 +2831,7 @@ class _ShiftViewSection extends StatelessWidget {
   final bool isPublic;
   final bool hasTeamScope;
   final List<int> alarmOffsets;
+  final bool isChatMessageSource;
 
   bool _hasMeaningfulValue(String? value) {
     if (value == null) {
@@ -2705,6 +2880,11 @@ class _ShiftViewSection extends StatelessWidget {
                   ? _publicTeamShiftSummaryLabel(context)
                   : _publicPersonalShiftSummaryLabel(context)),
       ),
+      if (isChatMessageSource)
+        (
+          label: _sourceRowLabel(context),
+          value: _chatMessageSourceValue(context),
+        ),
       if (_hasMeaningfulValue(note))
         (label: localization.note, value: note.trim()),
       if (alarmsText != null) (label: localization.alarms, value: alarmsText),

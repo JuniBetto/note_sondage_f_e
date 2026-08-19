@@ -618,6 +618,18 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get save;
 
+  /// No description provided for @selectDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Select range'**
+  String get selectDateRange;
+
+  /// No description provided for @selectDateRangeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a start date, then an end date'**
+  String get selectDateRangeHint;
+
   /// No description provided for @editRoleManager.
   ///
   /// In en, this message translates to:
@@ -1043,6 +1055,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Assignments, updates and shift reminders'**
   String get assignmentsUpdatesAndShiftReminders;
+
+  /// No description provided for @taskNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Notifications'**
+  String get taskNotifications;
+
+  /// No description provided for @taskNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders for tasks assigned to you or with an upcoming due date'**
+  String get taskNotificationsSubtitle;
 
   /// No description provided for @debugTools.
   ///
@@ -1613,6 +1637,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total Members'**
   String get totalMembers;
+
+  /// No description provided for @myOpenTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Tasks'**
+  String get myOpenTasks;
+
+  /// No description provided for @unreadChatMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread Messages'**
+  String get unreadChatMessages;
 
   /// No description provided for @viewAll.
   ///
@@ -3681,6 +3717,516 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We could not send a new verification email right now. Please try again.'**
   String get profileTwoFactorSendFailedMessage;
+
+  /// No description provided for @taskPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get taskPageTitle;
+
+  /// No description provided for @taskPriorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get taskPriorityLow;
+
+  /// No description provided for @taskPriorityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get taskPriorityMedium;
+
+  /// No description provided for @taskPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get taskPriorityHigh;
+
+  /// No description provided for @taskStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get taskStatusOpen;
+
+  /// No description provided for @taskStatusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get taskStatusInProgress;
+
+  /// No description provided for @taskStatusBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get taskStatusBlocked;
+
+  /// No description provided for @taskStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get taskStatusDone;
+
+  /// No description provided for @taskStatusCanceled.
+  ///
+  /// In en, this message translates to:
+  /// **'Canceled'**
+  String get taskStatusCanceled;
+
+  /// No description provided for @taskHeaderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team operational tasks'**
+  String get taskHeaderTitle;
+
+  /// No description provided for @taskHeaderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize operational work, follow-ups, and actions coming from chat, shifts, or team needs.'**
+  String get taskHeaderSubtitle;
+
+  /// No description provided for @taskNewTaskAction.
+  ///
+  /// In en, this message translates to:
+  /// **'New task'**
+  String get taskNewTaskAction;
+
+  /// No description provided for @taskNewTaskActionShort.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get taskNewTaskActionShort;
+
+  /// No description provided for @taskSummaryTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get taskSummaryTotal;
+
+  /// No description provided for @taskSummaryOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get taskSummaryOpen;
+
+  /// No description provided for @taskSummaryDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get taskSummaryDone;
+
+  /// No description provided for @taskTeamLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get taskTeamLabel;
+
+  /// No description provided for @taskSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by title, description, or assignee'**
+  String get taskSearchHint;
+
+  /// No description provided for @taskFilterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get taskFilterActive;
+
+  /// No description provided for @taskFilterArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get taskFilterArchived;
+
+  /// No description provided for @taskFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get taskFilterAll;
+
+  /// No description provided for @taskSelectTaskPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a task from the list to see its details.'**
+  String get taskSelectTaskPrompt;
+
+  /// No description provided for @taskViewModeList.
+  ///
+  /// In en, this message translates to:
+  /// **'List view'**
+  String get taskViewModeList;
+
+  /// No description provided for @taskViewModeTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Table view'**
+  String get taskViewModeTable;
+
+  /// No description provided for @taskViewModeTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline view'**
+  String get taskViewModeTimeline;
+
+  /// No description provided for @taskViewModeCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar view'**
+  String get taskViewModeCalendar;
+
+  /// No description provided for @taskTimelineEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks with a start or due date in this range.'**
+  String get taskTimelineEmptyState;
+
+  /// No description provided for @taskNoTeamsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No teams are available for tasks.'**
+  String get taskNoTeamsAvailable;
+
+  /// No description provided for @taskLoadTeamTasksError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load team tasks.'**
+  String get taskLoadTeamTasksError;
+
+  /// No description provided for @taskLoadArchivedTasksError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load archived tasks.'**
+  String get taskLoadArchivedTasksError;
+
+  /// No description provided for @taskCreatePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Only owners, admins, or roles with Admin/Manage permissions can create tasks.'**
+  String get taskCreatePermissionDenied;
+
+  /// No description provided for @taskCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task created successfully.'**
+  String get taskCreateSuccess;
+
+  /// No description provided for @taskUpdateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task updated.'**
+  String get taskUpdateSuccess;
+
+  /// No description provided for @taskAssignedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get taskAssignedLabel;
+
+  /// No description provided for @taskArchivedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get taskArchivedLabel;
+
+  /// No description provided for @taskStartDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get taskStartDateLabel;
+
+  /// No description provided for @taskStartAfterDueError.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date must not be after the due date.'**
+  String get taskStartAfterDueError;
+
+  /// No description provided for @taskDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get taskDueDateLabel;
+
+  /// No description provided for @taskDueDateNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get taskDueDateNotSet;
+
+  /// No description provided for @taskNoDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get taskNoDueDate;
+
+  /// No description provided for @taskCreatedByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Created by'**
+  String get taskCreatedByLabel;
+
+  /// No description provided for @taskUpdatedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get taskUpdatedLabel;
+
+  /// No description provided for @taskSourceChatMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Source: chat message'**
+  String get taskSourceChatMessage;
+
+  /// No description provided for @taskOpenLinkedConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open linked conversation'**
+  String get taskOpenLinkedConversation;
+
+  /// No description provided for @taskUpdateStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Update status'**
+  String get taskUpdateStatusLabel;
+
+  /// No description provided for @taskUpdateStatusError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to update task status.'**
+  String get taskUpdateStatusError;
+
+  /// No description provided for @taskEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit task'**
+  String get taskEditAction;
+
+  /// No description provided for @taskArchiveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive task'**
+  String get taskArchiveAction;
+
+  /// No description provided for @taskRestoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore task'**
+  String get taskRestoreAction;
+
+  /// No description provided for @taskArchiveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task archived.'**
+  String get taskArchiveSuccess;
+
+  /// No description provided for @taskArchiveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to archive the task.'**
+  String get taskArchiveError;
+
+  /// No description provided for @taskRestoreSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task restored.'**
+  String get taskRestoreSuccess;
+
+  /// No description provided for @taskRestoreError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to restore the task.'**
+  String get taskRestoreError;
+
+  /// No description provided for @taskDeletePermanentlyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get taskDeletePermanentlyAction;
+
+  /// No description provided for @taskDeletePermanentlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete task permanently?'**
+  String get taskDeletePermanentlyTitle;
+
+  /// No description provided for @taskDeletePermanentlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone. The task will be permanently removed from the system.'**
+  String get taskDeletePermanentlyMessage;
+
+  /// No description provided for @taskDeletePermanentlySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task permanently deleted.'**
+  String get taskDeletePermanentlySuccess;
+
+  /// No description provided for @taskDeletePermanentlyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to delete the task.'**
+  String get taskDeletePermanentlyError;
+
+  /// No description provided for @taskEmptyArchivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived tasks'**
+  String get taskEmptyArchivedTitle;
+
+  /// No description provided for @taskEmptyActiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No active tasks'**
+  String get taskEmptyActiveTitle;
+
+  /// No description provided for @taskEmptyArchivedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived tasks for this team will show up here.'**
+  String get taskEmptyArchivedSubtitle;
+
+  /// No description provided for @taskEmptyActiveSubtitleManage.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no active tasks for this team yet. You can create one here or from chat.'**
+  String get taskEmptyActiveSubtitleManage;
+
+  /// No description provided for @taskEmptyActiveSubtitleReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no active tasks for this team right now.'**
+  String get taskEmptyActiveSubtitleReadOnly;
+
+  /// No description provided for @taskSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to save the task. Please try again shortly.'**
+  String get taskSaveError;
+
+  /// No description provided for @taskContextSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Context'**
+  String get taskContextSectionTitle;
+
+  /// No description provided for @taskContextSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the team and the task content.'**
+  String get taskContextSectionSubtitle;
+
+  /// No description provided for @taskSelectTeamError.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a team'**
+  String get taskSelectTeamError;
+
+  /// No description provided for @taskTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get taskTitleLabel;
+
+  /// No description provided for @taskTitleRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Title is required'**
+  String get taskTitleRequiredError;
+
+  /// No description provided for @taskDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get taskDescriptionLabel;
+
+  /// No description provided for @taskPlanningSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning'**
+  String get taskPlanningSectionTitle;
+
+  /// No description provided for @taskPlanningSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set priority and due date.'**
+  String get taskPlanningSectionSubtitle;
+
+  /// No description provided for @taskPriorityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get taskPriorityLabel;
+
+  /// No description provided for @taskAssignmentSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment'**
+  String get taskAssignmentSectionTitle;
+
+  /// No description provided for @taskAssignmentSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose who owns the task.'**
+  String get taskAssignmentSectionSubtitle;
+
+  /// No description provided for @taskAssignToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign to'**
+  String get taskAssignToLabel;
+
+  /// No description provided for @taskUnassignedOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get taskUnassignedOption;
+
+  /// No description provided for @taskSourceChatBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This task will keep the link to the source chat message.'**
+  String get taskSourceChatBanner;
+
+  /// No description provided for @taskSaveChangesAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get taskSaveChangesAction;
+
+  /// No description provided for @taskCreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create task'**
+  String get taskCreateAction;
+
+  /// No description provided for @taskCloseAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get taskCloseAction;
+
+  /// No description provided for @taskMyTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Tasks'**
+  String get taskMyTasksTitle;
+
+  /// No description provided for @taskMyTasksSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks assigned to you or created by you, across every team plus personal ones'**
+  String get taskMyTasksSubtitle;
+
+  /// No description provided for @taskPersonalToggleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal task'**
+  String get taskPersonalToggleLabel;
+
+  /// No description provided for @taskPersonalToggleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not tied to any team — visible and manageable only by you'**
+  String get taskPersonalToggleSubtitle;
 }
 
 class _AppLocalizationsDelegate

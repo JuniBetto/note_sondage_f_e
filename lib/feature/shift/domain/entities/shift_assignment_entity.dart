@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/feature/notification/shared/workflow_context_metadata.dart';
 import 'shift_profile_entity.dart';
 
 /// Mirrors the backend ShiftAssignment entity.
@@ -22,6 +23,11 @@ class ShiftAssignmentEntity {
     this.isPublic = false,
     this.memberEditUnlocked = false,
     this.memberChangeRequestPending = false,
+    this.contextType,
+    this.contextId,
+    this.sourceType,
+    this.sourceId,
+    this.sourceMessageId,
   });
 
   final String id;
@@ -50,6 +56,11 @@ class ShiftAssignmentEntity {
 
   /// True when a shift-change request is awaiting manager approval.
   final bool memberChangeRequestPending;
+  final String? contextType;
+  final String? contextId;
+  final String? sourceType;
+  final String? sourceId;
+  final String? sourceMessageId;
 
   Color get displayColor {
     final hex = profileColor;
@@ -74,6 +85,11 @@ class ShiftAssignmentEntity {
     bool? memberChangeRequestPending,
     String? teamId,
     String? teamShiftGroupId,
+    String? contextType,
+    String? contextId,
+    String? sourceType,
+    String? sourceId,
+    String? sourceMessageId,
   }) {
     return ShiftAssignmentEntity(
       id: id,
@@ -95,6 +111,29 @@ class ShiftAssignmentEntity {
       memberEditUnlocked: memberEditUnlocked ?? this.memberEditUnlocked,
       memberChangeRequestPending:
           memberChangeRequestPending ?? this.memberChangeRequestPending,
+      contextType: contextType ?? this.contextType,
+      contextId: contextId ?? this.contextId,
+      sourceType: sourceType ?? this.sourceType,
+      sourceId: sourceId ?? this.sourceId,
+      sourceMessageId: sourceMessageId ?? this.sourceMessageId,
     );
+  }
+
+  WorkflowContextMetadata get workflowContext {
+    final metadata = <String, String>{
+      if (teamId != null && teamId!.trim().isNotEmpty) 'teamId': teamId!.trim(),
+      if (id.trim().isNotEmpty) 'assignmentId': id.trim(),
+      if (contextType != null && contextType!.trim().isNotEmpty)
+        WorkflowContextMetadata.contextTypeKey: contextType!.trim(),
+      if (contextId != null && contextId!.trim().isNotEmpty)
+        WorkflowContextMetadata.contextIdKey: contextId!.trim(),
+      if (sourceType != null && sourceType!.trim().isNotEmpty)
+        WorkflowContextMetadata.sourceTypeKey: sourceType!.trim(),
+      if (sourceId != null && sourceId!.trim().isNotEmpty)
+        WorkflowContextMetadata.sourceIdKey: sourceId!.trim(),
+      if (sourceMessageId != null && sourceMessageId!.trim().isNotEmpty)
+        WorkflowContextMetadata.sourceMessageIdKey: sourceMessageId!.trim(),
+    };
+    return WorkflowContextMetadata.fromMetadata(metadata);
   }
 }

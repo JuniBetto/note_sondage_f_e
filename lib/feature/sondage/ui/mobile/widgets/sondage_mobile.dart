@@ -526,6 +526,7 @@ class _SondageMobileState extends State<SondageMobile>
                         ChatMobileTeamListPage(
                           initialTeamId: widget.initialChatTeamId,
                           isActive: tabController.index == 2,
+                          isTabTransitioning: tabController.indexIsChanging,
                         ),
                       ],
                     ),

@@ -12,6 +12,7 @@ import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/core/utils/file_download_bridge.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
@@ -22,12 +23,27 @@ import 'package:note_sondage/feature/chat/ui/widgets/chat_image_viewer_dialog.da
 import 'package:note_sondage/feature/chat/ui/web/chat_web_layout.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_draft_attachment.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
+import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
+import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
+import 'package:note_sondage/feature/sondage/ui/web/widgets/create_sondage_web.dart';
+import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
+import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
+import 'package:note_sondage/feature/task/ui/task_editor_sheet.dart';
+import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
+import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/custom_dialog.dart';
+import 'package:uuid/uuid.dart';
 
 enum ChatScreenLayout { mobile, web }
 
@@ -74,7 +90,14 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   static const double _readVisibilityThreshold = 72;
 
   final TeamUseCase _teamUseCase = GetIt.instance<TeamUseCase>();
+  final TeamMemberUseCase _teamMemberUseCase =
+      GetIt.instance<TeamMemberUseCase>();
+  final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
   final ChatUseCase _chatUseCase = GetIt.instance<ChatUseCase>();
+  final ChatMessageActionDraftService _messageActionDraftService =
+      GetIt.instance<ChatMessageActionDraftService>();
+  final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
+  final TaskUseCase _taskUseCase = GetIt.instance<TaskUseCase>();
   final RealtimeNotificationService _realtimeService =
       GetIt.instance<RealtimeNotificationService>();
   final ImagePicker _imagePicker = ImagePicker();
@@ -86,6 +109,10 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
   List<TeamEntity> _teams = const <TeamEntity>[];
   List<ChatMessageEntity> _messages = const <ChatMessageEntity>[];
+  final Map<String, List<TeamMemberEntity>> _teamMembersByTeamId = {};
+  final Map<String, List<RoleEntity>> _rolesByTeamId = {};
+  final Set<String> _loadingTeamMemberIds = <String>{};
+  final Set<String> _loadingTeamRoleIds = <String>{};
   ChatConversationEntity? _conversation;
   String? _selectedTeamId;
   String? _selectedMemberUserId;
@@ -103,6 +130,9 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   bool _didNotifyContentReady = false;
 
   bool get _sending => _pendingSendCount > 0;
+  String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid.trim();
+  String get _currentEmail =>
+      GetIt.instance<AuthBloc>().state.user.email.trim().toLowerCase();
 
   TeamEntity? get _selectedTeam {
     for (final team in _teams) {
@@ -285,6 +315,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   Future<void> _loadConversation(String teamId, {String? memberUserId}) async {
+    unawaited(_ensureTeamAccessContextLoaded(teamId));
     final normalizedMemberUserId = memberUserId?.trim();
     final isDirect =
         normalizedMemberUserId != null && normalizedMemberUserId.isNotEmpty;
@@ -375,6 +406,167 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _ensureTeamAccessContextLoaded(String teamId) async {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return;
+    }
+
+    final futures = <Future<void>>[];
+
+    if (!_teamMembersByTeamId.containsKey(normalizedTeamId) &&
+        !_loadingTeamMemberIds.contains(normalizedTeamId)) {
+      _loadingTeamMemberIds.add(normalizedTeamId);
+      futures.add(
+        _teamMemberUseCase
+            .getAllMembersByTeamId(normalizedTeamId)
+            .then((members) {
+              if (!mounted) {
+                return;
+              }
+              setState(() {
+                _teamMembersByTeamId[normalizedTeamId] = members;
+              });
+            })
+            .catchError((_) {})
+            .whenComplete(() {
+              _loadingTeamMemberIds.remove(normalizedTeamId);
+            }),
+      );
+    }
+
+    if (!_rolesByTeamId.containsKey(normalizedTeamId) &&
+        !_loadingTeamRoleIds.contains(normalizedTeamId)) {
+      _loadingTeamRoleIds.add(normalizedTeamId);
+      futures.add(
+        _roleUseCase
+            .getAllRolesByTeamId(normalizedTeamId)
+            .then((roles) {
+              if (!mounted) {
+                return;
+              }
+              setState(() {
+                _rolesByTeamId[normalizedTeamId] = roles;
+              });
+            })
+            .catchError((_) {})
+            .whenComplete(() {
+              _loadingTeamRoleIds.remove(normalizedTeamId);
+            }),
+      );
+    }
+
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+  }
+
+  bool _canManageTeam(TeamEntity team) {
+    final teamId = team.id?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      return false;
+    }
+    if (team.createdByUserId.trim() == _currentUid) {
+      return true;
+    }
+
+    final currentMember = _findCurrentTeamMember(teamId);
+    final roleCode = _normalizeRoleCode(currentMember?.roleId);
+    if (roleCode == 'OWNER' || roleCode == 'ADMIN') {
+      return true;
+    }
+
+    final permissions = _normalizePermissions(
+      roleCode,
+      _findRoleByCode(teamId, roleCode)?.permissions,
+    );
+    return permissions.contains('ADMIN') || permissions.contains('MANAGE');
+  }
+
+  bool _canUseWorkflowMessageActions() {
+    final selectedTeam = _selectedTeam;
+    if (selectedTeam == null) {
+      return false;
+    }
+    return _canManageTeam(selectedTeam);
+  }
+
+  TeamMemberEntity? _findCurrentTeamMember(String teamId) {
+    final members = _teamMembersByTeamId[teamId];
+    if (members == null || members.isEmpty) {
+      return null;
+    }
+
+    for (final member in members) {
+      final memberUserId = member.userId?.trim();
+      if (memberUserId != null &&
+          memberUserId.isNotEmpty &&
+          memberUserId == _currentUid) {
+        return member;
+      }
+    }
+
+    for (final member in members) {
+      if (member.userEmail.trim().toLowerCase() == _currentEmail) {
+        return member;
+      }
+    }
+
+    return null;
+  }
+
+  String _normalizeRoleCode(String? value) {
+    return value?.trim().toUpperCase() ?? '';
+  }
+
+  RoleEntity? _findRoleByCode(String teamId, String roleCode) {
+    final roles = _rolesByTeamId[teamId];
+    if (roles == null || roles.isEmpty) {
+      return null;
+    }
+
+    for (final role in roles) {
+      if (_normalizeRoleCode(role.id) == roleCode) {
+        return role;
+      }
+    }
+    return null;
+  }
+
+  Set<String> _normalizePermissions(
+    String roleCode,
+    List<String>? permissions,
+  ) {
+    if (permissions == null || permissions.isEmpty) {
+      return switch (roleCode) {
+        'OWNER' => {'READ', 'UPDATE', 'ADMIN', 'DELETE', 'MANAGE'},
+        'ADMIN' => {'READ', 'UPDATE', 'ADMIN', 'DELETE'},
+        _ => {'READ'},
+      };
+    }
+
+    return permissions
+        .map((value) => value.trim().toUpperCase())
+        .where((value) => value.isNotEmpty)
+        .toSet();
+  }
+
+  bool _ensureWorkflowMessageActionPermission() {
+    if (_canUseWorkflowMessageActions()) {
+      return true;
+    }
+
+    AppSnackBar.showError(
+      context,
+      _chatActionText(
+        Localizations.localeOf(context).languageCode,
+        it: 'Solo owner, admin o ruoli con permessi Admin/Manage possono usare queste azioni dalla chat.',
+        en: 'Only owners, admins, or roles with Admin/Manage permissions can use these chat actions.',
+      ),
+    );
+    return false;
   }
 
   Future<void> _refreshMessages() async {
@@ -963,17 +1155,628 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   Future<void> _handleMessageLongPressed(ChatMessageEntity message) async {
-    final path = message.attachmentPath?.trim();
-    if (path == null || path.isEmpty) {
+    if (message.deleted && !message.hasAttachment) {
       return;
     }
 
-    if (message.isImageAttachment) {
-      await _showImageAttachmentViewer(message);
+    final selectedTeamId = _selectedTeamId?.trim();
+    if (selectedTeamId != null && selectedTeamId.isNotEmpty) {
+      await _ensureTeamAccessContextLoaded(selectedTeamId);
+      if (!mounted) {
+        return;
+      }
+    }
+
+    final selectedAction = await _showMessageActionSheet(message);
+    if (!mounted || selectedAction == null) {
       return;
     }
 
-    await _downloadAttachment(message);
+    switch (selectedAction) {
+      case 'reply':
+        _handleReplyRequested(message);
+        return;
+      case 'create_sondage':
+        await _handleCreateSondageFromMessage(message);
+        return;
+      case 'create_shift':
+        await _handleCreateShiftFromMessage(message);
+        return;
+      case 'create_task':
+        await _handleCreateTaskFromMessage(message);
+        return;
+      case 'open_attachment':
+        if (message.isImageAttachment) {
+          await _showImageAttachmentViewer(message);
+        } else {
+          await _downloadAttachment(message);
+        }
+        return;
+      case 'delete':
+        await _handleDeleteRequested(message);
+        return;
+      default:
+        return;
+    }
+  }
+
+  Future<String?> _showMessageActionSheet(ChatMessageEntity message) {
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final locale = Localizations.localeOf(sheetContext).languageCode;
+        final canUseWorkflowActions = _canUseWorkflowMessageActions();
+        final items = <_ChatMessageActionItem>[
+          if (!message.deleted)
+            _ChatMessageActionItem(
+              value: 'reply',
+              icon: Icons.reply_rounded,
+              label: _chatActionText(
+                locale,
+                it: 'Rispondi',
+                en: 'Reply',
+                fr: 'Repondre',
+                es: 'Responder',
+              ),
+            ),
+          if (!message.deleted && canUseWorkflowActions)
+            _ChatMessageActionItem(
+              value: 'create_sondage',
+              icon: Icons.poll_outlined,
+              label: _chatActionText(
+                locale,
+                it: 'Crea sondaggio',
+                en: 'Create survey',
+                fr: 'Creer un sondage',
+                es: 'Crear encuesta',
+              ),
+            ),
+          if (!message.deleted && canUseWorkflowActions)
+            _ChatMessageActionItem(
+              value: 'create_shift',
+              icon: Icons.event_available_outlined,
+              label: _chatActionText(
+                locale,
+                it: 'Precompila turno',
+                en: 'Prefill shift',
+                fr: 'Pre-remplir le quart',
+                es: 'Prellenar turno',
+              ),
+            ),
+          if (!message.deleted && canUseWorkflowActions)
+            _ChatMessageActionItem(
+              value: 'create_task',
+              icon: Icons.task_alt_outlined,
+              label: _chatActionText(
+                locale,
+                it: 'Crea task',
+                en: 'Create task',
+                fr: 'Creer une tache',
+                es: 'Crear tarea',
+              ),
+            ),
+          if (message.hasAttachment)
+            _ChatMessageActionItem(
+              value: 'open_attachment',
+              icon: message.isImageAttachment
+                  ? Icons.image_outlined
+                  : Icons.download_rounded,
+              label: message.isImageAttachment
+                  ? _chatActionText(
+                      locale,
+                      it: 'Apri allegato',
+                      en: 'Open attachment',
+                      fr: 'Ouvrir la piece jointe',
+                      es: 'Abrir adjunto',
+                    )
+                  : _chatActionText(
+                      locale,
+                      it: 'Scarica allegato',
+                      en: 'Download attachment',
+                      fr: 'Telecharger la piece jointe',
+                      es: 'Descargar adjunto',
+                    ),
+            ),
+          if (message.mine && !message.deleted)
+            _ChatMessageActionItem(
+              value: 'delete',
+              icon: Icons.delete_outline_rounded,
+              label: _chatActionText(
+                locale,
+                it: 'Elimina',
+                en: 'Delete',
+                fr: 'Supprimer',
+                es: 'Eliminar',
+              ),
+              destructive: true,
+            ),
+        ];
+
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.24,
+                      ),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  for (final item in items)
+                    ListTile(
+                      leading: Icon(
+                        item.icon,
+                        color: item.destructive
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurface,
+                      ),
+                      title: Text(
+                        item.label,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: item.destructive
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      onTap: () => Navigator.of(sheetContext).pop(item.value),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _chatActionText(
+    String locale, {
+    required String it,
+    required String en,
+    String? fr,
+    String? es,
+  }) {
+    return switch (locale) {
+      'it' => it,
+      'fr' => fr ?? en,
+      'es' => es ?? en,
+      _ => en,
+    };
+  }
+
+  Future<void> _handleCreateSondageFromMessage(
+    ChatMessageEntity message,
+  ) async {
+    final conversation = _conversation;
+    final teamId = _selectedTeamId?.trim();
+    if (conversation == null || teamId == null || teamId.isEmpty) {
+      return;
+    }
+    if (!_ensureWorkflowMessageActionPermission()) {
+      return;
+    }
+
+    try {
+      final result = await _runWithLoadingOverlay(
+        () => _messageActionDraftService.buildDraft(
+          actionType: ChatMessageActionType.createSondage,
+          conversationId: conversation.id,
+          messageId: message.id,
+          teamId: teamId,
+          locale: Localizations.localeOf(context).languageCode,
+          selectedMessageText: message.contentText,
+          memberUserId: _selectedMemberUserId,
+          memberDisplayName: _conversationDisplayName,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (result.isUnsupported || result.sondagePrefill == null) {
+        AppSnackBar.showWarning(
+          context,
+          result.primaryMessage ??
+              _chatActionText(
+                Localizations.localeOf(context).languageCode,
+                it: 'Non siamo riusciti a creare una bozza sondaggio da questo messaggio.',
+                en: 'We could not build a survey draft from this message.',
+              ),
+        );
+        return;
+      }
+      await _openSondageDraft(result.sondagePrefill!);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showError(
+        context,
+        AppErrorMessageResolver.resolve(
+          error,
+          fallback: _chatActionText(
+            Localizations.localeOf(context).languageCode,
+            it: 'Errore durante la preparazione della bozza sondaggio.',
+            en: 'Failed to prepare the survey draft.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleCreateShiftFromMessage(ChatMessageEntity message) async {
+    final conversation = _conversation;
+    final teamId = _selectedTeamId?.trim();
+    if (conversation == null || teamId == null || teamId.isEmpty) {
+      return;
+    }
+    if (!_ensureWorkflowMessageActionPermission()) {
+      return;
+    }
+
+    try {
+      final result = await _runWithLoadingOverlay(
+        () => _messageActionDraftService.buildDraft(
+          actionType: ChatMessageActionType.createShift,
+          conversationId: conversation.id,
+          messageId: message.id,
+          teamId: teamId,
+          locale: Localizations.localeOf(context).languageCode,
+          selectedMessageText: message.contentText,
+          memberUserId: _selectedMemberUserId,
+          memberDisplayName: _conversationDisplayName,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      final shiftDraft = result.shiftDraft;
+      if (result.isUnsupported || shiftDraft == null) {
+        AppSnackBar.showWarning(
+          context,
+          '${result.primaryMessage ?? _chatActionText(Localizations.localeOf(context).languageCode, it: 'Non siamo riusciti a precompilare il turno da questo messaggio.', en: 'We could not prefill a shift from this message.')}\n\n${_chatActionText(Localizations.localeOf(context).languageCode, it: 'Suggerimento: usa un messaggio con data e orario, ad esempio "30/08 09:00-16:00".', en: 'Tip: use a message with date and time, for example "30/08 09:00-16:00".')}',
+        );
+        return;
+      }
+      if (result.isPartial) {
+        AppSnackBar.showWarning(
+          context,
+          '${result.primaryMessage ?? _chatActionText(Localizations.localeOf(context).languageCode, it: 'La bozza del turno e parziale.', en: 'The shift draft is partial.')}\n\n${_chatActionText(Localizations.localeOf(context).languageCode, it: 'Apriamo comunque il form con i dati riconosciuti, cosi puoi completare i campi mancanti.', en: 'We will still open the form with the recognized data so you can complete the missing fields.')}',
+        );
+      }
+
+      final profiles = await _shiftRepository.getProfiles();
+      if (!mounted) {
+        return;
+      }
+      final shiftResult = await showShiftDayDialog(
+        context: context,
+        date: shiftDraft.shiftDate,
+        profiles: profiles,
+        allTeams: _teams,
+        initialDraft: shiftDraft,
+        initialTeamId: shiftDraft.teamId ?? teamId,
+        canManagePublicShifts: true,
+        ownerTeams: _buildWorkflowOwnerTeams(
+          preferredTeamId: shiftDraft.teamId ?? teamId,
+        ),
+      );
+      if (!mounted || shiftResult == null) {
+        return;
+      }
+
+      final requests = _buildShiftRequestsFromDialog(
+        fallbackDate: shiftDraft.shiftDate,
+        result: shiftResult,
+      );
+      if (requests.isEmpty) {
+        return;
+      }
+
+      await _runWithLoadingOverlay(() async {
+        if (requests.length == 1) {
+          final request = requests.single;
+          await _shiftRepository.assign(
+            shiftDate: request.shiftDate,
+            profileId: request.profileId,
+            startTime: request.startTime,
+            endTime: request.endTime,
+            overnight: request.overnight,
+            note: request.note,
+            alarmOffsets: request.alarmOffsets,
+            isPublic: request.isPublic,
+            teamId: request.teamId,
+            teamShiftGroupId: request.teamShiftGroupId,
+            targetUserId: request.targetUserId,
+          );
+          return;
+        }
+        await _shiftRepository.assignBatch(requests: requests);
+      });
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showSuccess(
+        context,
+        _chatActionText(
+          Localizations.localeOf(context).languageCode,
+          it: requests.length == 1
+              ? 'Turno creato con successo.'
+              : 'Turni creati con successo.',
+          en: requests.length == 1
+              ? 'Shift created successfully.'
+              : 'Shifts created successfully.',
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showError(
+        context,
+        AppErrorMessageResolver.resolve(
+          error,
+          fallback: _chatActionText(
+            Localizations.localeOf(context).languageCode,
+            it: 'Errore durante la preparazione o creazione del turno.',
+            en: 'Failed to prepare or create the shift.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleCreateTaskFromMessage(ChatMessageEntity message) async {
+    final conversation = _conversation;
+    final teamId = _selectedTeamId?.trim();
+    if (conversation == null || teamId == null || teamId.isEmpty) {
+      return;
+    }
+    if (!_ensureWorkflowMessageActionPermission()) {
+      return;
+    }
+
+    try {
+      final result = await _runWithLoadingOverlay(
+        () => _messageActionDraftService.buildDraft(
+          actionType: ChatMessageActionType.createTask,
+          conversationId: conversation.id,
+          messageId: message.id,
+          teamId: teamId,
+          locale: Localizations.localeOf(context).languageCode,
+          selectedMessageText: message.contentText,
+          memberUserId: _selectedMemberUserId,
+          memberDisplayName: _conversationDisplayName,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+
+      final taskDraft = result.taskDraft;
+      if (result.isUnsupported || taskDraft == null) {
+        AppSnackBar.showWarning(
+          context,
+          result.primaryMessage ??
+              _chatActionText(
+                Localizations.localeOf(context).languageCode,
+                it: 'Non siamo riusciti a costruire una bozza task da questo messaggio.',
+                en: 'We could not build a task draft from this message.',
+              ),
+        );
+        return;
+      }
+
+      if (result.isPartial) {
+        AppSnackBar.showWarning(
+          context,
+          result.primaryMessage ??
+              _chatActionText(
+                Localizations.localeOf(context).languageCode,
+                it: 'La bozza task e parziale: conferma scadenza e assegnatario prima di creare.',
+                en: 'The task draft is partial: confirm due date and assignee before creating.',
+              ),
+        );
+      }
+
+      final createdTask = await showTaskEditorSheet(
+        context: context,
+        availableTeams: _teams
+            .where((team) => team.id?.trim() == teamId)
+            .toList(growable: false),
+        loadAssignees: (selectedTeamId) async {
+          await _ensureTeamAccessContextLoaded(selectedTeamId);
+          final members =
+              _teamMembersByTeamId[selectedTeamId] ??
+              const <TeamMemberEntity>[];
+          return members
+              .where(
+                (member) =>
+                    member.userId?.trim().isNotEmpty == true &&
+                    member.status.name.toLowerCase() == 'active',
+              )
+              .map(
+                (member) => TaskAssigneeOption(
+                  userId: member.userId!.trim(),
+                  label: member.initialName?.trim().isNotEmpty == true
+                      ? member.initialName!.trim()
+                      : member.userEmail.trim(),
+                  secondaryLabel: member.userEmail,
+                ),
+              )
+              .toList(growable: false);
+        },
+        onCreate: _taskUseCase.createTask,
+        onUpdate: (task, request) => _taskUseCase.updateTask(task.id, request),
+        actorUserId: _currentUid,
+        actorDisplayName: _conversationDisplayName ?? _currentEmail,
+        initialDraft: taskDraft.copyWith(teamId: teamId),
+        lockTeamSelection: true,
+      );
+      if (!mounted || createdTask == null) {
+        return;
+      }
+      AppSnackBar.showSuccess(
+        context,
+        _chatActionText(
+          Localizations.localeOf(context).languageCode,
+          it: 'Task creato con successo.',
+          en: 'Task created successfully.',
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showError(
+        context,
+        AppErrorMessageResolver.resolve(
+          error,
+          fallback: _chatActionText(
+            Localizations.localeOf(context).languageCode,
+            it: 'Errore durante la preparazione del task.',
+            en: 'Failed to prepare the task.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openSondageDraft(SondageCreatePrefill prefill) async {
+    if (widget.layout == ChatScreenLayout.mobile) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => FractionallySizedBox(
+          heightFactor: 0.94,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+            ),
+            child: CreateSondageMobile(
+              initialPrefill: prefill,
+              enableTutorial: false,
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    await CustomDialog(
+      width: 860,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      child: CreateSondageWeb(initialPrefill: prefill),
+    ).show<void>(context);
+  }
+
+  List<TeamEntityForView> _buildWorkflowOwnerTeams({String? preferredTeamId}) {
+    return _teams
+        .where((team) => team.id != null)
+        .where((team) => preferredTeamId == null || team.id == preferredTeamId)
+        .map((team) => TeamEntityForView(team: team, members: const []))
+        .toList(growable: false);
+  }
+
+  List<ShiftAssignmentCreateRequestEntity> _buildShiftRequestsFromDialog({
+    required DateTime fallbackDate,
+    required ShiftDayDialogResult result,
+  }) {
+    final scheduledDates = result.scheduledDates.isEmpty
+        ? <DateTime>[fallbackDate]
+        : result.scheduledDates;
+    final targetUserIds = result.targetUserIds.isEmpty
+        ? const <String?>[null]
+        : result.targetUserIds.cast<String?>();
+    final uuid = const Uuid();
+    final requests = <ShiftAssignmentCreateRequestEntity>[];
+
+    for (final scheduledDate in scheduledDates) {
+      if (result.memberAssignmentPlans.isNotEmpty) {
+        for (final plan in result.memberAssignmentPlans) {
+          requests.add(
+            ShiftAssignmentCreateRequestEntity(
+              shiftDate: scheduledDate,
+              profileId: plan.profileId ?? result.profileId,
+              startTime: plan.profileId == null ? result.startTime : null,
+              endTime: plan.profileId == null ? result.endTime : null,
+              overnight: plan.profileId == null ? result.overnight : null,
+              note: result.note,
+              alarmOffsets: plan.profileId == null ? result.alarmOffsets : null,
+              isPublic: result.isPublic,
+              teamId: result.isPublic ? result.teamId : null,
+              teamShiftGroupId: result.isPublic ? uuid.v4() : null,
+              targetUserId: plan.targetUserId,
+            ),
+          );
+        }
+        continue;
+      }
+
+      final sharedGroupId = result.isPublic ? uuid.v4() : null;
+      for (final targetUserId in targetUserIds) {
+        requests.add(
+          ShiftAssignmentCreateRequestEntity(
+            shiftDate: scheduledDate,
+            profileId: result.profileId,
+            startTime: result.startTime,
+            endTime: result.endTime,
+            overnight: result.overnight,
+            note: result.note,
+            alarmOffsets: result.alarmOffsets,
+            isPublic: result.isPublic,
+            teamId: result.isPublic ? result.teamId : null,
+            teamShiftGroupId: sharedGroupId,
+            targetUserId: targetUserId,
+          ),
+        );
+      }
+    }
+
+    return requests;
+  }
+
+  Future<T> _runWithLoadingOverlay<T>(Future<T> Function() action) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      return await action();
+    } finally {
+      if (mounted && Navigator.of(context, rootNavigator: true).canPop()) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
   }
 
   Future<void> _handleDeleteRequested(ChatMessageEntity message) async {
@@ -1389,4 +2192,18 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       composerShowcaseDescription: widget.composerShowcaseDescription,
     );
   }
+}
+
+class _ChatMessageActionItem {
+  const _ChatMessageActionItem({
+    required this.value,
+    required this.icon,
+    required this.label,
+    this.destructive = false,
+  });
+
+  final String value;
+  final IconData icon;
+  final String label;
+  final bool destructive;
 }

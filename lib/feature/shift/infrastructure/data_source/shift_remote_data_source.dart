@@ -130,6 +130,11 @@ class ShiftRemoteDataSource {
     String? teamId,
     String? teamShiftGroupId,
     String? targetUserId,
+    String? contextType,
+    String? contextId,
+    String? sourceType,
+    String? sourceId,
+    String? sourceMessageId,
   }) async {
     final response = await _dio.post(
       '/api/aggregate/shift/assignments',
@@ -145,6 +150,11 @@ class ShiftRemoteDataSource {
         teamId: teamId,
         teamShiftGroupId: teamShiftGroupId,
         targetFirebaseUid: targetUserId,
+        contextType: contextType,
+        contextId: contextId,
+        sourceType: sourceType,
+        sourceId: sourceId,
+        sourceMessageId: sourceMessageId,
       ),
     );
     return ShiftMapper.assignmentFromJson(
@@ -184,6 +194,11 @@ class ShiftRemoteDataSource {
     String? teamId,
     String? teamShiftGroupId,
     String? targetUserId,
+    String? contextType,
+    String? contextId,
+    String? sourceType,
+    String? sourceId,
+    String? sourceMessageId,
   }) async {
     final response = await _dio.put(
       '/api/aggregate/shift/assignments/$assignmentId',
@@ -199,6 +214,11 @@ class ShiftRemoteDataSource {
         teamId: teamId,
         teamShiftGroupId: teamShiftGroupId,
         targetFirebaseUid: targetUserId,
+        contextType: contextType,
+        contextId: contextId,
+        sourceType: sourceType,
+        sourceId: sourceId,
+        sourceMessageId: sourceMessageId,
       ),
     );
     return ShiftMapper.assignmentFromJson(

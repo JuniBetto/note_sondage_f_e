@@ -1,4 +1,5 @@
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
+import 'package:note_sondage/feature/notification/realtime/task_realtime_coordinator.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_local_data_source.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remote_data_source.dart';
@@ -18,6 +19,7 @@ import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_local_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
 import 'package:note_sondage/feature/clocking/domain/repositories/clocking_repository.dart';
 import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_local/clocking_local_data_source.dart';
@@ -53,6 +55,15 @@ import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dar
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/user/user_use_case.dart';
+import 'package:note_sondage/feature/task/domain/repositories/task_repository.dart';
+import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
+import 'package:note_sondage/feature/task/navigation/task_open_intent_controller.dart';
+import 'package:note_sondage/feature/task/infrastructure/data_source/data_source_local/task_local_data_source.dart';
+import 'package:note_sondage/feature/task/infrastructure/data_source/task_remote_data_source.dart';
+import 'package:note_sondage/feature/task/notification/task_alarm_scheduler.dart';
+import 'package:note_sondage/feature/task/ui/bloc/task_bloc.dart';
+import 'package:note_sondage/feature/task/ui/bloc/task_text_size_cubit.dart';
+import 'package:note_sondage/feature/task/infrastructure/repositories/task_repository_impl.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/permission_local_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/role_local_data_source.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
@@ -174,6 +185,15 @@ void _registerDataSources() {
   getIt.registerLazySingleton<ChatRemoteDataSource>(
     () => ChatRemoteDataSource(),
   );
+  getIt.registerLazySingleton<ChatMessageActionDraftService>(
+    () => ChatMessageActionDraftService(),
+  );
+  getIt.registerLazySingleton<TaskRemoteDataSource>(
+    () => TaskRemoteDataSource(),
+  );
+  getIt.registerLazySingleton<TaskLocalDataSource>(
+    () => TaskLocalDataSource(),
+  );
 }
 
 // ==================== REPOSITORIES ====================
@@ -243,6 +263,13 @@ void _registerRepositories() {
     ),
   );
 
+  getIt.registerLazySingleton<TaskRepository>(
+    () => TaskRepositoryImpl(
+      getIt<TaskLocalDataSource>(),
+      getIt<TaskRemoteDataSource>(),
+    ),
+  );
+
   // Dashboard
   getIt.registerLazySingleton<DashboardRepository>(
     () => DashboardRepositoryImpl(
@@ -250,6 +277,8 @@ void _registerRepositories() {
       sondageRemote: getIt<SondageRemoteDataSource>(),
       clockingRemote: getIt<ClockingRemoteDataSource>(),
       shiftRemote: getIt<ShiftRemoteDataSource>(),
+      taskRemote: getIt<TaskRemoteDataSource>(),
+      chatRemote: getIt<ChatRemoteDataSource>(),
       currentUserIdProvider: () => getIt<AuthBloc>().state.user.uid,
     ),
   );
@@ -299,6 +328,10 @@ void _registerUseCases() {
   // Chat
   getIt.registerLazySingleton<ChatUseCase>(
     () => ChatUseCase(getIt<ChatRepository>()),
+  );
+
+  getIt.registerLazySingleton<TaskUseCase>(
+    () => TaskUseCase(getIt<TaskRepository>()),
   );
 
   // Dashboard
@@ -351,6 +384,23 @@ void _registerBlocs() {
     ),
   );
 
+  // Task come LazySingleton per poter essere osservato da TaskAlarmScheduler
+  getIt.registerLazySingleton<TaskBloc>(
+    () => TaskBloc(getIt<TaskUseCase>()),
+  );
+  getIt.registerLazySingleton<TaskAlarmScheduler>(
+    () => TaskAlarmScheduler(
+      taskBloc: getIt<TaskBloc>(),
+      localNotifications: getIt<LocalNotificationService>(),
+    ),
+  );
+  getIt.registerLazySingleton<TaskTextSizeCubit>(
+    () => TaskTextSizeCubit()..load(),
+  );
+  getIt.registerLazySingleton<TaskOpenIntentController>(
+    () => TaskOpenIntentController(),
+  );
+
   // Dashboard - Singleton per condividere lo stato tra widget
   getIt.registerLazySingleton<DashboardBloc>(
     () => DashboardBloc(dashboardUseCase: getIt<DashboardUseCase>()),
@@ -392,6 +442,9 @@ void _registerBlocs() {
   );
   getIt.registerLazySingleton<ShiftRealtimeCoordinator>(
     () => ShiftRealtimeCoordinator(),
+  );
+  getIt.registerLazySingleton<TaskRealtimeCoordinator>(
+    () => TaskRealtimeCoordinator(),
   );
 }
 

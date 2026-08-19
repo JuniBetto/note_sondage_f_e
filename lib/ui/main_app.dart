@@ -28,6 +28,7 @@ import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controll
 import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/shift/notification/shift_alarm_scheduler.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
+import 'package:note_sondage/feature/task/notification/task_alarm_scheduler.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
@@ -453,6 +454,8 @@ class _MainAppState extends State<MainApp> {
       unawaited(notificationCenterCubit.loadNotifications(force: true));
       // Avvia lo scheduler allarmi turni
       getIt<ShiftAlarmScheduler>().start();
+      // Avvia lo scheduler promemoria task
+      getIt<TaskAlarmScheduler>().start();
       if (resetCaches) {
         _processedNotificationIds.clear();
         teamBloc.add(const ResetTeamCacheEvent());
@@ -470,6 +473,8 @@ class _MainAppState extends State<MainApp> {
       sondageBloc.add(const ResetSondageCacheEvent());
       // Ferma lo scheduler allarmi turni
       getIt<ShiftAlarmScheduler>().stop();
+      // Ferma lo scheduler promemoria task
+      getIt<TaskAlarmScheduler>().stop();
     }
   }
 

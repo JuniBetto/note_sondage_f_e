@@ -36,10 +36,23 @@ class _FakeBackendAuthDataSource extends BackendAuthDataSource {
 
 class _SpyLocalNotificationService extends LocalNotificationService {
   final shiftNotificationsEnabledCalls = <bool>[];
+  final taskNotificationsEnabledCalls = <bool>[];
+  bool taskNotificationsEnabledValue = true;
 
   @override
   Future<void> setShiftNotificationsEnabled(bool enabled) async {
     shiftNotificationsEnabledCalls.add(enabled);
+  }
+
+  @override
+  Future<void> setTaskNotificationsEnabled(bool enabled) async {
+    taskNotificationsEnabledCalls.add(enabled);
+    taskNotificationsEnabledValue = enabled;
+  }
+
+  @override
+  Future<bool> areTaskNotificationsEnabled() async {
+    return taskNotificationsEnabledValue;
   }
 }
 
@@ -74,6 +87,7 @@ void main() {
           clockingAlertsEnabled: false,
           shiftAlertsEnabled: false,
           chatMessagesEnabled: true,
+          taskRemindersEnabled: true,
         );
 
         backendAuth.getPreferencesHandler = () async => preferences;
@@ -135,6 +149,7 @@ void main() {
           clockingAlertsEnabled: true,
           shiftAlertsEnabled: true,
           chatMessagesEnabled: true,
+          taskRemindersEnabled: true,
         );
         const updatedPreferences = NotificationPreferencesEntity(
           emailEnabled: false,
@@ -144,6 +159,7 @@ void main() {
           clockingAlertsEnabled: true,
           shiftAlertsEnabled: false,
           chatMessagesEnabled: false,
+          taskRemindersEnabled: false,
         );
 
         backendAuth.getPreferencesHandler = () async => initialPreferences;
@@ -205,6 +221,7 @@ void main() {
           clockingAlertsEnabled: true,
           shiftAlertsEnabled: true,
           chatMessagesEnabled: true,
+          taskRemindersEnabled: true,
         );
         const updatedPreferences = NotificationPreferencesEntity(
           emailEnabled: false,
@@ -214,6 +231,7 @@ void main() {
           clockingAlertsEnabled: false,
           shiftAlertsEnabled: false,
           chatMessagesEnabled: false,
+          taskRemindersEnabled: false,
         );
 
         backendAuth.getPreferencesHandler = () async => initialPreferences;

@@ -63,6 +63,11 @@ class ShiftMapper {
       memberEditUnlocked: (json['memberEditUnlocked'] as bool?) ?? false,
       memberChangeRequestPending:
           (json['memberChangeRequestPending'] as bool?) ?? false,
+      contextType: _nullableString(json['contextType']),
+      contextId: _nullableString(json['contextId']),
+      sourceType: _nullableString(json['sourceType']),
+      sourceId: _nullableString(json['sourceId']),
+      sourceMessageId: _nullableString(json['sourceMessageId']),
     );
   }
 
@@ -100,6 +105,11 @@ class ShiftMapper {
     String? teamId,
     String? teamShiftGroupId,
     String? targetFirebaseUid,
+    String? contextType,
+    String? contextId,
+    String? sourceType,
+    String? sourceId,
+    String? sourceMessageId,
   }) {
     String? formatTime(TimeOfDay? t) => t == null
         ? null
@@ -117,6 +127,11 @@ class ShiftMapper {
       if (teamShiftGroupId != null) 'teamShiftGroupId': teamShiftGroupId,
       'isPublic': isPublic,
       if (targetFirebaseUid != null) 'targetFirebaseUid': targetFirebaseUid,
+      if (contextType != null) 'contextType': contextType,
+      if (contextId != null) 'contextId': contextId,
+      if (sourceType != null) 'sourceType': sourceType,
+      if (sourceId != null) 'sourceId': sourceId,
+      if (sourceMessageId != null) 'sourceMessageId': sourceMessageId,
     };
   }
 
@@ -135,6 +150,11 @@ class ShiftMapper {
       teamId: request.teamId,
       teamShiftGroupId: request.teamShiftGroupId,
       targetFirebaseUid: request.targetUserId,
+      contextType: request.contextType,
+      contextId: request.contextId,
+      sourceType: request.sourceType,
+      sourceId: request.sourceId,
+      sourceMessageId: request.sourceMessageId,
     );
   }
 

@@ -58,7 +58,7 @@ class AppTheme {
         primary: colorScheme.bgColor!,
         secondary: Colors.blue, //colorScheme.bgsecondary!,
         surface: colorScheme.bgSurface!,
-        surfaceContainer: colorScheme.error,
+        surfaceContainer: colorScheme.dialogBackgroundColor ?? colorScheme.bgSurface!,
         error: colorScheme.error,
         onPrimary: colorScheme.onPrimary,
         onSecondary: colorScheme.onSecondary,

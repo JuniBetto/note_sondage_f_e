@@ -101,8 +101,7 @@ class ChatMessageTimeline extends StatelessWidget {
             onPressed: onMessagePressed == null
                 ? null
                 : () => onMessagePressed!(message),
-            onLongPressed:
-                onMessageLongPressed == null || !message.hasAttachment
+            onLongPressed: onMessageLongPressed == null
                 ? null
                 : () => onMessageLongPressed!(message),
             onSenderPressed: onSenderPressed == null

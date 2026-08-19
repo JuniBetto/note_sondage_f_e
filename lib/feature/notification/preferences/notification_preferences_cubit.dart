@@ -29,9 +29,17 @@ class NotificationPreferencesCubit extends Cubit<NotificationPreferencesState> {
 
     emit(state.copyWith(status: NotificationPreferencesStatus.loading));
     try {
-      final preferences = await _backendAuth.getNotificationPreferences();
+      final backendPreferences = await _backendAuth.getNotificationPreferences();
       await _localNotificationService.setShiftNotificationsEnabled(
-        preferences.shiftAlertsEnabled,
+        backendPreferences.shiftAlertsEnabled,
+      );
+      // taskRemindersEnabled isn't persisted by the backend yet, so the
+      // locally-scheduled alarm flag (which IS durable) is the source of
+      // truth instead of the backend's always-true fallback.
+      final taskRemindersEnabled = await _localNotificationService
+          .areTaskNotificationsEnabled();
+      final preferences = backendPreferences.copyWith(
+        taskRemindersEnabled: taskRemindersEnabled,
       );
       emit(
         state.copyWith(
@@ -60,9 +68,20 @@ class NotificationPreferencesCubit extends Cubit<NotificationPreferencesState> {
       ),
     );
     try {
-      final saved = await _backendAuth.updateNotificationPreferences(preferences);
+      final backendSaved = await _backendAuth.updateNotificationPreferences(
+        preferences,
+      );
       await _localNotificationService.setShiftNotificationsEnabled(
-        saved.shiftAlertsEnabled,
+        backendSaved.shiftAlertsEnabled,
+      );
+      // Same client-only caveat as loadPreferences: persist locally and
+      // trust what was just requested rather than the backend's response,
+      // since it silently drops this field instead of echoing it back.
+      await _localNotificationService.setTaskNotificationsEnabled(
+        preferences.taskRemindersEnabled,
+      );
+      final saved = backendSaved.copyWith(
+        taskRemindersEnabled: preferences.taskRemindersEnabled,
       );
       emit(
         state.copyWith(

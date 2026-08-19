@@ -103,6 +103,20 @@ class WorkflowContextMetadata {
     return _trimOrNull(metadata['conversationId']);
   }
 
+  String? get resolvedSourceConversationId {
+    if (_matchesAny(normalizedSourceType, const {
+      'chat_message',
+      'chat',
+      'conversation',
+      'chat_conversation',
+      'team_chat',
+      'direct_chat',
+    })) {
+      return _trimOrNull(sourceId) ?? _trimOrNull(metadata['conversationId']);
+    }
+    return null;
+  }
+
   static String? _normalizeType(String? raw) {
     final value = raw?.trim().toLowerCase();
     if (value == null || value.isEmpty) {

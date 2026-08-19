@@ -22,6 +22,7 @@ import 'package:note_sondage/feature/team/domain/use_case/team_member/team_membe
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
+import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class ChatWebTeamListPage extends StatefulWidget {
@@ -32,6 +33,9 @@ class ChatWebTeamListPage extends StatefulWidget {
 }
 
 class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
+  // Deve restare allineato all'indice della Chat nell'IndexedStack di
+  // MainWeb (vedi _pathToNavIndex in routes.dart e main_web.dart).
+  static const int _chatNavIndex = 7;
   final GlobalKey _introKey = GlobalKey();
   final GlobalKey _teamChannelsKey = GlobalKey();
   final GlobalKey _directChatsKey = GlobalKey();
@@ -56,7 +60,7 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
   @override
   void dispose() {
     AppTutorialController.unregisterTutorial('web-chat-list');
-    AppTutorialController.unregisterTutorial('web-main-6');
+    AppTutorialController.unregisterTutorial('web-main-$_chatNavIndex');
     super.dispose();
   }
 
@@ -268,8 +272,12 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
       );
     }
 
+    final isChatTabActive =
+        context.watch<NavigationBloc>().state == _chatNavIndex;
     _registerTutorials(context);
-    _scheduleTutorial();
+    if (isChatTabActive) {
+      _scheduleTutorial();
+    }
 
     return BlocListener<TeamBloc, TeamState>(
       listener: (context, state) {
@@ -433,7 +441,7 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
       ),
     );
     AppTutorialController.registerReplayAction(
-      tutorialId: 'web-main-6',
+      tutorialId: 'web-main-$_chatNavIndex',
       action: () => AppTutorialController.replayRegistered(
         context: context,
         tutorialId: 'web-chat-list',
@@ -452,6 +460,14 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
       }
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) {
+        return;
+      }
+      // La Chat vive dentro l'IndexedStack di MainWeb ed è quindi montata
+      // anche quando un'altra scheda è quella visibile: senza questo
+      // controllo il tutorial partirebbe (e verrebbe segnato come "visto")
+      // mentre l'utente sta ancora guardando un'altra pagina.
+      if (context.read<NavigationBloc>().state != _chatNavIndex) {
+        _tutorialScheduled = false;
         return;
       }
       await AppTutorialController.showIfNeeded(
