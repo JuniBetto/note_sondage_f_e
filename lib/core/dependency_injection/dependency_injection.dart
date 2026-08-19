@@ -1,4 +1,5 @@
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
+import 'package:note_sondage/feature/notification/realtime/task_realtime_coordinator.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_local_data_source.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remote_data_source.dart';
@@ -56,6 +57,7 @@ import 'package:note_sondage/feature/team/domain/use_case/team_member/team_membe
 import 'package:note_sondage/feature/team/domain/use_case/user/user_use_case.dart';
 import 'package:note_sondage/feature/task/domain/repositories/task_repository.dart';
 import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
+import 'package:note_sondage/feature/task/navigation/task_open_intent_controller.dart';
 import 'package:note_sondage/feature/task/infrastructure/data_source/data_source_local/task_local_data_source.dart';
 import 'package:note_sondage/feature/task/infrastructure/data_source/task_remote_data_source.dart';
 import 'package:note_sondage/feature/task/notification/task_alarm_scheduler.dart';
@@ -395,6 +397,9 @@ void _registerBlocs() {
   getIt.registerLazySingleton<TaskTextSizeCubit>(
     () => TaskTextSizeCubit()..load(),
   );
+  getIt.registerLazySingleton<TaskOpenIntentController>(
+    () => TaskOpenIntentController(),
+  );
 
   // Dashboard - Singleton per condividere lo stato tra widget
   getIt.registerLazySingleton<DashboardBloc>(
@@ -437,6 +442,9 @@ void _registerBlocs() {
   );
   getIt.registerLazySingleton<ShiftRealtimeCoordinator>(
     () => ShiftRealtimeCoordinator(),
+  );
+  getIt.registerLazySingleton<TaskRealtimeCoordinator>(
+    () => TaskRealtimeCoordinator(),
   );
 }
 

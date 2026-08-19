@@ -7,12 +7,16 @@ import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/error/error_logger.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
+import 'package:note_sondage/feature/notification/realtime/task_realtime_coordinator.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_text_size.dart';
 
 import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
+import 'package:note_sondage/feature/task/navigation/task_open_intent_controller.dart';
 import 'package:note_sondage/feature/task/ui/bloc/task_bloc.dart';
 import 'package:note_sondage/feature/task/ui/bloc/task_text_size_cubit.dart';
 import 'package:note_sondage/feature/task/ui/task_density_scope.dart';
@@ -86,11 +90,15 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   String? _selectedTaskId;
   TaskViewMode _viewMode = TaskViewMode.list;
   DateTime _timelineWeekStart = mondayOfWeek(DateTime.now());
+  StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _realtimeSubscription = GetIt.instance<RealtimeNotificationService>()
+        .stream
+        .listen(_handleRealtimeNotification);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) {
         return;
       }
@@ -100,12 +108,48 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       // _syncSelectedTeamWithTeams only refreshes when the selection actually
       // changes; "My Tasks" (null) is now the resting default, so the very
       // first load needs an explicit kick here.
-      unawaited(_refreshTasks());
+      await _refreshTasks();
+      if (!mounted) {
+        return;
+      }
+      unawaited(_tryConsumeTaskOpenIntent());
     });
+  }
+
+  /// Refreshes the task list when another user's mutation arrives over the
+  /// realtime websocket (e.g. a teammate changed a task's status) — without
+  /// this, only the actor's own optimistic UI update was ever reflected and
+  /// every other viewer needed a manual pull-to-refresh to see the change.
+  void _handleRealtimeNotification(RealtimeNotification notification) {
+    final decision = GetIt.instance<TaskRealtimeCoordinator>().resolveDecision(
+      notification,
+    );
+    if (!decision.refreshTasks || !mounted) {
+      return;
+    }
+    unawaited(_refreshTasks());
+  }
+
+  /// Consumes any pending deep-link intent queued by [TaskOpenIntentController]
+  /// (e.g. when the user tapped a "task assigned" push notification). Must be
+  /// called after tasks have been loaded so we can look up the entity by ID.
+  Future<void> _tryConsumeTaskOpenIntent() async {
+    final intentController = GetIt.instance<TaskOpenIntentController>();
+    final intent = intentController.pendingIntent;
+    if (intent == null) {
+      return;
+    }
+    intentController.clear();
+    final task = _findTaskById(intent.taskId);
+    if (task == null || !mounted) {
+      return;
+    }
+    await _openTaskDetail(task);
   }
 
   @override
   void dispose() {
+    _realtimeSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }

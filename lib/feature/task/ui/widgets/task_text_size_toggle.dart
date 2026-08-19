@@ -26,28 +26,65 @@ class TaskTextSizeToggle extends StatelessWidget {
           tooltip: _textSizeMenuTooltip(context),
           initialValue: selected,
           onSelected: cubit.setSize,
+          color: colorScheme.dialogBackgroundColor ?? colorScheme.surface,
+          elevation: 8,
+          shadowColor: Colors.black.withValues(alpha: 0.28),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: borderColor.withValues(alpha: 0.6)),
+          ),
           itemBuilder: (menuContext) => TaskTextSize.values.map((size) {
             final isSelected = size == selected;
             return PopupMenuItem<TaskTextSize>(
               value: size,
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 26,
-                    child: Text(
-                      'Aa',
-                      style: TextStyle(
-                        fontSize: (11 + size.scaleFactor * 7).clamp(11, 21),
-                        fontWeight: FontWeight.w700,
-                        color: isSelected ? accent : colorScheme.onSurfaceVariant,
+              height: 52,
+              padding: EdgeInsets.zero,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? accent.withValues(alpha: 0.14)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 26,
+                      child: Text(
+                        'Aa',
+                        style: TextStyle(
+                          fontSize: (11 + size.scaleFactor * 7).clamp(11, 21),
+                          fontWeight: FontWeight.w700,
+                          color: isSelected
+                              ? accent
+                              : colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(_labelFor(menuContext, size))),
-                  if (isSelected)
-                    Icon(Icons.check_rounded, size: 16, color: accent),
-                ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _labelFor(menuContext, size),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isSelected
+                              ? accent
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    if (isSelected)
+                      Icon(Icons.check_rounded, size: 16, color: accent),
+                  ],
+                ),
               ),
             );
           }).toList(),
