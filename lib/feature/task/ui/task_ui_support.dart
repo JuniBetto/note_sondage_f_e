@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_priority.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
@@ -61,20 +62,23 @@ String taskDateTimeLabel(DateTime value, BuildContext context) {
   ).format(value.toLocal());
 }
 
-List<TaskStatus> allowedTaskStatuses(TaskEntity task) {
+List<TaskStatus> allowedTaskStatuses(
+  TaskEntity task, {
+  required bool canManageTask,
+}) {
   return switch (task.status) {
-    TaskStatus.open => const <TaskStatus>[
+    TaskStatus.open => <TaskStatus>[
       TaskStatus.open,
       TaskStatus.inProgress,
       TaskStatus.blocked,
       TaskStatus.done,
-      TaskStatus.canceled,
+      if (canManageTask) TaskStatus.canceled,
     ],
-    TaskStatus.inProgress => const <TaskStatus>[
+    TaskStatus.inProgress => <TaskStatus>[
       TaskStatus.inProgress,
       TaskStatus.blocked,
       TaskStatus.done,
-      TaskStatus.canceled,
+      if (canManageTask) TaskStatus.canceled,
     ],
     TaskStatus.blocked => const <TaskStatus>[
       TaskStatus.blocked,
@@ -84,6 +88,20 @@ List<TaskStatus> allowedTaskStatuses(TaskEntity task) {
     TaskStatus.done => const <TaskStatus>[TaskStatus.done],
     TaskStatus.canceled => const <TaskStatus>[TaskStatus.canceled],
   };
+}
+
+List<TeamEntity> taskEditAvailableTeams({
+  required TaskEntity task,
+  required TeamEntity? taskTeam,
+  required List<TeamEntity> manageableTeams,
+}) {
+  if (task.isPersonal) {
+    return manageableTeams;
+  }
+  if (taskTeam == null) {
+    return const <TeamEntity>[];
+  }
+  return <TeamEntity>[taskTeam];
 }
 
 String normalizeTaskRoleCode(String? value) {

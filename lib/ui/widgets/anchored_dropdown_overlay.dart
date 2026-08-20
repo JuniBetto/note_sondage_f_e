@@ -35,6 +35,7 @@ class _AnchoredDropdownOverlayState extends State<AnchoredDropdownOverlay>
   double _targetWidth = 0;
   double _overlayWidth = 0;
   double _overlayMaxHeight = 320;
+  bool _openAbove = false;
   bool _rebuildScheduled = false;
   bool _barrierDismissEnabled = false;
   int _overlaySession = 0;
@@ -63,7 +64,8 @@ class _AnchoredDropdownOverlayState extends State<AnchoredDropdownOverlay>
     final view = WidgetsBinding.instance.platformDispatcher.views.firstOrNull;
     if (view != null) {
       final newWidth = view.physicalSize.width / view.devicePixelRatio;
-      if (_lastScreenWidth != null && (newWidth - _lastScreenWidth!).abs() < 1) {
+      if (_lastScreenWidth != null &&
+          (newWidth - _lastScreenWidth!).abs() < 1) {
         // Only height changed (keyboard) — ignore.
         return;
       }
@@ -118,7 +120,14 @@ class _AnchoredDropdownOverlayState extends State<AnchoredDropdownOverlay>
           CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
-            offset: widget.offset,
+            targetAnchor: _openAbove ? Alignment.topLeft : Alignment.bottomLeft,
+            followerAnchor: _openAbove
+                ? Alignment.bottomLeft
+                : Alignment.topLeft,
+            offset: Offset(
+              widget.offset.dx,
+              _openAbove ? -widget.offset.dy : widget.offset.dy,
+            ),
             child: Material(
               color: Colors.transparent,
               child: SizedBox(
@@ -209,16 +218,18 @@ class _AnchoredDropdownOverlayState extends State<AnchoredDropdownOverlay>
     const horizontalScreenMargin = 16.0;
     const verticalScreenMargin = 16.0;
     const minOverlayWidth = 340.0;
-    const minOverlayHeight = 140.0;
+    const fallbackOverlayHeight = 140.0;
+    const preferredOverlayHeight = 360.0;
     final maxOverlayWidth = screenWidth - (horizontalScreenMargin * 2);
     if (renderBox == null) {
       _targetWidth = 320;
       _overlayWidth = maxOverlayWidth < minOverlayWidth
           ? maxOverlayWidth
           : minOverlayWidth;
+      _openAbove = false;
       _overlayMaxHeight = (screenHeight - (verticalScreenMargin * 2)).clamp(
-        minOverlayHeight,
-        360.0,
+        0.0,
+        preferredOverlayHeight,
       );
       return;
     }
@@ -228,11 +239,19 @@ class _AnchoredDropdownOverlayState extends State<AnchoredDropdownOverlay>
         : _targetWidth;
     _overlayWidth = desiredWidth.clamp(220.0, maxOverlayWidth);
     final targetOrigin = renderBox.localToGlobal(Offset.zero);
-    final targetBottom =
-        targetOrigin.dy + renderBox.size.height + widget.offset.dy;
+    final targetBottom = targetOrigin.dy + renderBox.size.height;
     final availableHeightBelow =
-        screenHeight - targetBottom - verticalScreenMargin;
-    _overlayMaxHeight = availableHeightBelow.clamp(minOverlayHeight, 360.0);
+        screenHeight - targetBottom - verticalScreenMargin - widget.offset.dy;
+    final availableHeightAbove =
+        targetOrigin.dy - verticalScreenMargin - widget.offset.dy;
+    final useAbove =
+        availableHeightBelow < fallbackOverlayHeight &&
+        availableHeightAbove > availableHeightBelow;
+    _openAbove = useAbove;
+    final availableHeight = useAbove
+        ? availableHeightAbove
+        : availableHeightBelow;
+    _overlayMaxHeight = availableHeight.clamp(0.0, preferredOverlayHeight);
   }
 
   @override

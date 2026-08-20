@@ -633,13 +633,18 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
 
   Future<void> _openEditTask(TaskEntity task) async {
     final l10n = AppLocalizations.of(context)!;
-    final selectedTeam = _selectedTeam;
-    if (selectedTeam == null || !_canManageTeam(selectedTeam)) {
+    final taskTeam = _teamForTask(task);
+    if (!task.isPersonal && (taskTeam == null || !_canManageTeam(taskTeam))) {
       return;
     }
+    final availableTeams = taskEditAvailableTeams(
+      task: task,
+      taskTeam: taskTeam,
+      manageableTeams: _teams.where(_canManageTeam).toList(growable: false),
+    );
     final updated = await showTaskEditorSheet(
       context: context,
-      availableTeams: [selectedTeam],
+      availableTeams: availableTeams,
       loadAssignees: _loadAssigneeOptions,
       onCreate: _taskBloc.createTask,
       onUpdate: (task, request) => _taskBloc.updateTask(task.id, request),

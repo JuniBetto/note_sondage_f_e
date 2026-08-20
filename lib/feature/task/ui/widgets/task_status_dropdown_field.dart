@@ -32,38 +32,41 @@ class TaskStatusDropdownField extends StatelessWidget {
         isOpen: isOpen,
         onTap: toggle,
       ),
-      overlayBuilder: (context, width, maxHeight, close) => ConstrainedBox(
+      overlayBuilder: (context, width, maxHeight, close) => Container(
+        width: width,
         constraints: BoxConstraints(maxHeight: maxHeight),
-        child: Container(
-          width: width,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: colorScheme.outlineVariant),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 14,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < options.length; i++) ...[
-                if (i > 0) const SizedBox(height: 6),
-                _StatusOptionTile(
-                  status: options[i],
-                  isSelected: options[i] == status,
-                  onTap: () {
-                    onChanged(options[i]);
-                    close();
-                  },
-                ),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colorScheme.outlineVariant),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Scrollbar(
+          thumbVisibility: options.length > 3,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < options.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 6),
+                  _StatusOptionTile(
+                    status: options[i],
+                    isSelected: options[i] == status,
+                    onTap: () {
+                      onChanged(options[i]);
+                      close();
+                    },
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
