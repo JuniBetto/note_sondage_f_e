@@ -38,6 +38,19 @@ class TaskAlarmScheduler {
     debugPrint('[TaskAlarmScheduler] started');
   }
 
+  /// Re-applies local reminders from a freshly fetched server snapshot.
+  Future<void> syncTasks(Iterable<TaskEntity> tasks) async {
+    for (final task in tasks) {
+      try {
+        await _cancelAndReschedule(task);
+      } catch (error, stack) {
+        debugPrint(
+          '[TaskAlarmScheduler] Failed to sync task ${task.id}: $error\n$stack',
+        );
+      }
+    }
+  }
+
   /// Ferma l'ascolto.
   void stop() {
     _subscription?.cancel();
@@ -78,9 +91,7 @@ class TaskAlarmScheduler {
   /// del task (creazione, modifica, cambio stato/assegnatario, ripristino).
   Future<void> _cancelAndReschedule(TaskEntity task) async {
     final anchorTime = task.reminderAnchorTime;
-    if (task.isArchived ||
-        task.reminderOffsets.isEmpty ||
-        anchorTime == null) {
+    if (task.isArchived || task.reminderOffsets.isEmpty || anchorTime == null) {
       await _localNotifications.cancelTaskAlarms(
         taskId: task.id,
         alarmOffsets: task.reminderOffsets,

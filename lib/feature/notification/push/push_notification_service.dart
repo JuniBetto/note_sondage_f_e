@@ -231,10 +231,10 @@ class PushNotificationService {
   static const _lastRegisteredPushUserIdKey = 'last_registered_push_user_id';
   static const _lastRegisteredPushAtKey = 'last_registered_push_at';
   static const Duration _pushRegistrationRefreshInterval = Duration(hours: 6);
+  static const Duration _registrationRetryDelay = Duration(seconds: 15);
+  static const int _maxRegistrationRetryAttempts = 10;
   static const Duration _apnsTokenWaitStep = Duration(milliseconds: 400);
   static const int _apnsTokenWaitAttempts = 12;
-  static const Duration _iosRegistrationRetryDelay = Duration(seconds: 6);
-  static const int _maxIosRegistrationRetryAttempts = 8;
 
   final BackendAuthDataSource _backendAuth;
   final StreamController<RealtimeNotification> _controller =
@@ -242,8 +242,8 @@ class PushNotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
   StreamSubscription<String>? _tokenRefreshSubscription;
-  Timer? _iosRegistrationRetryTimer;
-  int _iosRegistrationRetryAttempts = 0;
+  Timer? _registrationRetryTimer;
+  int _registrationRetryAttempts = 0;
   bool _initialized = false;
   bool _available = true;
   String? _lastRegistrationErrorMessage;
@@ -318,22 +318,32 @@ class PushNotificationService {
       final apnsReady = await _waitForPlatformPushToken();
       if (defaultTargetPlatform == TargetPlatform.iOS && !apnsReady) {
         debugPrint(
-          '[PushNotificationService] APNS token not ready yet; scheduling iOS registration retry.',
+          '[PushNotificationService] APNS token not ready yet; scheduling push registration retry.',
         );
-        _scheduleIosRegistrationRetry();
+        _scheduleRegistrationRetry(reason: 'apns_token_not_ready');
         return;
       }
 
-      final token = forceToken ?? await _messaging.getToken();
+      String? token;
+      try {
+        token = forceToken ?? await _messaging.getToken();
+      } catch (error) {
+        _lastRegistrationErrorMessage = error.toString();
+        debugPrint(
+          '[PushNotificationService] FCM token retrieval failed: $error',
+        );
+        _scheduleRegistrationRetry(reason: 'fcm_token_error');
+        return;
+      }
       if (token == null || token.isEmpty) {
         debugPrint(
-          '[PushNotificationService] FCM token unavailable; scheduling iOS registration retry.',
+          '[PushNotificationService] FCM token unavailable; scheduling push registration retry.',
         );
-        _scheduleIosRegistrationRetry();
+        _scheduleRegistrationRetry(reason: 'fcm_token_unavailable');
         return;
       }
       if (!await _shouldRegisterToken(firebaseUser.uid, token)) {
-        _clearIosRegistrationRetry();
+        _clearRegistrationRetry();
         return;
       }
 
@@ -347,7 +357,7 @@ class PushNotificationService {
         pushToken: token,
       );
       await _markTokenRegistered(firebaseUser.uid, token);
-      _clearIosRegistrationRetry();
+      _clearRegistrationRetry();
       _lastRegistrationErrorMessage = null;
       debugPrint(
         '[PushNotificationService] device registration synced for ${firebaseUser.uid}.',
@@ -363,11 +373,13 @@ class PushNotificationService {
       debugPrint(
         '[PushNotificationService] device registration skipped due to platform error: ${error.message ?? error.code}',
       );
+      _scheduleRegistrationRetry(reason: error.code);
     } catch (error) {
       _lastRegistrationErrorMessage = error.toString();
       debugPrint(
         '[PushNotificationService] device registration failed: $error',
       );
+      _scheduleRegistrationRetry(reason: 'registration_failed');
     }
   }
 
@@ -544,27 +556,31 @@ class PushNotificationService {
     return false;
   }
 
-  void _scheduleIosRegistrationRetry() {
-    if (defaultTargetPlatform != TargetPlatform.iOS) {
-      return;
-    }
+  void _scheduleRegistrationRetry({required String reason}) {
     final firebaseUser = FirebaseAuth.instance.currentUser;
     if (firebaseUser == null || firebaseUser.uid.isEmpty) {
       return;
     }
-    if (_iosRegistrationRetryAttempts >= _maxIosRegistrationRetryAttempts) {
+    if (_registrationRetryAttempts >= _maxRegistrationRetryAttempts) {
       debugPrint(
-        '[PushNotificationService] iOS push registration retry limit reached.',
+        '[PushNotificationService] push registration retry limit reached '
+        'for ${defaultTargetPlatform.name} (last reason: $reason).',
       );
       return;
     }
-    if (_iosRegistrationRetryTimer?.isActive ?? false) {
+    if (_registrationRetryTimer?.isActive ?? false) {
       return;
     }
 
-    _iosRegistrationRetryAttempts += 1;
-    _iosRegistrationRetryTimer = Timer(_iosRegistrationRetryDelay, () {
-      _iosRegistrationRetryTimer = null;
+    _registrationRetryAttempts += 1;
+    debugPrint(
+      '[PushNotificationService] scheduling push registration retry '
+      '$_registrationRetryAttempts/$_maxRegistrationRetryAttempts '
+      'in ${_registrationRetryDelay.inSeconds}s '
+      'for ${defaultTargetPlatform.name} (reason: $reason).',
+    );
+    _registrationRetryTimer = Timer(_registrationRetryDelay, () {
+      _registrationRetryTimer = null;
       if (!_available || !_supportsPushPlatform) {
         return;
       }
@@ -575,10 +591,10 @@ class PushNotificationService {
     });
   }
 
-  void _clearIosRegistrationRetry() {
-    _iosRegistrationRetryTimer?.cancel();
-    _iosRegistrationRetryTimer = null;
-    _iosRegistrationRetryAttempts = 0;
+  void _clearRegistrationRetry() {
+    _registrationRetryTimer?.cancel();
+    _registrationRetryTimer = null;
+    _registrationRetryAttempts = 0;
   }
 
   bool _allowsRemoteNotifications(AuthorizationStatus status) {
@@ -612,7 +628,7 @@ class PushNotificationService {
   }
 
   Future<void> dispose() async {
-    _clearIosRegistrationRetry();
+    _clearRegistrationRetry();
     await _tokenRefreshSubscription?.cancel();
     await _controller.close();
   }
