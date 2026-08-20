@@ -280,8 +280,8 @@ jobs:
           EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           APP_ENV: ${{ env.APP_ENV }}
-          FLUTTER_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
-          FLUTTER_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
+          APP_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
+          APP_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
           PLAY_STORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
         run: BUNDLE_GEMFILE=fastlane/Gemfile bundle exec fastlane android internal
 
@@ -397,8 +397,8 @@ jobs:
           EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           APP_ENV: ${{ env.APP_ENV }}
-          FLUTTER_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
-          FLUTTER_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
+          APP_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
+          APP_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}

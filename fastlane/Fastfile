@@ -10,11 +10,11 @@ def require_env!(keys)
 end
 
 def flutter_build_name
-  ENV["FLUTTER_BUILD_NAME"].to_s.strip.empty? ? "1.0.0" : ENV["FLUTTER_BUILD_NAME"].strip
+  ENV["APP_BUILD_NAME"].to_s.strip.empty? ? "1.0.0" : ENV["APP_BUILD_NAME"].strip
 end
 
 def flutter_build_number
-  value = ENV["FLUTTER_BUILD_NUMBER"].to_s.strip
+  value = ENV["APP_BUILD_NUMBER"].to_s.strip
   return value unless value.empty?
 
   ENV["GITHUB_RUN_NUMBER"].to_s.strip.empty? ? Time.now.to_i.to_s : ENV["GITHUB_RUN_NUMBER"].strip
