@@ -14,6 +14,7 @@ import 'package:note_sondage/feature/task/domain/entities/task_create_request_en
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_text_size.dart';
+import 'package:note_sondage/feature/task/notification/task_alarm_scheduler.dart';
 
 import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
 import 'package:note_sondage/feature/task/navigation/task_open_intent_controller.dart';
@@ -63,6 +64,8 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   // cambiamento e schedula/cancelli i promemoria — stesso ruolo di ShiftBloc
   // per ShiftAlarmScheduler.
   final TaskBloc _taskBloc = GetIt.instance<TaskBloc>();
+  final TaskAlarmScheduler _taskAlarmScheduler =
+      GetIt.instance<TaskAlarmScheduler>();
   // Lets the user shrink/grow all text in the compact/mobile layout to fit
   // more content on screen (see TaskTextSizeToggle in TaskWorkspaceHeader).
   final TaskTextSizeCubit _taskTextSizeCubit =
@@ -95,8 +98,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   @override
   void initState() {
     super.initState();
-    _realtimeSubscription = GetIt.instance<RealtimeNotificationService>()
-        .stream
+    _realtimeSubscription = GetIt.instance<RealtimeNotificationService>().stream
         .listen(_handleRealtimeNotification);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) {
@@ -402,6 +404,9 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       final tasks = isMyTasksMode
           ? await _taskUseCase.getMyTasks(_currentUid)
           : await _taskUseCase.getTasksByTeam(teamId);
+      await _taskAlarmScheduler.syncTasks(
+        tasks.where((task) => !task.isArchived),
+      );
       if (!mounted) {
         return;
       }
@@ -667,10 +672,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       ];
     });
     try {
-      final updated = await _taskBloc.updateTaskStatus(
-        task.id,
-        nextStatus,
-      );
+      final updated = await _taskBloc.updateTaskStatus(task.id, nextStatus);
       if (!mounted) {
         return;
       }
@@ -703,114 +705,120 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
           bloc: _taskTextSizeCubit,
           builder: (blocContext, textSize) {
             return MediaQuery(
-              data: MediaQuery.of(sheetContext).copyWith(
-                textScaler: TextScaler.linear(textSize.scaleFactor),
-              ),
+              data: MediaQuery.of(
+                sheetContext,
+              ).copyWith(textScaler: TextScaler.linear(textSize.scaleFactor)),
               child: TaskDensityScope(
                 scale: textSize.scaleFactor,
                 child: StatefulBuilder(
-                builder: (sheetContext, setModalState) {
-                  final l10n = AppLocalizations.of(sheetContext)!;
-            final isArchivedTask = latestTask.isArchived;
-            final canChangeStatus =
-                !isArchivedTask && _canChangeStatus(latestTask);
-            final canEdit = !isArchivedTask && _canEditTask(latestTask);
-            final canRestore = isArchivedTask && _canEditTask(latestTask);
-            final canDeletePermanently =
-                _canEditTask(latestTask) &&
-                (isArchivedTask || latestTask.status == TaskStatus.canceled);
-            return FractionallySizedBox(
-              heightFactor: MediaQuery.of(sheetContext).size.width < 760
-                  ? 0.88
-                  : 0.84,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Theme.of(sheetContext).colorScheme.surface,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(28),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          sheetContext,
-                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.24),
-                        borderRadius: BorderRadius.circular(999),
+                  builder: (sheetContext, setModalState) {
+                    final l10n = AppLocalizations.of(sheetContext)!;
+                    final isArchivedTask = latestTask.isArchived;
+                    final canChangeStatus =
+                        !isArchivedTask && _canChangeStatus(latestTask);
+                    final canEdit = !isArchivedTask && _canEditTask(latestTask);
+                    final canRestore =
+                        isArchivedTask && _canEditTask(latestTask);
+                    final canDeletePermanently =
+                        _canEditTask(latestTask) &&
+                        (isArchivedTask ||
+                            latestTask.status == TaskStatus.canceled);
+                    return FractionallySizedBox(
+                      heightFactor: MediaQuery.of(sheetContext).size.width < 760
+                          ? 0.88
+                          : 0.84,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Theme.of(sheetContext).colorScheme.surface,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(28),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 12),
+                            Container(
+                              width: 42,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Theme.of(sheetContext)
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withValues(alpha: 0.24),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                            Expanded(
+                              child: TaskDetailPanel(
+                                task: latestTask,
+                                canChangeStatus: canChangeStatus,
+                                canEdit: canEdit,
+                                canRestore: canRestore,
+                                canDeletePermanently: canDeletePermanently,
+                                onStatusChange: (nextStatus) async {
+                                  final rollbackTask = latestTask;
+                                  setModalState(() {
+                                    latestTask = latestTask.copyWith(
+                                      status: nextStatus,
+                                    );
+                                  });
+                                  try {
+                                    final updated = await _taskBloc
+                                        .updateTaskStatus(
+                                          latestTask.id,
+                                          nextStatus,
+                                        );
+                                    if (!mounted) {
+                                      return;
+                                    }
+                                    setModalState(() {
+                                      latestTask = updated;
+                                    });
+                                  } catch (_) {
+                                    if (!mounted) {
+                                      return;
+                                    }
+                                    setModalState(() {
+                                      latestTask = rollbackTask;
+                                    });
+                                    AppSnackBar.showError(
+                                      context,
+                                      l10n.taskUpdateStatusError,
+                                    );
+                                  }
+                                },
+                                onEdit: canEdit
+                                    ? () => Navigator.of(
+                                        sheetContext,
+                                      ).pop(_TaskDetailAction.edit)
+                                    : null,
+                                onArchive: canEdit
+                                    ? () => Navigator.of(
+                                        sheetContext,
+                                      ).pop(_TaskDetailAction.archive)
+                                    : null,
+                                onRestore: canRestore
+                                    ? () => Navigator.of(
+                                        sheetContext,
+                                      ).pop(_TaskDetailAction.restore)
+                                    : null,
+                                onDeletePermanently: canDeletePermanently
+                                    ? () => Navigator.of(
+                                        sheetContext,
+                                      ).pop(_TaskDetailAction.deletePermanently)
+                                    : null,
+                                onOpenLinkedChat: () => Navigator.of(
+                                  sheetContext,
+                                ).pop(_TaskDetailAction.openLinkedChat),
+                                onClose: () => Navigator.of(sheetContext).pop(),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: TaskDetailPanel(
-                        task: latestTask,
-                        canChangeStatus: canChangeStatus,
-                        canEdit: canEdit,
-                        canRestore: canRestore,
-                        canDeletePermanently: canDeletePermanently,
-                        onStatusChange: (nextStatus) async {
-                          final rollbackTask = latestTask;
-                          setModalState(() {
-                            latestTask = latestTask.copyWith(
-                              status: nextStatus,
-                            );
-                          });
-                          try {
-                            final updated = await _taskBloc
-                                .updateTaskStatus(latestTask.id, nextStatus);
-                            if (!mounted) {
-                              return;
-                            }
-                            setModalState(() {
-                              latestTask = updated;
-                            });
-                          } catch (_) {
-                            if (!mounted) {
-                              return;
-                            }
-                            setModalState(() {
-                              latestTask = rollbackTask;
-                            });
-                            AppSnackBar.showError(
-                              context,
-                              l10n.taskUpdateStatusError,
-                            );
-                          }
-                        },
-                        onEdit: canEdit
-                            ? () => Navigator.of(
-                                sheetContext,
-                              ).pop(_TaskDetailAction.edit)
-                            : null,
-                        onArchive: canEdit
-                            ? () => Navigator.of(
-                                sheetContext,
-                              ).pop(_TaskDetailAction.archive)
-                            : null,
-                        onRestore: canRestore
-                            ? () => Navigator.of(
-                                sheetContext,
-                              ).pop(_TaskDetailAction.restore)
-                            : null,
-                        onDeletePermanently: canDeletePermanently
-                            ? () => Navigator.of(
-                                sheetContext,
-                              ).pop(_TaskDetailAction.deletePermanently)
-                            : null,
-                        onOpenLinkedChat: () => Navigator.of(
-                          sheetContext,
-                        ).pop(_TaskDetailAction.openLinkedChat),
-                        onClose: () => Navigator.of(sheetContext).pop(),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              ),
-            );
-                },
-              ),
               ),
             );
           },
@@ -968,7 +976,10 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     });
   }
 
-  Widget _buildDetailPanelCard(BuildContext context, {required TaskEntity task}) {
+  Widget _buildDetailPanelCard(
+    BuildContext context, {
+    required TaskEntity task,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     final isArchivedTask = task.isArchived;
     final canChangeStatus = !isArchivedTask && _canChangeStatus(task);
@@ -1030,7 +1041,9 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     final searchFilteredActiveTasks = _applyTaskSearch(_tasks);
     final filteredTasks = _applyStatusFilter(searchFilteredActiveTasks);
     final filteredArchivedTasks = _applyTaskSearch(_archivedTasks);
-    final displayedTasks = _showArchived ? filteredArchivedTasks : filteredTasks;
+    final displayedTasks = _showArchived
+        ? filteredArchivedTasks
+        : filteredTasks;
     final isLoadingDisplayed = _showArchived
         ? _loadingArchivedTasks
         : _loadingTasks;
@@ -1083,9 +1096,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                         minWidth: 640,
                         child: TaskTableView(
                           tasks: displayedTasks,
-                          selectedTaskId: isSplitView
-                              ? selectedTask?.id
-                              : null,
+                          selectedTaskId: isSplitView ? selectedTask?.id : null,
                           onTaskTap: (task) => isSplitView
                               ? _selectTask(task)
                               : _openTaskDetail(task),
@@ -1103,9 +1114,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                             _timelineWeekStart = value;
                           });
                         },
-                        selectedTaskId: isSplitView
-                            ? selectedTask?.id
-                            : null,
+                        selectedTaskId: isSplitView ? selectedTask?.id : null,
                         onTaskTap: (task) => isSplitView
                             ? _selectTask(task)
                             : _openTaskDetail(task),
@@ -1141,8 +1150,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                         final task = displayedTasks[index];
                         return TaskCard(
                           task: task,
-                          selected:
-                              isSplitView && task.id == selectedTask?.id,
+                          selected: isSplitView && task.id == selectedTask?.id,
                           onTap: () => isSplitView
                               ? _selectTask(task)
                               : _openTaskDetail(task),
@@ -1276,7 +1284,13 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   }
 }
 
-enum _TaskDetailAction { edit, archive, restore, deletePermanently, openLinkedChat }
+enum _TaskDetailAction {
+  edit,
+  archive,
+  restore,
+  deletePermanently,
+  openLinkedChat,
+}
 
 /// Lets [child] size itself normally on wide layouts; on narrow ones (mobile,
 /// or a compact web window) it enforces [minWidth] and scrolls horizontally
@@ -1309,6 +1323,3 @@ class _HorizontalScrollIfNarrow extends StatelessWidget {
     );
   }
 }
-
-
-
