@@ -252,7 +252,7 @@ jobs:
         env:
           BUNDLE_GEMFILE: fastlane/Gemfile
         with:
-          ruby-version: "3.2"
+          ruby-version: "3.3"
           bundler-cache: true
 
       - name: Prepare Android signing
@@ -311,10 +311,10 @@ jobs:
         env:
           BUNDLE_GEMFILE: fastlane/Gemfile
         with:
-          ruby-version: "3.2"
+          ruby-version: "3.3"
           bundler-cache: true
 
-      - name: Force Ruby 3.2 CocoaPods
+      - name: Force Ruby 3.3 CocoaPods
         run: |
           brew uninstall cocoapods || true
           gem install cocoapods
