@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
-import 'package:showcaseview/src/showcase/showcase_service.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class AppTutorialController {
   AppTutorialController._();
@@ -211,15 +211,8 @@ class AppTutorialController {
 
   static List<GlobalKey> _mountedShowcaseKeys(List<GlobalKey> keys) {
     try {
-      final scope = ShowcaseView.get().scope;
-      final controllers = ShowcaseService.instance.getControllers(scope: scope);
-      final mountedKeys = <GlobalKey>[];
-      for (final key in keys) {
-        if (controllers[key]?.isNotEmpty ?? false) {
-          mountedKeys.add(key);
-        }
-      }
-      return mountedKeys;
+      final showcase = ShowcaseView.get();
+      return keys.where(showcase.isTargetRendered).toList(growable: false);
     } catch (_) {
       return const <GlobalKey>[];
     }
