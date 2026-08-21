@@ -17,15 +17,17 @@ class TaskEditorSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: colorScheme.borderColor ?? colorScheme.outlineVariant,
-        ),
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(22),
+      side: BorderSide(
+        color: colorScheme.borderColor ?? colorScheme.outlineVariant,
       ),
+    );
+
+    return Material(
+      color: colorScheme.surface,
+      shape: shape,
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
