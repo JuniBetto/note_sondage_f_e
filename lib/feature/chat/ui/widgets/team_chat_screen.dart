@@ -28,6 +28,7 @@ import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_models.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
 import 'package:note_sondage/feature/event/domain/use_case/event_use_case.dart';
@@ -40,8 +41,6 @@ import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
 import 'package:note_sondage/feature/sondage/ui/web/widgets/create_sondage_web.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
-import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
-import 'package:note_sondage/feature/task/ui/task_editor_sheet.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
@@ -106,9 +105,10 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       GetIt.instance<ChatMessageActionDraftService>();
   final ChatMessageSuggestionService _messageSuggestionService =
       GetIt.instance<ChatMessageSuggestionService>();
+  final ChatMessageTaskWorkflowController _taskWorkflowController =
+      GetIt.instance<ChatMessageTaskWorkflowController>();
   final EventUseCase _eventUseCase = GetIt.instance<EventUseCase>();
   final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
-  final TaskUseCase _taskUseCase = GetIt.instance<TaskUseCase>();
   final RealtimeNotificationService _realtimeService =
       GetIt.instance<RealtimeNotificationService>();
   final WorkflowAiPreferencesCubit _workflowAiPreferencesCubit =
@@ -545,21 +545,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         _workflowAiAppEnabled &&
         selectedTeam != null &&
         selectedTeam.workflowAiEnabled;
-  }
-
-  bool _ensureWorkflowActionsEnabled() {
-    if (RuntimeConfig.enableWorkflowActions) {
-      return true;
-    }
-    AppSnackBar.showWarning(
-      context,
-      _chatActionText(
-        Localizations.localeOf(context).languageCode,
-        it: 'Le workflow actions sono disattivate in questo ambiente.',
-        en: 'Workflow actions are disabled in this environment.',
-      ),
-    );
-    return false;
   }
 
   TeamMemberEntity? _findCurrentTeamMember(String teamId) {
@@ -1674,13 +1659,11 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _messageActionDraftService.buildDraft(
-          actionType: ChatMessageActionType.createTask,
-          conversationId: conversation.id,
-          messageId: message.id,
+        () => _taskWorkflowController.prepareDraft(
+          conversation: conversation,
+          message: message,
           teamId: teamId,
           locale: Localizations.localeOf(context).languageCode,
-          selectedMessageText: message.contentText,
           memberUserId: _selectedMemberUserId,
           memberDisplayName: _conversationDisplayName,
         ),
@@ -1715,38 +1698,18 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         );
       }
 
-      final createdTask = await showTaskEditorSheet(
+      final createdTask = await _taskWorkflowController.openTaskEditor(
         context: context,
-        availableTeams: _teams
-            .where((team) => team.id?.trim() == teamId)
-            .toList(growable: false),
-        loadAssignees: (selectedTeamId) async {
+        teams: _teams,
+        teamId: teamId,
+        loadMembers: (selectedTeamId) async {
           await _ensureTeamAccessContextLoaded(selectedTeamId);
-          final members =
-              _teamMembersByTeamId[selectedTeamId] ??
+          return _teamMembersByTeamId[selectedTeamId] ??
               const <TeamMemberEntity>[];
-          return members
-              .where(
-                (member) =>
-                    member.userId?.trim().isNotEmpty == true &&
-                    member.status.name.toLowerCase() == 'active',
-              )
-              .map(
-                (member) => TaskAssigneeOption(
-                  userId: member.userId!.trim(),
-                  label: member.initialName?.trim().isNotEmpty == true
-                      ? member.initialName!.trim()
-                      : member.userEmail.trim(),
-                  secondaryLabel: member.userEmail,
-                ),
-              )
-              .toList(growable: false);
         },
-        onCreate: _taskUseCase.createTask,
-        onUpdate: (task, request) => _taskUseCase.updateTask(task.id, request),
         actorUserId: _currentUid,
         actorDisplayName: _actorDisplayName,
-        initialDraft: taskDraft.copyWith(teamId: teamId),
+        initialDraft: taskDraft,
         lockTeamSelection: true,
       );
       if (!mounted || createdTask == null) {
