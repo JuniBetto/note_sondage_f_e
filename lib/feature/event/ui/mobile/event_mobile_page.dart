@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/feature/event/ui/event_workspace.dart';
@@ -40,3 +40,4 @@ class EventMobilePage extends StatelessWidget {
     );
   }
 }
+*/

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
@@ -463,8 +464,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
 
   String _linkedConversationUnavailableMessage() {
     return switch (Localizations.localeOf(context).languageCode) {
-      'it' =>
-        'Questo sondaggio non ha una conversazione collegata apribile.',
+      'it' => 'Questo sondaggio non ha una conversazione collegata apribile.',
       'fr' => 'Ce sondage n a pas de conversation liee ouvrable.',
       'es' =>
         'Esta encuesta no tiene una conversacion vinculada que se pueda abrir.',
@@ -668,14 +668,19 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                             colorScheme: colorScheme,
                             textTheme: textTheme,
                             onOpenLinkedConversation:
-                                sondage.workflowContext
+                                RuntimeConfig.enableWorkflowActions &&
+                                    sondage
+                                            .workflowContext
                                             .resolvedSourceConversationId !=
                                         null
                                 ? () => _openLinkedConversation(sondage)
                                 : null,
                             onOpenLinkedShift:
-                                sondage.workflowContext.resolvedAssignmentId !=
-                                    null
+                                RuntimeConfig.enableWorkflowActions &&
+                                    sondage
+                                            .workflowContext
+                                            .resolvedAssignmentId !=
+                                        null
                                 ? () => _openLinkedShift(sondage)
                                 : null,
                           );
@@ -744,18 +749,26 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                                 ? () => _openReminderDialog(sondage)
                                 : null,
                             onOpenLinkedConversation:
-                                sondage.workflowContext
+                                RuntimeConfig.enableWorkflowActions &&
+                                    sondage
+                                            .workflowContext
                                             .resolvedSourceConversationId !=
                                         null
                                 ? () => _openLinkedConversation(sondage)
                                 : null,
                             onOpenLinkedShift:
-                                sondage.workflowContext.resolvedAssignmentId !=
-                                    null
+                                RuntimeConfig.enableWorkflowActions &&
+                                    sondage
+                                            .workflowContext
+                                            .resolvedAssignmentId !=
+                                        null
                                 ? () => _openLinkedShift(sondage)
                                 : null,
                             onAutoReplaceLinkedShift:
-                                sondage.workflowContext.resolvedAssignmentId !=
+                                RuntimeConfig.enableWorkflowActions &&
+                                    sondage
+                                            .workflowContext
+                                            .resolvedAssignmentId !=
                                         null &&
                                     sondage
                                         .workflowAvailableResponderUserIds

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
@@ -665,17 +666,19 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
                                     colorScheme: colorScheme,
                                     textTheme: textTheme,
                                     onOpenLinkedConversation:
-                                        sondage
-                                                .workflowContext
-                                                .resolvedSourceConversationId !=
-                                            null
+                                        RuntimeConfig.enableWorkflowActions &&
+                                            sondage
+                                                    .workflowContext
+                                                    .resolvedSourceConversationId !=
+                                                null
                                         ? () => _openLinkedConversation(sondage)
                                         : null,
                                     onOpenLinkedShift:
-                                        sondage
-                                                .workflowContext
-                                                .resolvedAssignmentId !=
-                                            null
+                                        RuntimeConfig.enableWorkflowActions &&
+                                            sondage
+                                                    .workflowContext
+                                                    .resolvedAssignmentId !=
+                                                null
                                         ? () => _openLinkedShift(sondage)
                                         : null,
                                   );
@@ -746,23 +749,29 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
                                             ? () => _openReminderDialog(sondage)
                                             : null,
                                         onOpenLinkedConversation:
-                                            sondage
-                                                    .workflowContext
-                                                    .resolvedSourceConversationId !=
-                                                null
+                                            RuntimeConfig
+                                                    .enableWorkflowActions &&
+                                                sondage
+                                                        .workflowContext
+                                                        .resolvedSourceConversationId !=
+                                                    null
                                             ? () => _openLinkedConversation(
                                                 sondage,
                                               )
                                             : null,
                                         onOpenLinkedShift:
-                                            sondage
-                                                    .workflowContext
-                                                    .resolvedAssignmentId !=
-                                                null
+                                            RuntimeConfig
+                                                    .enableWorkflowActions &&
+                                                sondage
+                                                        .workflowContext
+                                                        .resolvedAssignmentId !=
+                                                    null
                                             ? () => _openLinkedShift(sondage)
                                             : null,
                                         onAutoReplaceLinkedShift:
-                                            sondage
+                                            RuntimeConfig
+                                                    .enableWorkflowActions &&
+                                                sondage
                                                         .workflowContext
                                                         .resolvedAssignmentId !=
                                                     null &&

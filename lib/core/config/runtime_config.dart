@@ -46,6 +46,12 @@ class RuntimeConfig {
     defaultValue: false,
   );
 
+  static const bool _workflowActionsFeatureFlag = bool.fromEnvironment(
+    'ENABLE_WORKFLOW_ACTIONS',
+    defaultValue: false,
+  );
+  static bool? _enableWorkflowActionsOverride;
+
   static const String emailConfirmationUrl = String.fromEnvironment(
     'EMAIL_CONFIRMATION_URL',
     defaultValue: '',
@@ -124,6 +130,14 @@ class RuntimeConfig {
       resolvedPasswordResetUrl.isNotEmpty;
   static bool get hasAppleStoreUrl => resolvedAppleStoreUrl.isNotEmpty;
   static bool get hasAndroidStoreUrl => resolvedAndroidStoreUrl.isNotEmpty;
+  static bool get enableWorkflowActions =>
+      _enableWorkflowActionsOverride ??
+      !kReleaseMode || _workflowActionsFeatureFlag;
+
+  @visibleForTesting
+  static void debugSetEnableWorkflowActionsOverride(bool? value) {
+    _enableWorkflowActionsOverride = value;
+  }
 
   static AppEnvironment? _environmentFromString(String rawValue) {
     switch (rawValue.trim().toLowerCase()) {

@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
@@ -528,6 +529,9 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   bool _canUseWorkflowMessageActions() {
+    if (!RuntimeConfig.enableWorkflowActions) {
+      return false;
+    }
     final selectedTeam = _selectedTeam;
     if (selectedTeam == null) {
       return false;
@@ -537,9 +541,25 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
   bool _isWorkflowAiEnabledForSelectedTeam() {
     final selectedTeam = _selectedTeam;
-    return _workflowAiAppEnabled &&
+    return RuntimeConfig.enableWorkflowActions &&
+        _workflowAiAppEnabled &&
         selectedTeam != null &&
         selectedTeam.workflowAiEnabled;
+  }
+
+  bool _ensureWorkflowActionsEnabled() {
+    if (RuntimeConfig.enableWorkflowActions) {
+      return true;
+    }
+    AppSnackBar.showWarning(
+      context,
+      _chatActionText(
+        Localizations.localeOf(context).languageCode,
+        it: 'Le workflow actions sono disattivate in questo ambiente.',
+        en: 'Workflow actions are disabled in this environment.',
+      ),
+    );
+    return false;
   }
 
   TeamMemberEntity? _findCurrentTeamMember(String teamId) {
