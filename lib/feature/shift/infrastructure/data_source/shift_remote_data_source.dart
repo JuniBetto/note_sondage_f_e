@@ -271,6 +271,16 @@ class ShiftRemoteDataSource {
     );
   }
 
+  Future<void> offerReplacement(
+    String assignmentId, {
+    required String candidateFirebaseUid,
+  }) async {
+    await _dio.post(
+      '/api/aggregate/shift/assignments/$assignmentId/replacement-offers',
+      data: {'candidateFirebaseUid': candidateFirebaseUid},
+    );
+  }
+
   Future<ShiftReplacementCandidatesEntity> findReplacementCandidates(
     String assignmentId,
   ) async {

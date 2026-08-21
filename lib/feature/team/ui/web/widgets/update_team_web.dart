@@ -62,6 +62,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   String _clockingReminderTime = '09:00';
   String _clockingMissingAlertTime = '10:00';
   String _clockingOpenAlertTime = '18:00';
+  bool _workflowAiEnabled = false;
   TeamSectionPermissions _teamPermissions = TeamSectionPermissions.readOnly();
   late final TeamBloc _teamBloc;
   bool _isLoading = true;
@@ -69,6 +70,10 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
 
   bool get _showClockingSection => _teamPermissions.canManageClockingSettings;
   bool get _canEditTeamFields => !widget.readOnly && _teamPermissions.isOwner;
+  bool get _canManageWorkflowAi =>
+      !widget.readOnly && _teamPermissions.canAccessRoleManager;
+  bool get _isWorkflowAiOnlyManagerUpdate =>
+      _canManageWorkflowAi && !_teamPermissions.isOwner;
   bool get _canOpenRoleManager =>
       !widget.readOnly &&
       widget.teamId != null &&
@@ -149,6 +154,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
             _clockingMissingAlertTime =
                 team.clockingMissingAlertTime ?? '10:00';
             _clockingOpenAlertTime = team.clockingOpenAlertTime ?? '18:00';
+            _workflowAiEnabled = team.workflowAiEnabled;
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated) {
@@ -341,6 +347,43 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                   const SizedBox(height: 24),
                 ],
 
+                _buildSectionTitle(
+                  context,
+                  _isItalian(context) ? 'Workflow AI' : 'Workflow AI',
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: colorScheme.homeSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: SwitchListTile.adaptive(
+                    value: _workflowAiEnabled,
+                    onChanged: _canManageWorkflowAi
+                        ? (value) {
+                            setState(() => _workflowAiEnabled = value);
+                          }
+                        : null,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      _isItalian(context)
+                          ? 'Abilita AI per questo team'
+                          : 'Enable AI for this team',
+                    ),
+                    subtitle: Text(
+                      _isItalian(context)
+                          ? 'Owner, admin o manage possono autorizzare l AI del team. Serve anche il toggle globale dell app.'
+                          : 'Owner, admin, or manage roles can authorize team AI. The app-wide global toggle is also required.',
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
                 // ── Members Section ──
                 _buildSectionTitle(context, localization.userList),
                 const SizedBox(height: 12),
@@ -379,6 +422,8 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                     child: Text(
                       widget.readOnly
                           ? 'This team is in read-only mode.'
+                          : _canManageWorkflowAi
+                          ? 'You can manage the AI toggle for this team, while basic team information remains owner-only.'
                           : 'Only the team owner can edit team information.',
                       style: textTheme.bodyMedium?.copyWith(
                         color: colorScheme.descriptionColor,
@@ -478,9 +523,13 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
-        clearClockingRequiredEndDate:
-            _initialClockingRequiredEndDate != null &&
-            _clockingRequiredEndDate == null,
+        workflowAiEnabled: _workflowAiEnabled,
+        workflowAiEnabledChanged: true,
+        workflowAiOnlyUpdate: _isWorkflowAiOnlyManagerUpdate,
+        clearClockingRequiredEndDate: _isWorkflowAiOnlyManagerUpdate
+            ? false
+            : _initialClockingRequiredEndDate != null &&
+                  _clockingRequiredEndDate == null,
         listMember: listteamMember,
       );
 

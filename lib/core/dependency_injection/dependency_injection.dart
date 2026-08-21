@@ -1,5 +1,13 @@
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
+import 'package:note_sondage/feature/notification/realtime/event_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/task_realtime_coordinator.dart';
+import 'package:note_sondage/feature/ai/preferences/workflow_ai_preferences_cubit.dart';
+import 'package:note_sondage/feature/event/navigation/event_open_intent_controller.dart';
+import 'package:note_sondage/feature/event/domain/repositories/event_repository.dart';
+import 'package:note_sondage/feature/event/domain/use_case/event_use_case.dart';
+import 'package:note_sondage/feature/event/infrastructure/data_source/data_source_local/event_local_data_source.dart';
+import 'package:note_sondage/feature/event/infrastructure/data_source/event_remote_data_source.dart';
+import 'package:note_sondage/feature/event/infrastructure/repositories/event_repository_impl.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_local_data_source.dart';
 import 'package:note_sondage/feature/shift/infrastructure/data_source/shift_remote_data_source.dart';
@@ -20,6 +28,7 @@ import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_local_
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
 import 'package:note_sondage/feature/clocking/domain/repositories/clocking_repository.dart';
 import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_local/clocking_local_data_source.dart';
@@ -188,11 +197,18 @@ void _registerDataSources() {
   getIt.registerLazySingleton<ChatMessageActionDraftService>(
     () => ChatMessageActionDraftService(),
   );
+  getIt.registerLazySingleton<ChatMessageSuggestionService>(
+    () => ChatMessageSuggestionService(),
+  );
   getIt.registerLazySingleton<TaskRemoteDataSource>(
     () => TaskRemoteDataSource(),
   );
-  getIt.registerLazySingleton<TaskLocalDataSource>(
-    () => TaskLocalDataSource(),
+  getIt.registerLazySingleton<TaskLocalDataSource>(() => TaskLocalDataSource());
+  getIt.registerLazySingleton<EventRemoteDataSource>(
+    () => EventRemoteDataSource(),
+  );
+  getIt.registerLazySingleton<EventLocalDataSource>(
+    () => EventLocalDataSource(),
   );
 }
 
@@ -269,6 +285,12 @@ void _registerRepositories() {
       getIt<TaskRemoteDataSource>(),
     ),
   );
+  getIt.registerLazySingleton<EventRepository>(
+    () => EventRepositoryImpl(
+      getIt<EventLocalDataSource>(),
+      getIt<EventRemoteDataSource>(),
+    ),
+  );
 
   // Dashboard
   getIt.registerLazySingleton<DashboardRepository>(
@@ -333,6 +355,9 @@ void _registerUseCases() {
   getIt.registerLazySingleton<TaskUseCase>(
     () => TaskUseCase(getIt<TaskRepository>()),
   );
+  getIt.registerLazySingleton<EventUseCase>(
+    () => EventUseCase(getIt<EventRepository>()),
+  );
 
   // Dashboard
   getIt.registerLazySingleton<DashboardUseCase>(
@@ -385,9 +410,7 @@ void _registerBlocs() {
   );
 
   // Task come LazySingleton per poter essere osservato da TaskAlarmScheduler
-  getIt.registerLazySingleton<TaskBloc>(
-    () => TaskBloc(getIt<TaskUseCase>()),
-  );
+  getIt.registerLazySingleton<TaskBloc>(() => TaskBloc(getIt<TaskUseCase>()));
   getIt.registerLazySingleton<TaskAlarmScheduler>(
     () => TaskAlarmScheduler(
       taskBloc: getIt<TaskBloc>(),
@@ -399,6 +422,9 @@ void _registerBlocs() {
   );
   getIt.registerLazySingleton<TaskOpenIntentController>(
     () => TaskOpenIntentController(),
+  );
+  getIt.registerLazySingleton<EventOpenIntentController>(
+    () => EventOpenIntentController(),
   );
 
   // Dashboard - Singleton per condividere lo stato tra widget
@@ -425,6 +451,9 @@ void _registerBlocs() {
       localNotificationService: getIt<LocalNotificationService>(),
     ),
   );
+  getIt.registerLazySingleton<WorkflowAiPreferencesCubit>(
+    () => WorkflowAiPreferencesCubit(),
+  );
   getIt.registerLazySingleton<NotificationCenterCubit>(
     () => NotificationCenterCubit(
       backendAuth: getIt<BackendAuthDataSource>(),
@@ -445,6 +474,9 @@ void _registerBlocs() {
   );
   getIt.registerLazySingleton<TaskRealtimeCoordinator>(
     () => TaskRealtimeCoordinator(),
+  );
+  getIt.registerLazySingleton<EventRealtimeCoordinator>(
+    () => EventRealtimeCoordinator(),
   );
 }
 

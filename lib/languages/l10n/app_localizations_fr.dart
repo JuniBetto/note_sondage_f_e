@@ -2350,4 +2350,187 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get taskPersonalToggleSubtitle =>
       'Non liée à une équipe — visible et gérable uniquement par vous';
+
+  @override
+  String get eventPageTitle => 'Événements';
+
+  @override
+  String get eventNavShowcaseDescription =>
+      'Gérez ici les événements de calendrier hors shift, comme les réunions ou moments partagés de l\'équipe.';
+
+  @override
+  String get eventHeaderTitle => 'Événements du calendrier';
+
+  @override
+  String get eventHeaderSubtitle =>
+      'Rendez-vous, réunions et moments partagés de l\'équipe, séparés des tâches et des shifts.';
+
+  @override
+  String get eventMyEventsTitle => 'Mes événements';
+
+  @override
+  String get eventMyEventsSubtitle =>
+      'Événements que vous avez créés ou auxquels vous avez été ajouté, dans toutes les équipes';
+
+  @override
+  String get eventActiveFilterLabel => 'Actifs';
+
+  @override
+  String get eventArchivedFilterLabel => 'Archivés';
+
+  @override
+  String get eventNewEventAction => 'Nouvel événement';
+
+  @override
+  String get eventEditEventTitle => 'Modifier l\'événement';
+
+  @override
+  String get eventTitleLabel => 'Titre';
+
+  @override
+  String get eventDescriptionLabel => 'Description';
+
+  @override
+  String get eventAllDayLabel => 'Toute la journée';
+
+  @override
+  String eventStartLabel(Object value) {
+    return 'Début : $value';
+  }
+
+  @override
+  String eventEndLabel(Object value) {
+    return 'Fin : $value';
+  }
+
+  @override
+  String get eventEndNotSet => 'Fin non définie';
+
+  @override
+  String get eventRemoveEndAction => 'Supprimer la fin';
+
+  @override
+  String get eventLocationLabel => 'Lieu';
+
+  @override
+  String get eventParticipantsLabel => 'Participants';
+
+  @override
+  String get eventParticipantsEmptyTeam =>
+      'Cette équipe n\'a pas encore d\'autres membres à ajouter.';
+
+  @override
+  String get eventTitleRequiredError => 'Le titre est obligatoire.';
+
+  @override
+  String get eventNoParticipants => 'Aucun participant indiqué';
+
+  @override
+  String get eventChipLabel => 'Événement';
+
+  @override
+  String get eventScheduleAllDaySuffix => 'toute la journée';
+
+  @override
+  String eventSourceLabel(Object source) {
+    return 'Source : $source';
+  }
+
+  @override
+  String get eventEditAction => 'Modifier';
+
+  @override
+  String get eventRestoreAction => 'Restaurer';
+
+  @override
+  String get eventArchiveAction => 'Archiver';
+
+  @override
+  String get eventDeleteAction => 'Supprimer';
+
+  @override
+  String get eventEmptyArchivedTitle => 'Aucun événement archivé';
+
+  @override
+  String get eventEmptyActiveTitle => 'Aucun événement actif';
+
+  @override
+  String get eventEmptyArchivedSubtitle =>
+      'Les événements archivés apparaîtront ici.';
+
+  @override
+  String get eventEmptyActiveSubtitle =>
+      'Utilisez cette section pour les réunions, rendez-vous ou moments partagés non liés aux shifts.';
+
+  @override
+  String get eventMyEventsEmptyTitle => 'Aucun événement pour l\'instant';
+
+  @override
+  String get eventMyEventsEmptySubtitle =>
+      'Les événements que vous créez ou auxquels vous êtes ajouté comme participant, dans n\'importe quelle équipe, apparaîtront ici.';
+
+  @override
+  String get eventCreateSuccess => 'Événement créé.';
+
+  @override
+  String get eventUpdateSuccess => 'Événement mis à jour.';
+
+  @override
+  String eventSaveError(Object error) {
+    return 'Impossible d\'enregistrer l\'événement : $error';
+  }
+
+  @override
+  String get eventRestoreSuccess => 'Événement restauré.';
+
+  @override
+  String get eventArchiveSuccess => 'Événement archivé.';
+
+  @override
+  String eventOperationFailedError(Object error) {
+    return 'L\'opération a échoué : $error';
+  }
+
+  @override
+  String get eventDeletePermanentlySuccess =>
+      'Événement définitivement supprimé.';
+
+  @override
+  String eventDeleteError(Object error) {
+    return 'Impossible de supprimer l\'événement : $error';
+  }
+
+  @override
+  String eventLoadError(Object error) {
+    return 'Impossible de charger les événements : $error';
+  }
+
+  @override
+  String eventLoadArchivedError(Object error) {
+    return 'Impossible de charger les archivés : $error';
+  }
+
+  @override
+  String get eventViewModeCard => 'Vue en cartes';
+
+  @override
+  String get eventViewModeCalendar => 'Vue calendrier';
+
+  @override
+  String get eventCalendarDayLabel => 'Jour';
+
+  @override
+  String get eventCalendarWeekLabel => 'Semaine';
+
+  @override
+  String get eventCalendarMonthLabel => 'Mois';
+
+  @override
+  String eventCalendarMoreLabel(Object count) {
+    return '+$count autres';
+  }
+
+  @override
+  String get eventPersonalEventNotice =>
+      'Ceci est un événement personnel — visible uniquement par vous.';
 }

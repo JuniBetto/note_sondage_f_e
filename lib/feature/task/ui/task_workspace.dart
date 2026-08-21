@@ -171,10 +171,6 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
         .toList(growable: false);
   }
 
-  TeamEntity? get _selectedTeam {
-    return _selectedTeamFrom(_teams);
-  }
-
   TeamEntity? _selectedTeamFrom(List<TeamEntity> teams) {
     final selectedTeamId = _selectedTeamId?.trim();
     if (selectedTeamId == null || selectedTeamId.isEmpty) {

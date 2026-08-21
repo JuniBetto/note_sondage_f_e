@@ -11,6 +11,7 @@ import 'package:note_sondage/ui/mobile/widgets/settings/widgets/change_theme.dar
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/contact_us_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/notification_settings_mobile.dart';
 import 'package:note_sondage/ui/mobile/widgets/settings/widgets/profile_settings_mobile.dart';
+import 'package:note_sondage/ui/mobile/widgets/settings/widgets/settings_ai_mobile.dart';
 import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 import 'package:note_sondage/ui/widgets/auth/contact_email_setup_card.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
@@ -263,6 +264,20 @@ class _SettingsMobileState extends State<SettingsMobile> {
                         onTap: () => _showSettingModal(
                           context,
                           const NotificationSettingsMobile(),
+                        ),
+                        showDivider: true,
+                      ),
+                      _SettingTile(
+                        icon: Icons.auto_awesome_rounded,
+                        iconColor: const Color(0xFF00A86B),
+                        title: 'AI',
+                        subtitle:
+                            Localizations.localeOf(context).languageCode == 'it'
+                            ? 'Autorizzazione globale AI'
+                            : 'Global AI authorization',
+                        onTap: () => _showSettingModal(
+                          context,
+                          const SettingsAiMobile(),
                         ),
                         showDivider: false,
                       ),

@@ -16,6 +16,7 @@ class TeamEntity {
   final String? clockingReminderTime;
   final String? clockingMissingAlertTime;
   final String? clockingOpenAlertTime;
+  final bool workflowAiEnabled;
   final int memberCount;
   final List<PlanningWorkerTypeEntity> planningWorkerTypes;
   final List<InviteTeamMemberRequestEntity>?
@@ -34,6 +35,7 @@ class TeamEntity {
     this.clockingReminderTime,
     this.clockingMissingAlertTime,
     this.clockingOpenAlertTime,
+    this.workflowAiEnabled = false,
     this.memberCount = 0,
     this.planningWorkerTypes = PlanningWorkerTypeEntity.builtIns,
     DateTime? createdAt,
@@ -79,6 +81,8 @@ class TeamEntityForView {
 class TeamUpdate extends TeamEntity {
   final bool? isDeleted; // New field to indicate if the team is deleted
   final bool clearClockingRequiredEndDate;
+  final bool workflowAiEnabledChanged;
+  final bool workflowAiOnlyUpdate;
   final List<TeamMemberUpdateTeam> listMember;
 
   TeamUpdate(
@@ -94,6 +98,9 @@ class TeamUpdate extends TeamEntity {
     String? clockingReminderTime,
     String? clockingMissingAlertTime,
     String? clockingOpenAlertTime,
+    bool workflowAiEnabled = false,
+    this.workflowAiEnabledChanged = false,
+    this.workflowAiOnlyUpdate = false,
     this.clearClockingRequiredEndDate = false,
     DateTime? createdAt,
     List<PlanningWorkerTypeEntity> planningWorkerTypes =
@@ -112,6 +119,7 @@ class TeamUpdate extends TeamEntity {
          clockingReminderTime: clockingReminderTime,
          clockingMissingAlertTime: clockingMissingAlertTime,
          clockingOpenAlertTime: clockingOpenAlertTime,
+         workflowAiEnabled: workflowAiEnabled,
          memberCount: 0,
          planningWorkerTypes: planningWorkerTypes,
          createdAt: createdAt ?? DateTime.now(),
@@ -131,6 +139,9 @@ class TeamUpdate extends TeamEntity {
     String? clockingReminderTime,
     String? clockingMissingAlertTime,
     String? clockingOpenAlertTime,
+    bool? workflowAiEnabled,
+    bool? workflowAiEnabledChanged,
+    bool? workflowAiOnlyUpdate,
     bool? clearClockingRequiredEndDate,
     List<PlanningWorkerTypeEntity>? planningWorkerTypes,
     List<TeamMemberUpdateTeam>? listMember,
@@ -151,6 +162,10 @@ class TeamUpdate extends TeamEntity {
           clockingMissingAlertTime ?? this.clockingMissingAlertTime,
       clockingOpenAlertTime:
           clockingOpenAlertTime ?? this.clockingOpenAlertTime,
+      workflowAiEnabled: workflowAiEnabled ?? this.workflowAiEnabled,
+      workflowAiEnabledChanged:
+          workflowAiEnabledChanged ?? this.workflowAiEnabledChanged,
+      workflowAiOnlyUpdate: workflowAiOnlyUpdate ?? this.workflowAiOnlyUpdate,
       clearClockingRequiredEndDate:
           clearClockingRequiredEndDate ?? this.clearClockingRequiredEndDate,
       planningWorkerTypes: planningWorkerTypes ?? this.planningWorkerTypes,

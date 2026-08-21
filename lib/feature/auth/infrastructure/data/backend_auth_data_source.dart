@@ -707,6 +707,25 @@ class BackendAuthDataSource {
     );
   }
 
+  Future<void> acceptShiftReplacementOffer({required String offerId}) async {
+    await _postShiftChangeDecision(
+      '/api/aggregate/shift/replacement-offers/$offerId/accept',
+      const <String, dynamic>{},
+      'accept shift replacement offer',
+    );
+  }
+
+  Future<void> rejectShiftReplacementOffer({
+    required String offerId,
+    required String reason,
+  }) async {
+    await _postShiftChangeDecision(
+      '/api/aggregate/shift/replacement-offers/$offerId/reject',
+      {'reason': reason},
+      'reject shift replacement offer',
+    );
+  }
+
   Future<void> _postClockingDecision(
     String path,
     Map<String, dynamic> data,

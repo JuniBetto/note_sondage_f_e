@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/clocking/ui/web/clocking_web.dart';
+import 'package:note_sondage/feature/event/ui/web/event_web_page.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/web/shift_web_page.dart';
 import 'package:note_sondage/feature/sondage/ui/web/sondage_web.dart';
@@ -33,6 +34,8 @@ class MainWeb extends StatefulWidget {
     this.chatInitialMemberUserId,
     this.chatInitialMemberName,
     this.chatFocusLatestOnOpen = false,
+    this.eventInitialTeamId,
+    this.eventInitialEventId,
   });
 
   final Widget? child;
@@ -40,6 +43,8 @@ class MainWeb extends StatefulWidget {
   final String? chatInitialMemberUserId;
   final String? chatInitialMemberName;
   final bool chatFocusLatestOnOpen;
+  final String? eventInitialTeamId;
+  final String? eventInitialEventId;
 
   @override
   State<MainWeb> createState() => _MainWebState();
@@ -53,6 +58,7 @@ class _MainWebState extends State<MainWeb> {
   final GlobalKey _shiftsKey = GlobalKey();
   final GlobalKey _tasksKey = GlobalKey();
   final GlobalKey _chatKey = GlobalKey();
+  final GlobalKey _eventsKey = GlobalKey();
   final GlobalKey _contentKey = GlobalKey();
   final GlobalKey _notificationsKey = GlobalKey();
 
@@ -183,6 +189,19 @@ class _MainWebState extends State<MainWeb> {
                   ),
                 ),
                 _buildShowcase(
+                  showcaseKey: _eventsKey,
+                  title: _eventsLabel(context),
+                  description: _navDescription(context),
+                  child: SidebarItem(
+                    key: const ValueKey(8),
+                    icon: Icons.event_outlined,
+                    label: _eventsLabel(context),
+                    index: 8,
+                    isSmallScreen: isExpanded,
+                    lastIndexes: lastIndexes,
+                  ),
+                ),
+                _buildShowcase(
                   showcaseKey: _chatKey,
                   title: 'Chat',
                   description: _navDescription(context),
@@ -250,6 +269,10 @@ class _MainWebState extends State<MainWeb> {
                   initialMemberUserId: widget.chatInitialMemberUserId,
                   initialMemberName: widget.chatInitialMemberName,
                   focusLatestOnOpen: widget.chatFocusLatestOnOpen,
+                ),
+                EventWebPage(
+                  initialTeamId: widget.eventInitialTeamId,
+                  initialEventId: widget.eventInitialEventId,
                 ),
               ];
 
@@ -375,7 +398,8 @@ class _MainWebState extends State<MainWeb> {
         navIndex == 4 ||
         navIndex == 5 ||
         navIndex == 6 ||
-        navIndex == 7;
+        navIndex == 7 ||
+        navIndex == 8;
   }
 
   bool _isDelegatedTutorialIndex(int navIndex) {
@@ -385,7 +409,8 @@ class _MainWebState extends State<MainWeb> {
         navIndex == 4 ||
         navIndex == 5 ||
         navIndex == 6 ||
-        navIndex == 7;
+        navIndex == 7 ||
+        navIndex == 8;
   }
 
   bool _shouldBypassShowcaseInDebug() {
@@ -399,6 +424,7 @@ class _MainWebState extends State<MainWeb> {
       4 => _sondageKey,
       5 => _shiftsKey,
       6 => _tasksKey,
+      8 => _eventsKey,
       7 => _chatKey,
       _ => _homeKey,
     };
@@ -411,6 +437,7 @@ class _MainWebState extends State<MainWeb> {
       4 => localizations.sondage,
       5 => localizations.myShifts,
       6 => localizations.taskPageTitle,
+      8 => localizations.eventPageTitle,
       7 => 'Chat',
       _ => localizations.home,
     };
@@ -434,6 +461,9 @@ class _MainWebState extends State<MainWeb> {
 
   String _contentDescription(BuildContext context, int navIndex) {
     final isItalian = _isItalian(context);
+    if (navIndex == 8) {
+      return AppLocalizations.of(context)!.eventNavShowcaseDescription;
+    }
     return switch (navIndex) {
       1 =>
         isItalian
@@ -468,5 +498,9 @@ class _MainWebState extends State<MainWeb> {
 
   bool _isItalian(BuildContext context) {
     return Localizations.localeOf(context).languageCode == 'it';
+  }
+
+  String _eventsLabel(BuildContext context) {
+    return AppLocalizations.of(context)!.eventPageTitle;
   }
 }

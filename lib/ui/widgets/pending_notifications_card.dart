@@ -6,6 +6,7 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_replacement_reject_reason_dialog.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -267,7 +268,8 @@ class _PendingNotificationTile extends StatelessWidget {
     final state = context.watch<NotificationCenterCubit>().state;
     final canRespond =
         (item.supportsInviteDecisionFor(currentUserId) ||
-            item.supportsClockingDecision()) &&
+            item.supportsClockingDecision() ||
+            item.supportsReplacementOfferDecision()) &&
         !state.completedActionNotificationIds.contains(item.notificationId);
     final isProcessing = state.processingNotificationIds.contains(
       item.notificationId,
@@ -278,6 +280,8 @@ class _PendingNotificationTile extends StatelessWidget {
     final roleCode = item.roleCode;
     final actionRequestNote = item.actionRequestNote;
     final impactedShiftSummaries = item.impactedShiftSummaries;
+    final impactedTaskSummaries = item.impactedTaskSummaries;
+    final impactedEventSummaries = item.impactedEventSummaries;
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
@@ -380,63 +384,32 @@ class _PendingNotificationTile extends StatelessWidget {
                         ],
                         if (impactedShiftSummaries.isNotEmpty) ...[
                           const SizedBox(height: 10),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFF59E0B,
-                              ).withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(
-                                  0xFFF59E0B,
-                                ).withValues(alpha: 0.26),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _impactedShiftTitle(context),
-                                  style: textTheme.labelMedium?.copyWith(
-                                    color: const Color(0xFFB45309),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                for (final summary in impactedShiftSummaries)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Padding(
-                                          padding: EdgeInsets.only(top: 3),
-                                          child: Icon(
-                                            Icons.event_busy_rounded,
-                                            size: 14,
-                                            color: Color(0xFFB45309),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            summary,
-                                            style: textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: colorScheme.textColor,
-                                                  height: 1.35,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
+                          _ImpactedItemsSection(
+                            title: _impactedShiftTitle(context),
+                            icon: Icons.event_busy_rounded,
+                            summaries: impactedShiftSummaries,
+                            textTheme: textTheme,
+                            colorScheme: colorScheme,
+                          ),
+                        ],
+                        if (impactedTaskSummaries.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          _ImpactedItemsSection(
+                            title: _impactedTaskTitle(context),
+                            icon: Icons.task_alt_rounded,
+                            summaries: impactedTaskSummaries,
+                            textTheme: textTheme,
+                            colorScheme: colorScheme,
+                          ),
+                        ],
+                        if (impactedEventSummaries.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          _ImpactedItemsSection(
+                            title: _impactedEventTitle(context),
+                            icon: Icons.event_rounded,
+                            summaries: impactedEventSummaries,
+                            textTheme: textTheme,
+                            colorScheme: colorScheme,
                           ),
                         ],
                       ],
@@ -500,20 +473,43 @@ class _PendingNotificationTile extends StatelessWidget {
                     OutlinedButton(
                       onPressed: isProcessing
                           ? null
-                          : () => item.supportsClockingDecision()
-                                ? context
-                                      .read<NotificationCenterCubit>()
-                                      .rejectClockingDecision(item)
-                                : context
-                                      .read<NotificationCenterCubit>()
-                                      .rejectInvitation(item),
+                          : () async {
+                              if (item.supportsReplacementOfferDecision()) {
+                                final reason =
+                                    await showShiftReplacementRejectReasonDialog(
+                                      context: context,
+                                    );
+                                if (reason == null ||
+                                    reason.isEmpty ||
+                                    !context.mounted) {
+                                  return;
+                                }
+                                context
+                                    .read<NotificationCenterCubit>()
+                                    .rejectReplacementOffer(item, reason);
+                                return;
+                              }
+                              if (item.supportsClockingDecision()) {
+                                context
+                                    .read<NotificationCenterCubit>()
+                                    .rejectClockingDecision(item);
+                                return;
+                              }
+                              context
+                                  .read<NotificationCenterCubit>()
+                                  .rejectInvitation(item);
+                            },
                       child: Text(localization.rejectRequest),
                     ),
                     const SizedBox(width: 10),
                     FilledButton(
                       onPressed: isProcessing
                           ? null
-                          : () => item.supportsClockingDecision()
+                          : () => item.supportsReplacementOfferDecision()
+                                ? context
+                                      .read<NotificationCenterCubit>()
+                                      .acceptReplacementOffer(item)
+                                : item.supportsClockingDecision()
                                 ? context
                                       .read<NotificationCenterCubit>()
                                       .approveClockingDecision(item)
@@ -599,6 +595,24 @@ class _PendingNotificationTile extends StatelessWidget {
     };
   }
 
+  static String _impactedTaskTitle(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Task impattati',
+      'fr' => 'Taches impactees',
+      'es' => 'Tareas afectadas',
+      _ => 'Impacted tasks',
+    };
+  }
+
+  static String _impactedEventTitle(BuildContext context) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'it' => 'Eventi impattati',
+      'fr' => 'Evenements impactes',
+      'es' => 'Eventos afectados',
+      _ => 'Impacted events',
+    };
+  }
+
   static String _markAsSeenLabel(BuildContext context) {
     return switch (Localizations.localeOf(context).languageCode) {
       'it' => 'Segna come vista',
@@ -662,6 +676,74 @@ class _PendingNotificationTile extends StatelessWidget {
     }
 
     return null;
+  }
+}
+
+class _ImpactedItemsSection extends StatelessWidget {
+  const _ImpactedItemsSection({
+    required this.title,
+    required this.icon,
+    required this.summaries,
+    required this.textTheme,
+    required this.colorScheme,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<String> summaries;
+  final TextTheme textTheme;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF59E0B).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFF59E0B).withValues(alpha: 0.26),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: textTheme.labelMedium?.copyWith(
+              color: const Color(0xFFB45309),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          for (final summary in summaries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Icon(icon, size: 14, color: const Color(0xFFB45309)),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      summary,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.textColor,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

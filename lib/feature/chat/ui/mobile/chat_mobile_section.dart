@@ -43,6 +43,7 @@ class ChatMobileSection extends StatelessWidget {
     this.composerShowcaseKey,
     this.composerShowcaseTitle,
     this.composerShowcaseDescription,
+    this.messageFooterBuilder,
   });
 
   final String headerDescription;
@@ -79,6 +80,8 @@ class ChatMobileSection extends StatelessWidget {
   final GlobalKey? composerShowcaseKey;
   final String? composerShowcaseTitle;
   final String? composerShowcaseDescription;
+  final Widget? Function(BuildContext context, ChatMessageEntity message)?
+  messageFooterBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -117,6 +120,7 @@ class ChatMobileSection extends StatelessWidget {
               onMessageLongPressed: onMessageLongPressed,
               onReplyRequested: onReplyRequested,
               onDeleteRequested: onDeleteRequested,
+              messageFooterBuilder: messageFooterBuilder,
               replyTarget: replyTarget,
               onPickImagePressed: onPickImagePressed,
               onPickDocumentPressed: onPickDocumentPressed,

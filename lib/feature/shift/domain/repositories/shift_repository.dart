@@ -94,6 +94,11 @@ abstract class ShiftRepository {
     String assignmentId,
   );
 
+  Future<void> offerReplacement(
+    String assignmentId, {
+    required String candidateFirebaseUid,
+  });
+
   Future<SondageEntity> createAvailabilitySondageDraft(
     String assignmentId,
     ShiftAvailabilitySondageDraftRequestEntity request,

@@ -43,6 +43,9 @@ class TeamHiveModel extends HiveObject {
   @HiveField(12)
   final String? clockingRequiredEndDate;
 
+  @HiveField(13)
+  final bool workflowAiEnabled;
+
   TeamHiveModel({
     required this.id,
     required this.name,
@@ -57,5 +60,6 @@ class TeamHiveModel extends HiveObject {
     this.clockingOpenAlertTime,
     this.planningWorkerTypesJson,
     this.clockingRequiredEndDate,
+    this.workflowAiEnabled = false,
   });
 }

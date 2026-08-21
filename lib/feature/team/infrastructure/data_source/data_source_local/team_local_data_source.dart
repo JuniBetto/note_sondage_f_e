@@ -42,6 +42,7 @@ class TeamLocalDataSource {
         clockingReminderTime: e.clockingReminderTime,
         clockingMissingAlertTime: e.clockingMissingAlertTime,
         clockingOpenAlertTime: e.clockingOpenAlertTime,
+        workflowAiEnabled: e.workflowAiEnabled,
         planningWorkerTypesJson: jsonEncode(
           e.planningWorkerTypes
               .map(TeamMapper.planningWorkerTypeToJson)
@@ -88,6 +89,7 @@ class TeamLocalDataSource {
         clockingReminderTime: m.clockingReminderTime,
         clockingMissingAlertTime: m.clockingMissingAlertTime,
         clockingOpenAlertTime: m.clockingOpenAlertTime,
+        workflowAiEnabled: m.workflowAiEnabled,
         planningWorkerTypes: planningWorkerTypes.isEmpty
             ? PlanningWorkerTypeEntity.builtIns
             : planningWorkerTypes,

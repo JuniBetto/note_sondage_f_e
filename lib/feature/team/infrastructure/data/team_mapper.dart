@@ -55,6 +55,7 @@ class TeamMapper {
         json['clockingReminderTime'],
         fallback: _defaultReminderTime,
       ),
+      workflowAiEnabled: json['workflowAiEnabled'] == true,
       clockingMissingAlertTime: _normalizeTimeString(
         json['clockingMissingAlertTime'],
         fallback: _defaultMissingAlertTime,
@@ -118,6 +119,7 @@ class TeamMapper {
         entity.clockingReminderTime,
         fallback: _defaultReminderTime,
       ),
+      'workflowAiEnabled': entity.workflowAiEnabled,
       'clockingMissingAlertTime': _timeForApi(
         entity.clockingMissingAlertTime,
         fallback: _defaultMissingAlertTime,
@@ -136,6 +138,13 @@ class TeamMapper {
   }
 
   static Map<String, dynamic> toJsonForUpdate(TeamUpdate entity) {
+    if (entity.workflowAiOnlyUpdate) {
+      return {
+        if (entity.workflowAiEnabledChanged)
+          'workflowAiEnabled': entity.workflowAiEnabled,
+      };
+    }
+
     final normalizedStartDate = _normalizeDateString(
       entity.clockingRequiredStartDate,
     );
@@ -158,6 +167,8 @@ class TeamMapper {
         entity.clockingReminderTime,
         fallback: _defaultReminderTime,
       ),
+      if (entity.workflowAiEnabledChanged)
+        'workflowAiEnabled': entity.workflowAiEnabled,
       'clockingMissingAlertTime': _timeForApi(
         entity.clockingMissingAlertTime,
         fallback: _defaultMissingAlertTime,
@@ -200,10 +211,13 @@ class TeamMapper {
         json['clockingReminderTime'],
         fallback: _defaultReminderTime,
       ),
+      workflowAiEnabled: json['workflowAiEnabled'] == true,
       clockingMissingAlertTime: _normalizeTimeString(
         json['clockingMissingAlertTime'],
         fallback: _defaultMissingAlertTime,
       ),
+      workflowAiEnabledChanged: json.containsKey('workflowAiEnabled'),
+      workflowAiOnlyUpdate: false,
       clockingOpenAlertTime: _normalizeTimeString(
         json['clockingOpenAlertTime'],
         fallback: _defaultOpenAlertTime,

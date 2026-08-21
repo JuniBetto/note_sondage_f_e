@@ -397,6 +397,40 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     }
   }
 
+  Future<void> acceptReplacementOffer(NotificationCenterItem item) async {
+    final offerId = item.replacementOfferId;
+    if (offerId == null || offerId.isEmpty) {
+      return;
+    }
+    final resolved = await _performAction(
+      item.notificationId,
+      () => _backendAuth.acceptShiftReplacementOffer(offerId: offerId),
+    );
+    if (resolved) {
+      _refreshTeamSurfaces();
+    }
+  }
+
+  Future<void> rejectReplacementOffer(
+    NotificationCenterItem item,
+    String reason,
+  ) async {
+    final offerId = item.replacementOfferId;
+    if (offerId == null || offerId.isEmpty) {
+      return;
+    }
+    final resolved = await _performAction(
+      item.notificationId,
+      () => _backendAuth.rejectShiftReplacementOffer(
+        offerId: offerId,
+        reason: reason,
+      ),
+    );
+    if (resolved) {
+      _refreshTeamSurfaces();
+    }
+  }
+
   Future<void> approveClockingDecision(NotificationCenterItem item) async {
     final teamId = item.metadata['teamId']?.trim();
     final requesterUserId = item.requesterUserId;

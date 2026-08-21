@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_conversation_page.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
+import 'package:note_sondage/feature/event/ui/web/event_web_page.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/mobile/shift_mobile_page.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/sondage_detail_mobile.dart';
@@ -41,6 +42,8 @@ import 'package:note_sondage/ui/widgets/auth/confirm_registration_page.dart';
 import 'package:note_sondage/ui/widgets/auth/reset_password_page.dart';
 import 'package:note_sondage/ui/widgets/splash_screen/splash_sreen_begin.dart';
 
+import '../../feature/clocking/ui/mobile/clocking_shift_tab_page.dart';
+
 //String currentAppPath = RouterPaths.splashScreen;
 
 final _rootNavigatorKey = navigatorKey;
@@ -64,6 +67,8 @@ int _pathToNavIndex(String path) {
       return 6;
     case RouterPaths.chat:
       return 7;
+    case RouterPaths.events:
+      return 8;
     default:
       return 0;
   }
@@ -95,8 +100,10 @@ GoRouter createRouter(BuildContext context) {
                 path == RouterPaths.sondage ||
                 path == RouterPaths.shifts ||
                 path == RouterPaths.tasks ||
-                path == RouterPaths.chat;
+                path == RouterPaths.chat ||
+                path == RouterPaths.events;
             final isChatPage = path == RouterPaths.chat;
+            final isEventPage = path == RouterPaths.events;
 
             // ═══ Sincronizza il NavigationBloc con l'URL corrente ═══
             // Fondamentale per i pulsanti back/forward del browser:
@@ -124,6 +131,12 @@ GoRouter createRouter(BuildContext context) {
                 chatFocusLatestOnOpen:
                     isChatPage &&
                     state.uri.queryParameters['focus'] == 'latest',
+                eventInitialTeamId: isEventPage
+                    ? state.uri.queryParameters['teamId']
+                    : null,
+                eventInitialEventId: isEventPage
+                    ? state.uri.queryParameters['eventId']
+                    : null,
                 child: isMainPage ? null : child,
               ),
             );
@@ -167,6 +180,16 @@ GoRouter createRouter(BuildContext context) {
               name: RouterPaths.chat,
               pageBuilder: (context, state) =>
                   const NoTransitionPage<void>(child: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: RouterPaths.events,
+              name: RouterPaths.events,
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                child: EventWebPage(
+                  initialTeamId: state.uri.queryParameters['teamId'],
+                  initialEventId: state.uri.queryParameters['eventId'],
+                ),
+              ),
             ),
             GoRoute(
               path: RouterPaths.tasks,
@@ -343,6 +366,18 @@ GoRouter createRouter(BuildContext context) {
               initialTeamId: state.uri.queryParameters['teamId'],
             ),
           ),
+        ),
+        GoRoute(
+          path: RouterPaths.events,
+          name: RouterPaths.events,
+          pageBuilder: (context, state) {
+            ClockingShiftTabPage.requestedInitialTab = 3;
+            ClockingShiftTabPage.requestedEventInitialTeamId =
+                state.uri.queryParameters['teamId'];
+            ClockingShiftTabPage.requestedEventInitialEventId =
+                state.uri.queryParameters['eventId'];
+            return const NoTransitionPage<void>(child: ClockingShiftTabPage());
+          },
         ),
         GoRoute(
           path: RouterPaths.rolePage,
@@ -578,6 +613,7 @@ abstract class RouterPaths {
   static const shifts = '/shifts';
   static const tasks = '/tasks';
   static const chat = '/chat';
+  static const events = '/events';
   static const createTeam = '/create_team';
   static const updateTeam = '/update_team';
   static const teamDetail = '/team_detail';

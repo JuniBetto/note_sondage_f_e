@@ -1,19 +1,26 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_workflow_metadata_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_priority.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_workflow_metadata_entity.dart';
 
-enum ChatMessageActionType { createSondage, createShift, createTask }
+enum ChatMessageActionType {
+  createSondage,
+  createShift,
+  createTask,
+  createEvent,
+}
 
 extension ChatMessageActionTypeValue on ChatMessageActionType {
   String get wireValue => switch (this) {
     ChatMessageActionType.createSondage => 'create_sondage',
     ChatMessageActionType.createShift => 'create_shift',
     ChatMessageActionType.createTask => 'create_task',
+    ChatMessageActionType.createEvent => 'create_event',
   };
 }
 
@@ -73,6 +80,7 @@ class ChatMessageActionDraftResult {
     this.sondagePrefill,
     this.shiftDraft,
     this.taskDraft,
+    this.eventDraft,
   });
 
   final String messageActionType;
@@ -83,6 +91,7 @@ class ChatMessageActionDraftResult {
   final SondageCreatePrefill? sondagePrefill;
   final ShiftAssignmentCreateRequestEntity? shiftDraft;
   final TaskCreateRequestEntity? taskDraft;
+  final ChatMessageActionEventDraft? eventDraft;
 
   bool get isUnsupported =>
       resolutionStatus.trim().toLowerCase() == 'unsupported';
@@ -145,6 +154,13 @@ class ChatMessageActionDraftResult {
           : null,
       taskDraft: actionType == 'create_task'
           ? _parseTaskDraft(
+              draft,
+              source: source,
+              workflowMetadata: workflowMetadata,
+            )
+          : null,
+      eventDraft: actionType == 'create_event'
+          ? _parseEventDraft(
               draft,
               source: source,
               workflowMetadata: workflowMetadata,
@@ -265,6 +281,53 @@ class ChatMessageActionDraftResult {
     );
   }
 
+  static ChatMessageActionEventDraft? _parseEventDraft(
+    Map<String, dynamic> json, {
+    required Map<String, dynamic> source,
+    required Map<String, dynamic> workflowMetadata,
+  }) {
+    final title = json['title']?.toString().trim() ?? '';
+    final startsAt = DateTime.tryParse(json['startsAt']?.toString() ?? '');
+    if (title.isEmpty || startsAt == null) {
+      return null;
+    }
+    return ChatMessageActionEventDraft(
+      teamId: _trimOrNull(json['teamId']),
+      title: title,
+      description: _trimOrNull(json['description']),
+      startsAt: startsAt,
+      endsAt: DateTime.tryParse(json['endsAt']?.toString() ?? ''),
+      allDay: json['allDay'] == true,
+      location: _trimOrNull(json['location']),
+      participantUserIds:
+          (json['participantUserIds'] as List<dynamic>?)
+              ?.map((item) => item.toString().trim())
+              .where((item) => item.isNotEmpty)
+              .toList(growable: false) ??
+          const <String>[],
+      participantDisplayNames:
+          (json['participantDisplayNames'] as List<dynamic>?)
+              ?.map((item) => item.toString().trim())
+              .where((item) => item.isNotEmpty)
+              .toList(growable: false) ??
+          const <String>[],
+      workflowMetadata: EventWorkflowMetadataEntity(
+        contextType: _trimOrNull(workflowMetadata['contextType']),
+        contextId: _trimOrNull(workflowMetadata['contextId']),
+        sourceType:
+            _trimOrNull(source['sourceType']) ??
+            _trimOrNull(workflowMetadata['sourceType']),
+        sourceId:
+            _trimOrNull(workflowMetadata['sourceId']) ??
+            _trimOrNull(source['conversationId']),
+        sourceMessageId:
+            _trimOrNull(workflowMetadata['sourceMessageId']) ??
+            _trimOrNull(source['sourceMessageId']) ??
+            _trimOrNull(source['messageId']),
+      ),
+    );
+  }
+
   static TimeOfDay? _parseTimeOfDay(Object? raw) {
     final value = raw?.toString().trim() ?? '';
     if (value.isEmpty) {
@@ -320,4 +383,30 @@ class ChatMessageActionFallback {
       message: json['message']?.toString().trim() ?? '',
     );
   }
+}
+
+class ChatMessageActionEventDraft {
+  const ChatMessageActionEventDraft({
+    required this.title,
+    required this.startsAt,
+    required this.workflowMetadata,
+    this.teamId,
+    this.description,
+    this.endsAt,
+    this.allDay = false,
+    this.location,
+    this.participantUserIds = const <String>[],
+    this.participantDisplayNames = const <String>[],
+  });
+
+  final String? teamId;
+  final String title;
+  final String? description;
+  final DateTime startsAt;
+  final DateTime? endsAt;
+  final bool allDay;
+  final String? location;
+  final List<String> participantUserIds;
+  final List<String> participantDisplayNames;
+  final EventWorkflowMetadataEntity workflowMetadata;
 }

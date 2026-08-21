@@ -420,6 +420,7 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
       clockingReminderTime: team.clockingReminderTime,
       clockingMissingAlertTime: team.clockingMissingAlertTime,
       clockingOpenAlertTime: team.clockingOpenAlertTime,
+      workflowAiEnabled: team.workflowAiEnabled,
       memberCount: memberCount,
       createdAt: team.createdAt,
     );

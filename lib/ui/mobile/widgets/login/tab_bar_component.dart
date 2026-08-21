@@ -11,11 +11,13 @@ class TabBarComponent extends StatelessWidget {
     this.childTab1,
     this.childTab2,
     this.childTab3,
+    this.childTab4,
   });
   final TabController tabController;
   final Widget? childTab1;
   final Widget? childTab2;
   final Widget? childTab3;
+  final Widget? childTab4;
   final void Function(void Function()) setToUpdate;
 
   @override
@@ -45,6 +47,7 @@ class TabBarComponent extends StatelessWidget {
                 ),
               ),
           if (childTab3 != null) childTab3!,
+          if (childTab4 != null) childTab4!,
         ];
         final selectedIndex = animationValue.round().clamp(0, tabs.length - 1);
 

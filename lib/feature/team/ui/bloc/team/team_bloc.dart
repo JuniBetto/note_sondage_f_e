@@ -213,6 +213,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       clockingReminderTime: event.team.clockingReminderTime,
       clockingMissingAlertTime: event.team.clockingMissingAlertTime,
       clockingOpenAlertTime: event.team.clockingOpenAlertTime,
+      workflowAiEnabled: event.team.workflowAiEnabled,
       memberCount: event.team.memberCount,
       createdAt: event.team.createdAt,
     );
@@ -614,6 +615,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       clockingReminderTime: update.clockingReminderTime,
       clockingMissingAlertTime: update.clockingMissingAlertTime,
       clockingOpenAlertTime: update.clockingOpenAlertTime,
+      workflowAiEnabled: update.workflowAiEnabled,
       memberCount: previous?.memberCount ?? 0,
       createdAt: previous?.createdAt ?? update.createdAt,
     );
