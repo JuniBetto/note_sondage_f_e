@@ -29,6 +29,7 @@ import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
 import 'package:note_sondage/feature/clocking/domain/repositories/clocking_repository.dart';
 import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/clocking/infrastructure/data_source/data_source_local/clocking_local_data_source.dart';
@@ -199,6 +200,12 @@ void _registerDataSources() {
   );
   getIt.registerLazySingleton<ChatMessageSuggestionService>(
     () => ChatMessageSuggestionService(),
+  );
+  getIt.registerLazySingleton<ChatMessageTaskWorkflowController>(
+    () => ChatMessageTaskWorkflowController(
+      draftService: getIt<ChatMessageActionDraftService>(),
+      taskUseCase: getIt<TaskUseCase>(),
+    ),
   );
   getIt.registerLazySingleton<TaskRemoteDataSource>(
     () => TaskRemoteDataSource(),
