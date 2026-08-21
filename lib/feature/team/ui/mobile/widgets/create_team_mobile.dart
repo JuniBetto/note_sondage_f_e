@@ -75,6 +75,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   String _clockingReminderTime = '09:00';
   String _clockingMissingAlertTime = '10:00';
   String _clockingOpenAlertTime = '18:00';
+  bool _workflowAiEnabled = false;
   TeamSectionPermissions _teamPermissions = TeamSectionPermissions.readOnly();
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
   bool _tutorialScheduled = false;
@@ -83,6 +84,11 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
   bool get _supportsCreateTutorial => !_isEditMode && !widget.readOnly;
   bool get _showClockingSection =>
       !_isEditMode || _teamPermissions.canManageClockingSettings;
+  bool get _isWorkflowAiOnlyManagerUpdate =>
+      _isEditMode &&
+      !widget.readOnly &&
+      !_teamPermissions.isOwner &&
+      _teamPermissions.canAccessRoleManager;
 
   @override
   void initState() {
@@ -186,6 +192,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             _clockingMissingAlertTime =
                 team.clockingMissingAlertTime ?? '10:00';
             _clockingOpenAlertTime = team.clockingOpenAlertTime ?? '18:00';
+            _workflowAiEnabled = team.workflowAiEnabled;
             _isLoading = false;
           });
         } else if (teamState is TeamUpdated && _isEditMode) {
@@ -220,6 +227,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
             _clockingReminderTime = '09:00';
             _clockingMissingAlertTime = '10:00';
             _clockingOpenAlertTime = '18:00';
+            _workflowAiEnabled = false;
           });
           if (widget.onTeamCreated != null) {
             widget.onTeamCreated!();
@@ -366,6 +374,51 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                         ),
                         const SizedBox(height: 24),
                       ],
+
+                      _buildSectionHeader(
+                        context,
+                        _isItalian(context) ? 'AI workflow' : 'Workflow AI',
+                        Icons.auto_awesome_rounded,
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: colorScheme.homeSecondary,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.borderColor!.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        child: SwitchListTile.adaptive(
+                          value: _workflowAiEnabled,
+                          onChanged:
+                              widget.readOnly ||
+                                  (_isEditMode &&
+                                      !_teamPermissions.canAccessRoleManager)
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    _workflowAiEnabled = value;
+                                  });
+                                },
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            _isItalian(context)
+                                ? 'Abilita AI per questo team'
+                                : 'Enable AI for this team',
+                          ),
+                          subtitle: Text(
+                            _isItalian(context)
+                                ? 'Richiede anche l attivazione globale nelle impostazioni generali dell app.'
+                                : 'Also requires the global AI setting to be enabled in the app settings.',
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
 
                       // ── Members Section ──
                       _buildSectionHeader(
@@ -520,10 +573,14 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
-        clearClockingRequiredEndDate:
-            _initialClockingRequiredEndDate != null &&
-            _clockingRequiredEndDate == null,
-        listMember: [],
+        workflowAiEnabled: _workflowAiEnabled,
+        workflowAiEnabledChanged: true,
+        workflowAiOnlyUpdate: _isWorkflowAiOnlyManagerUpdate,
+        clearClockingRequiredEndDate: _isWorkflowAiOnlyManagerUpdate
+            ? false
+            : _initialClockingRequiredEndDate != null &&
+                  _clockingRequiredEndDate == null,
+        listMember: const [],
       );
       _teamBloc.add(UpdateTeamEvent(team));
     } else {
@@ -541,6 +598,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         clockingReminderTime: _clockingReminderTime,
         clockingMissingAlertTime: _clockingMissingAlertTime,
         clockingOpenAlertTime: _clockingOpenAlertTime,
+        workflowAiEnabled: _workflowAiEnabled,
       );
       _teamBloc.add(CreateTeamEvent(team, userId: currentUserId));
     }

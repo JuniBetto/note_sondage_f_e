@@ -4227,6 +4227,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not tied to any team — visible and manageable only by you'**
   String get taskPersonalToggleSubtitle;
+
+  /// No description provided for @eventPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get eventPageTitle;
+
+  /// No description provided for @eventNavShowcaseDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage non-shift calendar events here, such as meetings or shared team moments.'**
+  String get eventNavShowcaseDescription;
+
+  /// No description provided for @eventHeaderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar events'**
+  String get eventHeaderTitle;
+
+  /// No description provided for @eventHeaderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointments, meetings, and shared team moments, kept separate from tasks and shifts.'**
+  String get eventHeaderSubtitle;
+
+  /// No description provided for @eventMyEventsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Events'**
+  String get eventMyEventsTitle;
+
+  /// No description provided for @eventMyEventsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Events you created or were added to, across every team'**
+  String get eventMyEventsSubtitle;
+
+  /// No description provided for @eventActiveFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get eventActiveFilterLabel;
+
+  /// No description provided for @eventArchivedFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get eventArchivedFilterLabel;
+
+  /// No description provided for @eventNewEventAction.
+  ///
+  /// In en, this message translates to:
+  /// **'New event'**
+  String get eventNewEventAction;
+
+  /// No description provided for @eventEditEventTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit event'**
+  String get eventEditEventTitle;
+
+  /// No description provided for @eventTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get eventTitleLabel;
+
+  /// No description provided for @eventDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get eventDescriptionLabel;
+
+  /// No description provided for @eventAllDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get eventAllDayLabel;
+
+  /// No description provided for @eventStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start: {value}'**
+  String eventStartLabel(Object value);
+
+  /// No description provided for @eventEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End: {value}'**
+  String eventEndLabel(Object value);
+
+  /// No description provided for @eventEndNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'End not set'**
+  String get eventEndNotSet;
+
+  /// No description provided for @eventRemoveEndAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove end'**
+  String get eventRemoveEndAction;
+
+  /// No description provided for @eventLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get eventLocationLabel;
+
+  /// No description provided for @eventParticipantsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants'**
+  String get eventParticipantsLabel;
+
+  /// No description provided for @eventParticipantsEmptyTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'This team has no other members to add yet.'**
+  String get eventParticipantsEmptyTeam;
+
+  /// No description provided for @eventTitleRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Title is required.'**
+  String get eventTitleRequiredError;
+
+  /// No description provided for @eventNoParticipants.
+  ///
+  /// In en, this message translates to:
+  /// **'No participants indicated'**
+  String get eventNoParticipants;
+
+  /// No description provided for @eventChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get eventChipLabel;
+
+  /// No description provided for @eventScheduleAllDaySuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'all day'**
+  String get eventScheduleAllDaySuffix;
+
+  /// No description provided for @eventSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source: {source}'**
+  String eventSourceLabel(Object source);
+
+  /// No description provided for @eventEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get eventEditAction;
+
+  /// No description provided for @eventRestoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get eventRestoreAction;
+
+  /// No description provided for @eventArchiveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get eventArchiveAction;
+
+  /// No description provided for @eventDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get eventDeleteAction;
+
+  /// No description provided for @eventEmptyArchivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived events'**
+  String get eventEmptyArchivedTitle;
+
+  /// No description provided for @eventEmptyActiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No active events'**
+  String get eventEmptyActiveTitle;
+
+  /// No description provided for @eventEmptyArchivedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived events will appear here.'**
+  String get eventEmptyArchivedSubtitle;
+
+  /// No description provided for @eventEmptyActiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this section for meetings, appointments, or shared moments not tied to shifts.'**
+  String get eventEmptyActiveSubtitle;
+
+  /// No description provided for @eventMyEventsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No events yet'**
+  String get eventMyEventsEmptyTitle;
+
+  /// No description provided for @eventMyEventsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Events you create or get added to as a participant, in any team, will show up here.'**
+  String get eventMyEventsEmptySubtitle;
+
+  /// No description provided for @eventCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event created.'**
+  String get eventCreateSuccess;
+
+  /// No description provided for @eventUpdateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event updated.'**
+  String get eventUpdateSuccess;
+
+  /// No description provided for @eventSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to save the event: {error}'**
+  String eventSaveError(Object error);
+
+  /// No description provided for @eventRestoreSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event restored.'**
+  String get eventRestoreSuccess;
+
+  /// No description provided for @eventArchiveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event archived.'**
+  String get eventArchiveSuccess;
+
+  /// No description provided for @eventOperationFailedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed: {error}'**
+  String eventOperationFailedError(Object error);
+
+  /// No description provided for @eventDeletePermanentlySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event permanently deleted.'**
+  String get eventDeletePermanentlySuccess;
+
+  /// No description provided for @eventDeleteError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to delete the event: {error}'**
+  String eventDeleteError(Object error);
+
+  /// No description provided for @eventLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load events: {error}'**
+  String eventLoadError(Object error);
+
+  /// No description provided for @eventLoadArchivedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load archived events: {error}'**
+  String eventLoadArchivedError(Object error);
+
+  /// No description provided for @eventViewModeCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Card view'**
+  String get eventViewModeCard;
+
+  /// No description provided for @eventViewModeCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar view'**
+  String get eventViewModeCalendar;
+
+  /// No description provided for @eventCalendarDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get eventCalendarDayLabel;
+
+  /// No description provided for @eventCalendarWeekLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get eventCalendarWeekLabel;
+
+  /// No description provided for @eventCalendarMonthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get eventCalendarMonthLabel;
+
+  /// No description provided for @eventCalendarMoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String eventCalendarMoreLabel(Object count);
+
+  /// No description provided for @eventPersonalEventNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a personal event — only you can see it.'**
+  String get eventPersonalEventNotice;
 }
 
 class _AppLocalizationsDelegate

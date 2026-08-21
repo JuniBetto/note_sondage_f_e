@@ -36,10 +36,12 @@ Future<void> showShiftReplacementCandidatesDialog({
   required BuildContext context,
   required ShiftReplacementCandidatesEntity result,
   VoidCallback? onOpenAvailability,
+  ValueChanged<ShiftReplacementCandidateEntity>? onOfferReplacement,
 }) async {
   final sheet = _ShiftReplacementCandidatesSheet(
     result: result,
     onOpenAvailability: onOpenAvailability,
+    onOfferReplacement: onOfferReplacement,
   );
   final isWideLayout = MediaQuery.of(context).size.width >= 720;
 
@@ -68,10 +70,12 @@ class _ShiftReplacementCandidatesSheet extends StatelessWidget {
   const _ShiftReplacementCandidatesSheet({
     required this.result,
     this.onOpenAvailability,
+    this.onOfferReplacement,
   });
 
   final ShiftReplacementCandidatesEntity result;
   final VoidCallback? onOpenAvailability;
+  final ValueChanged<ShiftReplacementCandidateEntity>? onOfferReplacement;
 
   @override
   Widget build(BuildContext context) {
@@ -281,6 +285,12 @@ class _ShiftReplacementCandidatesSheet extends StatelessWidget {
                                   borderColor: borderColor,
                                   compatibleColor: successColor,
                                   blockedColor: warningColor,
+                                  onOfferReplacement: onOfferReplacement == null
+                                      ? null
+                                      : () {
+                                          Navigator.of(context).pop();
+                                          onOfferReplacement?.call(candidate);
+                                        },
                                 );
                               },
                             ),
@@ -380,12 +390,14 @@ class _CandidateCard extends StatelessWidget {
     required this.borderColor,
     required this.compatibleColor,
     required this.blockedColor,
+    this.onOfferReplacement,
   });
 
   final ShiftReplacementCandidateEntity candidate;
   final Color borderColor;
   final Color compatibleColor;
   final Color blockedColor;
+  final VoidCallback? onOfferReplacement;
 
   @override
   Widget build(BuildContext context) {
@@ -452,36 +464,78 @@ class _CandidateCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  candidate.compatible
-                      ? _localizedReplacementText(
-                          context,
-                          it: 'Compatibile',
-                          en: 'Compatible',
-                          fr: 'Compatible',
-                          es: 'Compatible',
-                        )
-                      : _localizedReplacementText(
-                          context,
-                          it: 'Bloccato',
-                          en: 'Blocked',
-                          fr: 'Bloque',
-                          es: 'Bloqueado',
-                        ),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: badgeColor,
-                    fontWeight: FontWeight.w700,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      candidate.compatible
+                          ? _localizedReplacementText(
+                              context,
+                              it: 'Compatibile',
+                              en: 'Compatible',
+                              fr: 'Compatible',
+                              es: 'Compatible',
+                            )
+                          : _localizedReplacementText(
+                              context,
+                              it: 'Bloccato',
+                              en: 'Blocked',
+                              fr: 'Bloque',
+                              es: 'Bloqueado',
+                            ),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: badgeColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
+                  if (candidate.compatible && onOfferReplacement != null) ...[
+                    const SizedBox(height: 6),
+                    InkWell(
+                      onTap: onOfferReplacement,
+                      borderRadius: BorderRadius.circular(999),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.swap_horiz_rounded,
+                              size: 14,
+                              color: compatibleColor,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _localizedReplacementText(
+                                context,
+                                it: 'Sostituisci',
+                                en: 'Replace',
+                                fr: 'Remplacer',
+                                es: 'Reemplazar',
+                              ),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: compatibleColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),

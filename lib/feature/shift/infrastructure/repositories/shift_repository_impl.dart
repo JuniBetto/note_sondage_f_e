@@ -267,6 +267,17 @@ class ShiftRepositoryImpl implements ShiftRepository {
   }
 
   @override
+  Future<void> offerReplacement(
+    String assignmentId, {
+    required String candidateFirebaseUid,
+  }) {
+    return _remote.offerReplacement(
+      assignmentId,
+      candidateFirebaseUid: candidateFirebaseUid,
+    );
+  }
+
+  @override
   Future<SondageEntity> createAvailabilitySondageDraft(
     String assignmentId,
     ShiftAvailabilitySondageDraftRequestEntity request,

@@ -1618,6 +1618,8 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
         context: context,
         result: response,
         onOpenAvailability: () => _openAvailabilitySondageDraft(response),
+        onOfferReplacement: (candidate) =>
+            _offerReplacement(response.assignmentId, candidate),
       );
     } catch (error) {
       if (!mounted) {
@@ -1640,6 +1642,46 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
           _loadingReplacementCandidates = false;
         });
       }
+    }
+  }
+
+  Future<void> _offerReplacement(
+    String assignmentId,
+    ShiftReplacementCandidateEntity candidate,
+  ) async {
+    try {
+      await _shiftRepository.offerReplacement(
+        assignmentId,
+        candidateFirebaseUid: candidate.userId,
+      );
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showSuccess(
+        context,
+        _localizedShiftDayText(
+          context,
+          it: 'Richiesta inviata a ${candidate.displayName}.',
+          en: 'Request sent to ${candidate.displayName}.',
+          fr: 'Demande envoyee a ${candidate.displayName}.',
+          es: 'Solicitud enviada a ${candidate.displayName}.',
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: _localizedShiftDayText(
+          context,
+          it: 'Non siamo riusciti a inviare la richiesta di sostituzione.',
+          en: 'We could not send the replacement request.',
+          fr: 'Nous n\'avons pas pu envoyer la demande de remplacement.',
+          es: 'No hemos podido enviar la solicitud de reemplazo.',
+        ),
+      );
     }
   }
 

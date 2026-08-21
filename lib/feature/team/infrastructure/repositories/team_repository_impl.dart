@@ -110,6 +110,7 @@ class TeamRepositoryImpl implements TeamRepository {
                     clockingReminderTime: updated.clockingReminderTime,
                     clockingMissingAlertTime: updated.clockingMissingAlertTime,
                     clockingOpenAlertTime: updated.clockingOpenAlertTime,
+                    workflowAiEnabled: updated.workflowAiEnabled,
                     planningWorkerTypes: updated.planningWorkerTypes,
                     createdAt: updated.createdAt,
                   )
@@ -161,6 +162,7 @@ class TeamRepositoryImpl implements TeamRepository {
                     clockingReminderTime: team.clockingReminderTime,
                     clockingMissingAlertTime: team.clockingMissingAlertTime,
                     clockingOpenAlertTime: team.clockingOpenAlertTime,
+                    workflowAiEnabled: team.workflowAiEnabled,
                     memberCount: team.memberCount,
                     planningWorkerTypes: updated,
                     createdAt: team.createdAt,

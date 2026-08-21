@@ -231,7 +231,7 @@ class TaskDetailPanel extends StatelessWidget {
           TaskStatusDropdownField(
             label: l10n.taskUpdateStatusLabel,
             status: task.status,
-            options: allowedTaskStatuses(task),
+            options: allowedTaskStatuses(task, canManageTask: canEdit),
             onChanged: (nextStatus) {
               if (nextStatus == task.status) {
                 return;

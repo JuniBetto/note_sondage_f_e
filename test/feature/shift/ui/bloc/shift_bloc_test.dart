@@ -271,6 +271,12 @@ class _FakeShiftRepository implements ShiftRepository {
   ) => throw UnimplementedError();
 
   @override
+  Future<void> offerReplacement(
+    String assignmentId, {
+    required String candidateFirebaseUid,
+  }) => throw UnimplementedError();
+
+  @override
   Future<List<ShiftAssignmentEntity>> getAssignments({
     required DateTime from,
     required DateTime to,

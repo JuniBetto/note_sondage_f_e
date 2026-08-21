@@ -3,13 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
+import 'package:note_sondage/feature/event/ui/mobile/event_mobile_widget.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/mobile/shift_mobile_widget.dart';
 import 'package:note_sondage/feature/task/ui/mobile/task_mobile_widget.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 
-/// Tab page that hosts "Clock In/Out" and "My Shifts" as two tabs,
+/// Tab page that hosts Clocking, Shifts, Tasks and Events,
 /// using the same pill-style tab bar as Login/Register and Teams.
 class ClockingShiftTabPage extends StatefulWidget {
   const ClockingShiftTabPage({super.key});
@@ -18,6 +19,8 @@ class ClockingShiftTabPage extends StatefulWidget {
   /// It is reset to 0 after the first build so subsequent navigations start
   /// on the default Clocking tab.
   static int requestedInitialTab = 0;
+  static String? requestedEventInitialTeamId;
+  static String? requestedEventInitialEventId;
 
   @override
   State<ClockingShiftTabPage> createState() => _ClockingShiftTabPageState();
@@ -26,14 +29,24 @@ class ClockingShiftTabPage extends StatefulWidget {
 class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late final String? _eventInitialTeamId;
+  late final String? _eventInitialEventId;
 
   @override
   void initState() {
     super.initState();
     final initialTab = ClockingShiftTabPage.requestedInitialTab;
+    _eventInitialTeamId = _normalizeOptionalId(
+      ClockingShiftTabPage.requestedEventInitialTeamId,
+    );
+    _eventInitialEventId = _normalizeOptionalId(
+      ClockingShiftTabPage.requestedEventInitialEventId,
+    );
     ClockingShiftTabPage.requestedInitialTab = 0; // reset for next navigation
+    ClockingShiftTabPage.requestedEventInitialTeamId = null;
+    ClockingShiftTabPage.requestedEventInitialEventId = null;
     _tabController = TabController(
-      length: 3,
+      length: 4,
       vsync: this,
       initialIndex: initialTab,
     );
@@ -42,6 +55,14 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
 
   void _onTabChanged() {
     if (_tabController.indexIsChanging) setState(() {});
+  }
+
+  String? _normalizeOptionalId(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
   }
 
   @override
@@ -63,7 +84,9 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
             ? 'mobile-clocking'
             : _tabController.index == 1
             ? 'mobile-shifts'
-            : 'mobile-tasks',
+            : _tabController.index == 2
+            ? 'mobile-tasks'
+            : 'mobile-events',
       ),
     );
 
@@ -79,6 +102,7 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
               childTab1: Text(loc.clockingInOut),
               childTab2: Text(loc.myShifts),
               childTab3: const Text('Task'),
+              childTab4: Text(loc.eventPageTitle),
             ),
 
             const SizedBox(height: 8),
@@ -99,6 +123,10 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
                     child: const ShiftMobileWidget(),
                   ),
                   const TaskMobileWidget(),
+                  EventMobileWidget(
+                    initialTeamId: _eventInitialTeamId,
+                    initialEventId: _eventInitialEventId,
+                  ),
                 ],
               ),
             ),

@@ -229,6 +229,42 @@ class NotificationCenterItem extends Equatable {
 
   bool get hasImpactedShiftSummaries => impactedShiftSummaries.isNotEmpty;
 
+  int get impactedTaskCount {
+    return int.tryParse(metadata['impactedTaskCount']?.trim() ?? '') ?? 0;
+  }
+
+  List<String> get impactedTaskSummaries {
+    final raw = metadata['impactedTaskSummaries']?.trim();
+    if (raw == null || raw.isEmpty) {
+      return const <String>[];
+    }
+    return raw
+        .split('||')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  bool get hasImpactedTaskSummaries => impactedTaskSummaries.isNotEmpty;
+
+  int get impactedEventCount {
+    return int.tryParse(metadata['impactedEventCount']?.trim() ?? '') ?? 0;
+  }
+
+  List<String> get impactedEventSummaries {
+    final raw = metadata['impactedEventSummaries']?.trim();
+    if (raw == null || raw.isEmpty) {
+      return const <String>[];
+    }
+    return raw
+        .split('||')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  bool get hasImpactedEventSummaries => impactedEventSummaries.isNotEmpty;
+
   bool get isApprovedAbsenceDecision =>
       eventType == 'CLOCKING_VACATION_REQUEST_APPROVED' ||
       eventType == 'CLOCKING_PERMISSION_REQUEST_APPROVED' ||
@@ -287,6 +323,15 @@ class NotificationCenterItem extends Equatable {
       eventType == 'SHIFT_CHANGE_REQUESTED' ||
       eventType == 'SHIFT_SWAP_REQUESTED' ||
       eventType == 'SHIFT_SWAP_MANAGER_REVIEW_REQUESTED';
+
+  bool get isReplacementOffer => requestType == 'shift_replacement';
+
+  String? get replacementOfferId => metadata['offerId']?.trim();
+
+  bool supportsReplacementOfferDecision() {
+    return isReplacementOffer &&
+        (replacementOfferId?.isNotEmpty ?? false);
+  }
 
   bool supportsClockingDecision() {
     if (!isPendingClockingManagerDecision || requestType == null) {

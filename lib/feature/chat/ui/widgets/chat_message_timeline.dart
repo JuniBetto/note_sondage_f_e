@@ -19,6 +19,7 @@ class ChatMessageTimeline extends StatelessWidget {
     this.onMessageLongPressed,
     this.onReplyRequested,
     this.onDeleteRequested,
+    this.messageFooterBuilder,
   });
 
   final List<ChatMessageEntity> messages;
@@ -33,6 +34,8 @@ class ChatMessageTimeline extends StatelessWidget {
   final ValueChanged<ChatMessageEntity>? onMessageLongPressed;
   final ValueChanged<ChatMessageEntity>? onReplyRequested;
   final ValueChanged<ChatMessageEntity>? onDeleteRequested;
+  final Widget? Function(BuildContext context, ChatMessageEntity message)?
+  messageFooterBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -89,25 +92,32 @@ class ChatMessageTimeline extends StatelessWidget {
         }
       }
 
+      final footer = messageFooterBuilder?.call(context, message);
       widgets.add(
-        _SwipeMessageWrapper(
-          key: ValueKey(message.id),
-          message: message,
-          onReplyRequested: onReplyRequested,
-          onDeleteRequested: onDeleteRequested,
-          child: ChatMessageBubble(
-            message: message,
-            accentColor: accentColor,
-            onPressed: onMessagePressed == null
-                ? null
-                : () => onMessagePressed!(message),
-            onLongPressed: onMessageLongPressed == null
-                ? null
-                : () => onMessageLongPressed!(message),
-            onSenderPressed: onSenderPressed == null
-                ? null
-                : () => onSenderPressed!(message),
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SwipeMessageWrapper(
+              key: ValueKey(message.id),
+              message: message,
+              onReplyRequested: onReplyRequested,
+              onDeleteRequested: onDeleteRequested,
+              child: ChatMessageBubble(
+                message: message,
+                accentColor: accentColor,
+                onPressed: onMessagePressed == null
+                    ? null
+                    : () => onMessagePressed!(message),
+                onLongPressed: onMessageLongPressed == null
+                    ? null
+                    : () => onMessageLongPressed!(message),
+                onSenderPressed: onSenderPressed == null
+                    ? null
+                    : () => onSenderPressed!(message),
+              ),
+            ),
+            if (footer != null) ...[const SizedBox(height: 6), footer],
+          ],
         ),
       );
       previousTimestamp = message.createdAt;

@@ -13,6 +13,7 @@ import 'package:note_sondage/ui/web/settings/settings_language_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_notification_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_privacy_web.dart';
 import 'package:note_sondage/ui/web/settings/settings_profile_web.dart';
+import 'package:note_sondage/ui/web/settings/settings_ai_web.dart';
 import 'package:note_sondage/ui/web/widgets/full_sidebar.dart';
 import 'package:note_sondage/ui/web/widgets/home/left_home_section.dart';
 import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
@@ -144,6 +145,15 @@ class _SettingsWebState extends State<SettingsWeb> {
                         SidebarItem(
                           isSettings: true,
                           key: const ValueKey(2),
+                          icon: Icons.auto_awesome_rounded,
+                          label: 'AI',
+                          index: 6,
+                          isSmallScreen: isExpanded,
+                          lastIndexes: lastIndexes,
+                        ),
+                        SidebarItem(
+                          isSettings: true,
+                          key: const ValueKey(6),
                           icon: Icons.contacts,
                           label: localizations.contactUs,
                           index: 2,
@@ -187,6 +197,7 @@ class _SettingsWebState extends State<SettingsWeb> {
                           1 => const SettingsNotificationWeb(),
                           2 => const SettingsContactUsWeb(),
                           3 => const SettingsPrivacyWeb(),
+                          6 => const SettingsAiWeb(),
                           int() => const SettingsLanguageWeb(),
                         },
                       ),
@@ -234,7 +245,8 @@ class _SettingsWebState extends State<SettingsWeb> {
         tabIndex == 1 ||
         tabIndex == 2 ||
         tabIndex == 3 ||
-        tabIndex == 5;
+        tabIndex == 5 ||
+        tabIndex == 6;
   }
 
   String _profileTitle(BuildContext context) {

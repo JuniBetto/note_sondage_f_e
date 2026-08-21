@@ -12,6 +12,7 @@ import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/core/utils/file_download_bridge.dart';
+import 'package:note_sondage/feature/ai/preferences/workflow_ai_preferences_cubit.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
@@ -24,6 +25,12 @@ import 'package:note_sondage/feature/chat/ui/web/chat_web_layout.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_draft_attachment.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_models.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
+import 'package:note_sondage/feature/event/domain/use_case/event_use_case.dart';
+import 'package:note_sondage/feature/event/ui/widgets/event_editor_dialog.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
@@ -96,23 +103,32 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   final ChatUseCase _chatUseCase = GetIt.instance<ChatUseCase>();
   final ChatMessageActionDraftService _messageActionDraftService =
       GetIt.instance<ChatMessageActionDraftService>();
+  final ChatMessageSuggestionService _messageSuggestionService =
+      GetIt.instance<ChatMessageSuggestionService>();
+  final EventUseCase _eventUseCase = GetIt.instance<EventUseCase>();
   final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
   final TaskUseCase _taskUseCase = GetIt.instance<TaskUseCase>();
   final RealtimeNotificationService _realtimeService =
       GetIt.instance<RealtimeNotificationService>();
+  final WorkflowAiPreferencesCubit _workflowAiPreferencesCubit =
+      GetIt.instance<WorkflowAiPreferencesCubit>();
   final ImagePicker _imagePicker = ImagePicker();
   final FileDownloadBridge _fileDownloadBridge = createFileDownloadBridge();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
+  StreamSubscription<WorkflowAiPreferencesState>? _workflowAiSubscription;
 
   List<TeamEntity> _teams = const <TeamEntity>[];
   List<ChatMessageEntity> _messages = const <ChatMessageEntity>[];
   final Map<String, List<TeamMemberEntity>> _teamMembersByTeamId = {};
   final Map<String, List<RoleEntity>> _rolesByTeamId = {};
+  final Map<String, DetectWorkflowSuggestionResult>
+  _workflowSuggestionsByMessageId = {};
   final Set<String> _loadingTeamMemberIds = <String>{};
   final Set<String> _loadingTeamRoleIds = <String>{};
+  final Set<String> _loadingWorkflowSuggestionMessageIds = <String>{};
   ChatConversationEntity? _conversation;
   String? _selectedTeamId;
   String? _selectedMemberUserId;
@@ -125,6 +141,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   int _pendingSendCount = 0;
   bool _markingConversationRead = false;
   bool _pendingForceLatestFocus = false;
+  bool _workflowAiAppEnabled = false;
   ChatDraftAttachment? _selectedAttachment;
   ChatMessageEntity? _replyTarget;
   bool _didNotifyContentReady = false;
@@ -133,6 +150,14 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid.trim();
   String get _currentEmail =>
       GetIt.instance<AuthBloc>().state.user.email.trim().toLowerCase();
+  String get _actorDisplayName {
+    final user = GetIt.instance<AuthBloc>().state.user;
+    final candidate = user.displayName?.trim();
+    if (candidate != null && candidate.isNotEmpty) {
+      return candidate;
+    }
+    return user.email.trim();
+  }
 
   TeamEntity? get _selectedTeam {
     for (final team in _teams) {
@@ -210,16 +235,33 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   void initState() {
     super.initState();
     _pendingForceLatestFocus = widget.focusLatestOnOpen;
+    _workflowAiAppEnabled = _workflowAiPreferencesCubit.state.appAiEnabled;
     _scrollController.addListener(_handleScroll);
     _realtimeSubscription = _realtimeService.stream.listen(
       _handleRealtimeNotification,
     );
+    _workflowAiSubscription = _workflowAiPreferencesCubit.stream.listen((
+      state,
+    ) {
+      if (!mounted || _workflowAiAppEnabled == state.appAiEnabled) {
+        return;
+      }
+      setState(() {
+        _workflowAiAppEnabled = state.appAiEnabled;
+        if (!_workflowAiAppEnabled) {
+          _workflowSuggestionsByMessageId.clear();
+          _loadingWorkflowSuggestionMessageIds.clear();
+        }
+      });
+    });
+    unawaited(_workflowAiPreferencesCubit.loadPreferences());
     unawaited(_loadTeams());
   }
 
   @override
   void dispose() {
     _realtimeSubscription?.cancel();
+    _workflowAiSubscription?.cancel();
     _scrollController.removeListener(_handleScroll);
     _messageController.dispose();
     _scrollController.dispose();
@@ -491,6 +533,13 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       return false;
     }
     return _canManageTeam(selectedTeam);
+  }
+
+  bool _isWorkflowAiEnabledForSelectedTeam() {
+    final selectedTeam = _selectedTeam;
+    return _workflowAiAppEnabled &&
+        selectedTeam != null &&
+        selectedTeam.workflowAiEnabled;
   }
 
   TeamMemberEntity? _findCurrentTeamMember(String teamId) {
@@ -1185,6 +1234,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       case 'create_task':
         await _handleCreateTaskFromMessage(message);
         return;
+      case 'create_event':
+        await _handleCreateEventFromMessage(message);
+        return;
+      case 'detect_workflow_suggestions':
+        await _handleDetectWorkflowSuggestionsFromMessage(message);
+        return;
       case 'open_attachment':
         if (message.isImageAttachment) {
           await _showImageAttachmentViewer(message);
@@ -1208,6 +1263,8 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         final theme = Theme.of(sheetContext);
         final locale = Localizations.localeOf(sheetContext).languageCode;
         final canUseWorkflowActions = _canUseWorkflowMessageActions();
+        final canUseWorkflowAi =
+            canUseWorkflowActions && _isWorkflowAiEnabledForSelectedTeam();
         final items = <_ChatMessageActionItem>[
           if (!message.deleted)
             _ChatMessageActionItem(
@@ -1219,6 +1276,18 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
                 en: 'Reply',
                 fr: 'Repondre',
                 es: 'Responder',
+              ),
+            ),
+          if (!message.deleted && canUseWorkflowAi)
+            _ChatMessageActionItem(
+              value: 'detect_workflow_suggestions',
+              icon: Icons.auto_awesome_outlined,
+              label: _chatActionText(
+                locale,
+                it: 'Suggerimenti AI',
+                en: 'AI suggestions',
+                fr: 'Suggestions IA',
+                es: 'Sugerencias IA',
               ),
             ),
           if (!message.deleted && canUseWorkflowActions)
@@ -1255,6 +1324,18 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
                 en: 'Create task',
                 fr: 'Creer une tache',
                 es: 'Crear tarea',
+              ),
+            ),
+          if (!message.deleted && canUseWorkflowActions)
+            _ChatMessageActionItem(
+              value: 'create_event',
+              icon: Icons.event_note_outlined,
+              label: _chatActionText(
+                locale,
+                it: 'Crea evento',
+                en: 'Create event',
+                fr: 'Creer un evenement',
+                es: 'Crear evento',
               ),
             ),
           if (message.hasAttachment)
@@ -1378,6 +1459,17 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       return;
     }
     if (!_ensureWorkflowMessageActionPermission()) {
+      return;
+    }
+    if (!_isWorkflowAiEnabledForSelectedTeam()) {
+      AppSnackBar.showWarning(
+        context,
+        _chatActionText(
+          Localizations.localeOf(context).languageCode,
+          it: 'Attiva prima AI globale e Workflow AI del team per usare questa funzione.',
+          en: 'Enable both global AI and team Workflow AI before using this feature.',
+        ),
+      );
       return;
     }
 
@@ -1633,7 +1725,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         onCreate: _taskUseCase.createTask,
         onUpdate: (task, request) => _taskUseCase.updateTask(task.id, request),
         actorUserId: _currentUid,
-        actorDisplayName: _conversationDisplayName ?? _currentEmail,
+        actorDisplayName: _actorDisplayName,
         initialDraft: taskDraft.copyWith(teamId: teamId),
         lockTeamSelection: true,
       );
@@ -1663,6 +1755,335 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _handleCreateEventFromMessage(ChatMessageEntity message) async {
+    final conversation = _conversation;
+    final teamId = _selectedTeamId?.trim();
+    if (conversation == null || teamId == null || teamId.isEmpty) {
+      return;
+    }
+    if (!_ensureWorkflowMessageActionPermission()) {
+      return;
+    }
+
+    try {
+      await _ensureTeamAccessContextLoaded(teamId);
+
+      final result = await _runWithLoadingOverlay(
+        () => _messageActionDraftService.buildDraft(
+          actionType: ChatMessageActionType.createEvent,
+          conversationId: conversation.id,
+          messageId: message.id,
+          teamId: teamId,
+          locale: Localizations.localeOf(context).languageCode,
+          selectedMessageText: message.contentText,
+          memberUserId: _selectedMemberUserId,
+          memberDisplayName: _conversationDisplayName,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+
+      final eventDraft = result.eventDraft;
+      if (result.isUnsupported || eventDraft == null) {
+        AppSnackBar.showWarning(
+          context,
+          '${result.primaryMessage ?? _chatActionText(Localizations.localeOf(context).languageCode, it: 'Non siamo riusciti a costruire una bozza evento da questo messaggio.', en: 'We could not build an event draft from this message.')}\n\n${_chatActionText(Localizations.localeOf(context).languageCode, it: 'Suggerimento: usa un messaggio con data e orario, ad esempio "riunione 25/08 alle 14:30".', en: 'Tip: use a message with date and time, for example "meeting on 2026-08-25 at 14:30".')}',
+        );
+        return;
+      }
+
+      if (result.isPartial) {
+        AppSnackBar.showWarning(
+          context,
+          result.primaryMessage ??
+              _chatActionText(
+                Localizations.localeOf(context).languageCode,
+                it: 'La bozza evento e parziale: conferma orario, location e partecipanti prima di creare.',
+                en: 'The event draft is partial: confirm time, location, and participants before creating.',
+              ),
+        );
+      }
+
+      final effectiveTeamId = eventDraft.teamId?.trim().isNotEmpty == true
+          ? eventDraft.teamId!.trim()
+          : teamId;
+      final editorResult = await showEventEditorDialog(
+        context,
+        initialTeamId: effectiveTeamId,
+        initialEvent: _buildEventDraftPreviewEntity(
+          eventDraft,
+          fallbackTeamId: effectiveTeamId,
+        ),
+        teamMembers: _buildWorkflowEventTeamMembers(effectiveTeamId),
+      );
+      if (!mounted || editorResult == null) {
+        return;
+      }
+
+      await _runWithLoadingOverlay(
+        () => _eventUseCase.createEvent(
+          EventCreateRequestEntity(
+            teamId: editorResult.teamId,
+            title: editorResult.title,
+            description: editorResult.description,
+            startsAt: editorResult.startsAt,
+            endsAt: editorResult.endsAt,
+            allDay: editorResult.allDay,
+            location: editorResult.location,
+            participantUserIds: editorResult.participantUserIds,
+            participantDisplayNames: editorResult.participantDisplayNames,
+            createdByUserId: _currentUid,
+            createdByDisplayName: _actorDisplayName,
+            workflowMetadata: eventDraft.workflowMetadata,
+          ),
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showSuccess(
+        context,
+        _chatActionText(
+          Localizations.localeOf(context).languageCode,
+          it: 'Evento creato con successo.',
+          en: 'Event created successfully.',
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showError(
+        context,
+        AppErrorMessageResolver.resolve(
+          error,
+          fallback: _chatActionText(
+            Localizations.localeOf(context).languageCode,
+            it: 'Errore durante la preparazione o creazione dell evento.',
+            en: 'Failed to prepare or create the event.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleDetectWorkflowSuggestionsFromMessage(
+    ChatMessageEntity message,
+  ) async {
+    final conversation = _conversation;
+    final teamId = _selectedTeamId?.trim();
+    if (conversation == null || teamId == null || teamId.isEmpty) {
+      return;
+    }
+    if (!_ensureWorkflowMessageActionPermission()) {
+      return;
+    }
+
+    try {
+      final result = await _runWithLoadingOverlay(
+        () => _messageSuggestionService.detectWorkflowSuggestionFromMessage(
+          conversationId: conversation.id,
+          messageId: message.id,
+          teamId: teamId,
+          locale: Localizations.localeOf(context).languageCode,
+          allowedActionTypes: const <ChatMessageActionType>[
+            ChatMessageActionType.createTask,
+            ChatMessageActionType.createEvent,
+            ChatMessageActionType.createSondage,
+            ChatMessageActionType.createShift,
+          ],
+          selectedMessageText: message.contentText,
+          memberUserId: _selectedMemberUserId,
+          memberDisplayName: _conversationDisplayName,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+
+      if (result.isUnsupported || result.suggestions.isEmpty) {
+        final fallbackMessage = result.fallback?.message.trim();
+        final warningMessage = result.warnings
+            .map((item) => item.message.trim())
+            .firstWhere((item) => item.isNotEmpty, orElse: () => '');
+        AppSnackBar.showWarning(
+          context,
+          fallbackMessage != null && fallbackMessage.isNotEmpty
+              ? fallbackMessage
+              : warningMessage.isNotEmpty
+              ? warningMessage
+              : _chatActionText(
+                  Localizations.localeOf(context).languageCode,
+                  it: 'Nessun suggerimento AI affidabile trovato per questo messaggio.',
+                  en: 'No reliable AI suggestion was found for this message.',
+                ),
+        );
+        return;
+      }
+
+      final selectedSuggestion = await _showWorkflowSuggestionSelectionSheet(
+        result,
+      );
+      if (!mounted || selectedSuggestion == null) {
+        return;
+      }
+      await _handleWorkflowSuggestionSelection(message, selectedSuggestion);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppSnackBar.showError(
+        context,
+        AppErrorMessageResolver.resolve(
+          error,
+          fallback: _chatActionText(
+            Localizations.localeOf(context).languageCode,
+            it: 'Errore durante il rilevamento dei suggerimenti AI.',
+            en: 'Failed to detect AI suggestions.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<WorkflowSuggestionItem?> _showWorkflowSuggestionSelectionSheet(
+    DetectWorkflowSuggestionResult result,
+  ) {
+    return showModalBottomSheet<WorkflowSuggestionItem>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final locale = Localizations.localeOf(sheetContext).languageCode;
+
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.24,
+                      ),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _chatActionText(
+                          locale,
+                          it: 'Suggerimenti AI',
+                          en: 'AI suggestions',
+                          fr: 'Suggestions IA',
+                          es: 'Sugerencias IA',
+                        ),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final suggestion in result.suggestions)
+                    ListTile(
+                      leading: Icon(
+                        _iconForWorkflowActionType(suggestion.actionType),
+                        color: theme.colorScheme.primary,
+                      ),
+                      title: Text(
+                        suggestion.title.isNotEmpty
+                            ? suggestion.title
+                            : _labelForWorkflowActionType(
+                                locale,
+                                suggestion.actionType,
+                              ),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: Text(
+                        suggestion.reason.isNotEmpty
+                            ? suggestion.reason
+                            : _chatActionText(
+                                locale,
+                                it: 'Conferma per aprire la bozza suggerita.',
+                                en: 'Confirm to open the suggested draft.',
+                              ),
+                      ),
+                      trailing: suggestion.confidence.trim().isEmpty
+                          ? null
+                          : Text(
+                              suggestion.confidence.trim(),
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                      onTap: () => Navigator.of(sheetContext).pop(suggestion),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleWorkflowSuggestionSelection(
+    ChatMessageEntity message,
+    WorkflowSuggestionItem suggestion,
+  ) async {
+    switch (suggestion.actionType) {
+      case ChatMessageActionType.createSondage:
+        await _handleCreateSondageFromMessage(message);
+        return;
+      case ChatMessageActionType.createShift:
+        await _handleCreateShiftFromMessage(message);
+        return;
+      case ChatMessageActionType.createTask:
+        await _handleCreateTaskFromMessage(message);
+        return;
+      case ChatMessageActionType.createEvent:
+        await _handleCreateEventFromMessage(message);
+        return;
+      case null:
+        AppSnackBar.showWarning(
+          context,
+          _chatActionText(
+            Localizations.localeOf(context).languageCode,
+            it: 'Il suggerimento selezionato non e ancora supportato.',
+            en: 'The selected suggestion is not supported yet.',
+          ),
+        );
+        return;
     }
   }
 
@@ -1704,6 +2125,79 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         .where((team) => preferredTeamId == null || team.id == preferredTeamId)
         .map((team) => TeamEntityForView(team: team, members: const []))
         .toList(growable: false);
+  }
+
+  List<TeamMemberforView> _buildWorkflowEventTeamMembers(String teamId) {
+    final members = _teamMembersByTeamId[teamId] ?? const <TeamMemberEntity>[];
+    return members
+        .map((member) => TeamMemberforView(teamMember: member))
+        .toList(growable: false);
+  }
+
+  EventEntity _buildEventDraftPreviewEntity(
+    ChatMessageActionEventDraft draft, {
+    required String fallbackTeamId,
+  }) {
+    final now = DateTime.now();
+    final normalizedTeamId = draft.teamId?.trim();
+    return EventEntity(
+      id: const Uuid().v4(),
+      teamId: normalizedTeamId != null && normalizedTeamId.isNotEmpty
+          ? normalizedTeamId
+          : fallbackTeamId,
+      title: draft.title,
+      description: draft.description,
+      startsAt: draft.startsAt,
+      endsAt: draft.endsAt,
+      allDay: draft.allDay,
+      location: draft.location,
+      participantUserIds: draft.participantUserIds,
+      participantDisplayNames: draft.participantDisplayNames,
+      createdByUserId: _currentUid,
+      createdByDisplayName: _actorDisplayName,
+      workflowMetadata: draft.workflowMetadata,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  IconData _iconForWorkflowActionType(ChatMessageActionType? actionType) {
+    return switch (actionType) {
+      ChatMessageActionType.createSondage => Icons.poll_outlined,
+      ChatMessageActionType.createShift => Icons.event_available_outlined,
+      ChatMessageActionType.createTask => Icons.task_alt_outlined,
+      ChatMessageActionType.createEvent => Icons.event_note_outlined,
+      null => Icons.auto_awesome_outlined,
+    };
+  }
+
+  String _labelForWorkflowActionType(
+    String locale,
+    ChatMessageActionType? actionType,
+  ) {
+    return switch (actionType) {
+      ChatMessageActionType.createSondage => _chatActionText(
+        locale,
+        it: 'Crea sondaggio',
+        en: 'Create survey',
+      ),
+      ChatMessageActionType.createShift => _chatActionText(
+        locale,
+        it: 'Precompila turno',
+        en: 'Prefill shift',
+      ),
+      ChatMessageActionType.createTask => _chatActionText(
+        locale,
+        it: 'Crea task',
+        en: 'Create task',
+      ),
+      ChatMessageActionType.createEvent => _chatActionText(
+        locale,
+        it: 'Crea evento',
+        en: 'Create event',
+      ),
+      null => _chatActionText(locale, it: 'Suggerimento', en: 'Suggestion'),
+    };
   }
 
   List<ShiftAssignmentCreateRequestEntity> _buildShiftRequestsFromDialog({
@@ -1853,16 +2347,27 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
     final eventType = notification.eventType.toUpperCase();
+    final selectedTeamId = _selectedTeamId;
+    final teamId = notification.metadata['teamId']?.trim();
+    if (selectedTeamId == null) {
+      return;
+    }
+
+    if (eventType.startsWith('TEAM_')) {
+      if (teamId != null && teamId.isNotEmpty && teamId == selectedTeamId) {
+        unawaited(_loadTeams());
+      }
+      return;
+    }
+
     if (!eventType.startsWith('CHAT_MESSAGE_')) {
       return;
     }
 
-    final selectedTeamId = _selectedTeamId;
     final conversation = _conversation;
-    final teamId = notification.metadata['teamId']?.trim();
     final conversationId = notification.metadata['conversationId']?.trim();
 
-    if (selectedTeamId == null || conversation == null) {
+    if (conversation == null) {
       return;
     }
     if (teamId != null && teamId.isNotEmpty && teamId != selectedTeamId) {
@@ -1932,6 +2437,207 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         curve: Curves.easeOut,
       );
     });
+  }
+
+  bool _canShowWorkflowSuggestionFooter(ChatMessageEntity message) {
+    if (!_canUseWorkflowMessageActions() ||
+        !_isWorkflowAiEnabledForSelectedTeam() ||
+        message.deleted) {
+      return false;
+    }
+    final content = message.contentText.trim();
+    return content.isNotEmpty;
+  }
+
+  Future<void> _prefetchWorkflowSuggestionsForMessage(
+    ChatMessageEntity message,
+  ) async {
+    final conversation = _conversation;
+    final teamId = _selectedTeamId?.trim();
+    if (conversation == null || teamId == null || teamId.isEmpty) {
+      return;
+    }
+    if (!_isWorkflowAiEnabledForSelectedTeam()) {
+      return;
+    }
+    if (_loadingWorkflowSuggestionMessageIds.contains(message.id) ||
+        _workflowSuggestionsByMessageId.containsKey(message.id)) {
+      return;
+    }
+
+    setState(() {
+      _loadingWorkflowSuggestionMessageIds.add(message.id);
+    });
+
+    try {
+      final result = await _messageSuggestionService
+          .detectWorkflowSuggestionFromMessage(
+            conversationId: conversation.id,
+            messageId: message.id,
+            teamId: teamId,
+            locale: Localizations.localeOf(context).languageCode,
+            allowedActionTypes: const <ChatMessageActionType>[
+              ChatMessageActionType.createTask,
+              ChatMessageActionType.createEvent,
+              ChatMessageActionType.createSondage,
+              ChatMessageActionType.createShift,
+            ],
+            selectedMessageText: message.contentText,
+            memberUserId: _selectedMemberUserId,
+            memberDisplayName: _conversationDisplayName,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _workflowSuggestionsByMessageId[message.id] = result;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _workflowSuggestionsByMessageId[message.id] =
+            const DetectWorkflowSuggestionResult(
+              resolutionStatus: 'unsupported',
+              suggestions: <WorkflowSuggestionItem>[],
+              warnings: <ChatMessageActionWarning>[],
+            );
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingWorkflowSuggestionMessageIds.remove(message.id);
+        });
+      }
+    }
+  }
+
+  Widget? _buildWorkflowSuggestionFooter(
+    BuildContext context,
+    ChatMessageEntity message,
+  ) {
+    if (!_canShowWorkflowSuggestionFooter(message)) {
+      return null;
+    }
+
+    final theme = Theme.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
+    final suggestionResult = _workflowSuggestionsByMessageId[message.id];
+    final isLoading = _loadingWorkflowSuggestionMessageIds.contains(message.id);
+    final alignment = message.mine
+        ? Alignment.centerRight
+        : Alignment.centerLeft;
+    final suggestions = suggestionResult?.suggestions ?? const [];
+
+    return Align(
+      alignment: alignment,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: widget.layout == ChatScreenLayout.mobile ? 320 : 420,
+        ),
+        child: Wrap(
+          alignment: message.mine ? WrapAlignment.end : WrapAlignment.start,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (isLoading)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _chatActionText(
+                        locale,
+                        it: 'Analisi AI...',
+                        en: 'AI analysis...',
+                      ),
+                      style: theme.textTheme.labelMedium,
+                    ),
+                  ],
+                ),
+              )
+            else if (suggestions.isNotEmpty) ...[
+              for (final suggestion in suggestions)
+                ActionChip(
+                  avatar: Icon(
+                    _iconForWorkflowActionType(suggestion.actionType),
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  label: Text(
+                    suggestion.title.isNotEmpty
+                        ? suggestion.title
+                        : _labelForWorkflowActionType(
+                            locale,
+                            suggestion.actionType,
+                          ),
+                  ),
+                  onPressed: () async {
+                    await _handleWorkflowSuggestionSelection(
+                      message,
+                      suggestion,
+                    );
+                  },
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(
+                  _chatActionText(locale, it: 'Aggiorna AI', en: 'Refresh AI'),
+                ),
+                onPressed: () {
+                  setState(() {
+                    _workflowSuggestionsByMessageId.remove(message.id);
+                  });
+                  unawaited(_prefetchWorkflowSuggestionsForMessage(message));
+                },
+              ),
+            ] else if (suggestionResult != null) ...[
+              ActionChip(
+                avatar: const Icon(Icons.auto_awesome_outlined, size: 18),
+                label: Text(
+                  _chatActionText(
+                    locale,
+                    it: 'Nessun suggerimento AI',
+                    en: 'No AI suggestion',
+                  ),
+                ),
+                onPressed: () => unawaited(
+                  _handleDetectWorkflowSuggestionsFromMessage(message),
+                ),
+              ),
+            ] else
+              ActionChip(
+                avatar: const Icon(Icons.auto_awesome_outlined, size: 18),
+                label: Text(
+                  _chatActionText(
+                    locale,
+                    it: 'Suggerimenti AI',
+                    en: 'AI suggestions',
+                  ),
+                ),
+                onPressed: () {
+                  unawaited(_prefetchWorkflowSuggestionsForMessage(message));
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<Uint8List> _loadAttachmentBytes(String path) async {
@@ -2146,6 +2852,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         onMessageLongPressed: _handleMessageLongPressed,
         onReplyRequested: _handleReplyRequested,
         onDeleteRequested: _handleDeleteRequested,
+        messageFooterBuilder: _buildWorkflowSuggestionFooter,
         timelineShowcaseKey: widget.timelineShowcaseKey,
         timelineShowcaseTitle: widget.timelineShowcaseTitle,
         timelineShowcaseDescription: widget.timelineShowcaseDescription,
@@ -2184,6 +2891,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       onMessageLongPressed: _handleMessageLongPressed,
       onReplyRequested: _handleReplyRequested,
       onDeleteRequested: _handleDeleteRequested,
+      messageFooterBuilder: _buildWorkflowSuggestionFooter,
       timelineShowcaseKey: widget.timelineShowcaseKey,
       timelineShowcaseTitle: widget.timelineShowcaseTitle,
       timelineShowcaseDescription: widget.timelineShowcaseDescription,

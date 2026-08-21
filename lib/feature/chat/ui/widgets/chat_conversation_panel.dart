@@ -39,6 +39,7 @@ class ChatConversationPanel extends StatelessWidget {
     this.composerShowcaseKey,
     this.composerShowcaseTitle,
     this.composerShowcaseDescription,
+    this.messageFooterBuilder,
   });
 
   final List<ChatMessageEntity> messages;
@@ -70,6 +71,8 @@ class ChatConversationPanel extends StatelessWidget {
   final GlobalKey? composerShowcaseKey;
   final String? composerShowcaseTitle;
   final String? composerShowcaseDescription;
+  final Widget? Function(BuildContext context, ChatMessageEntity message)?
+  messageFooterBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +117,7 @@ class ChatConversationPanel extends StatelessWidget {
                       onMessageLongPressed: onMessageLongPressed,
                       onReplyRequested: onReplyRequested,
                       onDeleteRequested: onDeleteRequested,
+                      messageFooterBuilder: messageFooterBuilder,
                     ),
             ),
           ),

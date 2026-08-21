@@ -2318,4 +2318,185 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get taskPersonalToggleSubtitle =>
       'Not tied to any team — visible and manageable only by you';
+
+  @override
+  String get eventPageTitle => 'Events';
+
+  @override
+  String get eventNavShowcaseDescription =>
+      'Manage non-shift calendar events here, such as meetings or shared team moments.';
+
+  @override
+  String get eventHeaderTitle => 'Calendar events';
+
+  @override
+  String get eventHeaderSubtitle =>
+      'Appointments, meetings, and shared team moments, kept separate from tasks and shifts.';
+
+  @override
+  String get eventMyEventsTitle => 'My Events';
+
+  @override
+  String get eventMyEventsSubtitle =>
+      'Events you created or were added to, across every team';
+
+  @override
+  String get eventActiveFilterLabel => 'Active';
+
+  @override
+  String get eventArchivedFilterLabel => 'Archived';
+
+  @override
+  String get eventNewEventAction => 'New event';
+
+  @override
+  String get eventEditEventTitle => 'Edit event';
+
+  @override
+  String get eventTitleLabel => 'Title';
+
+  @override
+  String get eventDescriptionLabel => 'Description';
+
+  @override
+  String get eventAllDayLabel => 'All day';
+
+  @override
+  String eventStartLabel(Object value) {
+    return 'Start: $value';
+  }
+
+  @override
+  String eventEndLabel(Object value) {
+    return 'End: $value';
+  }
+
+  @override
+  String get eventEndNotSet => 'End not set';
+
+  @override
+  String get eventRemoveEndAction => 'Remove end';
+
+  @override
+  String get eventLocationLabel => 'Location';
+
+  @override
+  String get eventParticipantsLabel => 'Participants';
+
+  @override
+  String get eventParticipantsEmptyTeam =>
+      'This team has no other members to add yet.';
+
+  @override
+  String get eventTitleRequiredError => 'Title is required.';
+
+  @override
+  String get eventNoParticipants => 'No participants indicated';
+
+  @override
+  String get eventChipLabel => 'Event';
+
+  @override
+  String get eventScheduleAllDaySuffix => 'all day';
+
+  @override
+  String eventSourceLabel(Object source) {
+    return 'Source: $source';
+  }
+
+  @override
+  String get eventEditAction => 'Edit';
+
+  @override
+  String get eventRestoreAction => 'Restore';
+
+  @override
+  String get eventArchiveAction => 'Archive';
+
+  @override
+  String get eventDeleteAction => 'Delete';
+
+  @override
+  String get eventEmptyArchivedTitle => 'No archived events';
+
+  @override
+  String get eventEmptyActiveTitle => 'No active events';
+
+  @override
+  String get eventEmptyArchivedSubtitle => 'Archived events will appear here.';
+
+  @override
+  String get eventEmptyActiveSubtitle =>
+      'Use this section for meetings, appointments, or shared moments not tied to shifts.';
+
+  @override
+  String get eventMyEventsEmptyTitle => 'No events yet';
+
+  @override
+  String get eventMyEventsEmptySubtitle =>
+      'Events you create or get added to as a participant, in any team, will show up here.';
+
+  @override
+  String get eventCreateSuccess => 'Event created.';
+
+  @override
+  String get eventUpdateSuccess => 'Event updated.';
+
+  @override
+  String eventSaveError(Object error) {
+    return 'Unable to save the event: $error';
+  }
+
+  @override
+  String get eventRestoreSuccess => 'Event restored.';
+
+  @override
+  String get eventArchiveSuccess => 'Event archived.';
+
+  @override
+  String eventOperationFailedError(Object error) {
+    return 'Operation failed: $error';
+  }
+
+  @override
+  String get eventDeletePermanentlySuccess => 'Event permanently deleted.';
+
+  @override
+  String eventDeleteError(Object error) {
+    return 'Unable to delete the event: $error';
+  }
+
+  @override
+  String eventLoadError(Object error) {
+    return 'Unable to load events: $error';
+  }
+
+  @override
+  String eventLoadArchivedError(Object error) {
+    return 'Unable to load archived events: $error';
+  }
+
+  @override
+  String get eventViewModeCard => 'Card view';
+
+  @override
+  String get eventViewModeCalendar => 'Calendar view';
+
+  @override
+  String get eventCalendarDayLabel => 'Day';
+
+  @override
+  String get eventCalendarWeekLabel => 'Week';
+
+  @override
+  String get eventCalendarMonthLabel => 'Month';
+
+  @override
+  String eventCalendarMoreLabel(Object count) {
+    return '+$count more';
+  }
+
+  @override
+  String get eventPersonalEventNotice =>
+      'This is a personal event — only you can see it.';
 }
