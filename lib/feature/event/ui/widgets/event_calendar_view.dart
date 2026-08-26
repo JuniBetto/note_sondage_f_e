@@ -1,26 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/custom_date_range_picker.dart';
 
 const _kCalendarStartHour = 7;
 const _kCalendarEndHour = 20;
 const _kPixelsPerHour = 64.0;
 const _kCalendarCompactBreakpoint = 760.0;
 
-enum _CalendarViewMode { day, week, month }
+enum _CalendarViewMode { day, week, month, range }
 
 DateTime mondayOfWeek(DateTime date) {
   final normalized = DateTime(date.year, date.month, date.day);
   return normalized.subtract(Duration(days: normalized.weekday - 1));
 }
 
-/// Time-of-day calendar with an explicit Day / Week / Month switcher —
-/// Day and Week render the hour-grid agenda (single day or full week);
-/// Month renders a classic month grid with per-day event chips. Ported from
-/// [TaskCalendarView]'s styling/interaction pattern, trimmed to the three
-/// granularities Event needs (no custom-range mode).
+/// Time-of-day calendar with an explicit Day / Week / Month switcher plus a
+/// custom-period picker — Day and Week render the hour-grid agenda (single
+/// day, full week, or an arbitrary picked period); Month renders a classic
+/// month grid with per-day event chips. Ported from [TaskCalendarView]'s
+/// styling/interaction pattern.
 class EventCalendarView extends StatefulWidget {
   const EventCalendarView({
     super.key,
@@ -50,9 +53,19 @@ class _EventCalendarViewState extends State<EventCalendarView> {
   // follows screen width (day on narrow, week on wide), but from then on
   // it's fully under the user's control via the Day/Week/Month selector.
   _CalendarViewMode? _viewMode;
+  DateTimeRange? _customRange;
 
   List<DateTime> get _days =>
       List.generate(7, (i) => widget.weekStart.add(Duration(days: i)));
+
+  List<DateTime> get _rangeDays {
+    final range = _customRange;
+    if (range == null) {
+      return const <DateTime>[];
+    }
+    final dayCount = range.end.difference(range.start).inDays + 1;
+    return List.generate(dayCount, (i) => range.start.add(Duration(days: i)));
+  }
 
   @override
   void initState() {
@@ -60,6 +73,49 @@ class _EventCalendarViewState extends State<EventCalendarView> {
     _focusedDay = _clampToWeek(DateTime.now());
     final now = DateTime.now();
     _focusedMonth = DateTime(now.year, now.month, 1);
+  }
+
+  Future<void> _pickCustomRange(BuildContext context) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final initial =
+        _customRange ??
+        DateTimeRange(start: today, end: today.add(const Duration(days: 4)));
+    final picked = await showCustomDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 3),
+      initialDateRange: initial,
+    );
+    if (picked == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _customRange = DateTimeRange(
+        start: DateTime(
+          picked.start.year,
+          picked.start.month,
+          picked.start.day,
+        ),
+        end: DateTime(picked.end.year, picked.end.month, picked.end.day),
+      );
+      _viewMode = _CalendarViewMode.range;
+    });
+  }
+
+  void _shiftCustomRange(int directionInRangeLengths) {
+    final range = _customRange;
+    if (range == null) {
+      return;
+    }
+    final length = range.end.difference(range.start).inDays + 1;
+    final offset = Duration(days: directionInRangeLengths * length);
+    setState(() {
+      _customRange = DateTimeRange(
+        start: range.start.add(offset),
+        end: range.end.add(offset),
+      );
+    });
   }
 
   void _jumpToDay(DateTime day) {
@@ -128,12 +184,26 @@ class _EventCalendarViewState extends State<EventCalendarView> {
         final viewMode =
             _viewMode ??
             (isCompact ? _CalendarViewMode.day : _CalendarViewMode.week);
+        final rangeDays = _rangeDays;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _CalendarViewModeSelector(
-              selected: viewMode,
-              onChanged: (mode) => setState(() => _viewMode = mode),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _CalendarViewModeSelector(
+                  selected: viewMode == _CalendarViewMode.range
+                      ? null
+                      : viewMode,
+                  onChanged: (mode) => setState(() => _viewMode = mode),
+                ),
+                _CalendarCustomRangePill(
+                  range: _customRange,
+                  onTap: () => unawaited(_pickCustomRange(context)),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             if (viewMode == _CalendarViewMode.month)
@@ -159,6 +229,13 @@ class _EventCalendarViewState extends State<EventCalendarView> {
                     _focusedMonth = DateTime(today.year, today.month, 1);
                   });
                 },
+              )
+            else if (viewMode == _CalendarViewMode.range && _customRange != null)
+              _CalendarRangeNavHeader(
+                range: _customRange!,
+                onPrevRange: () => _shiftCustomRange(-1),
+                onNextRange: () => _shiftCustomRange(1),
+                onPickRange: () => unawaited(_pickCustomRange(context)),
               )
             else
               _CalendarNavHeader(
@@ -198,8 +275,23 @@ class _EventCalendarViewState extends State<EventCalendarView> {
                   onDaySelected: _jumpToDay,
                 ),
               )
+            else if (viewMode == _CalendarViewMode.range && rangeDays.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.eventCalendarPickPeriodHint,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              )
             else if (!_hasAnyBlockIn(
-              viewMode == _CalendarViewMode.day ? [_focusedDay] : days,
+              viewMode == _CalendarViewMode.range
+                  ? rangeDays
+                  : (viewMode == _CalendarViewMode.day ? [_focusedDay] : days),
             ))
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
@@ -235,6 +327,16 @@ class _EventCalendarViewState extends State<EventCalendarView> {
                           onEventTap: widget.onEventTap,
                           showDayHeaders: false,
                         )
+                      : viewMode == _CalendarViewMode.range
+                      ? _HorizontalScrollIfNarrow(
+                          minWidth: rangeDays.length * 96.0,
+                          child: _CalendarGrid(
+                            days: rangeDays,
+                            blocksForDay: _blocksForDay,
+                            onEventTap: widget.onEventTap,
+                            showDayHeaders: true,
+                          ),
+                        )
                       : _CalendarGrid(
                           days: days,
                           blocksForDay: _blocksForDay,
@@ -250,13 +352,40 @@ class _EventCalendarViewState extends State<EventCalendarView> {
   }
 }
 
+/// Lets [child] size itself normally on wide layouts; on narrow ones it
+/// enforces [minWidth] and scrolls horizontally instead of squeezing an
+/// arbitrary-length custom range unreadably.
+class _HorizontalScrollIfNarrow extends StatelessWidget {
+  const _HorizontalScrollIfNarrow({required this.minWidth, required this.child});
+
+  final double minWidth;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= minWidth) {
+          return child;
+        }
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(width: minWidth, child: child),
+        );
+      },
+    );
+  }
+}
+
 class _CalendarViewModeSelector extends StatelessWidget {
   const _CalendarViewModeSelector({
     required this.selected,
     required this.onChanged,
   });
 
-  final _CalendarViewMode selected;
+  /// `null` when a custom range (outside Day/Week/Month) is active — none of
+  /// the three segments is highlighted in that case.
+  final _CalendarViewMode? selected;
   final ValueChanged<_CalendarViewMode> onChanged;
 
   @override
@@ -268,6 +397,7 @@ class _CalendarViewModeSelector extends StatelessWidget {
         visualDensity: VisualDensity.compact,
         textStyle: theme.textTheme.labelSmall,
       ),
+      emptySelectionAllowed: true,
       segments: [
         ButtonSegment(
           value: _CalendarViewMode.day,
@@ -282,12 +412,127 @@ class _CalendarViewModeSelector extends StatelessWidget {
           label: Text(l10n.eventCalendarMonthLabel),
         ),
       ],
-      selected: {selected},
+      selected: selected == null ? const {} : {selected!},
       onSelectionChanged: (next) {
+        // With emptySelectionAllowed (needed to show none of the three
+        // segments highlighted while a custom range is active), tapping the
+        // already-selected segment toggles it off instead of a no-op — just
+        // ignore that rather than reading .first off an empty set.
         if (next.isNotEmpty) {
           onChanged(next.first);
         }
       },
+    );
+  }
+}
+
+String _formatRangeLabel(DateTimeRange range, String locale) {
+  final sameMonth =
+      range.start.month == range.end.month &&
+      range.start.year == range.end.year;
+  return sameMonth
+      ? '${DateFormat.d(locale).format(range.start)}–${DateFormat.yMMMd(locale).format(range.end)}'
+      : '${DateFormat.MMMd(locale).format(range.start)} – ${DateFormat.yMMMd(locale).format(range.end)}';
+}
+
+/// Rounded outline pill showing the currently picked custom period (or an
+/// invitation to pick one) — tapping it opens [showCustomDateRangePicker].
+class _CalendarCustomRangePill extends StatelessWidget {
+  const _CalendarCustomRangePill({required this.range, required this.onTap});
+
+  final DateTimeRange? range;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final borderColor = colorScheme.borderColor ?? colorScheme.outlineVariant;
+    final label = range == null
+        ? l10n.eventCalendarPeriodLabel
+        : _formatRangeLabel(range!, locale);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_month_rounded,
+              size: 15,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Nav header for a custom picked range: prev/next shift the whole window
+/// by its own length, and the trailing button reopens the date-range picker.
+class _CalendarRangeNavHeader extends StatelessWidget {
+  const _CalendarRangeNavHeader({
+    required this.range,
+    required this.onPrevRange,
+    required this.onNextRange,
+    required this.onPickRange,
+  });
+
+  final DateTimeRange range;
+  final VoidCallback onPrevRange;
+  final VoidCallback onNextRange;
+  final VoidCallback onPickRange;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final label = _formatRangeLabel(range, locale);
+
+    return Row(
+      children: [
+        IconButton(
+          onPressed: onPrevRange,
+          icon: const Icon(Icons.chevron_left_rounded),
+        ),
+        Expanded(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ),
+        IconButton(
+          onPressed: onNextRange,
+          icon: const Icon(Icons.chevron_right_rounded),
+        ),
+        const SizedBox(width: 8),
+        OutlinedButton.icon(
+          onPressed: onPickRange,
+          icon: const Icon(Icons.edit_calendar_rounded, size: 16),
+          label: Text(l10n.eventCalendarEditPeriodLabel),
+        ),
+      ],
     );
   }
 }

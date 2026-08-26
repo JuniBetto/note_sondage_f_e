@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/ui/widgets/app_search_field.dart';
+import 'package:note_sondage/ui/widgets/navigation_bar.dart';
 
 class TeamsDisplay extends StatefulWidget {
   final List<Map<String, dynamic>> teams;
@@ -149,7 +150,14 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
                 },
               ),
               SizedBox(height: sectionSpacing),
-              Expanded(child: teamList),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: mobileNavBarBottomInset(context),
+                  ),
+                  child: teamList,
+                ),
+              ),
             ],
           );
         }
@@ -175,6 +183,7 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
                 ),
                 SizedBox(height: sectionSpacing),
                 teamList,
+                SizedBox(height: mobileNavBarBottomInset(context)),
               ],
             ),
           ),

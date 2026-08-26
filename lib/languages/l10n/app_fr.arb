@@ -62,6 +62,7 @@
     "settings": "Configuraion",
     "attendance": "Presence",
     "clockingInOut": "Pointage",
+    "planningTabLabel": "Planification",
     "explorer": "explorateur",
     "sondage": "Sondage",
     "sondageChat": "Sondage/Chat",
@@ -968,5 +969,8 @@
     "eventCalendarWeekLabel": "Semaine",
     "eventCalendarMonthLabel": "Mois",
     "eventCalendarMoreLabel": "+{count} autres",
-    "eventPersonalEventNotice": "Ceci est un événement personnel — visible uniquement par vous."
+    "eventPersonalEventNotice": "Ceci est un événement personnel — visible uniquement par vous.",
+    "eventCalendarPeriodLabel": "Periode",
+    "eventCalendarPickPeriodHint": "Choisissez une periode a afficher.",
+    "eventCalendarEditPeriodLabel": "Modifier"
 }

@@ -20,6 +20,7 @@ import 'package:note_sondage/feature/team/ui/widgets/team_members_section.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:uuid/uuid.dart';
 
@@ -361,7 +362,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                       color: colorScheme.borderColor!.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: SwitchListTile.adaptive(
+                  child: AppSwitchListTile(
                     value: _workflowAiEnabled,
                     onChanged: _canManageWorkflowAi
                         ? (value) {

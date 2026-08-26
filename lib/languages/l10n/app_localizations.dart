@@ -480,6 +480,12 @@ abstract class AppLocalizations {
   /// **'Clock in/out'**
   String get clockingInOut;
 
+  /// No description provided for @planningTabLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning'**
+  String get planningTabLabel;
+
   /// No description provided for @explorer.
   ///
   /// In en, this message translates to:
@@ -4539,6 +4545,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This is a personal event — only you can see it.'**
   String get eventPersonalEventNotice;
+
+  /// No description provided for @eventCalendarPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get eventCalendarPeriodLabel;
+
+  /// No description provided for @eventCalendarPickPeriodHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a period to view.'**
+  String get eventCalendarPickPeriodHint;
+
+  /// No description provided for @eventCalendarEditPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get eventCalendarEditPeriodLabel;
 }
 
 class _AppLocalizationsDelegate

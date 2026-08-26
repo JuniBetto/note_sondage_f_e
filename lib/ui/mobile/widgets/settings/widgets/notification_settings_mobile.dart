@@ -13,6 +13,7 @@ import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
 class NotificationSettingsMobile extends StatefulWidget {
   const NotificationSettingsMobile({super.key});
@@ -809,11 +810,7 @@ class _NotificationSettingsMobileState
                   ],
                 ),
               ),
-              Switch.adaptive(
-                value: value,
-                onChanged: onChanged,
-                activeTrackColor: colorScheme.selectItem,
-              ),
+              AppToggleSwitch(value: value, onChanged: onChanged),
             ],
           ),
         ),

@@ -24,6 +24,7 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
@@ -392,7 +393,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                             ),
                           ),
                         ),
-                        child: SwitchListTile.adaptive(
+                        child: AppSwitchListTile(
                           value: _workflowAiEnabled,
                           onChanged:
                               widget.readOnly ||

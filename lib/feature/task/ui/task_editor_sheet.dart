@@ -15,6 +15,7 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class TaskAssigneeOption {
@@ -480,7 +481,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                             ignoring: widget.lockTeamSelection,
                             child: Opacity(
                               opacity: widget.lockTeamSelection ? 0.6 : 1,
-                              child: SwitchListTile(
+                              child: AppSwitchListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(l10n.taskPersonalToggleLabel),
                                 subtitle: Text(l10n.taskPersonalToggleSubtitle),

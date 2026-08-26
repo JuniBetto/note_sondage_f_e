@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/team/domain/entities/planning_worker_type_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
 class TeamMemberPlanningConstraintsDialogResult {
   const TeamMemberPlanningConstraintsDialogResult({
@@ -290,15 +291,10 @@ class _TeamMemberPlanningConstraintsDialogState
                   ],
                 ),
                 const SizedBox(height: 10),
-                SwitchListTile(
-                  visualDensity: VisualDensity.compact,
+                AppSwitchListTile(
+                  dense: true,
                   contentPadding: EdgeInsets.zero,
                   value: _overtimeAllowed,
-                  activeThumbColor: theme.colorScheme.surface,
-                  activeTrackColor: theme.colorScheme.selectionColor,
-                  inactiveThumbColor: theme.colorScheme.cursorColor,
-                  inactiveTrackColor: theme.colorScheme.bottomOutline
-                      ?.withValues(alpha: 0.28),
                   title: Text(
                     _strings.overtimeAllowed,
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -309,15 +305,10 @@ class _TeamMemberPlanningConstraintsDialogState
                     setState(() => _overtimeAllowed = value);
                   },
                 ),
-                SwitchListTile(
-                  visualDensity: VisualDensity.compact,
+                AppSwitchListTile(
+                  dense: true,
                   contentPadding: EdgeInsets.zero,
                   value: _avoidConsecutiveShifts,
-                  activeThumbColor: theme.colorScheme.surface,
-                  activeTrackColor: theme.colorScheme.selectionColor,
-                  inactiveThumbColor: theme.colorScheme.cursorColor,
-                  inactiveTrackColor: theme.colorScheme.bottomOutline
-                      ?.withValues(alpha: 0.28),
                   title: Text(
                     _strings.avoidConsecutiveShifts,
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -328,15 +319,10 @@ class _TeamMemberPlanningConstraintsDialogState
                     setState(() => _avoidConsecutiveShifts = value);
                   },
                 ),
-                SwitchListTile(
-                  visualDensity: VisualDensity.compact,
+                AppSwitchListTile(
+                  dense: true,
                   contentPadding: EdgeInsets.zero,
                   value: _requiresCoworkerPresence,
-                  activeThumbColor: theme.colorScheme.surface,
-                  activeTrackColor: theme.colorScheme.selectionColor,
-                  inactiveThumbColor: theme.colorScheme.cursorColor,
-                  inactiveTrackColor: theme.colorScheme.bottomOutline
-                      ?.withValues(alpha: 0.28),
                   title: Text(
                     _strings.requiresCoworkerPresence,
                     style: theme.textTheme.bodyMedium?.copyWith(

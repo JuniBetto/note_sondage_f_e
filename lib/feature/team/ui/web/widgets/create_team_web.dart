@@ -14,6 +14,7 @@ import 'package:note_sondage/feature/team/ui/widgets/team_clocking_requirement_s
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
@@ -329,7 +330,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                         color: colorScheme.borderColor!.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: SwitchListTile.adaptive(
+                    child: AppSwitchListTile(
                       value: _workflowAiEnabled,
                       onChanged: (value) {
                         setState(() => _workflowAiEnabled = value);

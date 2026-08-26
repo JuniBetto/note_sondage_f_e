@@ -79,6 +79,7 @@ class _MainMobileState extends State<MainMobile> {
         },
         child: Scaffold(
           backgroundColor: colorScheme.homePrimary,
+          extendBody: true,
           body: SafeArea(
             bottom: false,
             child: _buildShowcase(
@@ -210,7 +211,7 @@ class _MainMobileState extends State<MainMobile> {
   String _pageTitle(AppLocalizations localizations, int navIndex) {
     return switch (navIndex) {
       1 => localizations.team,
-      3 => localizations.clockingInOut,
+      3 => localizations.planningTabLabel,
       4 => localizations.sondageChat,
       _ => localizations.home,
     };
@@ -225,8 +226,8 @@ class _MainMobileState extends State<MainMobile> {
             : 'Explore teams, open details, and manage collaboration from here.',
       3 =>
         isItalian
-            ? 'Questa area ti aiuta a registrare la presenza e controllare rapidamente lo stato della giornata.'
-            : 'Use this area to track attendance and quickly review your current workday status.',
+            ? 'Qui trovi turni, task, eventi e timbrature: tutto ciò che serve per pianificare e seguire la tua giornata di lavoro.'
+            : 'Here you can find shifts, tasks, events, and clocking: everything you need to plan and track your workday.',
       4 =>
         isItalian
             ? 'Qui trovi i sondaggi disponibili e puoi seguirne l\'avanzamento.'

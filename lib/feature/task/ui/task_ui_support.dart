@@ -38,7 +38,10 @@ Color taskPriorityColor(TaskPriority priority, ColorScheme colorScheme) {
 Color taskStatusColor(TaskStatus status, ColorScheme colorScheme) {
   return switch (status) {
     TaskStatus.open => colorScheme.infoColor,
-    TaskStatus.inProgress => colorScheme.warningColor,
+    // Not the semantic "warning" yellow — "in progress" isn't a warning
+    // state, and yellow doesn't sit well next to the rest of the app's
+    // palette. Uses the app's own purple accent instead.
+    TaskStatus.inProgress => colorScheme.primaryColor ?? colorScheme.primary,
     TaskStatus.blocked => colorScheme.errorColor,
     TaskStatus.done => colorScheme.successColor,
     TaskStatus.canceled => colorScheme.onSurfaceVariant,

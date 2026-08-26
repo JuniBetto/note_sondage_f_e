@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
 class TeamClockingRequirementSection extends StatelessWidget {
   const TeamClockingRequirementSection({
@@ -79,7 +80,7 @@ class TeamClockingRequirementSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Switch.adaptive(
+              AppToggleSwitch(
                 value: clockingRequired,
                 onChanged: readOnly ? null : onClockingRequiredChanged,
               ),

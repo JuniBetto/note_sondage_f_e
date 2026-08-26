@@ -7,7 +7,7 @@ import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_event.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
-import 'package:note_sondage/ui/widgets/theme_config/custom_toggle_switch.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
 import '../../widgets/aspect_ratio.dart' as adaptive;
 
@@ -56,7 +56,7 @@ class WebNavbar extends StatelessWidget implements PreferredSizeWidget {
       key: const ValueKey("web_navbar"),
       leading: adaptive.AspectRatio(
         aspectRatio: 1,
-        borderRadius: BorderRadius.circular( 24),
+        borderRadius: BorderRadius.circular(24),
         child: Image.asset(
           'assets/images/logo.png',
           fit: BoxFit.contain,
@@ -98,7 +98,7 @@ class WebNavbar extends StatelessWidget implements PreferredSizeWidget {
           ), // Aggiunge spazio
           child:
               toggleIcon ??
-              CustomToggleSwitch(
+              AppToggleSwitch(
                 key: ValueKey("theme_toggle"),
                 value: isDarkMode, // <-- Usa lo stato ottenuto dal BLoC
                 onChanged: (value) {

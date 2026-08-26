@@ -19,6 +19,7 @@ import 'package:note_sondage/ui/widgets/logout_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
+import 'package:note_sondage/ui/widgets/navigation_bar.dart';
 
 class SettingsMobile extends StatefulWidget {
   const SettingsMobile({super.key});
@@ -72,6 +73,7 @@ class _SettingsMobileState extends State<SettingsMobile> {
     return SafeArea(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.only(bottom: mobileNavBarBottomInset(context)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -18,6 +18,7 @@ import 'package:note_sondage/ui/widgets/auth/phone_sign_in_dialog.dart';
 import 'package:note_sondage/ui/widgets/auth/request_account_deletion_dialog.dart';
 import 'package:note_sondage/ui/widgets/auth/request_account_reactivation_dialog.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
@@ -330,7 +331,7 @@ class _AuthTabLoginState extends State<AuthTabLogin>
   Widget buildLoginForm(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme= theme.textTheme;
+    final textTheme = theme.textTheme;
     final localization = AppLocalizations.of(context)!;
 
     return SubmitOnEnterScope(
@@ -369,8 +370,12 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                   type: ButtonType.text,
                   onPressed: _submitLogin,
                   isActive: true,
-                  child: Text(localization.login,
-                      style: textTheme.bodyLarge!.copyWith(color: colorScheme.textInvertedColor)),
+                  child: Text(
+                    localization.login,
+                    style: textTheme.bodyLarge!.copyWith(
+                      color: colorScheme.textInvertedColor,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -390,24 +395,30 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                             context.pushNamed(RouterPaths.forgotPassword);
                           },
                           isActive: true,
-                          child: Text(localization.forgotPassword,
-                            style: textTheme.bodyLarge,),
+                          child: Text(
+                            localization.forgotPassword,
+                            style: textTheme.bodyLarge,
+                          ),
                         ),
                         CustomAppButton(
                           type: ButtonType.outlined,
                           backgroundColor: Colors.transparent,
                           onPressed: _openAccountDeletionDialog,
                           isActive: true,
-                          child: Text(localization.deleteAccount,
-                              style: textTheme.bodyLarge),
+                          child: Text(
+                            localization.deleteAccount,
+                            style: textTheme.bodyLarge,
+                          ),
                         ),
                         CustomAppButton(
                           type: ButtonType.outlined,
                           backgroundColor: Colors.transparent,
                           onPressed: _openAccountReactivationDialog,
                           isActive: true,
-                          child: Text(localization.reactivateAccount,
-                              style: textTheme.bodyLarge),
+                          child: Text(
+                            localization.reactivateAccount,
+                            style: textTheme.bodyLarge,
+                          ),
                         ),
                       ],
                     ),
@@ -499,7 +510,7 @@ class _AuthTabLoginState extends State<AuthTabLogin>
               ),
 
               const SizedBox(height: 16),
-              SwitchListTile.adaptive(
+              AppSwitchListTile(
                 value: _enableMfaOnRegistration,
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Enable two-factor authentication'),

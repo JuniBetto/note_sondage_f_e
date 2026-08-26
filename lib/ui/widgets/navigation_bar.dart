@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -5,6 +7,20 @@ import 'package:note_sondage/theme/color_palette.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
+
+/// Height reserved by [NavigationBarWidget]'s own content (the
+/// [BottomNavigationBar] plus its top border), excluding the device's
+/// bottom safe-area inset. Since the Scaffold hosting it now uses
+/// `extendBody: true` (needed for the bar's frosted-glass look), scrollable
+/// screens must add this much bottom padding themselves so their content
+/// isn't left permanently hidden behind the bar.
+const double kMobileNavBarContentHeight = kBottomNavigationBarHeight + 2;
+
+/// Total space [NavigationBarWidget] occupies at the bottom of the screen,
+/// including the device's safe-area inset. Add this as extra bottom padding
+/// to a mobile tab's root scrollable so its last item settles above the bar.
+double mobileNavBarBottomInset(BuildContext context) =>
+    kMobileNavBarContentHeight + MediaQuery.paddingOf(context).bottom;
 
 class NavigationBarWidget extends StatelessWidget {
   const NavigationBarWidget({super.key});
@@ -45,135 +61,142 @@ class NavigationBarWidget extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        //color: colorScheme.bgSurface,
-        border: Border(
-          top: BorderSide(color: colorScheme.borderColor!, width: 2),
-        ),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: BottomNavigationBar(
-          selectedLabelStyle: textTheme.labelMedium!.copyWith(
-            backgroundColor: ColorPalette.primary[6],
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorScheme.bgNavbarSurface?.withValues(alpha: 0.72),
+            border: Border(
+              top: BorderSide(color: colorScheme.borderColor!, width: 2),
+            ),
           ),
-          unselectedLabelStyle: textTheme.labelMedium,
-          currentIndex: position,
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+            ),
+            child: BottomNavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              selectedLabelStyle: textTheme.labelMedium!.copyWith(
+                backgroundColor: ColorPalette.primary[6],
+              ),
+              unselectedLabelStyle: textTheme.labelMedium,
+              currentIndex: position,
 
-          // === BLOC: Sostituisce _onTap(context, ref, index) ===
-          onTap: (index) => _onTap(context, index),
+              // === BLOC: Sostituisce _onTap(context, ref, index) ===
+              onTap: (index) => _onTap(context, index),
 
-          selectedItemColor: ColorPalette.primary[6],
-          unselectedItemColor: colorScheme.onSurfaceVariant,
-          items: [
-            BottomNavigationBarItem(
-              icon: _buildSectionTitle(
-                context,
-                const Icon(Icons.home_outlined),
-                Text(l10n.home),
-              ),
-              activeIcon: _buildSectionTitle(
-                context,
-                const Icon(Icons.home),
-                Text(
-                  l10n.home,
-                  style: textTheme.labelMedium!.copyWith(
-                    color: colorScheme.textInvertedColor,
+              selectedItemColor: ColorPalette.primary[6],
+              unselectedItemColor: colorScheme.onSurfaceVariant,
+              items: [
+                BottomNavigationBarItem(
+                  icon: _buildSectionTitle(
+                    context,
+                    const Icon(Icons.home_outlined),
+                    Text(l10n.home),
                   ),
-                ),
-                isActive: position == 0,
-              ),
-              label: '', //l10n.home,
-              tooltip: l10n.home,
-            ),
-            BottomNavigationBarItem(
-              icon: _buildSectionTitle(
-                context,
-                Icon(
-                  Icons.people_outlined,
-                  //color: colorScheme.textInvertedColor,
-                ),
-                Text(l10n.team),
-              ),
-              activeIcon: _buildSectionTitle(
-                context,
-                const Icon(Icons.people_alt_rounded),
-                Text(
-                  l10n.team,
-                  style: textTheme.labelMedium!.copyWith(
-                    color: colorScheme.textInvertedColor,
+                  activeIcon: _buildSectionTitle(
+                    context,
+                    const Icon(Icons.home),
+                    Text(
+                      l10n.home,
+                      style: textTheme.labelMedium!.copyWith(
+                        color: colorScheme.textInvertedColor,
+                      ),
+                    ),
+                    isActive: position == 0,
                   ),
+                  label: '', //l10n.home,
+                  tooltip: l10n.home,
                 ),
-                isActive: position == 1,
-              ),
-              label: '', //l10n.team,
-              tooltip: l10n.team,
-            ),
-            BottomNavigationBarItem(
-              icon: _buildSectionTitle(
-                context,
-                const Icon(Icons.settings_outlined),
-                Text(l10n.settings),
-              ),
-              activeIcon: _buildSectionTitle(
-                context,
-                const Icon(Icons.settings),
-                Text(
-                  l10n.settings,
-                  style: textTheme.labelMedium!.copyWith(
-                    color: colorScheme.textInvertedColor,
+                BottomNavigationBarItem(
+                  icon: _buildSectionTitle(
+                    context,
+                    Icon(
+                      Icons.people_outlined,
+                      //color: colorScheme.textInvertedColor,
+                    ),
+                    Text(l10n.team),
                   ),
-                ),
-                isActive: position == 2,
-              ),
-              label: '', //l10n.settings,
-              tooltip: l10n.settings,
-            ),
-            BottomNavigationBarItem(
-              icon: _buildSectionTitle(
-                context,
-                const Icon(Icons.timer_outlined),
-                Text(l10n.clockingInOut),
-              ),
-              activeIcon: _buildSectionTitle(
-                context,
-                const Icon(Icons.timer),
-                Text(
-                  l10n.clockingInOut,
-                  style: textTheme.labelMedium!.copyWith(
-                    color: colorScheme.textInvertedColor,
+                  activeIcon: _buildSectionTitle(
+                    context,
+                    const Icon(Icons.people_alt_rounded),
+                    Text(
+                      l10n.team,
+                      style: textTheme.labelMedium!.copyWith(
+                        color: colorScheme.textInvertedColor,
+                      ),
+                    ),
+                    isActive: position == 1,
                   ),
+                  label: '', //l10n.team,
+                  tooltip: l10n.team,
                 ),
-                isActive: position == 3,
-              ),
-              label: '', //l10n.settings,
-              tooltip: l10n.clockingInOut,
-            ),
-            BottomNavigationBarItem(
-              icon: _buildSectionTitle(
-                context,
-                const Icon(Icons.list_alt_outlined),
-                Text(l10n.sondageChat),
-              ),
-              activeIcon: _buildSectionTitle(
-                context,
-                const Icon(Icons.list_alt),
-                Text(
-                  l10n.sondageChat,
-                  style: textTheme.labelMedium!.copyWith(
-                    color: colorScheme.textInvertedColor,
+                BottomNavigationBarItem(
+                  icon: _buildSectionTitle(
+                    context,
+                    const Icon(Icons.settings_outlined),
+                    Text(l10n.settings),
                   ),
+                  activeIcon: _buildSectionTitle(
+                    context,
+                    const Icon(Icons.settings),
+                    Text(
+                      l10n.settings,
+                      style: textTheme.labelMedium!.copyWith(
+                        color: colorScheme.textInvertedColor,
+                      ),
+                    ),
+                    isActive: position == 2,
+                  ),
+                  label: '', //l10n.settings,
+                  tooltip: l10n.settings,
                 ),
-                isActive: position == 4,
-              ),
-              label: '', //l10n.settings,
-              tooltip: l10n.sondageChat,
+                BottomNavigationBarItem(
+                  icon: _buildSectionTitle(
+                    context,
+                    const Icon(Icons.timer_outlined),
+                    Text(l10n.planningTabLabel),
+                  ),
+                  activeIcon: _buildSectionTitle(
+                    context,
+                    const Icon(Icons.timer),
+                    Text(
+                      l10n.planningTabLabel,
+                      style: textTheme.labelMedium!.copyWith(
+                        color: colorScheme.textInvertedColor,
+                      ),
+                    ),
+                    isActive: position == 3,
+                  ),
+                  label: '', //l10n.settings,
+                  tooltip: l10n.planningTabLabel,
+                ),
+                BottomNavigationBarItem(
+                  icon: _buildSectionTitle(
+                    context,
+                    const Icon(Icons.list_alt_outlined),
+                    Text(l10n.sondageChat),
+                  ),
+                  activeIcon: _buildSectionTitle(
+                    context,
+                    const Icon(Icons.list_alt),
+                    Text(
+                      l10n.sondageChat,
+                      style: textTheme.labelMedium!.copyWith(
+                        color: colorScheme.textInvertedColor,
+                      ),
+                    ),
+                    isActive: position == 4,
+                  ),
+                  label: '', //l10n.settings,
+                  tooltip: l10n.sondageChat,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

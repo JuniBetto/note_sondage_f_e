@@ -22,6 +22,17 @@ class SondageBloc extends Bloc<SondageEvent, SondageState> {
 
   Set<String> get syncingSondageIds => Set.unmodifiable(_syncingSondageIds);
 
+  /// Returns the cached entity for [id] if this bloc already loaded it as
+  /// part of a list fetch, without waiting on a network round trip.
+  SondageEntity? cachedById(String id) {
+    for (final sondage in _cachedSondages) {
+      if (sondage.id == id) {
+        return sondage;
+      }
+    }
+    return null;
+  }
+
   SondageBloc({
     required this.sondageUseCase,
     required this.sondageLocalDataSource,

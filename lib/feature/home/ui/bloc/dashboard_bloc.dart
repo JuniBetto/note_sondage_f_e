@@ -18,7 +18,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     LoadDashboardEvent event,
     Emitter<DashboardState> emit,
   ) async {
-    emit(DashboardLoading());
+    // The bloc is a shared singleton, so if it already holds loaded data
+    // (e.g. from a previous visit to the Home tab in this session) keep
+    // showing it and refresh silently in the background instead of
+    // flashing a spinner every time this page is re-entered.
+    final hasCachedData = state is DashboardLoaded;
+    if (!hasCachedData) {
+      emit(DashboardLoading());
+    }
     try {
       final results = await Future.wait([
         dashboardUseCase.getStats(),
@@ -28,7 +35,11 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       final activities = results[1] as List<RecentActivity>;
       emit(DashboardLoaded(stats: stats, activities: activities));
     } catch (e) {
-      emit(DashboardError(e.toString()));
+      if (!hasCachedData) {
+        emit(DashboardError(e.toString()));
+      }
+      // If we already had cached data, keep it visible rather than
+      // replacing it with an error on a silent background refresh.
     }
   }
 

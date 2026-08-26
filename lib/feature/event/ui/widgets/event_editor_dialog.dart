@@ -3,6 +3,7 @@ import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 
 class EventEditorResult {
@@ -80,9 +81,7 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
       text: event?.description ?? '',
     );
     _locationController = TextEditingController(text: event?.location ?? '');
-    _selectedParticipantUserIds = <String>{
-      ...?event?.participantUserIds,
-    };
+    _selectedParticipantUserIds = <String>{...?event?.participantUserIds};
     _startsAt = event?.startsAt ?? DateTime.now().add(const Duration(hours: 1));
     _endsAt = event?.endsAt ?? _startsAt.add(const Duration(hours: 1));
     _allDay = event?.allDay ?? false;
@@ -110,10 +109,7 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
       hintText: hintText,
       filled: true,
       fillColor: colorScheme.textfieldFillColor,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 12,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: radius,
         borderSide: BorderSide(color: borderColor),
@@ -255,9 +251,7 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
     final appPrimary = colorScheme.primaryColor ?? colorScheme.primary;
     return AlertDialog(
       backgroundColor: colorScheme.dialogBackgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         widget.initialEvent == null
             ? loc.eventNewEventAction
@@ -282,7 +276,9 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
                   decoration: BoxDecoration(
                     color: appPrimary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: appPrimary.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: appPrimary.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -291,8 +287,9 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
                       Expanded(
                         child: Text(
                           loc.eventPersonalEventNotice,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: appPrimary),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: appPrimary),
                         ),
                       ),
                     ],
@@ -317,17 +314,11 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              SwitchListTile(
+              AppSwitchListTile(
                 value: _allDay,
                 onChanged: (value) => setState(() => _allDay = value),
                 title: Text(loc.eventAllDayLabel),
                 contentPadding: EdgeInsets.zero,
-                activeThumbColor: colorScheme.surface,
-                activeTrackColor: colorScheme.selectionColor,
-                inactiveThumbColor: colorScheme.cursorColor,
-                inactiveTrackColor: colorScheme.bottomOutline?.withValues(
-                  alpha: 0.28,
-                ),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -390,8 +381,9 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
                         .where((member) => member.teamMember.userId != null)
                         .map((member) {
                           final userId = member.teamMember.userId!;
-                          final selected = _selectedParticipantUserIds
-                              .contains(userId);
+                          final selected = _selectedParticipantUserIds.contains(
+                            userId,
+                          );
                           return FilterChip(
                             label: Text(_memberLabel(member)),
                             selected: selected,

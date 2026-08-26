@@ -134,6 +134,10 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                                 onPressed: widget.onEditTap,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
+                                style: IconButton.styleFrom(
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                               ),
                             IconButton(
                               icon: Icon(
@@ -148,6 +152,10 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                               onPressed: widget.onArchiveTap,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
+                              style: IconButton.styleFrom(
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
                             ),
                             if (widget.canDelete)
                               IconButton(
@@ -160,6 +168,10 @@ class _SondageComponentCardState extends State<SondageComponentCard> {
                                     widget.onDeleteTap(widget.sondageId),
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
+                                style: IconButton.styleFrom(
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                               ),
                           ],
                         ),

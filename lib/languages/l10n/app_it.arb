@@ -62,6 +62,7 @@
     "settings": "Impostazioni",
     "attendance": "Frequenza",
     "clockingInOut": "Timbratura",
+    "planningTabLabel": "Pianificazione",
     "explorer": "esploratore",
     "sondage": "Sondaggio",
     "sondageChat": "Sondaggio/Chat",
@@ -968,5 +969,8 @@
     "eventCalendarWeekLabel": "Settimana",
     "eventCalendarMonthLabel": "Mese",
     "eventCalendarMoreLabel": "+{count} altri",
-    "eventPersonalEventNotice": "Questo è un evento personale — visibile solo a te."
+    "eventPersonalEventNotice": "Questo è un evento personale — visibile solo a te.",
+    "eventCalendarPeriodLabel": "Periodo",
+    "eventCalendarPickPeriodHint": "Scegli un periodo da visualizzare.",
+    "eventCalendarEditPeriodLabel": "Modifica"
 }
