@@ -3,6 +3,7 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_enti
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
 String _localizedPreviewEditorText(
   BuildContext context, {
@@ -242,7 +243,7 @@ class _ShiftAutoPlanPreviewAssignmentEditorDialogState
                 ],
               ),
               const SizedBox(height: 8),
-              SwitchListTile(
+              AppSwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
                   _localizedPreviewEditorText(

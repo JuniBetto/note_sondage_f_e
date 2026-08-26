@@ -62,6 +62,18 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
     _sondageUseCase = getIt<SondageUseCase>();
     _teamMemberUseCase = getIt<TeamMemberUseCase>();
     _shiftRepository = getIt<ShiftRepository>();
+    // The list screen's root bloc already holds the full entity for the
+    // tapped card: paint it immediately instead of waiting on a fresh
+    // network round trip for data we already have.
+    final cachedSondage = context.read<SondageBloc>().cachedById(
+      widget.sondageId,
+    );
+    if (cachedSondage != null) {
+      _sondageNotifier.value = cachedSondage;
+      _hasInitialContent = true;
+      _ensureTeamMemberCountLoaded(cachedSondage);
+      _scheduleExpiryRefreshFor(cachedSondage);
+    }
     _bloc = SondageBloc(
       sondageUseCase: getIt<SondageUseCase>(),
       sondageLocalDataSource: getIt(),

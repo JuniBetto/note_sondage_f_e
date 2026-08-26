@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
 class ShiftAutoPlannerDialog extends StatefulWidget {
   const ShiftAutoPlannerDialog({
@@ -413,7 +414,7 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
                 ],
               ),
               const SizedBox(height: 12),
-              SwitchListTile(
+              AppSwitchListTile(
                 value: _plannerMode == ShiftAutoPlannerMode.coverage
                     ? true
                     : _replaceExistingAssignments,

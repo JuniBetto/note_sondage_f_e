@@ -24,6 +24,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/anchored_dropdown_overlay.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
@@ -2269,7 +2270,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
 
                     // ── Overnight toggle ──────────────────────────────────────────
                     if (!_requestMode)
-                      SwitchListTile.adaptive(
+                      AppSwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(
                           loc.overnightShift,
@@ -2491,7 +2492,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SwitchListTile.adaptive(
+                            AppSwitchListTile(
                               contentPadding: EdgeInsets.zero,
                               value: _useMemberSpecificProfiles,
                               onChanged: (value) => setState(() {
@@ -2555,7 +2556,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                                 : borderColor,
                           ),
                         ),
-                        child: SwitchListTile.adaptive(
+                        child: AppSwitchListTile(
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 0,

@@ -12,6 +12,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/anchored_dropdown_overlay.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
@@ -1132,11 +1133,10 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                     color: Colors.transparent,
                     child: Column(
                       children: [
-                        SwitchListTile.adaptive(
+                        AppSwitchListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(localization.allowMultipleResponses),
                           value: _allowMultipleResponses,
-                          activeThumbColor: colorScheme.selectionColor,
                           onChanged: (value) {
                             setState(() => _allowMultipleResponses = value);
                           },

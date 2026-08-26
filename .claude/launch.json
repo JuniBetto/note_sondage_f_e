@@ -6,6 +6,12 @@
       "runtimeExecutable": "puro",
       "runtimeArgs": ["flutter", "run", "-d", "web-server", "--web-port", "5959"],
       "port": 5959
+    },
+    {
+      "name": "vitrine-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "../note_sondage_vitrine"],
+      "port": 3000
     }
   ]
 }

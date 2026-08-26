@@ -21,7 +21,7 @@ import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_event.dart';
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
-import 'package:note_sondage/ui/widgets/theme_config/custom_toggle_switch.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 import '../../feature/chat/ui/web/chat_web_page.dart';
@@ -138,12 +138,12 @@ class _MainWebState extends State<MainWeb> {
                 ),
                 _buildShowcase(
                   showcaseKey: _clockingKey,
-                  title: localizations.clockingInOut,
+                  title: localizations.planningTabLabel,
                   description: _navDescription(context),
                   child: SidebarItem(
                     key: const ValueKey(3),
                     icon: Icons.timer,
-                    label: localizations.clockingInOut,
+                    label: localizations.planningTabLabel,
                     index: 3,
                     isSmallScreen: isExpanded,
                     lastIndexes: lastIndexes,
@@ -225,7 +225,7 @@ class _MainWebState extends State<MainWeb> {
                         ),
                       ),
                     Expanded(
-                      child: CustomToggleSwitch(
+                      child: AppToggleSwitch(
                         key: const ValueKey('theme_toggle'),
                         value: isDarkMode,
                         onChanged: (value) {
@@ -433,7 +433,7 @@ class _MainWebState extends State<MainWeb> {
   String _contentTitle(AppLocalizations localizations, int navIndex) {
     return switch (navIndex) {
       1 => localizations.team,
-      3 => localizations.clockingInOut,
+      3 => localizations.planningTabLabel,
       4 => localizations.sondage,
       5 => localizations.myShifts,
       6 => localizations.taskPageTitle,

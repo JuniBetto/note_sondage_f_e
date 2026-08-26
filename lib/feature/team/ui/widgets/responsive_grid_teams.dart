@@ -253,7 +253,8 @@ class _ResponsiveGridTeamsState extends State<ResponsiveGridTeams> {
                 currentUserPhotoUrl: currentUserPhotoUrl,
                 archivedTeamIds: _archivedTeamIds,
                 onArchiveToggle: _toggleArchive,
-                wrapInScrollView: !widget.isSelectionMode,
+                wrapInScrollView:
+                    !widget.isSelectionMode && !widget.shrinkWrapLayout,
               );
 
         if (widget.isSelectionMode) {

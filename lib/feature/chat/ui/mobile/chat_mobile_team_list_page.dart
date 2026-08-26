@@ -51,6 +51,17 @@ class ChatMobileTeamListPage extends StatefulWidget {
 }
 
 class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
+  // In-memory cache shared across instances of this State within the app
+  // session. The page is torn down and rebuilt every time the user
+  // switches away from and back to the chat tab, so without this the list
+  // would show a loading spinner on every single visit. Caching lets us
+  // paint the previous data instantly and refresh it silently in the
+  // background instead.
+  static List<TeamEntity>? _cachedTeams;
+  static Map<String, ChatTeamConversationSummaryEntity>?
+  _cachedSummaryByTeamId;
+  static List<_DirectChatEntry>? _cachedDirectEntries;
+
   final GlobalKey _introKey = GlobalKey();
   final GlobalKey _teamChannelsKey = GlobalKey();
   final GlobalKey _directChatsKey = GlobalKey();
@@ -59,11 +70,13 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
       GetIt.instance<TeamMemberUseCase>();
   final ChatUseCase _chatUseCase = GetIt.instance<ChatUseCase>();
 
-  List<TeamEntity> _teams = const <TeamEntity>[];
+  List<TeamEntity> _teams = _cachedTeams ?? const <TeamEntity>[];
   Map<String, ChatTeamConversationSummaryEntity> _summaryByTeamId =
+      _cachedSummaryByTeamId ??
       const <String, ChatTeamConversationSummaryEntity>{};
-  List<_DirectChatEntry> _directEntries = const <_DirectChatEntry>[];
-  bool _loading = true;
+  List<_DirectChatEntry> _directEntries =
+      _cachedDirectEntries ?? const <_DirectChatEntry>[];
+  bool _loading = _cachedTeams == null;
   bool _didHandleInitialTeam = false;
   bool _tutorialScheduled = false;
 
@@ -91,6 +104,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
         _teams = teams;
         _loading = false;
       });
+      _cachedTeams = teams;
       await _loadConversationData();
       _handleInitialTeamIfNeeded();
     } catch (error) {
@@ -232,6 +246,9 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
       _summaryByTeamId = nextSummaries;
       _directEntries = nextDirectEntries;
     });
+    _cachedTeams = nextTeams;
+    _cachedSummaryByTeamId = nextSummaries;
+    _cachedDirectEntries = nextDirectEntries;
   }
 
   Future<void> _openTeamConversation(String teamId) async {
@@ -295,6 +312,9 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
       _summaryByTeamId = nextSummaries;
       _directEntries = nextDirectEntries;
     });
+    _cachedTeams = nextTeams;
+    _cachedSummaryByTeamId = nextSummaries;
+    _cachedDirectEntries = nextDirectEntries;
   }
 
   @override

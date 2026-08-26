@@ -220,6 +220,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clockingInOut => 'Pointage';
 
   @override
+  String get planningTabLabel => 'Planification';
+
+  @override
   String get explorer => 'explorateur';
 
   @override
@@ -2533,4 +2536,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get eventPersonalEventNotice =>
       'Ceci est un événement personnel — visible uniquement par vous.';
+
+  @override
+  String get eventCalendarPeriodLabel => 'Periode';
+
+  @override
+  String get eventCalendarPickPeriodHint =>
+      'Choisissez une periode a afficher.';
+
+  @override
+  String get eventCalendarEditPeriodLabel => 'Modifier';
 }

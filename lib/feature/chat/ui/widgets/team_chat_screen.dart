@@ -137,6 +137,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   bool _loadingTeams = true;
   bool _loadingMessages = false;
   bool _refreshingMessages = false;
+  bool _skipNextTeamsConversationLoad = false;
   bool _loadingOlderMessages = false;
   bool _hasMoreOlderMessages = true;
   int _pendingSendCount = 0;
@@ -256,6 +257,19 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       });
     });
     unawaited(_workflowAiPreferencesCubit.loadPreferences());
+    final initialTeamId = widget.initialTeamId;
+    if (initialTeamId != null && initialTeamId.isNotEmpty) {
+      // The tapped card already tells us which conversation to open, so load
+      // it immediately instead of waiting on the full team list round-trip.
+      _selectedTeamId = initialTeamId;
+      _skipNextTeamsConversationLoad = true;
+      unawaited(
+        _loadConversation(
+          initialTeamId,
+          memberUserId: widget.initialMemberUserId,
+        ),
+      );
+    }
     unawaited(_loadTeams());
   }
 
@@ -310,10 +324,17 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       _notifyConversationTitleChanged();
 
       if (nextTeamId != null) {
-        await _loadConversation(
-          nextTeamId,
-          memberUserId: widget.initialMemberUserId?.trim(),
-        );
+        // Skip the redundant reload only once, right after the initState
+        // fast path already kicked off this exact conversation.
+        if (_skipNextTeamsConversationLoad &&
+            nextTeamId == widget.initialTeamId) {
+          _skipNextTeamsConversationLoad = false;
+        } else {
+          await _loadConversation(
+            nextTeamId,
+            memberUserId: widget.initialMemberUserId?.trim(),
+          );
+        }
       } else if (mounted) {
         setState(() {
           _conversation = null;
@@ -398,8 +419,13 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       _hasMoreOlderMessages = cachedMessages.length >= _initialMessagesLimit;
     });
     _notifyConversationTitleChanged();
-    if (canRenderCache && _pendingForceLatestFocus) {
-      _focusLatestMessage();
+    if (canRenderCache) {
+      // Land on the latest cached messages instantly: this is a fresh
+      // conversation open, not an incremental update worth animating.
+      _scrollToBottom(animate: false);
+      if (_pendingForceLatestFocus) {
+        _focusLatestMessage(animate: false);
+      }
     }
 
     try {
@@ -425,9 +451,11 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       });
       _notifyConversationTitleChanged();
       if (_pendingForceLatestFocus) {
-        _focusLatestMessage();
+        _focusLatestMessage(animate: false);
       } else {
-        _scrollToBottom();
+        // Still opening this conversation for the first time: jump, don't
+        // animate, so the user never sees older messages before this.
+        _scrollToBottom(animate: false);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
@@ -2395,12 +2423,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     return _isNearBottom();
   }
 
-  void _focusLatestMessage() {
+  void _focusLatestMessage({bool animate = true}) {
     if (!_pendingForceLatestFocus) {
       return;
     }
     _pendingForceLatestFocus = false;
-    _scrollToBottom();
+    _scrollToBottom(animate: animate);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -2409,16 +2437,21 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     });
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) {
         return;
       }
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-      );
+      final target = _scrollController.position.maxScrollExtent;
+      if (animate) {
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(target);
+      }
     });
   }
 
@@ -2778,11 +2811,16 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       theme.colorScheme.primary,
     );
 
-    if (_loadingTeams) {
+    // When we already know which conversation to open (tapped from a chat
+    // card), don't block the whole screen on the unrelated team-list fetch.
+    final hasKnownConversationTarget =
+        (widget.initialTeamId ?? '').isNotEmpty;
+
+    if (_loadingTeams && !hasKnownConversationTarget) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_teams.isEmpty) {
+    if (_teams.isEmpty && !hasKnownConversationTarget) {
       return Center(
         child: Padding(
           padding: EdgeInsets.all(isMobileLayout ? 16 : 24),

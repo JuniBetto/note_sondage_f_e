@@ -5,6 +5,7 @@ import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
 
@@ -191,7 +192,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                         ),
                       ],
                     ),
-                    SwitchListTile(
+                    AppSwitchListTile(
                       value: overnight,
                       onChanged: (v) => setS(() => overnight = v),
                       title: Text(loc.overnightShift),
@@ -223,7 +224,7 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                                 : Colors.grey.withValues(alpha: 0.3),
                           ),
                         ),
-                        child: SwitchListTile(
+                        child: AppSwitchListTile(
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 8,
                           ),
@@ -255,15 +256,24 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                   type: ButtonType.text,
                   isActive: false,
                   backgroundColor: colorScheme.bgsecondary,
-                  child: Text(loc.cancel,style: textTheme.bodySmall!.copyWith(color: colorScheme.textInvertedColor),),
+                  child: Text(
+                    loc.cancel,
+                    style: textTheme.bodySmall!.copyWith(
+                      color: colorScheme.textInvertedColor,
+                    ),
+                  ),
                 ),
                 CustomAppButton(
                   onPressed: !canSubmit ? null : () => submitProfile(ctx),
                   type: ButtonType.filled,
                   isActive: false,
                   backgroundColor: colorScheme.bgsecondary,
-                  child: Text(loc.save,
-                    style: textTheme.bodySmall!.copyWith(color: colorScheme.textInvertedColor),),
+                  child: Text(
+                    loc.save,
+                    style: textTheme.bodySmall!.copyWith(
+                      color: colorScheme.textInvertedColor,
+                    ),
+                  ),
                 ),
               ],
             ),

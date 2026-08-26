@@ -62,6 +62,7 @@
     "settings": "Settings",
     "attendance": "Attendance",
     "clockingInOut": "Clock in/out",
+    "planningTabLabel": "Planning",
     "explorer": "Explorer",
     "sondage": "Sondage",
     "sondageChat": "Sondage/Chat",
@@ -968,5 +969,8 @@
     "eventCalendarWeekLabel": "Week",
     "eventCalendarMonthLabel": "Month",
     "eventCalendarMoreLabel": "+{count} more",
-    "eventPersonalEventNotice": "This is a personal event — only you can see it."
+    "eventPersonalEventNotice": "This is a personal event — only you can see it.",
+    "eventCalendarPeriodLabel": "Period",
+    "eventCalendarPickPeriodHint": "Choose a period to view.",
+    "eventCalendarEditPeriodLabel": "Edit"
 }

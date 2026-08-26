@@ -96,29 +96,42 @@ class ChatConversationPanel extends StatelessWidget {
       ),
       child: Column(
         children: [
-          if (refreshingMessages) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: _buildShowcase(
               showcaseKey: timelineShowcaseKey,
               title: timelineShowcaseTitle,
               description: timelineShowcaseDescription,
-              child: loadingMessages
-                  ? const Center(child: CircularProgressIndicator())
-                  : ChatMessageTimeline(
-                      messages: messages,
-                      scrollController: scrollController,
-                      compact: compact,
-                      accentColor: accentColor,
-                      selectedTeamName: selectedTeamName,
-                      loadingOlderMessages: loadingOlderMessages,
-                      hasMoreOlderMessages: hasMoreOlderMessages,
-                      onSenderPressed: onSenderPressed,
-                      onMessagePressed: onMessagePressed,
-                      onMessageLongPressed: onMessageLongPressed,
-                      onReplyRequested: onReplyRequested,
-                      onDeleteRequested: onDeleteRequested,
-                      messageFooterBuilder: messageFooterBuilder,
+              child: Stack(
+                children: [
+                  loadingMessages
+                      ? const Center(child: CircularProgressIndicator())
+                      : ChatMessageTimeline(
+                          messages: messages,
+                          scrollController: scrollController,
+                          compact: compact,
+                          accentColor: accentColor,
+                          selectedTeamName: selectedTeamName,
+                          loadingOlderMessages: loadingOlderMessages,
+                          hasMoreOlderMessages: hasMoreOlderMessages,
+                          onSenderPressed: onSenderPressed,
+                          onMessagePressed: onMessagePressed,
+                          onMessageLongPressed: onMessageLongPressed,
+                          onReplyRequested: onReplyRequested,
+                          onDeleteRequested: onDeleteRequested,
+                          messageFooterBuilder: messageFooterBuilder,
+                        ),
+                  // Overlaid instead of stacked in the Column so it doesn't
+                  // change the list's available height (and shift its
+                  // content) when it appears/disappears.
+                  if (refreshingMessages)
+                    const Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: LinearProgressIndicator(minHeight: 2),
                     ),
+                ],
+              ),
             ),
           ),
           Padding(

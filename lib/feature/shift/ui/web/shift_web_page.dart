@@ -1622,18 +1622,27 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                                       _setAssignmentArchived(assignment, false);
                                     },
                                   )
-                                : ShiftCalendarWidget(
-                                    assignments: foregroundAssignments,
-                                    absenceStatuses: _absenceStatusesByKey
-                                        .values
-                                        .toList(growable: false),
-                                    syncingAssignmentIds: context
-                                        .read<ShiftBloc>()
-                                        .syncingAssignmentIds,
-                                    focusedMonth: _focusedMonth,
-                                    onMonthChanged: _onMonthChanged,
-                                    onDayTap: (date, assignments) =>
-                                        _onDayTap(context, date, assignments),
+                                : SingleChildScrollView(
+                                    // ShiftCalendarWidget sizes every week
+                                    // row to its own content (badges push
+                                    // cells taller on busy days), so its
+                                    // total height isn't fixed — on shorter
+                                    // browser windows it can exceed the
+                                    // Expanded space above and overflow.
+                                    // Scrolling here instead of clipping.
+                                    child: ShiftCalendarWidget(
+                                      assignments: foregroundAssignments,
+                                      absenceStatuses: _absenceStatusesByKey
+                                          .values
+                                          .toList(growable: false),
+                                      syncingAssignmentIds: context
+                                          .read<ShiftBloc>()
+                                          .syncingAssignmentIds,
+                                      focusedMonth: _focusedMonth,
+                                      onMonthChanged: _onMonthChanged,
+                                      onDayTap: (date, assignments) =>
+                                          _onDayTap(context, date, assignments),
+                                    ),
                                   ),
                           ),
                         ),

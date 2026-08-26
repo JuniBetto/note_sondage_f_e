@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/ai/preferences/workflow_ai_preferences_cubit.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
 class SettingsAiWeb extends StatefulWidget {
   const SettingsAiWeb({super.key});
@@ -60,7 +61,7 @@ class _SettingsAiWebState extends State<SettingsAiWeb> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  SwitchListTile.adaptive(
+                  AppSwitchListTile(
                     value: state.appAiEnabled,
                     onChanged: saving ? null : _cubit.setAppAiEnabled,
                     contentPadding: EdgeInsets.zero,
