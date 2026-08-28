@@ -1318,8 +1318,6 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                             ? null
                             : _submit,
                         type: ButtonType.filled,
-                        backgroundColor: colorScheme.secondary,
-                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         borderRadius: 16,
                         isActive: true,

@@ -778,6 +778,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                                 : null,
                             onAutoReplaceLinkedShift:
                                 RuntimeConfig.enableWorkflowActions &&
+                                    _canRemindForSurvey(sondage) &&
                                     sondage
                                             .workflowContext
                                             .resolvedAssignmentId !=

@@ -31,6 +31,16 @@ class RealtimeNotificationService {
 
   Stream<RealtimeNotification> get stream => _controller.stream;
 
+  /// Feeds a locally-constructed notification into the same stream used for
+  /// server-pushed events, so the current device reacts to its own action
+  /// exactly like the real recipient would (the backend only pushes
+  /// decision notifications to the requester, never back to the actor who
+  /// approved/rejected). Callers must mark `metadata['realtimeOnly']` as
+  /// `'true'` so it isn't persisted into the notification inbox.
+  void emitLocal(RealtimeNotification notification) {
+    _controller.add(notification);
+  }
+
   bool get isConnected => _client?.connected ?? false;
 
   void connect(String userId) {

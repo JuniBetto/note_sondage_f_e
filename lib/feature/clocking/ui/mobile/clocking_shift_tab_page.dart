@@ -122,10 +122,15 @@ class _ClockingShiftTabPageState extends State<ClockingShiftTabPage>
                     value: GetIt.instance<ShiftBloc>(),
                     child: const ShiftMobileWidget(),
                   ),
-                  const TaskMobileWidget(),
+                  TaskMobileWidget(
+                    isActive: _tabController.index == 2,
+                    isTabTransitioning: _tabController.indexIsChanging,
+                  ),
                   EventMobileWidget(
                     initialTeamId: _eventInitialTeamId,
                     initialEventId: _eventInitialEventId,
+                    isActive: _tabController.index == 3,
+                    isTabTransitioning: _tabController.indexIsChanging,
                   ),
                 ],
               ),

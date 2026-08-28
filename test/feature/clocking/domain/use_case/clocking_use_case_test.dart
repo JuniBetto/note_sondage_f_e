@@ -136,6 +136,7 @@ class _FakeClockingRepository implements ClockingRepository {
     required String targetUserId,
     required DateTime date,
     String? note,
+    String? recordId,
   }) => throw UnimplementedError();
 
   @override

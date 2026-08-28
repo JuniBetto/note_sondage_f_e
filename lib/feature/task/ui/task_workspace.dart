@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/error/error_logger.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
@@ -48,10 +51,30 @@ const _kSplitViewBreakpoint = 900.0;
 enum TaskViewMode { list, table, timeline, calendar }
 
 class TaskWorkspace extends StatefulWidget {
-  const TaskWorkspace({super.key, this.initialTeamId, this.embedded = false});
+  const TaskWorkspace({
+    super.key,
+    this.initialTeamId,
+    this.embedded = false,
+    this.isActive = true,
+    this.isTabTransitioning = false,
+  });
 
   final String? initialTeamId;
   final bool embedded;
+
+  /// Whether this page is currently the one the user is actually looking
+  /// at. Both the web `IndexedStack` and the mobile tab bar that can host
+  /// this widget mount it eagerly, well before it becomes visible, so the
+  /// auto-tutorial must not fire (and mark itself as "seen") until this is
+  /// true — otherwise it would silently show a tutorial for a page nobody
+  /// is looking at and never offer it again.
+  final bool isActive;
+
+  /// Whether the parent tab controller (mobile only) is still animating
+  /// between tabs. The auto-tutorial waits for the swipe to fully settle,
+  /// otherwise it races with the tab-change listener that dismisses any
+  /// active showcase and gets killed moments after starting.
+  final bool isTabTransitioning;
 
   @override
   State<TaskWorkspace> createState() => _TaskWorkspaceState();
@@ -94,6 +117,12 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
   TaskViewMode _viewMode = TaskViewMode.list;
   DateTime _timelineWeekStart = mondayOfWeek(DateTime.now());
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
+
+  final GlobalKey _createButtonKey = GlobalKey();
+  final GlobalKey _filterKey = GlobalKey();
+  final GlobalKey _listKey = GlobalKey();
+  bool _tutorialScheduled = false;
+  String get _tutorialId => kIsWeb ? 'web-tasks' : 'mobile-tasks';
 
   @override
   void initState() {
@@ -554,6 +583,27 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
 
   bool _canEditTask(TaskEntity task) => _canManageTask(task);
 
+  /// Maps userId -> profile photo URL, built from every team's member list
+  /// already loaded for permission checks — lets task cards/views show the
+  /// assignee's real photo when one is set, falling back to initials
+  /// otherwise (handled by [AvatarApp] itself).
+  Map<String, String> get _assigneeAvatarUrlByUserId {
+    final map = <String, String>{};
+    for (final members in _membersByTeamId.values) {
+      for (final member in members) {
+        final userId = member.userId?.trim();
+        final imageUrl = member.imageUrl?.trim();
+        if (userId != null &&
+            userId.isNotEmpty &&
+            imageUrl != null &&
+            imageUrl.isNotEmpty) {
+          map[userId] = imageUrl;
+        }
+      }
+    }
+    return map;
+  }
+
   Future<List<TaskAssigneeOption>> _loadAssigneeOptions(String teamId) async {
     final members =
         _membersByTeamId[teamId] ??
@@ -977,6 +1027,92 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     });
   }
 
+  void _registerTutorials(BuildContext context) {
+    AppTutorialController.registerTargets(
+      tutorialId: _tutorialId,
+      keys: <GlobalKey>[_createButtonKey, _filterKey, _listKey],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: _tutorialId,
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[_createButtonKey, _filterKey, _listKey],
+      ),
+    );
+    if (kIsWeb) {
+      AppTutorialController.registerReplayAction(
+        tutorialId: 'web-main-6',
+        action: () => AppTutorialController.replayRegistered(
+          context: context,
+          tutorialId: _tutorialId,
+        ),
+      );
+    }
+  }
+
+  void _scheduleTutorial() {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      if (!widget.isActive || widget.isTabTransitioning) {
+        _tutorialScheduled = false;
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: _tutorialId,
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[_createButtonKey, _filterKey, _listKey],
+      );
+    });
+  }
+
+  Widget _buildShowcase({
+    required GlobalKey showcaseKey,
+    required String title,
+    required String description,
+    required Widget child,
+  }) {
+    if (isInspectorSelectionActive) {
+      return child;
+    }
+    return Showcase(
+      key: showcaseKey,
+      title: title,
+      description: description,
+      child: child,
+    );
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
+  }
+
+  String _filterTitle(BuildContext context) {
+    return _isItalian(context) ? 'Filtra i task' : 'Filter tasks';
+  }
+
+  String _filterDescription(BuildContext context) {
+    return _isItalian(context)
+        ? 'Filtra i task per stato oppure passa alla vista degli archiviati.'
+        : 'Filter tasks by status, or switch to the archived view.';
+  }
+
+  String _listTitle(BuildContext context) {
+    return _isItalian(context) ? 'Elenco task' : 'Task list';
+  }
+
+  String _listDescription(BuildContext context) {
+    return _isItalian(context)
+        ? 'Qui trovi tutti i task: tocca una card per aprire i dettagli e gestirla.'
+        : 'Here are all your tasks: tap a card to open its details and manage it.';
+  }
+
   Widget _buildDetailPanelCard(
     BuildContext context, {
     required TaskEntity task,
@@ -1063,6 +1199,11 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    _registerTutorials(context);
+    if (widget.isActive && !widget.isTabTransitioning) {
+      _scheduleTutorial();
+    }
+
     return BlocListener<TeamBloc, TeamState>(
       listener: (_, nextState) {
         final nextTeams = _teamsFromState(nextState);
@@ -1101,6 +1242,8 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                           onTaskTap: (task) => isSplitView
                               ? _selectTask(task)
                               : _openTaskDetail(task),
+                          assigneeAvatarUrlByUserId:
+                              _assigneeAvatarUrlByUserId,
                         ),
                       ),
                     )
@@ -1119,6 +1262,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                         onTaskTap: (task) => isSplitView
                             ? _selectTask(task)
                             : _openTaskDetail(task),
+                        assigneeAvatarUrlByUserId: _assigneeAvatarUrlByUserId,
                       ),
                     )
                   : _viewMode == TaskViewMode.calendar
@@ -1136,6 +1280,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                         onTaskTap: (task) => isSplitView
                             ? _selectTask(task)
                             : _openTaskDetail(task),
+                        assigneeAvatarUrlByUserId: _assigneeAvatarUrlByUserId,
                       ),
                     )
                   : ListView.separated(
@@ -1155,9 +1300,19 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                           onTap: () => isSplitView
                               ? _selectTask(task)
                               : _openTaskDetail(task),
+                          assigneeAvatarUrl:
+                              _assigneeAvatarUrlByUserId[task.assigneeUserId
+                                  ?.trim()],
                         );
                       },
                     ),
+            );
+
+            final showcasedTaskListArea = _buildShowcase(
+              showcaseKey: _listKey,
+              title: _listTitle(context),
+              description: _listDescription(context),
+              child: taskListArea,
             );
 
             final showDetailPanel = isSplitView && selectedTask != null;
@@ -1195,32 +1350,44 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                         _searchQuery = value;
                       });
                     },
+                    createButtonKey: _createButtonKey,
+                    createButtonTitle: _isItalian(context)
+                        ? 'Nuovo task'
+                        : 'New task',
+                    createButtonDescription: _isItalian(context)
+                        ? 'Crea rapidamente un nuovo task personale o per un team.'
+                        : 'Quickly create a new personal or team task.',
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                  child: TaskStatusFilterBar(
-                    totalCount: searchFilteredActiveTasks.length,
-                    countsByStatus: countsByStatus,
-                    selectedStatus: _selectedStatusFilter,
-                    showArchived: _showArchived,
-                    archivedCount: filteredArchivedTasks.length,
-                    onStatusSelected: (status) {
-                      setState(() {
-                        _selectedStatusFilter = status;
-                        _showArchived = false;
-                      });
-                    },
-                    onArchivedSelected: () {
-                      setState(() {
-                        _showArchived = true;
-                      });
-                    },
+                  child: _buildShowcase(
+                    showcaseKey: _filterKey,
+                    title: _filterTitle(context),
+                    description: _filterDescription(context),
+                    child: TaskStatusFilterBar(
+                      totalCount: searchFilteredActiveTasks.length,
+                      countsByStatus: countsByStatus,
+                      selectedStatus: _selectedStatusFilter,
+                      showArchived: _showArchived,
+                      archivedCount: filteredArchivedTasks.length,
+                      onStatusSelected: (status) {
+                        setState(() {
+                          _selectedStatusFilter = status;
+                          _showArchived = false;
+                        });
+                      },
+                      onArchivedSelected: () {
+                        setState(() {
+                          _showArchived = true;
+                        });
+                      },
+                    ),
                   ),
                 ),
                 Expanded(
                   child: !showDetailPanel
-                      ? taskListArea
+                      ? showcasedTaskListArea
                       : GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           // Tapping anywhere that isn't a task card or the
@@ -1230,7 +1397,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(flex: 3, child: taskListArea),
+                              Expanded(flex: 3, child: showcasedTaskListArea),
                               const SizedBox(width: 16),
                               SizedBox(
                                 width: 380,

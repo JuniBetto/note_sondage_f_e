@@ -44,6 +44,7 @@ class TaskTimelineView extends StatefulWidget {
     required this.onWeekStartChanged,
     required this.selectedTaskId,
     required this.onTaskTap,
+    this.assigneeAvatarUrlByUserId = const <String, String>{},
   });
 
   final List<TaskEntity> tasks;
@@ -51,6 +52,7 @@ class TaskTimelineView extends StatefulWidget {
   final ValueChanged<DateTime> onWeekStartChanged;
   final String? selectedTaskId;
   final ValueChanged<TaskEntity> onTaskTap;
+  final Map<String, String> assigneeAvatarUrlByUserId;
 
   @override
   State<TaskTimelineView> createState() => _TaskTimelineViewState();
@@ -330,6 +332,8 @@ class _TaskTimelineViewState extends State<TaskTimelineView> {
                         rows: rows,
                         selectedTaskId: widget.selectedTaskId,
                         onTaskTap: widget.onTaskTap,
+                        assigneeAvatarUrlByUserId:
+                            widget.assigneeAvatarUrlByUserId,
                       ),
                     ),
             ),
@@ -377,12 +381,14 @@ class _TimelineBody extends StatelessWidget {
     required this.rows,
     required this.selectedTaskId,
     required this.onTaskTap,
+    this.assigneeAvatarUrlByUserId = const <String, String>{},
   });
 
   final List<DateTime> days;
   final List<_TimelineRow> rows;
   final String? selectedTaskId;
   final ValueChanged<TaskEntity> onTaskTap;
+  final Map<String, String> assigneeAvatarUrlByUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -408,6 +414,9 @@ class _TimelineBody extends StatelessWidget {
                     endIndex: row.endIndex,
                     selected: row.task.id == selectedTaskId,
                     onTap: () => onTaskTap(row.task),
+                    assigneeAvatarUrl:
+                        assigneeAvatarUrlByUserId[row.task.assigneeUserId
+                            ?.trim()],
                   );
                 },
               ),
@@ -934,6 +943,7 @@ class _TimelineTaskRow extends StatelessWidget {
     required this.endIndex,
     required this.selected,
     required this.onTap,
+    this.assigneeAvatarUrl,
   });
 
   final TaskEntity task;
@@ -942,6 +952,7 @@ class _TimelineTaskRow extends StatelessWidget {
   final int endIndex;
   final bool selected;
   final VoidCallback onTap;
+  final String? assigneeAvatarUrl;
 
   String _initialsFor(String value) {
     final parts = value
@@ -1115,6 +1126,7 @@ class _TimelineTaskRow extends StatelessWidget {
                             if (assignee?.isNotEmpty == true) ...[
                               SizedBox(width: 8 * scale),
                               AvatarApp(
+                                imageUrl: assigneeAvatarUrl,
                                 initials: _initialsFor(assignee!),
                                 size: 22 * scale,
                                 backgroundColor:

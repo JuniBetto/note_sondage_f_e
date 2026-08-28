@@ -1,6 +1,5 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_workflow_metadata_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
@@ -8,111 +7,10 @@ import 'package:note_sondage/feature/task/domain/entities/task_create_request_en
 import 'package:note_sondage/feature/task/domain/entities/task_priority.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_workflow_metadata_entity.dart';
 
-enum ChatMessageActionType {
-  createSondage,
-  createShift,
-  createTask,
-  createEvent,
-}
+class ChatMessageActionMapper {
+  const ChatMessageActionMapper._();
 
-extension ChatMessageActionTypeValue on ChatMessageActionType {
-  String get wireValue => switch (this) {
-    ChatMessageActionType.createSondage => 'create_sondage',
-    ChatMessageActionType.createShift => 'create_shift',
-    ChatMessageActionType.createTask => 'create_task',
-    ChatMessageActionType.createEvent => 'create_event',
-  };
-}
-
-class ChatMessageActionDraftService {
-  ChatMessageActionDraftService({Dio? dio}) : _dio = dio ?? DioClient().dio;
-
-  final Dio _dio;
-
-  Future<ChatMessageActionDraftResult> buildDraft({
-    required ChatMessageActionType actionType,
-    required String conversationId,
-    required String messageId,
-    required String teamId,
-    required String locale,
-    String? selectedMessageText,
-    String? memberUserId,
-    String? memberDisplayName,
-  }) async {
-    final response = await _dio.post(
-      '/api/aggregate/workflow/message-actions/draft',
-      data: {
-        'messageActionType': actionType.wireValue,
-        'conversationId': conversationId,
-        'messageId': messageId,
-        'teamId': teamId,
-        if (selectedMessageText != null &&
-            selectedMessageText.trim().isNotEmpty)
-          'selectedMessageText': selectedMessageText.trim(),
-        'clientContext': {
-          'chatType': memberUserId == null || memberUserId.trim().isEmpty
-              ? 'TEAM'
-              : 'DIRECT',
-          if (memberUserId != null && memberUserId.trim().isNotEmpty)
-            'memberUserId': memberUserId.trim(),
-          if (memberDisplayName != null && memberDisplayName.trim().isNotEmpty)
-            'memberDisplayName': memberDisplayName.trim(),
-          'locale': locale.trim(),
-        },
-      },
-    );
-
-    final data = response.data;
-    if (data is! Map<String, dynamic>) {
-      throw Exception('Invalid workflow action response');
-    }
-    return ChatMessageActionDraftResult.fromJson(data);
-  }
-}
-
-class ChatMessageActionDraftResult {
-  const ChatMessageActionDraftResult({
-    required this.messageActionType,
-    required this.resolutionStatus,
-    required this.targetEntityType,
-    required this.warnings,
-    this.fallback,
-    this.sondagePrefill,
-    this.shiftDraft,
-    this.taskDraft,
-    this.eventDraft,
-  });
-
-  final String messageActionType;
-  final String resolutionStatus;
-  final String targetEntityType;
-  final List<ChatMessageActionWarning> warnings;
-  final ChatMessageActionFallback? fallback;
-  final SondageCreatePrefill? sondagePrefill;
-  final ShiftAssignmentCreateRequestEntity? shiftDraft;
-  final TaskCreateRequestEntity? taskDraft;
-  final ChatMessageActionEventDraft? eventDraft;
-
-  bool get isUnsupported =>
-      resolutionStatus.trim().toLowerCase() == 'unsupported';
-
-  bool get isPartial => resolutionStatus.trim().toLowerCase() == 'partial';
-
-  String? get primaryMessage {
-    final fallbackMessage = fallback?.message.trim();
-    if (fallbackMessage != null && fallbackMessage.isNotEmpty) {
-      return fallbackMessage;
-    }
-    for (final warning in warnings) {
-      final value = warning.message.trim();
-      if (value.isNotEmpty) {
-        return value;
-      }
-    }
-    return null;
-  }
-
-  factory ChatMessageActionDraftResult.fromJson(Map<String, dynamic> json) {
+  static ChatMessageActionDraftResult fromJson(Map<String, dynamic> json) {
     final rawDraft = json['draft'];
     final draft = rawDraft is Map<String, dynamic>
         ? rawDraft
@@ -131,12 +29,10 @@ class ChatMessageActionDraftResult {
       targetEntityType: json['targetEntityType']?.toString().trim() ?? '',
       warnings: (json['warnings'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<Map<String, dynamic>>()
-          .map(ChatMessageActionWarning.fromJson)
+          .map(warningFromJson)
           .toList(growable: false),
       fallback: json['fallback'] is Map<String, dynamic>
-          ? ChatMessageActionFallback.fromJson(
-              json['fallback'] as Map<String, dynamic>,
-            )
+          ? fallbackFromJson(json['fallback'] as Map<String, dynamic>)
           : null,
       sondagePrefill: actionType == 'create_sondage'
           ? _parseSondagePrefill(
@@ -166,6 +62,23 @@ class ChatMessageActionDraftResult {
               workflowMetadata: workflowMetadata,
             )
           : null,
+    );
+  }
+
+  static ChatMessageActionWarning warningFromJson(Map<String, dynamic> json) {
+    return ChatMessageActionWarning(
+      code: json['code']?.toString().trim() ?? '',
+      message: json['message']?.toString().trim() ?? '',
+    );
+  }
+
+  static ChatMessageActionFallback fallbackFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return ChatMessageActionFallback(
+      type: json['type']?.toString().trim() ?? '',
+      reasonCode: json['reasonCode']?.toString().trim() ?? '',
+      message: json['message']?.toString().trim() ?? '',
     );
   }
 
@@ -349,64 +262,4 @@ class ChatMessageActionDraftResult {
     final value = raw?.toString().trim() ?? '';
     return value.isEmpty ? null : value;
   }
-}
-
-class ChatMessageActionWarning {
-  const ChatMessageActionWarning({required this.code, required this.message});
-
-  final String code;
-  final String message;
-
-  factory ChatMessageActionWarning.fromJson(Map<String, dynamic> json) {
-    return ChatMessageActionWarning(
-      code: json['code']?.toString().trim() ?? '',
-      message: json['message']?.toString().trim() ?? '',
-    );
-  }
-}
-
-class ChatMessageActionFallback {
-  const ChatMessageActionFallback({
-    required this.type,
-    required this.reasonCode,
-    required this.message,
-  });
-
-  final String type;
-  final String reasonCode;
-  final String message;
-
-  factory ChatMessageActionFallback.fromJson(Map<String, dynamic> json) {
-    return ChatMessageActionFallback(
-      type: json['type']?.toString().trim() ?? '',
-      reasonCode: json['reasonCode']?.toString().trim() ?? '',
-      message: json['message']?.toString().trim() ?? '',
-    );
-  }
-}
-
-class ChatMessageActionEventDraft {
-  const ChatMessageActionEventDraft({
-    required this.title,
-    required this.startsAt,
-    required this.workflowMetadata,
-    this.teamId,
-    this.description,
-    this.endsAt,
-    this.allDay = false,
-    this.location,
-    this.participantUserIds = const <String>[],
-    this.participantDisplayNames = const <String>[],
-  });
-
-  final String? teamId;
-  final String title;
-  final String? description;
-  final DateTime startsAt;
-  final DateTime? endsAt;
-  final bool allDay;
-  final String? location;
-  final List<String> participantUserIds;
-  final List<String> participantDisplayNames;
-  final EventWorkflowMetadataEntity workflowMetadata;
 }

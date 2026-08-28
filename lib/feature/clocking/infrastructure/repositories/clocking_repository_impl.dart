@@ -224,6 +224,7 @@ class ClockingRepositoryImpl implements ClockingRepository {
     required String targetUserId,
     required DateTime date,
     String? note,
+    String? recordId,
   }) async {
     try {
       await _remote.requestTeamMemberClocking(
@@ -231,6 +232,7 @@ class ClockingRepositoryImpl implements ClockingRepository {
         targetUserId: targetUserId,
         date: date,
         note: note,
+        recordId: recordId,
       );
     } catch (e) {
       throw Exception('Failed to request team member clocking: $e');

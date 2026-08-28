@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -83,21 +84,42 @@ class ShiftAutoPlanPreviewPage extends StatefulWidget {
     Map<String, String> userLabelsById = const {},
     bool compact = false,
   }) {
-    return Navigator.of(context).push<ShiftAutoPlanPreviewConfirmationResult>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (context) => ShiftAutoPlanPreviewPage(
-          request: request,
-          preview: preview,
-          availableProfiles: availableProfiles,
-          availableTeamMembers: availableTeamMembers,
-          onRecalculate: onRecalculate,
-          onConfirm: onConfirm,
-          teamName: teamName,
-          userLabelsById: userLabelsById,
-          compact: compact,
+    final content = ShiftAutoPlanPreviewPage(
+      request: request,
+      preview: preview,
+      availableProfiles: availableProfiles,
+      availableTeamMembers: availableTeamMembers,
+      onRecalculate: onRecalculate,
+      onConfirm: onConfirm,
+      teamName: teamName,
+      userLabelsById: userLabelsById,
+      compact: compact,
+    );
+
+    final useCompactLayout =
+        compact || MediaQuery.of(context).size.width < 720;
+
+    if (!useCompactLayout) {
+      return showDialog<ShiftAutoPlanPreviewConfirmationResult>(
+        context: context,
+        builder: (_) => Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: content,
         ),
-      ),
+      );
+    }
+
+    return showModalBottomSheet<ShiftAutoPlanPreviewConfirmationResult>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => content,
     );
   }
 
@@ -344,46 +366,75 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final appBarBackground =
-        colorScheme.bgNavbarSurface ?? theme.scaffoldBackgroundColor;
-    final appBarForeground = colorScheme.textColor ?? colorScheme.onSurface;
+    final mediaSize = MediaQuery.of(context).size;
+    final dialogBackground =
+        colorScheme.dialogBackgroundColor ?? colorScheme.bgSurface ?? theme.scaffoldBackgroundColor;
+    final titleColor = colorScheme.textColor ?? colorScheme.onSurface;
+    final wideLayout = !_compact;
 
-    return Scaffold(
-      backgroundColor: colorScheme.bgSurface ?? theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: appBarBackground,
-        foregroundColor: appBarForeground,
-        systemOverlayStyle: AppTheme.overlayStyleForBackground(
-          appBarBackground,
-        ),
-        surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        scrolledUnderElevation: 0,
-        elevation: 0,
-        leadingWidth: 56,
-        centerTitle: true,
-        title: Text(
-          _loc.shiftAutoPlanPreviewTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleLarge?.copyWith(
-            color: appBarForeground,
-            fontWeight: FontWeight.w700,
-            fontSize: _compact ? 20 : 22,
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1080),
+    final shellWidth = wideLayout
+        ? math.min(mediaSize.width - 48, 960.0)
+        : double.infinity;
+    final shellHeight = wideLayout
+        ? math.min(mediaSize.height - 48, 860.0)
+        : mediaSize.height * 0.92;
+
+    return SafeArea(
+      top: !wideLayout,
+      bottom: !wideLayout,
+      child: Center(
+        child: Material(
+          color: dialogBackground,
+          borderRadius: BorderRadius.circular(wideLayout ? 24 : 20),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: shellWidth,
+            height: shellHeight,
             child: Column(
               children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    _compact ? 16 : 24,
+                    _compact ? 14 : 20,
+                    _compact ? 12 : 16,
+                    0,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _loc.shiftAutoPlanPreviewTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: titleColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: _compact ? 18 : 20,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: (_submitting || _recalculating)
+                            ? null
+                            : () => Navigator.of(context).maybePop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        iconSize: 24,
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(
+                  height: _compact ? 18 : 22,
+                  thickness: 1,
+                  color: theme.dividerColor.withValues(alpha: 0.16),
+                ),
                 Expanded(
                   child: ListView(
                     padding: EdgeInsets.fromLTRB(
                       _compact ? 12 : 24,
-                      _compact ? 12 : 20,
+                      0,
                       _compact ? 12 : 24,
                       12,
                     ),

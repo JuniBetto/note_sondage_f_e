@@ -355,6 +355,62 @@ class NotificationCenterItem extends Equatable {
     if (eventType != 'CLOCKING_CLOCKING_REQUEST_APPROVED') {
       return false;
     }
+    if (recordId != null) {
+      // Carries a recordId => this approval targets a specific already-open
+      // record (unlock request), not a brand-new manual entry.
+      return false;
+    }
+    if ((requesterUserId ?? '') != currentUserId) {
+      return false;
+    }
+    final notificationTeamId = metadata['teamId']?.trim() ?? '';
+    final notificationTeamName = metadata['teamName']?.trim() ?? '';
+    final normalizedSelectedTeamName = teamName?.trim().toLowerCase() ?? '';
+
+    if (notificationTeamId.isNotEmpty) {
+      if (notificationTeamId.toLowerCase() != teamId.trim().toLowerCase()) {
+        return false;
+      }
+    } else {
+      if (notificationTeamName.isEmpty || normalizedSelectedTeamName.isEmpty) {
+        return false;
+      }
+      if (notificationTeamName.toLowerCase() != normalizedSelectedTeamName) {
+        return false;
+      }
+    }
+
+    final requested = requestedDate;
+    if (requested == null) {
+      return false;
+    }
+    final parsed = DateTime.tryParse(requested);
+    if (parsed == null) {
+      return false;
+    }
+    return parsed.year == date.year &&
+        parsed.month == date.month &&
+        parsed.day == date.day;
+  }
+
+  /// Whether this is an approved "unlock" decision for the given open
+  /// clocking record: a request-clocking approval that carries the
+  /// [recordId] of an already-open record from a past day, letting the
+  /// owner close that exact record themselves instead of filling in a new
+  /// manual entry.
+  bool supportsApprovedUnlockRecordFor({
+    required String currentUserId,
+    required String teamId,
+    String? teamName,
+    required DateTime date,
+    required String recordId,
+  }) {
+    if (eventType != 'CLOCKING_CLOCKING_REQUEST_APPROVED') {
+      return false;
+    }
+    if ((this.recordId ?? '') != recordId) {
+      return false;
+    }
     if ((requesterUserId ?? '') != currentUserId) {
       return false;
     }

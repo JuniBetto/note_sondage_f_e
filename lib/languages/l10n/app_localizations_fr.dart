@@ -1097,6 +1097,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get myShifts => 'Mes quarts';
 
   @override
+  String get myEvents => 'Mes événements';
+
+  @override
   String get shiftCalendar => 'Calendrier des quarts';
 
   @override
@@ -1285,6 +1288,25 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get deleteAllShiftsForDayTooltip =>
+      'Supprimer tous les quarts de ce jour';
+
+  @override
+  String get deleteAllShiftsForDayTitle => 'Supprimer tous les quarts';
+
+  @override
+  String deleteAllShiftsForDayMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Etes-vous sur de vouloir supprimer les $count quarts assignes ce jour?',
+      one: 'Etes-vous sur de vouloir supprimer le quart assigne ce jour?',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shiftAutoPlanPreviewTitle => 'Apercu Auto Planner';
 
   @override
@@ -1416,8 +1438,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vacationStatus => 'Congés';
 
   @override
-  String get clockingOpenRecordAnotherDay =>
-      'Vous avez un pointage ouvert sur un autre jour. Sélectionnez-le pour continuer.';
+  String clockingOpenRecordAnotherDay(String teamName, String date) {
+    return 'Vous avez un pointage ouvert sur $teamName le $date. Sélectionnez-le pour continuer.';
+  }
 
   @override
   String dayAlreadyHasClocking(String date) {
@@ -1463,8 +1486,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get manualClockingResolveOpenRecord =>
-      'Vous avez un pointage ouvert sur un autre jour. Fermez-le ou sélectionnez ce jour avant d\'enregistrer un pointage manuel.';
+  String manualClockingResolveOpenRecord(String teamName, String date) {
+    return 'Vous avez un pointage ouvert sur $teamName le $date. Fermez-le ou sélectionnez ce jour avant d\'enregistrer un pointage manuel.';
+  }
 
   @override
   String get selectedDays => 'Jours sélectionnés';
@@ -1644,6 +1668,22 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get clockingRequestSentError =>
       'Nous n\'avons pas pu envoyer la demande de pointage au membre de l\'équipe.';
+
+  @override
+  String get requestUnlockOpenRecord => 'Demander le déverrouillage';
+
+  @override
+  String requestUnlockOpenRecordDescription(String date) {
+    return 'Vous avez un pointage ouvert du $date que vous ne pouvez pas fermer vous-même. Demandez au manager de le déverrouiller pour pouvoir le fermer.';
+  }
+
+  @override
+  String get unlockRequestSentSuccess =>
+      'Demande de déverrouillage envoyée avec succès.';
+
+  @override
+  String get unlockRequestSentError =>
+      'Nous n\'avons pas pu envoyer la demande de déverrouillage.';
 
   @override
   String get decommitRequestSentSuccess =>

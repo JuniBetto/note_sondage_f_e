@@ -81,6 +81,7 @@ abstract class ClockingRepository {
     required String targetUserId,
     required DateTime date,
     String? note,
+    String? recordId,
   });
 
   Future<void> requestDecommit({

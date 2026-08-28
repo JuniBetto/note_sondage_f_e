@@ -352,6 +352,7 @@
     "loadingClockingState": "Loading clock in state...",
     "noClockingsForFilter": "No clockings found for the selected filters",
     "myShifts": "My Shifts",
+    "myEvents": "My Events",
     "shiftCalendar": "Shift Calendar",
     "shiftCalendarSubtitle": "Your personal and team shift schedule",
     "shiftTeamReportTitle": "Team shift report",
@@ -429,6 +430,16 @@
             }
         }
     },
+    "deleteAllShiftsForDayTooltip": "Delete all shifts for this day",
+    "deleteAllShiftsForDayTitle": "Delete all shifts",
+    "deleteAllShiftsForDayMessage": "{count, plural, =1{Are you sure you want to delete the shift assigned on this day?} other{Are you sure you want to delete all {count} shifts assigned on this day?}}",
+    "@deleteAllShiftsForDayMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "shiftAutoPlanPreviewTitle": "Auto Planner preview",
     "shiftAutoPlanPreviewStatusFeasible": "Feasible",
     "shiftAutoPlanPreviewStatusNeedsReview": "Needs review",
@@ -470,7 +481,19 @@
     "requestVacation": "Request vacation",
     "requestPermission": "Request permission",
     "vacationStatus": "Vacation",
-    "clockingOpenRecordAnotherDay": "You have an open clocking on another day. Select it to continue.",
+    "clockingOpenRecordAnotherDay": "You have an open clocking on {teamName} on {date}. Select it to continue.",
+    "@clockingOpenRecordAnotherDay": {
+        "placeholders": {
+            "teamName": {
+                "type": "String",
+                "example": "Development Team"
+            },
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
     "dayAlreadyHasClocking": "A clocking already exists for {date}.",
     "@dayAlreadyHasClocking": {
         "placeholders": {
@@ -513,7 +536,19 @@
             }
         }
     },
-    "manualClockingResolveOpenRecord": "You have an open clocking on another day. Close it or select that day before saving a manual clocking.",
+    "manualClockingResolveOpenRecord": "You have an open clocking on {teamName} on {date}. Close it or select that day before saving a manual clocking.",
+    "@manualClockingResolveOpenRecord": {
+        "placeholders": {
+            "teamName": {
+                "type": "String",
+                "example": "Development Team"
+            },
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
     "selectedDays": "Selected days",
     "addDay": "Add day",
     "clockInLabel": "Clock-in",
@@ -626,6 +661,18 @@
     "sendRequest": "Send request",
     "clockingRequestSentSuccess": "Clocking request sent successfully.",
     "clockingRequestSentError": "We couldn't send the clocking request to the team member.",
+    "requestUnlockOpenRecord": "Request unlock",
+    "requestUnlockOpenRecordDescription": "You have an open clocking on {date} that you can't close yourself. Ask the manager to unlock it so you can close it.",
+    "@requestUnlockOpenRecordDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "unlockRequestSentSuccess": "Unlock request sent successfully.",
+    "unlockRequestSentError": "We couldn't send the unlock request.",
     "decommitRequestSentSuccess": "Decommit request sent successfully.",
     "decommitRequestSentError": "We couldn't send the decommit request.",
     "vacationRequestSentSuccess": "Vacation request sent successfully.",

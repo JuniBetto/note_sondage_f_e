@@ -12,8 +12,12 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/avatar_app.dart';
 import 'package:note_sondage/ui/widgets/custom_date_range_picker.dart';
 
-const _kCalendarStartHour = 7;
-const _kCalendarEndHour = 20;
+const _kCalendarStartHour = 0;
+const _kCalendarEndHour = 24;
+// The grid spans the full day so no task/event is ever clipped out, but the
+// view still opens scrolled to this hour since most items fall in typical
+// working hours.
+const _kCalendarDefaultScrollHour = 7;
 const _kPixelsPerHour = 64.0;
 const _kCalendarCompactBreakpoint = 760.0;
 
@@ -32,6 +36,7 @@ class TaskCalendarView extends StatefulWidget {
     required this.onWeekStartChanged,
     required this.selectedTaskId,
     required this.onTaskTap,
+    this.assigneeAvatarUrlByUserId = const <String, String>{},
   });
 
   final List<TaskEntity> tasks;
@@ -39,6 +44,7 @@ class TaskCalendarView extends StatefulWidget {
   final ValueChanged<DateTime> onWeekStartChanged;
   final String? selectedTaskId;
   final ValueChanged<TaskEntity> onTaskTap;
+  final Map<String, String> assigneeAvatarUrlByUserId;
 
   @override
   State<TaskCalendarView> createState() => _TaskCalendarViewState();
@@ -52,6 +58,9 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
   // it's fully under the user's control via the Day/Week/Month selector.
   _CalendarViewMode? _viewMode;
   DateTimeRange? _customRange;
+  final ScrollController _hourGridScrollController = ScrollController(
+    initialScrollOffset: _kCalendarDefaultScrollHour * _kPixelsPerHour,
+  );
 
   List<DateTime> get _days =>
       List.generate(7, (i) => widget.weekStart.add(Duration(days: i)));
@@ -126,6 +135,12 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
         end: range.end.add(offset),
       );
     });
+  }
+
+  @override
+  void dispose() {
+    _hourGridScrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -318,6 +333,7 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
             else
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _hourGridScrollController,
                   child: viewMode == _CalendarViewMode.day
                       ? _CalendarGrid(
                           days: [_focusedDay],
@@ -325,6 +341,8 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                           selectedTaskId: widget.selectedTaskId,
                           onTaskTap: widget.onTaskTap,
                           showDayHeaders: false,
+                          assigneeAvatarUrlByUserId:
+                              widget.assigneeAvatarUrlByUserId,
                         )
                       : viewMode == _CalendarViewMode.range
                       ? _HorizontalScrollIfNarrow(
@@ -335,6 +353,8 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                             selectedTaskId: widget.selectedTaskId,
                             onTaskTap: widget.onTaskTap,
                             showDayHeaders: true,
+                            assigneeAvatarUrlByUserId:
+                                widget.assigneeAvatarUrlByUserId,
                           ),
                         )
                       : _CalendarGrid(
@@ -343,6 +363,8 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                           selectedTaskId: widget.selectedTaskId,
                           onTaskTap: widget.onTaskTap,
                           showDayHeaders: true,
+                          assigneeAvatarUrlByUserId:
+                              widget.assigneeAvatarUrlByUserId,
                         ),
                 ),
               ),
@@ -1002,6 +1024,7 @@ class _CalendarGrid extends StatelessWidget {
     required this.selectedTaskId,
     required this.onTaskTap,
     required this.showDayHeaders,
+    this.assigneeAvatarUrlByUserId = const <String, String>{},
   });
 
   final List<DateTime> days;
@@ -1009,6 +1032,7 @@ class _CalendarGrid extends StatelessWidget {
   final String? selectedTaskId;
   final ValueChanged<TaskEntity> onTaskTap;
   final bool showDayHeaders;
+  final Map<String, String> assigneeAvatarUrlByUserId;
 
   static const _hourCount = _kCalendarEndHour - _kCalendarStartHour;
   static const _gutterWidth = 52.0;
@@ -1073,6 +1097,7 @@ class _CalendarGrid extends StatelessWidget {
                       selectedTaskId: selectedTaskId,
                       onTaskTap: onTaskTap,
                       pixelsPerHour: pixelsPerHour,
+                      assigneeAvatarUrlByUserId: assigneeAvatarUrlByUserId,
                     ),
                   ),
                 ),
@@ -1162,12 +1187,14 @@ class _CalendarDayColumn extends StatelessWidget {
     required this.selectedTaskId,
     required this.onTaskTap,
     required this.pixelsPerHour,
+    this.assigneeAvatarUrlByUserId = const <String, String>{},
   });
 
   final List<_CalendarBlock> blocks;
   final String? selectedTaskId;
   final ValueChanged<TaskEntity> onTaskTap;
   final double pixelsPerHour;
+  final Map<String, String> assigneeAvatarUrlByUserId;
 
   double _topForTime(DateTime time) {
     final minutes = (time.hour * 60 + time.minute).clamp(
@@ -1213,6 +1240,9 @@ class _CalendarDayColumn extends StatelessWidget {
                 block: block,
                 selected: block.task.id == selectedTaskId,
                 onTap: () => onTaskTap(block.task),
+                assigneeAvatarUrl:
+                    assigneeAvatarUrlByUserId[block.task.assigneeUserId
+                        ?.trim()],
               ),
             ),
         ],
@@ -1226,11 +1256,13 @@ class _CalendarEventCard extends StatelessWidget {
     required this.block,
     required this.selected,
     required this.onTap,
+    this.assigneeAvatarUrl,
   });
 
   final _CalendarBlock block;
   final bool selected;
   final VoidCallback onTap;
+  final String? assigneeAvatarUrl;
 
   String _initialsFor(String value) {
     final parts = value
@@ -1319,6 +1351,7 @@ class _CalendarEventCard extends StatelessWidget {
                     if (showAvatar) ...[
                       SizedBox(height: 4 * scale),
                       AvatarApp(
+                        imageUrl: assigneeAvatarUrl,
                         initials: _initialsFor(assignee!),
                         size: 18 * scale,
                         backgroundColor: colorScheme.avatarBg ?? Colors.grey,

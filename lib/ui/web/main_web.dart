@@ -138,12 +138,12 @@ class _MainWebState extends State<MainWeb> {
                 ),
                 _buildShowcase(
                   showcaseKey: _clockingKey,
-                  title: localizations.planningTabLabel,
+                  title: localizations.clockingInOut,
                   description: _navDescription(context),
                   child: SidebarItem(
                     key: const ValueKey(3),
                     icon: Icons.timer,
-                    label: localizations.planningTabLabel,
+                    label: localizations.clockingInOut,
                     index: 3,
                     isSmallScreen: isExpanded,
                     lastIndexes: lastIndexes,
@@ -433,7 +433,7 @@ class _MainWebState extends State<MainWeb> {
   String _contentTitle(AppLocalizations localizations, int navIndex) {
     return switch (navIndex) {
       1 => localizations.team,
-      3 => localizations.planningTabLabel,
+      3 => localizations.clockingInOut,
       4 => localizations.sondage,
       5 => localizations.myShifts,
       6 => localizations.taskPageTitle,

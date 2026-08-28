@@ -2112,6 +2112,12 @@ abstract class AppLocalizations {
   /// **'My Shifts'**
   String get myShifts;
 
+  /// No description provided for @myEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'My Events'**
+  String get myEvents;
+
   /// No description provided for @shiftCalendar.
   ///
   /// In en, this message translates to:
@@ -2448,6 +2454,24 @@ abstract class AppLocalizations {
   /// **'+{count} more'**
   String shiftCalendarMoreEntries(int count);
 
+  /// No description provided for @deleteAllShiftsForDayTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all shifts for this day'**
+  String get deleteAllShiftsForDayTooltip;
+
+  /// No description provided for @deleteAllShiftsForDayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all shifts'**
+  String get deleteAllShiftsForDayTitle;
+
+  /// No description provided for @deleteAllShiftsForDayMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Are you sure you want to delete the shift assigned on this day?} other{Are you sure you want to delete all {count} shifts assigned on this day?}}'**
+  String deleteAllShiftsForDayMessage(int count);
+
   /// No description provided for @shiftAutoPlanPreviewTitle.
   ///
   /// In en, this message translates to:
@@ -2697,8 +2721,8 @@ abstract class AppLocalizations {
   /// No description provided for @clockingOpenRecordAnotherDay.
   ///
   /// In en, this message translates to:
-  /// **'You have an open clocking on another day. Select it to continue.'**
-  String get clockingOpenRecordAnotherDay;
+  /// **'You have an open clocking on {teamName} on {date}. Select it to continue.'**
+  String clockingOpenRecordAnotherDay(String teamName, String date);
 
   /// No description provided for @dayAlreadyHasClocking.
   ///
@@ -2763,8 +2787,8 @@ abstract class AppLocalizations {
   /// No description provided for @manualClockingResolveOpenRecord.
   ///
   /// In en, this message translates to:
-  /// **'You have an open clocking on another day. Close it or select that day before saving a manual clocking.'**
-  String get manualClockingResolveOpenRecord;
+  /// **'You have an open clocking on {teamName} on {date}. Close it or select that day before saving a manual clocking.'**
+  String manualClockingResolveOpenRecord(String teamName, String date);
 
   /// No description provided for @selectedDays.
   ///
@@ -3057,6 +3081,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t send the clocking request to the team member.'**
   String get clockingRequestSentError;
+
+  /// No description provided for @requestUnlockOpenRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Request unlock'**
+  String get requestUnlockOpenRecord;
+
+  /// No description provided for @requestUnlockOpenRecordDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You have an open clocking on {date} that you can\'t close yourself. Ask the manager to unlock it so you can close it.'**
+  String requestUnlockOpenRecordDescription(String date);
+
+  /// No description provided for @unlockRequestSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock request sent successfully.'**
+  String get unlockRequestSentSuccess;
+
+  /// No description provided for @unlockRequestSentError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the unlock request.'**
+  String get unlockRequestSentError;
 
   /// No description provided for @decommitRequestSentSuccess.
   ///

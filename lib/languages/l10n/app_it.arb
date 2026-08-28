@@ -352,6 +352,7 @@
     "loadingClockingState": "Caricamento stato timbratura...",
     "noClockingsForFilter": "Nessuna timbratura trovata per i filtri selezionati",
     "myShifts": "I miei turni",
+    "myEvents": "I miei eventi",
     "shiftCalendar": "Calendario turni",
     "shiftCalendarSubtitle": "Il tuo calendario personale e del team",
     "shiftTeamReportTitle": "Report turni team",
@@ -429,6 +430,16 @@
             }
         }
     },
+    "deleteAllShiftsForDayTooltip": "Elimina tutti i turni di questo giorno",
+    "deleteAllShiftsForDayTitle": "Elimina tutti i turni",
+    "deleteAllShiftsForDayMessage": "{count, plural, =1{Sei sicuro di voler eliminare il turno assegnato in questo giorno?} other{Sei sicuro di voler eliminare tutti i {count} turni assegnati in questo giorno?}}",
+    "@deleteAllShiftsForDayMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "shiftAutoPlanPreviewTitle": "Anteprima Auto Planner",
     "shiftAutoPlanPreviewStatusFeasible": "Fattibile",
     "shiftAutoPlanPreviewStatusNeedsReview": "Da correggere",
@@ -470,7 +481,19 @@
     "requestVacation": "Richiedi ferie",
     "requestPermission": "Richiedi permesso",
     "vacationStatus": "Ferie",
-    "clockingOpenRecordAnotherDay": "Hai una timbratura aperta in un altro giorno. Selezionalo per continuare.",
+    "clockingOpenRecordAnotherDay": "Hai una timbratura aperta su {teamName} il {date}. Selezionala per continuare.",
+    "@clockingOpenRecordAnotherDay": {
+        "placeholders": {
+            "teamName": {
+                "type": "String",
+                "example": "Development Team"
+            },
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
     "dayAlreadyHasClocking": "Esiste gia una timbratura per {date}.",
     "@dayAlreadyHasClocking": {
         "placeholders": {
@@ -513,7 +536,19 @@
             }
         }
     },
-    "manualClockingResolveOpenRecord": "Hai una timbratura aperta in un altro giorno. Chiudila o seleziona quel giorno prima di salvare una timbratura manuale.",
+    "manualClockingResolveOpenRecord": "Hai una timbratura aperta su {teamName} il {date}. Chiudila o seleziona quel giorno prima di salvare una timbratura manuale.",
+    "@manualClockingResolveOpenRecord": {
+        "placeholders": {
+            "teamName": {
+                "type": "String",
+                "example": "Development Team"
+            },
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
     "selectedDays": "Giorni selezionati",
     "addDay": "Aggiungi giorno",
     "clockInLabel": "Clock-in",
@@ -626,6 +661,18 @@
     "sendRequest": "Invia richiesta",
     "clockingRequestSentSuccess": "Richiesta di timbratura inviata con successo.",
     "clockingRequestSentError": "Non siamo riusciti a inviare la richiesta di timbratura al membro del team.",
+    "requestUnlockOpenRecord": "Richiedi sblocco",
+    "requestUnlockOpenRecordDescription": "Hai una timbratura aperta del {date} che non puoi chiudere da solo. Chiedi al manager di sbloccarla così potrai chiuderla tu.",
+    "@requestUnlockOpenRecordDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "unlockRequestSentSuccess": "Richiesta di sblocco inviata con successo.",
+    "unlockRequestSentError": "Non siamo riusciti a inviare la richiesta di sblocco.",
     "decommitRequestSentSuccess": "Richiesta di decommit inviata con successo.",
     "decommitRequestSentError": "Non siamo riusciti a inviare la richiesta di decommit.",
     "vacationRequestSentSuccess": "Richiesta ferie inviata con successo.",

@@ -17,10 +17,14 @@ import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordi
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/domain/entities/shift_text_size.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
+import 'package:note_sondage/feature/shift/ui/shift_density_scope.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
+import 'package:note_sondage/feature/shift/ui/bloc/shift_text_size_cubit.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_text_size_toggle.dart';
 import 'package:note_sondage/feature/shift/ui/utils/shift_assignment_day_visibility.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_archived_assignments_list.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
@@ -64,6 +68,10 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
   final UserArchiveService _archiveService =
       GetIt.instance<UserArchiveService>();
+  // Lets the user shrink/grow all text in this mobile layout to fit more
+  // content on screen (see ShiftTextSizeToggle in the toolbar row below).
+  final ShiftTextSizeCubit _shiftTextSizeCubit =
+      GetIt.instance<ShiftTextSizeCubit>();
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
   DateTime _focusedMonth = DateTime.now();
@@ -425,6 +433,19 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
   }
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
+    if (!mounted) {
+      return;
+    }
+    // The websocket push is best-effort: if this device was briefly
+    // disconnected, any decision notification sent while offline (e.g. a
+    // vacation/permission/sick request approved for the current user) is
+    // lost for good. Resync everything on (re)connect so a missed event
+    // still surfaces within seconds instead of requiring a manual reload.
+    if (notification.eventType == 'SYSTEM_CONNECTED') {
+      _loadAssignments();
+      unawaited(_loadShiftAbsenceStatuses());
+      return;
+    }
     final shiftDecision = GetIt.instance<ShiftRealtimeCoordinator>()
         .resolveDecision(notification, currentUserId: _currentUid);
     final clockingDecision = GetIt.instance<ClockingRealtimeCoordinator>()
@@ -433,9 +454,6 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           currentUserId: _currentUid,
           selectedTeamId: _selectedCalendarTeamId,
         );
-    if (!mounted) {
-      return;
-    }
     if (shiftDecision.refreshCalendar) {
       _loadAssignments();
     }
@@ -670,6 +688,41 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       _findRoleByCode(teamId, roleCode)?.permissions,
     );
     return permissions.contains('ADMIN') || permissions.contains('MANAGE');
+  }
+
+  /// The bulk "delete all shifts for this day" action is only offered when
+  /// a specific, manageable team is selected — not in the personal "my
+  /// shifts across every team" aggregate view (no single team to act on).
+  bool get _canDeleteSelectedCalendarDay {
+    final team = _selectedCalendarTeam?.team;
+    return team != null && _canManageTeam(team);
+  }
+
+  Future<void> _confirmAndDeleteAllShiftsForDay(
+    BuildContext context,
+    DateTime date,
+    List<ShiftAssignmentEntity> dayAssignments,
+  ) async {
+    if (dayAssignments.isEmpty) {
+      return;
+    }
+    final localization = AppLocalizations.of(context)!;
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: localization.deleteAllShiftsForDayTitle,
+      message: localization.deleteAllShiftsForDayMessage(
+        dayAssignments.length,
+      ),
+      confirmLabel: localization.deleteAction,
+      destructive: true,
+    );
+    if (!context.mounted || !confirmed) {
+      return;
+    }
+    final shiftBloc = context.read<ShiftBloc>();
+    for (final assignment in dayAssignments) {
+      shiftBloc.add(DeleteShiftAssignmentEvent(assignment.id));
+    }
   }
 
   TeamMemberforView? _findCurrentTeamMember(String teamId) {
@@ -1346,6 +1399,44 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           .where((assignment) => _archivedAssignmentIds.contains(assignment.id))
           .toList(),
     );
+    final calendarOrArchiveContent = _showArchivedOnly
+        ? ShiftArchivedAssignmentsList(
+            assignments: archivedAssignments,
+            compact: false,
+            onOpen: (assignment) {
+              _openDialogForAssignment(
+                context,
+                assignment.shiftDate,
+                existing: assignment,
+              );
+            },
+            onRestore: (assignment) {
+              _setAssignmentArchived(assignment, false);
+            },
+          )
+        : SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: ShiftCalendarWidget(
+              assignments: foregroundAssignments,
+              absenceStatuses: _absenceStatusesByKey.values.toList(
+                growable: false,
+              ),
+              syncingAssignmentIds: context
+                  .read<ShiftBloc>()
+                  .syncingAssignmentIds,
+              focusedMonth: _focusedMonth,
+              onMonthChanged: _onMonthChanged,
+              onDayTap: (date, assignments) =>
+                  _onDayTap(context, date, assignments),
+              onDeleteDay: _canDeleteSelectedCalendarDay
+                  ? (date, dayAssignments) => _confirmAndDeleteAllShiftsForDay(
+                      context,
+                      date,
+                      dayAssignments,
+                    )
+                  : null,
+            ),
+          );
 
     AppTutorialController.registerTargets(
       tutorialId: 'mobile-shifts',
@@ -1497,6 +1588,8 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),*/
                     // const Spacer(),
+                    const ShiftTextSizeToggle(),
+                    const SizedBox(width: 6),
                     if (_canManageAnyTeam) ...[
                       IconButton.outlined(
                         tooltip: _isItalian(context)
@@ -1606,36 +1699,20 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                         : (_isItalian(context)
                               ? 'Tocca un giorno per creare o modificare i turni disponibili in quella data.'
                               : 'Tap a day to create or edit the shifts available on that date.'),
-                    child: _showArchivedOnly
-                        ? ShiftArchivedAssignmentsList(
-                            assignments: archivedAssignments,
-                            compact: false,
-                            onOpen: (assignment) {
-                              _openDialogForAssignment(
-                                context,
-                                assignment.shiftDate,
-                                existing: assignment,
-                              );
-                            },
-                            onRestore: (assignment) {
-                              _setAssignmentArchived(assignment, false);
-                            },
-                          )
-                        : SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            child: ShiftCalendarWidget(
-                              assignments: foregroundAssignments,
-                              absenceStatuses: _absenceStatusesByKey.values
-                                  .toList(growable: false),
-                              syncingAssignmentIds: context
-                                  .read<ShiftBloc>()
-                                  .syncingAssignmentIds,
-                              focusedMonth: _focusedMonth,
-                              onMonthChanged: _onMonthChanged,
-                              onDayTap: (date, assignments) =>
-                                  _onDayTap(context, date, assignments),
-                            ),
+                    child: BlocBuilder<ShiftTextSizeCubit, ShiftTextSize>(
+                      bloc: _shiftTextSizeCubit,
+                      builder: (context, textSize) {
+                        return MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            textScaler: TextScaler.linear(textSize.scaleFactor),
                           ),
+                          child: ShiftDensityScope(
+                            scale: textSize.scaleFactor,
+                            child: calendarOrArchiveContent,
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],

@@ -13,11 +13,13 @@ class TaskCard extends StatelessWidget {
     required this.task,
     required this.onTap,
     this.selected = false,
+    this.assigneeAvatarUrl,
   });
 
   final TaskEntity task;
   final VoidCallback onTap;
   final bool selected;
+  final String? assigneeAvatarUrl;
 
   String _initialsFor(String value) {
     final parts = value
@@ -115,6 +117,7 @@ class TaskCard extends StatelessWidget {
               Row(
                 children: [
                   AvatarApp(
+                    imageUrl: assigneeAvatarUrl,
                     initials: assignee?.isNotEmpty == true
                         ? _initialsFor(assignee!)
                         : '?',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_entity.dart';
@@ -228,6 +229,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   widget.selectedTeamId!.isNotEmpty;
               final hasApprovedManualClockingRequest =
                   _hasApprovedManualClockingRequest(context);
+              final hasApprovedUnlockRequest = _hasApprovedUnlockRequest(
+                context,
+                activeRecord,
+              );
               final hasVacationOnSelectedDate = recordsForSelectedDate.any(
                 (record) => record.isFullDayAbsence,
               );
@@ -245,7 +250,13 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   !selectedDateIsToday &&
                   !hasVacationOnSelectedDate &&
                   !_canManageSelectedTeamClocking &&
-                  !hasApprovedManualClockingRequest;
+                  !hasApprovedManualClockingRequest &&
+                  !hasApprovedUnlockRequest;
+              final needsUnlockRequest =
+                  hasOpenRecordOutsideSelectedDate &&
+                  hasSelectedTeam &&
+                  !_canManageSelectedTeamClocking &&
+                  !hasApprovedUnlockRequest;
 
               final clockColor = activeRecordForSelectedDate != null
                   ? Colors.red
@@ -260,6 +271,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   hasVacationOnSelectedDate: hasVacationOnSelectedDate,
                   hasOpenRecordOutsideSelectedDate:
                       hasOpenRecordOutsideSelectedDate,
+                  activeRecord: activeRecord,
                   isClockingReady: isClockingReady,
                 );
               }
@@ -297,6 +309,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
                                 activeRecordForSelectedDate,
                             hasOpenRecordOutsideSelectedDate:
                                 hasOpenRecordOutsideSelectedDate,
+                            activeRecord: activeRecord,
                             selectedDateRecord: selectedDateRecord,
                             hasVacationOnSelectedDate:
                                 hasVacationOnSelectedDate,
@@ -304,6 +317,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
                             selectedDateIsToday: selectedDateIsToday,
                             hasApprovedManualClockingRequest:
                                 hasApprovedManualClockingRequest,
+                            hasApprovedUnlockRequest: hasApprovedUnlockRequest,
                           ),
                           isCompact: true,
                           isDisabled:
@@ -381,6 +395,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
                                   activeRecordForSelectedDate,
                               hasOpenRecordOutsideSelectedDate:
                                   hasOpenRecordOutsideSelectedDate,
+                              activeRecord: activeRecord,
                               selectedDateRecord: selectedDateRecord,
                               hasVacationOnSelectedDate:
                                   hasVacationOnSelectedDate,
@@ -388,6 +403,8 @@ class _ButtonClockingState extends State<ButtonClocking> {
                               selectedDateIsToday: selectedDateIsToday,
                               hasApprovedManualClockingRequest:
                                   hasApprovedManualClockingRequest,
+                              hasApprovedUnlockRequest:
+                                  hasApprovedUnlockRequest,
                             ),
                             isCompact: false,
                             isDisabled:
@@ -450,6 +467,23 @@ class _ButtonClockingState extends State<ButtonClocking> {
                   ),
                   const SizedBox(height: 12),
                   actionButtons,
+                  if (needsUnlockRequest) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: CustomAppButton(
+                        onPressed: isBusy
+                            ? null
+                            : () =>
+                                  _requestUnlockForOpenRecord(activeRecord),
+                        type: ButtonType.outlined,
+                        isActive: true,
+                        fullWidth: true,
+                        leadingIcon: const Icon(Icons.lock_open_rounded),
+                        child: Text(localization.requestUnlockOpenRecord),
+                      ),
+                    ),
+                  ],
                   if (widget.selectedTeamId == null ||
                       widget.selectedTeamId!.isEmpty) ...[
                     const SizedBox(height: 20),
@@ -897,6 +931,120 @@ class _ButtonClockingState extends State<ButtonClocking> {
     return false;
   }
 
+  bool _hasApprovedUnlockRequest(
+    BuildContext context,
+    ClockingRecordEntity? activeRecord,
+  ) {
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty || activeRecord == null) {
+      return false;
+    }
+    String? selectedTeamName;
+    final teamState = context.read<TeamBloc>().state;
+    if (teamState is TeamsLoaded) {
+      final selectedTeam = teamState.teams.cast<TeamEntity?>().firstWhere(
+        (item) => item?.id == teamId,
+        orElse: () => null,
+      );
+      selectedTeamName = selectedTeam?.name;
+    }
+    final notifications = context
+        .watch<NotificationCenterCubit>()
+        .state
+        .notifications;
+    for (final item in notifications) {
+      if (item.supportsApprovedUnlockRecordFor(
+        currentUserId: _currentUserId,
+        teamId: teamId,
+        teamName: selectedTeamName,
+        date: activeRecord.date,
+        recordId: activeRecord.id,
+      )) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _requestUnlockForOpenRecord(
+    ClockingRecordEntity activeRecord,
+  ) async {
+    final localization = AppLocalizations.of(context)!;
+    final teamId = widget.selectedTeamId;
+    if (teamId == null || teamId.isEmpty) {
+      return;
+    }
+
+    final noteController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(localization.requestUnlockOpenRecord),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localization.requestUnlockOpenRecordDescription(
+                    _formatDateLabel(activeRecord.date),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: localization.note,
+                    hintText: localization.optionalRequestNoteHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              type: ButtonType.text,
+              isActive: false,
+              child: Text(localization.cancel),
+            ),
+            CustomAppButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              type: ButtonType.filled,
+              isActive: true,
+              child: Text(localization.sendRequest),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _clockingUseCase.requestTeamMemberClocking(
+        teamId: teamId,
+        targetUserId: _currentUserId,
+        date: activeRecord.date,
+        recordId: activeRecord.id,
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
+      );
+      if (!mounted) return;
+      AppSnackBar.showSuccess(context, localization.unlockRequestSentSuccess);
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackBar.showResolvedError(
+        context,
+        error,
+        fallback: localization.unlockRequestSentError,
+      );
+    }
+  }
+
   bool _requiresManagerApprovalForSelectedDate() {
     final hasSelectedTeam =
         widget.selectedTeamId != null && widget.selectedTeamId!.isNotEmpty;
@@ -921,21 +1069,27 @@ class _ButtonClockingState extends State<ButtonClocking> {
     required AppLocalizations localization,
     required ClockingRecordEntity? activeRecordForSelectedDate,
     required bool hasOpenRecordOutsideSelectedDate,
+    required ClockingRecordEntity? activeRecord,
     required ClockingRecordEntity? selectedDateRecord,
     required bool hasVacationOnSelectedDate,
     required bool isClockingReady,
     required bool selectedDateIsToday,
     required bool hasApprovedManualClockingRequest,
+    required bool hasApprovedUnlockRequest,
   }) {
-    if (hasOpenRecordOutsideSelectedDate) {
-      return localization.clockingOpenRecordAnotherDay;
+    if (hasOpenRecordOutsideSelectedDate && activeRecord != null) {
+      return localization.clockingOpenRecordAnotherDay(
+        activeRecord.teamName,
+        DateFormat('dd/MM/yyyy').format(activeRecord.date),
+      );
     }
     if (!selectedDateIsToday) {
       final hasSelectedTeam =
           widget.selectedTeamId != null && widget.selectedTeamId!.isNotEmpty;
       if (hasSelectedTeam &&
           !_canManageSelectedTeamClocking &&
-          !hasApprovedManualClockingRequest) {
+          !hasApprovedManualClockingRequest &&
+          !hasApprovedUnlockRequest) {
         return localization.manualClockingRequiresApproval;
       }
       if (hasVacationOnSelectedDate) {
@@ -974,6 +1128,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
     required List<ClockingRecordEntity> records,
     required bool hasVacationOnSelectedDate,
     required bool hasOpenRecordOutsideSelectedDate,
+    required ClockingRecordEntity? activeRecord,
     required bool isClockingReady,
   }) {
     final theme = Theme.of(context);
@@ -1191,10 +1346,13 @@ class _ButtonClockingState extends State<ButtonClocking> {
                     ),
                 ],
               ),
-              if (hasOpenRecordOutsideSelectedDate) ...[
+              if (hasOpenRecordOutsideSelectedDate && activeRecord != null) ...[
                 const SizedBox(height: 10),
                 Text(
-                  localization.manualClockingResolveOpenRecord,
+                  localization.manualClockingResolveOpenRecord(
+                    activeRecord.teamName,
+                    DateFormat('dd/MM/yyyy').format(activeRecord.date),
+                  ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.orange[800],
                     fontWeight: FontWeight.w700,

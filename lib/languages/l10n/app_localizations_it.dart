@@ -1091,6 +1091,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get myShifts => 'I miei turni';
 
   @override
+  String get myEvents => 'I miei eventi';
+
+  @override
   String get shiftCalendar => 'Calendario turni';
 
   @override
@@ -1279,6 +1282,25 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get deleteAllShiftsForDayTooltip =>
+      'Elimina tutti i turni di questo giorno';
+
+  @override
+  String get deleteAllShiftsForDayTitle => 'Elimina tutti i turni';
+
+  @override
+  String deleteAllShiftsForDayMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Sei sicuro di voler eliminare tutti i $count turni assegnati in questo giorno?',
+      one: 'Sei sicuro di voler eliminare il turno assegnato in questo giorno?',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shiftAutoPlanPreviewTitle => 'Anteprima Auto Planner';
 
   @override
@@ -1410,8 +1432,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get vacationStatus => 'Ferie';
 
   @override
-  String get clockingOpenRecordAnotherDay =>
-      'Hai una timbratura aperta in un altro giorno. Selezionalo per continuare.';
+  String clockingOpenRecordAnotherDay(String teamName, String date) {
+    return 'Hai una timbratura aperta su $teamName il $date. Selezionala per continuare.';
+  }
 
   @override
   String dayAlreadyHasClocking(String date) {
@@ -1457,8 +1480,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get manualClockingResolveOpenRecord =>
-      'Hai una timbratura aperta in un altro giorno. Chiudila o seleziona quel giorno prima di salvare una timbratura manuale.';
+  String manualClockingResolveOpenRecord(String teamName, String date) {
+    return 'Hai una timbratura aperta su $teamName il $date. Chiudila o seleziona quel giorno prima di salvare una timbratura manuale.';
+  }
 
   @override
   String get selectedDays => 'Giorni selezionati';
@@ -1637,6 +1661,22 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get clockingRequestSentError =>
       'Non siamo riusciti a inviare la richiesta di timbratura al membro del team.';
+
+  @override
+  String get requestUnlockOpenRecord => 'Richiedi sblocco';
+
+  @override
+  String requestUnlockOpenRecordDescription(String date) {
+    return 'Hai una timbratura aperta del $date che non puoi chiudere da solo. Chiedi al manager di sbloccarla così potrai chiuderla tu.';
+  }
+
+  @override
+  String get unlockRequestSentSuccess =>
+      'Richiesta di sblocco inviata con successo.';
+
+  @override
+  String get unlockRequestSentError =>
+      'Non siamo riusciti a inviare la richiesta di sblocco.';
 
   @override
   String get decommitRequestSentSuccess =>

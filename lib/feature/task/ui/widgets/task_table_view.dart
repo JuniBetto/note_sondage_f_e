@@ -17,11 +17,13 @@ class TaskTableView extends StatelessWidget {
     required this.tasks,
     required this.selectedTaskId,
     required this.onTaskTap,
+    this.assigneeAvatarUrlByUserId = const <String, String>{},
   });
 
   final List<TaskEntity> tasks;
   final String? selectedTaskId;
   final ValueChanged<TaskEntity> onTaskTap;
+  final Map<String, String> assigneeAvatarUrlByUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +44,8 @@ class TaskTableView extends StatelessWidget {
                 task: task,
                 selected: task.id == selectedTaskId,
                 onTap: () => onTaskTap(task),
+                assigneeAvatarUrl:
+                    assigneeAvatarUrlByUserId[task.assigneeUserId?.trim()],
               );
             },
           ),
@@ -103,11 +107,13 @@ class _TaskTableRow extends StatelessWidget {
     required this.task,
     required this.selected,
     required this.onTap,
+    this.assigneeAvatarUrl,
   });
 
   final TaskEntity task;
   final bool selected;
   final VoidCallback onTap;
+  final String? assigneeAvatarUrl;
 
   String _initialsFor(String value) {
     final parts = value
@@ -196,6 +202,7 @@ class _TaskTableRow extends StatelessWidget {
                   ? Row(
                       children: [
                         AvatarApp(
+                          imageUrl: assigneeAvatarUrl,
                           initials: _initialsFor(assignee!),
                           size: 24 * scale,
                           backgroundColor: colorScheme.avatarBg ?? Colors.grey,

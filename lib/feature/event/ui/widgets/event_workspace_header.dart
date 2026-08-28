@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/feature/event/ui/event_workspace.dart';
+import 'package:note_sondage/feature/event/ui/widgets/event_text_size_toggle.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_view_mode_toggle.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
@@ -23,6 +25,12 @@ class EventWorkspaceHeader extends StatelessWidget {
     required this.onCreateEvent,
     required this.onTeamChanged,
     required this.onArchivedToggle,
+    this.createButtonKey,
+    this.createButtonTitle,
+    this.createButtonDescription,
+    this.filterKey,
+    this.filterTitle,
+    this.filterDescription,
   });
 
   final bool embedded;
@@ -36,6 +44,32 @@ class EventWorkspaceHeader extends StatelessWidget {
   final VoidCallback onCreateEvent;
   final ValueChanged<String?> onTeamChanged;
   final ValueChanged<bool> onArchivedToggle;
+  final GlobalKey? createButtonKey;
+  final String? createButtonTitle;
+  final String? createButtonDescription;
+  final GlobalKey? filterKey;
+  final String? filterTitle;
+  final String? filterDescription;
+
+  Widget _wrapShowcase({
+    required Widget child,
+    GlobalKey? showcaseKey,
+    String? title,
+    String? description,
+  }) {
+    if (showcaseKey == null ||
+        title == null ||
+        description == null ||
+        isInspectorSelectionActive) {
+      return child;
+    }
+    return Showcase(
+      key: showcaseKey,
+      title: title,
+      description: description,
+      child: child,
+    );
+  }
 
   Widget _buildNewEventButton(BuildContext context) {
     final theme = Theme.of(context);
@@ -47,7 +81,7 @@ class EventWorkspaceHeader extends StatelessWidget {
         colorScheme.primary;
     final onNavButtonColor = colorScheme.textInvertedColor ?? Colors.white;
 
-    return FilledButton.icon(
+    final button = FilledButton.icon(
       onPressed: onCreateEvent,
       style: FilledButton.styleFrom(backgroundColor: navButtonColor),
       icon: Icon(Icons.add, color: onNavButtonColor),
@@ -58,6 +92,13 @@ class EventWorkspaceHeader extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
+    );
+
+    return _wrapShowcase(
+      showcaseKey: createButtonKey,
+      title: createButtonTitle,
+      description: createButtonDescription,
+      child: button,
     );
   }
 
@@ -132,13 +173,18 @@ class EventWorkspaceHeader extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 760;
-        final archiveToggle = ArchiveViewToggle(
-          showArchivedOnly: showArchived,
-          primaryCount: activeCount,
-          archivedCount: archivedCount,
-          primaryLabel: loc.eventActiveFilterLabel,
-          archivedLabel: loc.eventArchivedFilterLabel,
-          onChanged: onArchivedToggle,
+        final archiveToggle = _wrapShowcase(
+          showcaseKey: filterKey,
+          title: filterTitle,
+          description: filterDescription,
+          child: ArchiveViewToggle(
+            showArchivedOnly: showArchived,
+            primaryCount: activeCount,
+            archivedCount: archivedCount,
+            primaryLabel: loc.eventActiveFilterLabel,
+            archivedLabel: loc.eventArchivedFilterLabel,
+            onChanged: onArchivedToggle,
+          ),
         );
         final teamPicker = ShiftCalendarTeamPicker(
           teams: teams,
@@ -171,23 +217,35 @@ class EventWorkspaceHeader extends StatelessWidget {
                         _buildNewEventButton(context),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: EventViewModeToggle(
-                              viewMode: viewMode,
-                              onChanged: onViewModeChanged,
-                            ),
+                          child: Wrap(
+                            alignment: WrapAlignment.end,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              const EventTextSizeToggle(),
+                              EventViewModeToggle(
+                                viewMode: viewMode,
+                                onChanged: onViewModeChanged,
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     )
                   else
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: EventViewModeToggle(
-                        viewMode: viewMode,
-                        onChanged: onViewModeChanged,
-                      ),
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        const EventTextSizeToggle(),
+                        EventViewModeToggle(
+                          viewMode: viewMode,
+                          onChanged: onViewModeChanged,
+                        ),
+                      ],
                     ),
                 ],
               )

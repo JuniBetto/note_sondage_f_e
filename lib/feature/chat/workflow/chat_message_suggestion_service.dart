@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
-import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_models.dart';
 
 class ChatMessageSuggestionService {

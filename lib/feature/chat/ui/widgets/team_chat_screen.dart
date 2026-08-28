@@ -16,8 +16,10 @@ import 'package:note_sondage/core/utils/file_download_bridge.dart';
 import 'package:note_sondage/feature/ai/preferences/workflow_ai_preferences_cubit.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
+import 'package:note_sondage/feature/chat/domain/use_case/chat_message_action_use_case.dart';
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_section.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_direct_action_dialog.dart';
@@ -25,7 +27,7 @@ import 'package:note_sondage/feature/chat/ui/widgets/chat_image_viewer_dialog.da
 import 'package:note_sondage/feature/chat/ui/web/chat_web_layout.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_draft_attachment.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
-import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_sondage_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_models.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
@@ -38,9 +40,6 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
-import 'package:note_sondage/feature/sondage/ui/mobile/widgets/create_sondage_mobile.dart';
-import 'package:note_sondage/feature/sondage/ui/web/widgets/create_sondage_web.dart';
-import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
@@ -49,7 +48,6 @@ import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dar
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
-import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 import 'package:uuid/uuid.dart';
 
 enum ChatScreenLayout { mobile, web }
@@ -101,8 +99,10 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       GetIt.instance<TeamMemberUseCase>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
   final ChatUseCase _chatUseCase = GetIt.instance<ChatUseCase>();
-  final ChatMessageActionDraftService _messageActionDraftService =
-      GetIt.instance<ChatMessageActionDraftService>();
+  final ChatMessageActionUseCase _messageActionUseCase =
+      GetIt.instance<ChatMessageActionUseCase>();
+  final ChatMessageSondageWorkflowController _sondageWorkflowController =
+      GetIt.instance<ChatMessageSondageWorkflowController>();
   final ChatMessageSuggestionService _messageSuggestionService =
       GetIt.instance<ChatMessageSuggestionService>();
   final ChatMessageTaskWorkflowController _taskWorkflowController =
@@ -1494,27 +1494,14 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     if (!_ensureWorkflowMessageActionPermission()) {
       return;
     }
-    if (!_isWorkflowAiEnabledForSelectedTeam()) {
-      AppSnackBar.showWarning(
-        context,
-        _chatActionText(
-          Localizations.localeOf(context).languageCode,
-          it: 'Attiva prima AI globale e Workflow AI del team per usare questa funzione.',
-          en: 'Enable both global AI and team Workflow AI before using this feature.',
-        ),
-      );
-      return;
-    }
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _messageActionDraftService.buildDraft(
-          actionType: ChatMessageActionType.createSondage,
-          conversationId: conversation.id,
-          messageId: message.id,
+        () => _sondageWorkflowController.prepareDraft(
+          conversation: conversation,
+          message: message,
           teamId: teamId,
           locale: Localizations.localeOf(context).languageCode,
-          selectedMessageText: message.contentText,
           memberUserId: _selectedMemberUserId,
           memberDisplayName: _conversationDisplayName,
         ),
@@ -1534,7 +1521,11 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         );
         return;
       }
-      await _openSondageDraft(result.sondagePrefill!);
+      await _sondageWorkflowController.openDraft(
+        context: context,
+        prefill: result.sondagePrefill!,
+        useMobileLayout: widget.layout == ChatScreenLayout.mobile,
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -1565,7 +1556,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _messageActionDraftService.buildDraft(
+        () => _messageActionUseCase.buildDraft(
           actionType: ChatMessageActionType.createShift,
           conversationId: conversation.id,
           messageId: message.id,
@@ -1783,7 +1774,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       await _ensureTeamAccessContextLoaded(teamId);
 
       final result = await _runWithLoadingOverlay(
-        () => _messageActionDraftService.buildDraft(
+        () => _messageActionUseCase.buildDraft(
           actionType: ChatMessageActionType.createEvent,
           conversationId: conversation.id,
           messageId: message.id,
@@ -2096,38 +2087,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         );
         return;
     }
-  }
-
-  Future<void> _openSondageDraft(SondageCreatePrefill prefill) async {
-    if (widget.layout == ChatScreenLayout.mobile) {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => FractionallySizedBox(
-          heightFactor: 0.94,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-            ),
-            child: CreateSondageMobile(
-              initialPrefill: prefill,
-              enableTutorial: false,
-            ),
-          ),
-        ),
-      );
-      return;
-    }
-
-    await CustomDialog(
-      width: 860,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-      child: CreateSondageWeb(initialPrefill: prefill),
-    ).show<void>(context);
   }
 
   List<TeamEntityForView> _buildWorkflowOwnerTeams({String? preferredTeamId}) {
@@ -2813,8 +2772,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     // When we already know which conversation to open (tapped from a chat
     // card), don't block the whole screen on the unrelated team-list fetch.
-    final hasKnownConversationTarget =
-        (widget.initialTeamId ?? '').isNotEmpty;
+    final hasKnownConversationTarget = (widget.initialTeamId ?? '').isNotEmpty;
 
     if (_loadingTeams && !hasKnownConversationTarget) {
       return const Center(child: CircularProgressIndicator());

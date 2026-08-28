@@ -96,13 +96,14 @@ class _MainMobileState extends State<MainMobile> {
             child: const NavigationBarWidget(key: Key('mobile_navigation_bar')),
           ),
           floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+          // Stesso widget (IconButton.filledTonal) usato dal bottone "?"
+          // flottante su web, così i due si allineano per colore/stile.
           floatingActionButton: _supportsTutorial(navBarItem)
               ? Tooltip(
                   message: loc.reviewTutorial,
-                  child: FloatingActionButton.small(
-                    heroTag: 'reviewTutorialFab',
+                  child: IconButton.filledTonal(
                     onPressed: () => _replayTutorialForIndex(navBarItem),
-                    child: const Icon(Icons.help_outline_rounded),
+                    icon: const Icon(Icons.help_outline_rounded),
                   ),
                 )
               : null,

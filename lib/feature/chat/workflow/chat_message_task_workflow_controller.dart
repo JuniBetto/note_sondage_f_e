@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
-import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
+import 'package:note_sondage/feature/chat/domain/use_case/chat_message_action_use_case.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
@@ -15,12 +16,12 @@ typedef ChatTaskWorkflowTeamMemberLoader =
 
 class ChatMessageTaskWorkflowController {
   ChatMessageTaskWorkflowController({
-    required ChatMessageActionDraftService draftService,
+    required ChatMessageActionUseCase draftService,
     required TaskUseCase taskUseCase,
   }) : _draftService = draftService,
        _taskUseCase = taskUseCase;
 
-  final ChatMessageActionDraftService _draftService;
+  final ChatMessageActionUseCase _draftService;
   final TaskUseCase _taskUseCase;
 
   Future<ChatMessageActionDraftResult> prepareDraft({

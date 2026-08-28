@@ -783,6 +783,7 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
                                         onAutoReplaceLinkedShift:
                                             RuntimeConfig
                                                     .enableWorkflowActions &&
+                                                _canRemindForSurvey(sondage) &&
                                                 sondage
                                                         .workflowContext
                                                         .resolvedAssignmentId !=

@@ -237,7 +237,16 @@ class _HomeWebState extends State<HomeWeb> {
                                     ),
                                   ),
                                   const SizedBox(width: 14),
-                                  const Expanded(child: SizedBox()),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.event_rounded,
+                                      label: l.myEvents,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.myEvents ?? 0}',
+                                      color: Colors.deepOrange,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
@@ -327,7 +336,16 @@ class _HomeWebState extends State<HomeWeb> {
                                     ),
                                   ),
                                   const SizedBox(width: 16),
-                                  const Expanded(child: SizedBox()),
+                                  Expanded(
+                                    child: _StatCard(
+                                      icon: Icons.event_rounded,
+                                      label: l.myEvents,
+                                      value: isLoading
+                                          ? null
+                                          : '${stats?.myEvents ?? 0}',
+                                      color: Colors.deepOrange,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
@@ -735,6 +753,14 @@ class _QuickActionsCard extends StatelessWidget {
             subtitle: l.chatListDescriptionWeb,
             color: Colors.cyan,
             onTap: () => navBloc.add(NavigationPositionChanged(7)),
+          ),
+          const SizedBox(height: 8),
+          _ActionTile(
+            icon: Icons.event_outlined,
+            label: l.myEvents,
+            subtitle: l.eventMyEventsSubtitle,
+            color: Colors.deepOrange,
+            onTap: () => navBloc.add(NavigationPositionChanged(8)),
           ),
         ],
       ),
