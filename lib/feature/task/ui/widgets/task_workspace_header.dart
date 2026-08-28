@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_text_size_toggle.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_view_mode_toggle.dart';
@@ -23,6 +24,9 @@ class TaskWorkspaceHeader extends StatelessWidget {
     required this.onViewModeChanged,
     required this.searchController,
     required this.onSearchChanged,
+    this.createButtonKey,
+    this.createButtonTitle,
+    this.createButtonDescription,
   });
 
   final bool embedded;
@@ -36,6 +40,9 @@ class TaskWorkspaceHeader extends StatelessWidget {
   final ValueChanged<TaskViewMode> onViewModeChanged;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
+  final GlobalKey? createButtonKey;
+  final String? createButtonTitle;
+  final String? createButtonDescription;
 
   Widget _buildTeamPicker(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -67,7 +74,7 @@ class TaskWorkspaceHeader extends StatelessWidget {
         colorScheme.bgNavbarbutton ?? colorScheme.primaryColor ?? colorScheme.primary;
     final onNavButtonColor = colorScheme.textInvertedColor ?? Colors.white;
 
-    return FilledButton.icon(
+    final button = FilledButton.icon(
       onPressed: canManageSelectedTeam ? onCreateTask : null,
       style: FilledButton.styleFrom(backgroundColor: navButtonColor),
       icon: Icon(Icons.add_task_rounded, color: onNavButtonColor),
@@ -78,6 +85,22 @@ class TaskWorkspaceHeader extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
+    );
+
+    final key = createButtonKey;
+    final title = createButtonTitle;
+    final description = createButtonDescription;
+    if (key == null ||
+        title == null ||
+        description == null ||
+        isInspectorSelectionActive) {
+      return button;
+    }
+    return Showcase(
+      key: key,
+      title: title,
+      description: description,
+      child: button,
     );
   }
 

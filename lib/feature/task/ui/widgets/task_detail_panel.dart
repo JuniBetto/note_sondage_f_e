@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/task/ui/widgets/task_status_dropdown_field.
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
+import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 
 /// Renders the read/edit content for a single task: chips, description,
 /// key dates, linked-chat banner, status control, and management actions.
@@ -241,37 +242,45 @@ class TaskDetailPanel extends StatelessWidget {
           ),
         const SizedBox(height: 18),
         if (canEdit && onEdit != null)
-          FilledButton.icon(
+          CustomAppButton(
             onPressed: onEdit,
-            icon: const Icon(Icons.edit_outlined),
-            label: Text(l10n.taskEditAction),
+            isActive: true,
+            leadingIcon: const Icon(Icons.edit_outlined, size: 18),
+            child: Text(l10n.taskEditAction),
           ),
         if (canEdit && onArchive != null)
           Padding(
             padding: const EdgeInsets.only(top: 10),
-            child: OutlinedButton.icon(
+            child: CustomAppButton(
               onPressed: onArchive,
-              icon: const Icon(Icons.archive_outlined),
-              label: Text(l10n.taskArchiveAction),
+              type: ButtonType.outlined,
+              isActive: true,
+              leadingIcon: const Icon(Icons.archive_outlined, size: 18),
+              child: Text(l10n.taskArchiveAction),
             ),
           ),
         if (canRestore && onRestore != null)
-          FilledButton.icon(
+          CustomAppButton(
             onPressed: onRestore,
-            icon: const Icon(Icons.unarchive_outlined),
-            label: Text(l10n.taskRestoreAction),
+            isActive: true,
+            leadingIcon: const Icon(Icons.unarchive_outlined, size: 18),
+            child: Text(l10n.taskRestoreAction),
           ),
         if (canDeletePermanently && onDeletePermanently != null)
           Padding(
             padding: const EdgeInsets.only(top: 10),
-            child: OutlinedButton.icon(
+            child: CustomAppButton(
               onPressed: () => _confirmAndDelete(context),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: colorScheme.error,
-                side: BorderSide(color: colorScheme.error),
+              type: ButtonType.outlined,
+              isActive: true,
+              foregroundColor: colorScheme.error,
+              borderColor: colorScheme.error,
+              leadingIcon: Icon(
+                Icons.delete_forever_outlined,
+                size: 18,
+                color: colorScheme.error,
               ),
-              icon: const Icon(Icons.delete_forever_outlined),
-              label: Text(l10n.taskDeletePermanentlyAction),
+              child: Text(l10n.taskDeletePermanentlyAction),
             ),
           ),
       ],

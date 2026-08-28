@@ -352,6 +352,7 @@
     "loadingClockingState": "Cargando estado de fichaje...",
     "noClockingsForFilter": "No se encontraron fichajes para los filtros seleccionados",
     "myShifts": "Mis turnos",
+    "myEvents": "Mis eventos",
     "shiftCalendar": "Calendario de turnos",
     "shiftCalendarSubtitle": "Tu calendario personal y del equipo",
     "shiftTeamReportTitle": "Informe de turnos del equipo",
@@ -429,6 +430,16 @@
             }
         }
     },
+    "deleteAllShiftsForDayTooltip": "Eliminar todos los turnos de este dia",
+    "deleteAllShiftsForDayTitle": "Eliminar todos los turnos",
+    "deleteAllShiftsForDayMessage": "{count, plural, =1{Estas seguro de que quieres eliminar el turno asignado en este dia?} other{Estas seguro de que quieres eliminar los {count} turnos asignados en este dia?}}",
+    "@deleteAllShiftsForDayMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "shiftAutoPlanPreviewTitle": "Vista previa Auto Planner",
     "shiftAutoPlanPreviewStatusFeasible": "Factible",
     "shiftAutoPlanPreviewStatusNeedsReview": "Revisar",
@@ -470,7 +481,19 @@
     "requestVacation": "Solicitar vacaciones",
     "requestPermission": "Solicitar permiso",
     "vacationStatus": "Vacaciones",
-    "clockingOpenRecordAnotherDay": "Tienes un fichaje abierto en otro día. Selecciónalo para continuar.",
+    "clockingOpenRecordAnotherDay": "Tienes un fichaje abierto en {teamName} el {date}. Selecciónalo para continuar.",
+    "@clockingOpenRecordAnotherDay": {
+        "placeholders": {
+            "teamName": {
+                "type": "String",
+                "example": "Development Team"
+            },
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
     "dayAlreadyHasClocking": "Ya existe un fichaje para {date}.",
     "@dayAlreadyHasClocking": {
         "placeholders": {
@@ -513,7 +536,19 @@
             }
         }
     },
-    "manualClockingResolveOpenRecord": "Tienes un fichaje abierto en otro día. Ciérralo o selecciona ese día antes de guardar un fichaje manual.",
+    "manualClockingResolveOpenRecord": "Tienes un fichaje abierto en {teamName} el {date}. Ciérralo o selecciona ese día antes de guardar un fichaje manual.",
+    "@manualClockingResolveOpenRecord": {
+        "placeholders": {
+            "teamName": {
+                "type": "String",
+                "example": "Development Team"
+            },
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
     "selectedDays": "Días seleccionados",
     "addDay": "Añadir día",
     "clockInLabel": "Entrada",
@@ -626,6 +661,18 @@
     "sendRequest": "Enviar solicitud",
     "clockingRequestSentSuccess": "Solicitud de fichaje enviada con éxito.",
     "clockingRequestSentError": "No hemos podido enviar la solicitud de fichaje al miembro del equipo.",
+    "requestUnlockOpenRecord": "Solicitar desbloqueo",
+    "requestUnlockOpenRecordDescription": "Tienes un fichaje abierto del {date} que no puedes cerrar tú mismo. Pide al manager que lo desbloquee para poder cerrarlo.",
+    "@requestUnlockOpenRecordDescription": {
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "25/05/2026"
+            }
+        }
+    },
+    "unlockRequestSentSuccess": "Solicitud de desbloqueo enviada con éxito.",
+    "unlockRequestSentError": "No hemos podido enviar la solicitud de desbloqueo.",
     "decommitRequestSentSuccess": "Solicitud de decommit enviada con éxito.",
     "decommitRequestSentError": "No hemos podido enviar la solicitud de decommit.",
     "vacationRequestSentSuccess": "Solicitud de vacaciones enviada con éxito.",

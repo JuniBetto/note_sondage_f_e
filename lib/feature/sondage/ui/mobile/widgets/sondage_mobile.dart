@@ -27,6 +27,13 @@ class SondageMobile extends StatefulWidget {
     this.initialChatTeamId,
   });
 
+  /// Set this before navigating to the Sondage/Chat bottom-nav tab to land
+  /// directly on a specific inner tab (0 = list, 1 = create, 2 = chat), used
+  /// when [initialTabIndex] can't be threaded through (bottom-nav switch).
+  /// Reset to 0 after the first build so subsequent navigations default back
+  /// to the survey list — mirrors [ClockingShiftTabPage.requestedInitialTab].
+  static int requestedInitialTab = 0;
+
   final int initialTabIndex;
   final String? initialChatTeamId;
 
@@ -53,7 +60,12 @@ class _SondageMobileState extends State<SondageMobile>
   @override
   void initState() {
     super.initState();
-    final safeInitialTab = widget.initialTabIndex.clamp(0, 2);
+    final requestedTab = SondageMobile.requestedInitialTab;
+    SondageMobile.requestedInitialTab = 0; // reset for next navigation
+    final effectiveInitialTab = widget.initialTabIndex != 0
+        ? widget.initialTabIndex
+        : requestedTab;
+    final safeInitialTab = effectiveInitialTab.clamp(0, 2);
     tabController = TabController(
       length: 3,
       vsync: this,

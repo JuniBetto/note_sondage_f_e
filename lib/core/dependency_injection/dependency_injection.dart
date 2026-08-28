@@ -3,6 +3,7 @@ import 'package:note_sondage/feature/notification/realtime/event_realtime_coordi
 import 'package:note_sondage/feature/notification/realtime/task_realtime_coordinator.dart';
 import 'package:note_sondage/feature/ai/preferences/workflow_ai_preferences_cubit.dart';
 import 'package:note_sondage/feature/event/navigation/event_open_intent_controller.dart';
+import 'package:note_sondage/feature/event/ui/event_text_size_cubit.dart';
 import 'package:note_sondage/feature/event/domain/repositories/event_repository.dart';
 import 'package:note_sondage/feature/event/domain/use_case/event_use_case.dart';
 import 'package:note_sondage/feature/event/infrastructure/data_source/data_source_local/event_local_data_source.dart';
@@ -15,6 +16,7 @@ import 'package:note_sondage/feature/shift/infrastructure/repositories/shift_rep
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/shift/notification/shift_alarm_scheduler.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
+import 'package:note_sondage/feature/shift/ui/bloc/shift_text_size_cubit.dart';
 import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
@@ -22,12 +24,16 @@ import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
 import 'package:note_sondage/feature/auth/infrastructure/repositories/firebase_auth_repository_impl.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/app_lifecycle_bloc.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/chat/domain/repositories/chat_message_action_repository.dart';
 import 'package:note_sondage/feature/chat/domain/repositories/chat_repository.dart';
+import 'package:note_sondage/feature/chat/domain/use_case/chat_message_action_use_case.dart';
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_local_data_source.dart';
+import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_message_action_remote_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
+import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_message_action_repository_impl.dart';
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
-import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_sondage_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
 import 'package:note_sondage/feature/clocking/domain/repositories/clocking_repository.dart';
@@ -195,15 +201,20 @@ void _registerDataSources() {
   getIt.registerLazySingleton<ChatRemoteDataSource>(
     () => ChatRemoteDataSource(),
   );
-  getIt.registerLazySingleton<ChatMessageActionDraftService>(
-    () => ChatMessageActionDraftService(),
+  getIt.registerLazySingleton<ChatMessageActionRemoteDataSource>(
+    () => ChatMessageActionRemoteDataSource(),
+  );
+  getIt.registerLazySingleton<ChatMessageSondageWorkflowController>(
+    () => ChatMessageSondageWorkflowController(
+      draftService: getIt<ChatMessageActionUseCase>(),
+    ),
   );
   getIt.registerLazySingleton<ChatMessageSuggestionService>(
     () => ChatMessageSuggestionService(),
   );
   getIt.registerLazySingleton<ChatMessageTaskWorkflowController>(
     () => ChatMessageTaskWorkflowController(
-      draftService: getIt<ChatMessageActionDraftService>(),
+      draftService: getIt<ChatMessageActionUseCase>(),
       taskUseCase: getIt<TaskUseCase>(),
     ),
   );
@@ -285,6 +296,11 @@ void _registerRepositories() {
       getIt<ChatRemoteDataSource>(),
     ),
   );
+  getIt.registerLazySingleton<ChatMessageActionRepository>(
+    () => ChatMessageActionRepositoryImpl(
+      getIt<ChatMessageActionRemoteDataSource>(),
+    ),
+  );
 
   getIt.registerLazySingleton<TaskRepository>(
     () => TaskRepositoryImpl(
@@ -308,6 +324,7 @@ void _registerRepositories() {
       shiftRemote: getIt<ShiftRemoteDataSource>(),
       taskRemote: getIt<TaskRemoteDataSource>(),
       chatRemote: getIt<ChatRemoteDataSource>(),
+      eventRemote: getIt<EventRemoteDataSource>(),
       currentUserIdProvider: () => getIt<AuthBloc>().state.user.uid,
     ),
   );
@@ -357,6 +374,9 @@ void _registerUseCases() {
   // Chat
   getIt.registerLazySingleton<ChatUseCase>(
     () => ChatUseCase(getIt<ChatRepository>()),
+  );
+  getIt.registerLazySingleton<ChatMessageActionUseCase>(
+    () => ChatMessageActionUseCase(getIt<ChatMessageActionRepository>()),
   );
 
   getIt.registerLazySingleton<TaskUseCase>(
@@ -432,6 +452,12 @@ void _registerBlocs() {
   );
   getIt.registerLazySingleton<EventOpenIntentController>(
     () => EventOpenIntentController(),
+  );
+  getIt.registerLazySingleton<EventTextSizeCubit>(
+    () => EventTextSizeCubit()..load(),
+  );
+  getIt.registerLazySingleton<ShiftTextSizeCubit>(
+    () => ShiftTextSizeCubit()..load(),
   );
 
   // Dashboard - Singleton per condividere lo stato tra widget

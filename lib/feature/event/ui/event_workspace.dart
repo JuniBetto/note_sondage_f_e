@@ -1,14 +1,20 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_update_request_entity.dart';
 import 'package:note_sondage/feature/event/navigation/event_open_intent_controller.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_text_size.dart';
 import 'package:note_sondage/feature/event/domain/use_case/event_use_case.dart';
+import 'package:note_sondage/feature/event/ui/event_density_scope.dart';
+import 'package:note_sondage/feature/event/ui/event_text_size_cubit.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_calendar_view.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_editor_dialog.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_empty_state.dart';
@@ -32,11 +38,27 @@ class EventWorkspace extends StatefulWidget {
     this.initialTeamId,
     this.initialEventId,
     this.embedded = false,
+    this.isActive = true,
+    this.isTabTransitioning = false,
   });
 
   final String? initialTeamId;
   final String? initialEventId;
   final bool embedded;
+
+  /// Whether this page is currently the one the user is actually looking
+  /// at. Both the web `IndexedStack` and the mobile tab bar that can host
+  /// this widget mount it eagerly, well before it becomes visible, so the
+  /// auto-tutorial must not fire (and mark itself as "seen") until this is
+  /// true — otherwise it would silently show a tutorial for a page nobody
+  /// is looking at and never offer it again.
+  final bool isActive;
+
+  /// Whether the parent tab controller (mobile only) is still animating
+  /// between tabs. The auto-tutorial waits for the swipe to fully settle,
+  /// otherwise it races with the tab-change listener that dismisses any
+  /// active showcase and gets killed moments after starting.
+  final bool isTabTransitioning;
 
   @override
   State<EventWorkspace> createState() => _EventWorkspaceState();
@@ -46,6 +68,10 @@ class _EventWorkspaceState extends State<EventWorkspace> {
   final EventUseCase _eventUseCase = GetIt.instance<EventUseCase>();
   final TeamMemberBloc _teamMemberBloc = GetIt.instance<TeamMemberBloc>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
+  // Lets the user shrink/grow all text in the compact/mobile layout to fit
+  // more content on screen (see EventTextSizeToggle in EventWorkspaceHeader).
+  final EventTextSizeCubit _eventTextSizeCubit =
+      GetIt.instance<EventTextSizeCubit>();
 
   /// `null` means "My Events" — the caller's own events across every team,
   /// mirroring Shift's model rather than a single always-selected team.
@@ -58,6 +84,12 @@ class _EventWorkspaceState extends State<EventWorkspace> {
   EventViewMode _viewMode = EventViewMode.card;
   DateTime _calendarWeekStart = mondayOfWeek(DateTime.now());
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
+
+  final GlobalKey _createButtonKey = GlobalKey();
+  final GlobalKey _filterKey = GlobalKey();
+  final GlobalKey _listKey = GlobalKey();
+  bool _tutorialScheduled = false;
+  String get _tutorialId => kIsWeb ? 'web-events' : 'mobile-events';
 
   final Map<String, List<TeamMemberforView>> _teamMembersByTeamId = {};
   final Map<String, List<RoleEntity>> _rolesByTeamId = {};
@@ -509,6 +541,92 @@ class _EventWorkspaceState extends State<EventWorkspace> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _registerTutorials(BuildContext context) {
+    AppTutorialController.registerTargets(
+      tutorialId: _tutorialId,
+      keys: <GlobalKey>[_createButtonKey, _filterKey, _listKey],
+    );
+    AppTutorialController.registerReplayAction(
+      tutorialId: _tutorialId,
+      action: () => AppTutorialController.replay(
+        context: context,
+        keys: <GlobalKey>[_createButtonKey, _filterKey, _listKey],
+      ),
+    );
+    if (kIsWeb) {
+      AppTutorialController.registerReplayAction(
+        tutorialId: 'web-main-8',
+        action: () => AppTutorialController.replayRegistered(
+          context: context,
+          tutorialId: _tutorialId,
+        ),
+      );
+    }
+  }
+
+  void _scheduleTutorial() {
+    if (_tutorialScheduled) {
+      return;
+    }
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      if (!widget.isActive || widget.isTabTransitioning) {
+        _tutorialScheduled = false;
+        return;
+      }
+      await AppTutorialController.showIfNeeded(
+        context: context,
+        tutorialId: _tutorialId,
+        userId: context.read<AuthBloc>().state.user.uid,
+        keys: <GlobalKey>[_createButtonKey, _filterKey, _listKey],
+      );
+    });
+  }
+
+  Widget _buildShowcase({
+    required GlobalKey showcaseKey,
+    required String title,
+    required String description,
+    required Widget child,
+  }) {
+    if (isInspectorSelectionActive) {
+      return child;
+    }
+    return Showcase(
+      key: showcaseKey,
+      title: title,
+      description: description,
+      child: child,
+    );
+  }
+
+  bool _isItalian(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'it';
+  }
+
+  String _filterTitle(BuildContext context) {
+    return _isItalian(context) ? 'Filtra gli eventi' : 'Filter events';
+  }
+
+  String _filterDescription(BuildContext context) {
+    return _isItalian(context)
+        ? 'Passa dagli eventi attivi a quelli archiviati con un tocco.'
+        : 'Switch between active and archived events with one tap.';
+  }
+
+  String _listTitle(BuildContext context) {
+    return _isItalian(context) ? 'Elenco eventi' : 'Event list';
+  }
+
+  String _listDescription(BuildContext context) {
+    return _isItalian(context)
+        ? 'Qui trovi i tuoi eventi in elenco o calendario: tocca una card per i dettagli.'
+        : 'Your events in list or calendar view: tap a card for details.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -554,6 +672,14 @@ class _EventWorkspaceState extends State<EventWorkspace> {
           await _loadArchivedIfNeeded();
         }
       },
+      createButtonKey: _createButtonKey,
+      createButtonTitle: _isItalian(context) ? 'Nuovo evento' : 'New event',
+      createButtonDescription: _isItalian(context)
+          ? 'Crea rapidamente un nuovo evento non legato ai turni, come una riunione.'
+          : 'Quickly create a new non-shift event, like a meeting.',
+      filterKey: _filterKey,
+      filterTitle: _filterTitle(context),
+      filterDescription: _filterDescription(context),
     );
 
     final loadingIndicator =
@@ -578,6 +704,20 @@ class _EventWorkspaceState extends State<EventWorkspace> {
         480.0,
         900.0,
       );
+      final calendarSection =
+          loadingIndicator ??
+          SizedBox(
+            height: calendarHeight,
+            child: EventCalendarView(
+              events: selectedItems,
+              weekStart: _calendarWeekStart,
+              onWeekStartChanged: (value) =>
+                  setState(() => _calendarWeekStart = value),
+              onEventTap: (event) => _openEditor(event: event),
+              emptyStateTitle: emptyStateTitle,
+              emptyStateSubtitle: emptyStateSubtitle,
+            ),
+          );
       content = SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -585,25 +725,37 @@ class _EventWorkspaceState extends State<EventWorkspace> {
           children: [
             header,
             const SizedBox(height: 16),
-            if (loadingIndicator != null)
-              loadingIndicator
-            else
-              SizedBox(
-                height: calendarHeight,
-                child: EventCalendarView(
-                  events: selectedItems,
-                  weekStart: _calendarWeekStart,
-                  onWeekStartChanged: (value) =>
-                      setState(() => _calendarWeekStart = value),
-                  onEventTap: (event) => _openEditor(event: event),
-                  emptyStateTitle: emptyStateTitle,
-                  emptyStateSubtitle: emptyStateSubtitle,
-                ),
-              ),
+            _buildShowcase(
+              showcaseKey: _listKey,
+              title: _listTitle(context),
+              description: _listDescription(context),
+              child: calendarSection,
+            ),
           ],
         ),
       );
     } else {
+      final itemsSection =
+          loadingIndicator ??
+          (selectedItems.isEmpty
+              ? EventEmptyState(
+                  title: emptyStateTitle,
+                  subtitle: emptyStateSubtitle,
+                )
+              : Column(
+                  children: [
+                    for (final event in selectedItems)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: EventListCard(
+                          event: event,
+                          onEdit: () => _openEditor(event: event),
+                          onArchiveToggle: () => _toggleArchive(event),
+                          onDeleteArchived: () => _deleteArchived(event),
+                        ),
+                      ),
+                  ],
+                ));
       content = RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
@@ -611,28 +763,20 @@ class _EventWorkspaceState extends State<EventWorkspace> {
           children: [
             header,
             const SizedBox(height: 16),
-            if (loadingIndicator != null)
-              loadingIndicator
-            else if (selectedItems.isEmpty)
-              EventEmptyState(
-                title: emptyStateTitle,
-                subtitle: emptyStateSubtitle,
-              )
-            else
-              ...selectedItems.map(
-                (event) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: EventListCard(
-                    event: event,
-                    onEdit: () => _openEditor(event: event),
-                    onArchiveToggle: () => _toggleArchive(event),
-                    onDeleteArchived: () => _deleteArchived(event),
-                  ),
-                ),
-              ),
+            _buildShowcase(
+              showcaseKey: _listKey,
+              title: _listTitle(context),
+              description: _listDescription(context),
+              child: itemsSection,
+            ),
           ],
         ),
       );
+    }
+
+    _registerTutorials(context);
+    if (widget.isActive && !widget.isTabTransitioning) {
+      _scheduleTutorial();
     }
 
     return BlocListener<TeamMemberBloc, TeamMemberState>(
@@ -662,7 +806,29 @@ class _EventWorkspaceState extends State<EventWorkspace> {
       child: SafeArea(
         top: !widget.embedded,
         bottom: widget.embedded,
-        child: content,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= 760) {
+              // Wide/desktop layout has enough room that shrinking/growing
+              // text to fit more content isn't the point.
+              return content;
+            }
+            return BlocBuilder<EventTextSizeCubit, EventTextSize>(
+              bloc: _eventTextSizeCubit,
+              builder: (context, textSize) {
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(textSize.scaleFactor),
+                  ),
+                  child: EventDensityScope(
+                    scale: textSize.scaleFactor,
+                    child: content,
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reaction_entity.dart';
-import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
+import 'package:note_sondage/feature/chat/domain/repositories/chat_message_action_repository.dart';
+import 'package:note_sondage/feature/chat/domain/use_case/chat_message_action_use_case.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
@@ -14,8 +16,24 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 
-class _FakeChatMessageActionDraftService extends ChatMessageActionDraftService {
-  _FakeChatMessageActionDraftService({required this.result});
+class _UnreachableChatMessageActionRepository
+    implements ChatMessageActionRepository {
+  @override
+  Future<ChatMessageActionDraftResult> buildDraft({
+    required ChatMessageActionType actionType,
+    required String conversationId,
+    required String messageId,
+    required String teamId,
+    required String locale,
+    String? selectedMessageText,
+    String? memberUserId,
+    String? memberDisplayName,
+  }) => throw UnimplementedError();
+}
+
+class _FakeChatMessageActionUseCase extends ChatMessageActionUseCase {
+  _FakeChatMessageActionUseCase({required this.result})
+    : super(_UnreachableChatMessageActionRepository());
 
   final ChatMessageActionDraftResult result;
 
@@ -100,11 +118,11 @@ class _FakeTaskRepository implements TaskRepository {
 }
 
 void main() {
-  late _FakeChatMessageActionDraftService draftService;
+  late _FakeChatMessageActionUseCase draftService;
   late ChatMessageTaskWorkflowController controller;
 
   setUp(() {
-    draftService = _FakeChatMessageActionDraftService(
+    draftService = _FakeChatMessageActionUseCase(
       result: const ChatMessageActionDraftResult(
         messageActionType: 'create_task',
         resolutionStatus: 'ready',

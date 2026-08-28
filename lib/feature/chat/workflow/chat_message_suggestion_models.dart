@@ -1,4 +1,5 @@
-import 'package:note_sondage/feature/chat/workflow/chat_message_action_draft_service.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
+import 'package:note_sondage/feature/chat/infrastructure/data/chat_message_action_mapper.dart';
 
 class DetectWorkflowSuggestionResult {
   const DetectWorkflowSuggestionResult({
@@ -27,10 +28,10 @@ class DetectWorkflowSuggestionResult {
           .toList(growable: false),
       warnings: (json['warnings'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<Map<String, dynamic>>()
-          .map(ChatMessageActionWarning.fromJson)
+          .map(ChatMessageActionMapper.warningFromJson)
           .toList(growable: false),
       fallback: json['fallback'] is Map<String, dynamic>
-          ? ChatMessageActionFallback.fromJson(
+          ? ChatMessageActionMapper.fallbackFromJson(
               json['fallback'] as Map<String, dynamic>,
             )
           : null,

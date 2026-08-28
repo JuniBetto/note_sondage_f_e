@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
+import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/infrastructure/data_source/data_source_local/team_local_data_source.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
@@ -439,7 +440,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       return;
     }
 
-    await _performAction(item.notificationId, () async {
+    final resolved = await _performAction(item.notificationId, () async {
       switch (item.requestType) {
         case 'clocking':
           if (teamId == null || teamId.isEmpty || requestedDate == null) {
@@ -538,6 +539,14 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           break;
       }
     });
+    if (resolved) {
+      _echoClockingDecisionLocally(
+        eventTypeByRequestType: _clockingApprovedEventTypeByRequestType,
+        requestType: item.requestType,
+        teamId: teamId,
+        requesterUserId: requesterUserId,
+      );
+    }
   }
 
   Future<void> rejectClockingDecision(NotificationCenterItem item) async {
@@ -548,7 +557,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       return;
     }
 
-    await _performAction(item.notificationId, () async {
+    final resolved = await _performAction(item.notificationId, () async {
       switch (item.requestType) {
         case 'clocking':
           if (teamId == null || teamId.isEmpty || requestedDate == null) {
@@ -647,6 +656,14 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           break;
       }
     });
+    if (resolved) {
+      _echoClockingDecisionLocally(
+        eventTypeByRequestType: _clockingRejectedEventTypeByRequestType,
+        requestType: item.requestType,
+        teamId: teamId,
+        requesterUserId: requesterUserId,
+      );
+    }
   }
 
   Future<void> handleActionIntent({
@@ -749,6 +766,60 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       }
       return true;
     }).toList();
+  }
+
+  static const Map<String, String> _clockingApprovedEventTypeByRequestType = {
+    'clocking': 'CLOCKING_CLOCKING_REQUEST_APPROVED',
+    'decommit': 'CLOCKING_DECOMMIT_REQUEST_APPROVED',
+    'vacation': 'CLOCKING_VACATION_REQUEST_APPROVED',
+    'sick': 'CLOCKING_SICK_REQUEST_APPROVED',
+    'permission': 'CLOCKING_PERMISSION_REQUEST_APPROVED',
+  };
+
+  static const Map<String, String> _clockingRejectedEventTypeByRequestType = {
+    'clocking': 'CLOCKING_CLOCKING_REQUEST_REJECTED',
+    'decommit': 'CLOCKING_DECOMMIT_REQUEST_REJECTED',
+    'vacation': 'CLOCKING_VACATION_REQUEST_REJECTED',
+    'sick': 'CLOCKING_SICK_REQUEST_REJECTED',
+    'permission': 'CLOCKING_PERMISSION_REQUEST_REJECTED',
+  };
+
+  /// The backend only pushes a clocking decision notification to the
+  /// requester, never back to the manager who just approved/rejected it, so
+  /// the actor's own clocking/shift views never receive a realtime event
+  /// for their own action. Echo the same event locally (flagged
+  /// `realtimeOnly`) so every listener that already reacts to it (clocking
+  /// bloc, dashboard, shift absence overlay) refreshes immediately without
+  /// polluting the notification inbox.
+  void _echoClockingDecisionLocally({
+    required Map<String, String> eventTypeByRequestType,
+    required String? requestType,
+    required String? teamId,
+    required String requesterUserId,
+  }) {
+    if (teamId == null || teamId.isEmpty) {
+      return;
+    }
+    final eventType = eventTypeByRequestType[requestType];
+    if (eventType == null) {
+      return;
+    }
+    getIt<RealtimeNotificationService>().emitLocal(
+      RealtimeNotification(
+        notificationId: 'local-echo-${DateTime.now().microsecondsSinceEpoch}',
+        eventType: eventType,
+        sourceService: 'clocking-service',
+        title: '',
+        body: '',
+        occurredAt: DateTime.now(),
+        metadata: {
+          'teamId': teamId,
+          'targetUserId': requesterUserId,
+          'requesterUserId': requesterUserId,
+          'realtimeOnly': 'true',
+        },
+      ),
+    );
   }
 
   Future<bool> _performAction(

@@ -409,6 +409,19 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   }
 
   void _handleRealtimeNotification(RealtimeNotification notification) {
+    if (!mounted) {
+      return;
+    }
+    // The websocket push is best-effort: if this device was briefly
+    // disconnected, any decision notification sent while offline (e.g. a
+    // vacation/permission/sick request approved for the current user) is
+    // lost for good. Resync everything on (re)connect so a missed event
+    // still surfaces within seconds instead of requiring a manual reload.
+    if (notification.eventType == 'SYSTEM_CONNECTED') {
+      _loadAssignments();
+      unawaited(_loadShiftAbsenceStatuses());
+      return;
+    }
     final shiftDecision = GetIt.instance<ShiftRealtimeCoordinator>()
         .resolveDecision(notification, currentUserId: _currentUid);
     final clockingDecision = GetIt.instance<ClockingRealtimeCoordinator>()
@@ -417,9 +430,6 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
           currentUserId: _currentUid,
           selectedTeamId: _selectedCalendarTeamId,
         );
-    if (!mounted) {
-      return;
-    }
     if (shiftDecision.refreshCalendar) {
       _loadAssignments();
     }
@@ -654,6 +664,41 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       _findRoleByCode(teamId, roleCode)?.permissions,
     );
     return permissions.contains('ADMIN') || permissions.contains('MANAGE');
+  }
+
+  /// The bulk "delete all shifts for this day" action is only offered when
+  /// a specific, manageable team is selected — not in the personal "my
+  /// shifts across every team" aggregate view (no single team to act on).
+  bool get _canDeleteSelectedCalendarDay {
+    final team = _selectedCalendarTeam?.team;
+    return team != null && _canManageTeam(team);
+  }
+
+  Future<void> _confirmAndDeleteAllShiftsForDay(
+    BuildContext context,
+    DateTime date,
+    List<ShiftAssignmentEntity> dayAssignments,
+  ) async {
+    if (dayAssignments.isEmpty) {
+      return;
+    }
+    final localization = AppLocalizations.of(context)!;
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: localization.deleteAllShiftsForDayTitle,
+      message: localization.deleteAllShiftsForDayMessage(
+        dayAssignments.length,
+      ),
+      confirmLabel: localization.deleteAction,
+      destructive: true,
+    );
+    if (!context.mounted || !confirmed) {
+      return;
+    }
+    final shiftBloc = context.read<ShiftBloc>();
+    for (final assignment in dayAssignments) {
+      shiftBloc.add(DeleteShiftAssignmentEvent(assignment.id));
+    }
   }
 
   TeamMemberforView? _findCurrentTeamMember(String teamId) {
@@ -1642,6 +1687,14 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                                       onMonthChanged: _onMonthChanged,
                                       onDayTap: (date, assignments) =>
                                           _onDayTap(context, date, assignments),
+                                      onDeleteDay: _canDeleteSelectedCalendarDay
+                                          ? (date, dayAssignments) =>
+                                                _confirmAndDeleteAllShiftsForDay(
+                                                  context,
+                                                  date,
+                                                  dayAssignments,
+                                                )
+                                          : null,
                                     ),
                                   ),
                           ),

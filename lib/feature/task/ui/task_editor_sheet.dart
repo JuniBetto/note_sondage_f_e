@@ -16,6 +16,7 @@ import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.d
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
+import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class TaskAssigneeOption {
@@ -759,16 +760,12 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                         ),
                       ),
                     const SizedBox(height: 24),
-                    FilledButton.icon(
+                    CustomAppButton(
                       onPressed: _saving ? null : _handleSubmit,
-                      icon: _saving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.check_rounded),
-                      label: Text(
+                      isActive: true,
+                      isLoading: _saving,
+                      leadingIcon: const Icon(Icons.check_rounded, size: 18),
+                      child: Text(
                         _isEditing
                             ? l10n.taskSaveChangesAction
                             : l10n.taskCreateAction,

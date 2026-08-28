@@ -305,6 +305,7 @@ class ClockingRemoteDataSource {
     required String targetUserId,
     required DateTime date,
     String? note,
+    String? recordId,
   }) async {
     try {
       final formattedDate = DateTime(
@@ -319,6 +320,7 @@ class ClockingRemoteDataSource {
           'targetUserId': targetUserId,
           'date': formattedDate,
           if (note != null && note.isNotEmpty) 'note': note,
+          if (recordId != null && recordId.isNotEmpty) 'recordId': recordId,
         },
       );
     } catch (e) {

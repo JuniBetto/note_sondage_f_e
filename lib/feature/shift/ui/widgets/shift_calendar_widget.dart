@@ -29,6 +29,7 @@ class ShiftCalendarWidget extends StatelessWidget {
     required this.onMonthChanged,
     required this.onDayTap,
     this.disablePastDays = false,
+    this.onDeleteDay,
   });
 
   final List<ShiftAssignmentEntity> assignments;
@@ -41,6 +42,14 @@ class ShiftCalendarWidget extends StatelessWidget {
   /// Called with the tapped date and all visible assignments for that day.
   final void Function(DateTime date, List<ShiftAssignmentEntity> assignments)
   onDayTap;
+
+  /// When non-null, a delete icon is shown on any day cell that has at
+  /// least one assignment, letting the caller bulk-delete every shift
+  /// assigned that day. The caller decides whether this is allowed (e.g.
+  /// only when a specific manageable team is selected) by passing `null`
+  /// otherwise.
+  final void Function(DateTime date, List<ShiftAssignmentEntity> assignments)?
+  onDeleteDay;
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +196,12 @@ class ShiftCalendarWidget extends StatelessWidget {
                     absenceStatuses: dayAbsenceStatuses,
                     syncingAssignmentIds: syncingAssignmentIds,
                     onTap: () => onDayTap(date, dayAssignments),
+                    onDelete:
+                        onDeleteDay != null &&
+                            !isPastDay &&
+                            dayAssignments.isNotEmpty
+                        ? () => onDeleteDay!(date, dayAssignments)
+                        : null,
                   ),
                 );
               }),
@@ -365,6 +380,7 @@ class _DayCell extends StatelessWidget {
     required this.absenceStatuses,
     required this.syncingAssignmentIds,
     required this.onTap,
+    this.onDelete,
   });
 
   final int day;
@@ -374,6 +390,7 @@ class _DayCell extends StatelessWidget {
   final List<ShiftAbsenceStatus> absenceStatuses;
   final Set<String> syncingAssignmentIds;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -396,227 +413,256 @@ class _DayCell extends StatelessWidget {
       (item) => syncingAssignmentIds.contains(item.id),
     );
 
-    return GestureDetector(
-      key: Key('shift-calendar-day-$day'),
-      onTap: isDisabled ? null : onTap,
-      child: Opacity(
-        opacity: isDisabled
-            ? 0.42
-            : hasSyncingAssignments
-            ? 0.82
-            : 1,
-        child: Container(
-          margin: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: shiftColor != null
-                ? shiftColor.withValues(alpha: isDisabled ? 0.08 : 0.15)
-                : colorScheme.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isDisabled
-                  ? colorScheme.outlineVariant.withValues(alpha: 0.22)
-                  : isToday
-                  ? Theme.of(context).colorScheme.primary
-                  : shiftColor != null
-                  ? shiftColor.withValues(alpha: 0.4)
-                  : colorScheme.outlineVariant.withValues(alpha: 0.3),
-              width: isToday ? 2 : 1,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Day number + visibility icon on same row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+    return Stack(
+      clipBehavior: Clip.none,
+      // Passthrough keeps the tight width Expanded gives this cell instead
+      // of Stack's default loose fit, which let empty-day cells (nothing
+      // forcing a width like the `double.infinity` shift badges do) shrink
+      // to the day-number text's width instead of filling the column.
+      fit: StackFit.passthrough,
+      children: [
+        GestureDetector(
+          key: Key('shift-calendar-day-$day'),
+          onTap: isDisabled ? null : onTap,
+          child: Opacity(
+            opacity: isDisabled
+                ? 0.42
+                : hasSyncingAssignments
+                ? 0.82
+                : 1,
+            child: Container(
+              margin: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: shiftColor != null
+                    ? shiftColor.withValues(alpha: isDisabled ? 0.08 : 0.15)
+                    : colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDisabled
+                      ? colorScheme.outlineVariant.withValues(alpha: 0.22)
+                      : isToday
+                      ? Theme.of(context).colorScheme.primary
+                      : shiftColor != null
+                      ? shiftColor.withValues(alpha: 0.4)
+                      : colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  width: isToday ? 2 : 1,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '$day',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
-                        color: isDisabled
-                            ? colorScheme.outline
-                            : isToday
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurface,
-                      ),
+                    // Day number + visibility icon on same row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$day',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontWeight: isToday
+                                    ? FontWeight.w800
+                                    : FontWeight.w500,
+                                color: isDisabled
+                                    ? colorScheme.outline
+                                    : isToday
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.onSurface,
+                              ),
+                        ),
+                        if (assignments.isNotEmpty) ...[
+                          const SizedBox(width: 1),
+                          Tooltip(
+                            message: publicCount > 0
+                                ? loc.shiftCalendarPublicAssignments(
+                                    publicCount,
+                                  )
+                                : loc.shiftCalendarPrivateAssignments,
+                            child: Icon(
+                              publicCount > 0
+                                  ? Icons.public
+                                  : Icons.lock_outline,
+                              size: 8,
+                              color: publicCount > 0
+                                  ? appPrimary
+                                  : colorScheme.outline.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          if (hasSyncingAssignments) ...[
+                            const SizedBox(width: 3),
+                            Icon(
+                              Icons.sync_rounded,
+                              size: 8,
+                              color: Colors.amber.shade800,
+                            ),
+                          ],
+                        ],
+                      ],
                     ),
                     if (assignments.isNotEmpty) ...[
-                      const SizedBox(width: 1),
-                      Tooltip(
-                        message: publicCount > 0
-                            ? loc.shiftCalendarPublicAssignments(publicCount)
-                            : loc.shiftCalendarPrivateAssignments,
-                        child: Icon(
-                          publicCount > 0 ? Icons.public : Icons.lock_outline,
-                          size: 8,
-                          color: publicCount > 0
-                              ? appPrimary
-                              : colorScheme.outline.withValues(alpha: 0.5),
+                      const SizedBox(height: 2),
+                      ...assignments.take(2).map((item) {
+                        final userBadge = _userBadge(item);
+                        final profileBadge = _profileBadge(item);
+                        final assignmentAbsence = absenceStatuses
+                            .where((status) => status.userId == item.userId)
+                            .firstOrNull;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: item.displayColor.withValues(
+                                alpha: syncingAssignmentIds.contains(item.id)
+                                    ? 0.58
+                                    : 0.84,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 1,
+                              runSpacing: 2,
+                              //mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _timeRangeLabel(item),
+                                  textAlign: TextAlign.center,
+                                  style:
+                                      (!kIsWeb
+                                              ? textTheme.largeText
+                                              : textTheme.bodySmall)!
+                                          .copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (profileBadge != null ||
+                                    userBadge != null) ...[
+                                  const SizedBox(height: 2),
+                                  Wrap(
+                                    alignment: WrapAlignment.center,
+                                    spacing: 3,
+                                    runSpacing: 2,
+                                    children: [
+                                      if (profileBadge != null)
+                                        Tooltip(
+                                          message:
+                                              item.profileName?.trim() ?? '',
+                                          child: _MiniBadge(
+                                            label: profileBadge,
+                                            alpha: 0.14,
+                                            borderAlpha: 0.22,
+                                          ),
+                                        ),
+                                      if (userBadge != null)
+                                        Tooltip(
+                                          message:
+                                              item.userName
+                                                      ?.trim()
+                                                      .isNotEmpty ==
+                                                  true
+                                              ? item.userName!.trim()
+                                              : item.userId,
+                                          child: _MiniBadge(
+                                            label: userBadge,
+                                            alpha: 0.18,
+                                            borderAlpha: 0.28,
+                                          ),
+                                        ),
+                                      if (assignmentAbsence != null)
+                                        Tooltip(
+                                          message: assignmentAbsence.label(
+                                            context,
+                                          ),
+                                          child: _MiniBadge(
+                                            label: assignmentAbsence
+                                                .compactLabel(context),
+                                            alpha: 0.18,
+                                            borderAlpha: 0.28,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                      if (hasMore)
+                        Text(
+                          loc.shiftCalendarMoreEntries(assignments.length - 2),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                fontSize: 8,
+                                color: colorScheme.descriptionColor,
+                              ),
                         ),
-                      ),
-                      if (hasSyncingAssignments) ...[
-                        const SizedBox(width: 3),
-                        Icon(
-                          Icons.sync_rounded,
-                          size: 8,
-                          color: Colors.amber.shade800,
+                      if (extraAbsenceStatuses.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 3,
+                          runSpacing: 2,
+                          children: extraAbsenceStatuses
+                              .take(2)
+                              .map(
+                                (status) => Tooltip(
+                                  message: status.label(context),
+                                  child: _MiniBadge(
+                                    label: status.compactLabel(context),
+                                    alpha: 0.12,
+                                    borderAlpha: 0.22,
+                                  ),
+                                ),
+                              )
+                              .toList(growable: false),
                         ),
                       ],
+                    ] else if (extraAbsenceStatuses.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 3,
+                        runSpacing: 2,
+                        children: extraAbsenceStatuses
+                            .take(2)
+                            .map(
+                              (status) => Tooltip(
+                                message: status.label(context),
+                                child: _MiniBadge(
+                                  label: status.compactLabel(context),
+                                  alpha: 0.12,
+                                  borderAlpha: 0.22,
+                                ),
+                              ),
+                            )
+                            .toList(growable: false),
+                      ),
                     ],
                   ],
                 ),
-                if (assignments.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  ...assignments.take(2).map((item) {
-                    final userBadge = _userBadge(item);
-                    final profileBadge = _profileBadge(item);
-                    final assignmentAbsence = absenceStatuses
-                        .where((status) => status.userId == item.userId)
-                        .firstOrNull;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: item.displayColor.withValues(
-                            alpha: syncingAssignmentIds.contains(item.id)
-                                ? 0.58
-                                : 0.84,
-                          ),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 1,
-                          runSpacing: 2,
-                          //mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _timeRangeLabel(item),
-                              textAlign: TextAlign.center,
-                              style:
-                                  (!kIsWeb
-                                          ? textTheme.largeText
-                                          : textTheme.bodySmall)!
-                                      .copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (profileBadge != null || userBadge != null) ...[
-                              const SizedBox(height: 2),
-                              Wrap(
-                                alignment: WrapAlignment.center,
-                                spacing: 3,
-                                runSpacing: 2,
-                                children: [
-                                  if (profileBadge != null)
-                                    Tooltip(
-                                      message: item.profileName?.trim() ?? '',
-                                      child: _MiniBadge(
-                                        label: profileBadge,
-                                        alpha: 0.14,
-                                        borderAlpha: 0.22,
-                                      ),
-                                    ),
-                                  if (userBadge != null)
-                                    Tooltip(
-                                      message:
-                                          item.userName?.trim().isNotEmpty ==
-                                              true
-                                          ? item.userName!.trim()
-                                          : item.userId,
-                                      child: _MiniBadge(
-                                        label: userBadge,
-                                        alpha: 0.18,
-                                        borderAlpha: 0.28,
-                                      ),
-                                    ),
-                                  if (assignmentAbsence != null)
-                                    Tooltip(
-                                      message: assignmentAbsence.label(context),
-                                      child: _MiniBadge(
-                                        label: assignmentAbsence.compactLabel(
-                                          context,
-                                        ),
-                                        alpha: 0.18,
-                                        borderAlpha: 0.28,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                  if (hasMore)
-                    Text(
-                      loc.shiftCalendarMoreEntries(assignments.length - 2),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontSize: 8,
-                        color: colorScheme.descriptionColor,
-                      ),
-                    ),
-                  if (extraAbsenceStatuses.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 3,
-                      runSpacing: 2,
-                      children: extraAbsenceStatuses
-                          .take(2)
-                          .map(
-                            (status) => Tooltip(
-                              message: status.label(context),
-                              child: _MiniBadge(
-                                label: status.compactLabel(context),
-                                alpha: 0.12,
-                                borderAlpha: 0.22,
-                              ),
-                            ),
-                          )
-                          .toList(growable: false),
-                    ),
-                  ],
-                ] else if (extraAbsenceStatuses.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 3,
-                    runSpacing: 2,
-                    children: extraAbsenceStatuses
-                        .take(2)
-                        .map(
-                          (status) => Tooltip(
-                            message: status.label(context),
-                            child: _MiniBadge(
-                              label: status.compactLabel(context),
-                              alpha: 0.12,
-                              borderAlpha: 0.22,
-                            ),
-                          ),
-                        )
-                        .toList(growable: false),
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
         ),
-      ),
+        if (onDelete != null)
+          Positioned(
+            top: -4,
+            right: -4,
+            child: _DeleteDayButton(onTap: onDelete!),
+          ),
+      ],
     );
   }
 
@@ -664,6 +710,41 @@ class _DayCell extends StatelessWidget {
     }
 
     return userId.substring(0, userId.length >= 2 ? 2 : 1).toUpperCase();
+  }
+}
+
+/// Small overflow-corner delete button shown on a day cell when the caller
+/// allows bulk-deleting that day's shifts (a specific manageable team is
+/// selected). Kept outside the cell's own [GestureDetector] so tapping it
+/// doesn't also open the day dialog.
+class _DeleteDayButton extends StatelessWidget {
+  const _DeleteDayButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    return Tooltip(
+      message: loc.deleteAllShiftsForDayTooltip,
+      child: Material(
+        color: Colors.red.shade600,
+        shape: const CircleBorder(),
+        elevation: 1,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: const Padding(
+            padding: EdgeInsets.all(3),
+            child: Icon(
+              Icons.delete_outline_rounded,
+              size: 11,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

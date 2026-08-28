@@ -217,6 +217,7 @@ class ClockingUseCase {
     required String targetUserId,
     required DateTime date,
     String? note,
+    String? recordId,
   }) async {
     try {
       await repository.requestTeamMemberClocking(
@@ -224,6 +225,7 @@ class ClockingUseCase {
         targetUserId: targetUserId,
         date: date,
         note: note,
+        recordId: recordId,
       );
     } catch (e) {
       throw Exception('Failed to request team member clocking: $e');

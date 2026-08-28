@@ -270,16 +270,16 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
               Text(
                 _plannerMode == ShiftAutoPlannerMode.rotation
                     ? _t(
-                        it: 'Genera automaticamente i turni del team usando i profili esistenti e una rotazione equa dei membri disponibili.',
-                        en: 'Automatically generate team shifts using existing profiles and a fair rotation of available members.',
-                        fr: 'Générez automatiquement les shifts de l’équipe à partir des profils existants et d’une rotation équitable des membres disponibles.',
-                        es: 'Genera automáticamente los turnos del equipo usando los perfiles existentes y una rotación equilibrada de los miembros disponibles.',
+                        it: 'Genera automaticamente i turni del team usando i profili esistenti e una rotazione equa dei membri disponibili. L\'Auto Planner si basa sui vincoli impostati per ciascun membro per generare turni più in linea con le esigenze: senza vincoli configurati potresti avere delle sorprese.',
+                        en: 'Automatically generate team shifts using existing profiles and a fair rotation of available members. The Auto Planner relies on each member\'s configured constraints to generate shifts that better match your needs — without constraints set up, you may get some surprises.',
+                        fr: 'Générez automatiquement les shifts de l’équipe à partir des profils existants et d’une rotation équitable des membres disponibles. L’Auto Planner s’appuie sur les contraintes configurées pour chaque membre afin de générer des shifts plus adaptés aux besoins : sans contraintes configurées, vous pourriez avoir des surprises.',
+                        es: 'Genera automáticamente los turnos del equipo usando los perfiles existentes y una rotación equilibrada de los miembros disponibles. El Auto Planner se basa en las restricciones configuradas para cada miembro para generar turnos más acordes a las necesidades: sin restricciones configuradas podrías llevarte alguna sorpresa.',
                       )
                     : _t(
-                        it: 'Copre l’intero profilo turno usando più membri del team in sequenza o in parallelo, rispettando i vincoli disponibili.',
-                        en: 'Cover the whole shift profile by combining multiple team members sequentially or in parallel while respecting available constraints.',
-                        fr: 'Couvrez tout le profil de shift en combinant plusieurs membres de l’équipe de façon séquentielle ou parallèle tout en respectant les contraintes disponibles.',
-                        es: 'Cubre todo el perfil de turno combinando varios miembros del equipo de forma secuencial o en paralelo respetando las restricciones disponibles.',
+                        it: 'Copre l’intero profilo turno usando più membri del team in sequenza o in parallelo, rispettando i vincoli disponibili. Anche qui l\'Auto Planner si basa sui vincoli impostati per ciascun membro per generare turni più in linea con le esigenze: senza vincoli configurati potresti avere delle sorprese.',
+                        en: 'Cover the whole shift profile by combining multiple team members sequentially or in parallel while respecting available constraints. Here too, the Auto Planner relies on each member\'s configured constraints to generate shifts that better match your needs — without constraints set up, you may get some surprises.',
+                        fr: 'Couvrez tout le profil de shift en combinant plusieurs membres de l’équipe de façon séquentielle ou parallèle tout en respectant les contraintes disponibles. Là aussi, l’Auto Planner s’appuie sur les contraintes configurées pour chaque membre afin de générer des shifts plus adaptés aux besoins : sans contraintes configurées, vous pourriez avoir des surprises.',
+                        es: 'Cubre todo el perfil de turno combinando varios miembros del equipo de forma secuencial o en paralelo respetando las restricciones disponibles. Aquí también, el Auto Planner se basa en las restricciones configuradas para cada miembro para generar turnos más acordes a las necesidades: sin restricciones configuradas podrías llevarte alguna sorpresa.',
                       ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: compact ? 12.5 : 14,

@@ -17,6 +17,8 @@ class ClockingRealtimeCoordinator {
     'CLOCKING_PERMISSION_REQUEST_REJECTED',
     'CLOCKING_SICK_REQUEST_APPROVED',
     'CLOCKING_SICK_REQUEST_REJECTED',
+    'CLOCKING_DECOMMIT_REQUEST_APPROVED',
+    'CLOCKING_DECOMMIT_REQUEST_REJECTED',
   };
 
   bool isManagedClockingNotification(RealtimeNotification notification) {

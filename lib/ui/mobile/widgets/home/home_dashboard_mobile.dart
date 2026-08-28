@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_shift_tab_page.dart';
 import 'package:note_sondage/feature/home/domain/entities/dashboard_entity.dart';
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
+import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
@@ -146,8 +145,14 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Spazio vuoto a destra per mantenere la griglia bilanciata
-                    const Expanded(child: SizedBox()),
+                    Expanded(
+                      child: _MobileStatCard(
+                        icon: Icons.event_rounded,
+                        label: l.myEvents,
+                        value: isLoading ? null : '${stats?.myEvents ?? 0}',
+                        color: Colors.deepOrange,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -433,7 +438,10 @@ class _MobileQuickActions extends StatelessWidget {
                   icon: Icons.task_alt_rounded,
                   label: l.taskPageTitle,
                   color: Colors.pink,
-                  onTap: () => context.push(RouterPaths.tasks),
+                  onTap: () {
+                    ClockingShiftTabPage.requestedInitialTab = 2;
+                    navBloc.add(NavigationPositionChanged(3));
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -442,9 +450,32 @@ class _MobileQuickActions extends StatelessWidget {
                   icon: Icons.chat_bubble_outline_rounded,
                   label: l.chatTitle,
                   color: Colors.cyan,
-                  onTap: () => context.push(RouterPaths.sondageChat),
+                  onTap: () {
+                    SondageMobile.requestedInitialTab = 2;
+                    navBloc.add(NavigationPositionChanged(4));
+                  },
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _QuickActionButton(
+                  icon: Icons.event_rounded,
+                  label: l.myEvents,
+                  color: Colors.deepOrange,
+                  onTap: () {
+                    ClockingShiftTabPage.requestedInitialTab = 3;
+                    navBloc.add(NavigationPositionChanged(3));
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(child: SizedBox()),
+              const SizedBox(width: 10),
+              const Expanded(child: SizedBox()),
             ],
           ),
         ],

@@ -9,6 +9,7 @@ class DashboardStats {
   final int pendingInvitations;
   final int myOpenTasks;
   final int unreadChatMessages;
+  final int myEvents;
 
   const DashboardStats({
     this.activeTeams = 0,
@@ -20,6 +21,7 @@ class DashboardStats {
     this.pendingInvitations = 0,
     this.myOpenTasks = 0,
     this.unreadChatMessages = 0,
+    this.myEvents = 0,
   });
 
   DashboardStats copyWith({
@@ -32,6 +34,7 @@ class DashboardStats {
     int? pendingInvitations,
     int? myOpenTasks,
     int? unreadChatMessages,
+    int? myEvents,
   }) {
     return DashboardStats(
       activeTeams: activeTeams ?? this.activeTeams,
@@ -43,6 +46,7 @@ class DashboardStats {
       pendingInvitations: pendingInvitations ?? this.pendingInvitations,
       myOpenTasks: myOpenTasks ?? this.myOpenTasks,
       unreadChatMessages: unreadChatMessages ?? this.unreadChatMessages,
+      myEvents: myEvents ?? this.myEvents,
     );
   }
 }

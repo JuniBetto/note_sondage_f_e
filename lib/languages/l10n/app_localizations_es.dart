@@ -1097,6 +1097,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get myShifts => 'Mis turnos';
 
   @override
+  String get myEvents => 'Mis eventos';
+
+  @override
   String get shiftCalendar => 'Calendario de turnos';
 
   @override
@@ -1285,6 +1288,26 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get deleteAllShiftsForDayTooltip =>
+      'Eliminar todos los turnos de este dia';
+
+  @override
+  String get deleteAllShiftsForDayTitle => 'Eliminar todos los turnos';
+
+  @override
+  String deleteAllShiftsForDayMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Estas seguro de que quieres eliminar los $count turnos asignados en este dia?',
+      one:
+          'Estas seguro de que quieres eliminar el turno asignado en este dia?',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shiftAutoPlanPreviewTitle => 'Vista previa Auto Planner';
 
   @override
@@ -1416,8 +1439,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get vacationStatus => 'Vacaciones';
 
   @override
-  String get clockingOpenRecordAnotherDay =>
-      'Tienes un fichaje abierto en otro día. Selecciónalo para continuar.';
+  String clockingOpenRecordAnotherDay(String teamName, String date) {
+    return 'Tienes un fichaje abierto en $teamName el $date. Selecciónalo para continuar.';
+  }
 
   @override
   String dayAlreadyHasClocking(String date) {
@@ -1463,8 +1487,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get manualClockingResolveOpenRecord =>
-      'Tienes un fichaje abierto en otro día. Ciérralo o selecciona ese día antes de guardar un fichaje manual.';
+  String manualClockingResolveOpenRecord(String teamName, String date) {
+    return 'Tienes un fichaje abierto en $teamName el $date. Ciérralo o selecciona ese día antes de guardar un fichaje manual.';
+  }
 
   @override
   String get selectedDays => 'Días seleccionados';
@@ -1643,6 +1668,22 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get clockingRequestSentError =>
       'No hemos podido enviar la solicitud de fichaje al miembro del equipo.';
+
+  @override
+  String get requestUnlockOpenRecord => 'Solicitar desbloqueo';
+
+  @override
+  String requestUnlockOpenRecordDescription(String date) {
+    return 'Tienes un fichaje abierto del $date que no puedes cerrar tú mismo. Pide al manager que lo desbloquee para poder cerrarlo.';
+  }
+
+  @override
+  String get unlockRequestSentSuccess =>
+      'Solicitud de desbloqueo enviada con éxito.';
+
+  @override
+  String get unlockRequestSentError =>
+      'No hemos podido enviar la solicitud de desbloqueo.';
 
   @override
   String get decommitRequestSentSuccess =>

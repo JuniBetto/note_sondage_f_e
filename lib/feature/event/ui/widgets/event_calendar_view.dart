@@ -7,8 +7,12 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_date_range_picker.dart';
 
-const _kCalendarStartHour = 7;
-const _kCalendarEndHour = 20;
+const _kCalendarStartHour = 0;
+const _kCalendarEndHour = 24;
+// The grid spans the full day so no task/event is ever clipped out, but the
+// view still opens scrolled to this hour since most items fall in typical
+// working hours.
+const _kCalendarDefaultScrollHour = 7;
 const _kPixelsPerHour = 64.0;
 const _kCalendarCompactBreakpoint = 760.0;
 
@@ -54,6 +58,9 @@ class _EventCalendarViewState extends State<EventCalendarView> {
   // it's fully under the user's control via the Day/Week/Month selector.
   _CalendarViewMode? _viewMode;
   DateTimeRange? _customRange;
+  final ScrollController _hourGridScrollController = ScrollController(
+    initialScrollOffset: _kCalendarDefaultScrollHour * _kPixelsPerHour,
+  );
 
   List<DateTime> get _days =>
       List.generate(7, (i) => widget.weekStart.add(Duration(days: i)));
@@ -128,6 +135,12 @@ class _EventCalendarViewState extends State<EventCalendarView> {
       _focusedDay = normalized;
       _viewMode = _CalendarViewMode.day;
     });
+  }
+
+  @override
+  void dispose() {
+    _hourGridScrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -320,6 +333,7 @@ class _EventCalendarViewState extends State<EventCalendarView> {
             else
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _hourGridScrollController,
                   child: viewMode == _CalendarViewMode.day
                       ? _CalendarGrid(
                           days: [_focusedDay],

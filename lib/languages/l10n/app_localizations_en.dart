@@ -1082,6 +1082,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myShifts => 'My Shifts';
 
   @override
+  String get myEvents => 'My Events';
+
+  @override
   String get shiftCalendar => 'Shift Calendar';
 
   @override
@@ -1270,6 +1273,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get deleteAllShiftsForDayTooltip => 'Delete all shifts for this day';
+
+  @override
+  String get deleteAllShiftsForDayTitle => 'Delete all shifts';
+
+  @override
+  String deleteAllShiftsForDayMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Are you sure you want to delete all $count shifts assigned on this day?',
+      one: 'Are you sure you want to delete the shift assigned on this day?',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shiftAutoPlanPreviewTitle => 'Auto Planner preview';
 
   @override
@@ -1401,8 +1422,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vacationStatus => 'Vacation';
 
   @override
-  String get clockingOpenRecordAnotherDay =>
-      'You have an open clocking on another day. Select it to continue.';
+  String clockingOpenRecordAnotherDay(String teamName, String date) {
+    return 'You have an open clocking on $teamName on $date. Select it to continue.';
+  }
 
   @override
   String dayAlreadyHasClocking(String date) {
@@ -1448,8 +1470,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get manualClockingResolveOpenRecord =>
-      'You have an open clocking on another day. Close it or select that day before saving a manual clocking.';
+  String manualClockingResolveOpenRecord(String teamName, String date) {
+    return 'You have an open clocking on $teamName on $date. Close it or select that day before saving a manual clocking.';
+  }
 
   @override
   String get selectedDays => 'Selected days';
@@ -1627,6 +1650,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clockingRequestSentError =>
       'We couldn\'t send the clocking request to the team member.';
+
+  @override
+  String get requestUnlockOpenRecord => 'Request unlock';
+
+  @override
+  String requestUnlockOpenRecordDescription(String date) {
+    return 'You have an open clocking on $date that you can\'t close yourself. Ask the manager to unlock it so you can close it.';
+  }
+
+  @override
+  String get unlockRequestSentSuccess => 'Unlock request sent successfully.';
+
+  @override
+  String get unlockRequestSentError => 'We couldn\'t send the unlock request.';
 
   @override
   String get decommitRequestSentSuccess =>
