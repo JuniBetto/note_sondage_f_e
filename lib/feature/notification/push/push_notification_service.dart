@@ -11,6 +11,7 @@ import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/auth/domain/entities/user_device_entity.dart';
+import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_interaction_gate.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -479,13 +480,26 @@ class PushNotificationService {
         return;
       }
       final notificationCenterCubit = getIt<NotificationCenterCubit>();
-      notificationCenterCubit.consumeNotification(notification.notificationId);
+      final item = NotificationCenterItem.fromRealtime(notification);
+      final currentUserId = getIt<AuthBloc>().state.user.uid;
+      final requiresDecision =
+          item.supportsInviteDecisionFor(currentUserId) ||
+          item.supportsClockingDecision() ||
+          item.supportsReplacementOfferDecision();
+      // Notifications awaiting a decision (accept/reject, or similar) must
+      // stay in the pending list so the user can act on them from the home
+      // page they're about to be navigated to — consuming them here would
+      // dismiss them before they're ever seen.
+      if (!requiresDecision) {
+        notificationCenterCubit.consumeNotification(
+          notification.notificationId,
+        );
+      }
       unawaited(
         getIt<LocalNotificationService>().dismissDisplayedNotification(
           notification.notificationId,
         ),
       );
-      final item = NotificationCenterItem.fromRealtime(notification);
       await NotificationNavigation.open(item);
     } catch (error, stackTrace) {
       if (claimKey != null) {

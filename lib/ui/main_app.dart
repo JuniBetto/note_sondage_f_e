@@ -407,7 +407,18 @@ class _MainAppState extends State<MainApp> {
 
       if (!isDecisionAction) {
         final notificationCenterCubit = getIt<NotificationCenterCubit>();
-        notificationCenterCubit.consumeNotification(item.notificationId);
+        final currentUserId = getIt<AuthBloc>().state.user.uid;
+        final requiresDecision =
+            item.supportsInviteDecisionFor(currentUserId) ||
+            item.supportsClockingDecision() ||
+            item.supportsReplacementOfferDecision();
+        // A plain body tap (as opposed to an explicit action-button tap,
+        // handled below) on a notification still awaiting a decision must
+        // not consume it: it needs to stay in the pending list so the user
+        // can act on it from the home page they're about to land on.
+        if (!requiresDecision) {
+          notificationCenterCubit.consumeNotification(item.notificationId);
+        }
         if (!mounted) return;
         await NotificationNavigation.open(item, context: context);
         return;
