@@ -108,6 +108,16 @@ class _MainAppState extends State<MainApp> {
     if (!mounted) {
       return;
     }
+    if (notification.eventType == 'SYSTEM_CONNECTED') {
+      // The websocket push has no delivery queue: any notification sent
+      // while this device was still (re)connecting (e.g. a team invite
+      // fired right after login, before the subscription completed) is
+      // silently dropped server-side. Resync the notification inbox on
+      // every (re)connect so a missed event still surfaces within seconds
+      // instead of requiring a manual reload. Runs before the duplicate
+      // guard below since it must fire on every reconnect, not just once.
+      unawaited(getIt<NotificationCenterCubit>().loadNotifications(force: true));
+    }
     if (_isDuplicateNotification(notification.notificationId)) {
       return;
     }
