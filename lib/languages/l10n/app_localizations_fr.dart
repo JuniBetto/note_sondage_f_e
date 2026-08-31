@@ -582,6 +582,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privacyPolicy => 'Politique de confidentialité';
 
   @override
+  String get termsOfService => 'Conditions d\'utilisation';
+
+  @override
   String get howWeProtectYourData => 'Comment nous protégeons vos données';
 
   @override
@@ -620,7 +623,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vous avez le droit d\'accéder, de rectifier ou de supprimer vos données personnelles à tout moment. Contactez notre équipe support pour toute demande liée à la confidentialité.';
 
   @override
-  String get privacyLastUpdated => 'Dernière mise à jour : janvier 2025';
+  String get privacyLastUpdated => 'Dernière mise à jour : 31 août 2026';
+
+  @override
+  String get reviewPublicLegalPages => 'Pages juridiques publiques';
+
+  @override
+  String get reviewPublicLegalPagesDescription =>
+      'Consultez sur le site la politique de confidentialité et les conditions d\'utilisation publiques les plus récentes.';
 
   @override
   String get yourName => 'Votre Nom';

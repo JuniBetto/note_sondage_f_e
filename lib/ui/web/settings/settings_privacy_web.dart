@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/legal/public_legal_links_panel.dart';
 
 class SettingsPrivacyWeb extends StatelessWidget {
   const SettingsPrivacyWeb({super.key});
@@ -91,6 +92,21 @@ class SettingsPrivacyWeb extends StatelessWidget {
             iconColor: const Color(0xFF00BCD4),
             title: localization.yourRights,
             content: localization.yourRightsDescription,
+          ),
+
+          const SizedBox(height: 24),
+
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: colorScheme.homeSecondary,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.borderColor!.withValues(alpha: 0.3),
+              ),
+            ),
+            padding: const EdgeInsets.all(20),
+            child: const PublicLegalLinksPanel(),
           ),
 
           const SizedBox(height: 24),

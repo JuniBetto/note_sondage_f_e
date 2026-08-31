@@ -1146,6 +1146,12 @@ abstract class AppLocalizations {
   /// **'Privacy Policy'**
   String get privacyPolicy;
 
+  /// No description provided for @termsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfService;
+
   /// No description provided for @howWeProtectYourData.
   ///
   /// In en, this message translates to:
@@ -1215,8 +1221,20 @@ abstract class AppLocalizations {
   /// No description provided for @privacyLastUpdated.
   ///
   /// In en, this message translates to:
-  /// **'Last updated: January 2025'**
+  /// **'Last updated: August 31, 2026'**
   String get privacyLastUpdated;
+
+  /// No description provided for @reviewPublicLegalPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Public legal pages'**
+  String get reviewPublicLegalPages;
+
+  /// No description provided for @reviewPublicLegalPagesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the latest public privacy policy and terms of service on our website.'**
+  String get reviewPublicLegalPagesDescription;
 
   /// No description provided for @yourName.
   ///
