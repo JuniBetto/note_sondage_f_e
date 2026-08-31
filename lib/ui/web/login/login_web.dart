@@ -4,6 +4,7 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/auth_tab_login.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/forget_password.dart';
 import 'package:note_sondage/ui/web/widgets/web_navbar.dart';
+import 'package:note_sondage/ui/widgets/legal/public_legal_links_panel.dart';
 
 class LoginWeb extends StatelessWidget {
   final bool? isForgetPassword;
@@ -73,6 +74,15 @@ class LoginWeb extends StatelessWidget {
                         : AuthTabLogin(queryParameters: queryParameters),
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 680),
+                  child: const PublicLegalLinksPanel(centered: true),
+                ),
               ),
             ),
           ],

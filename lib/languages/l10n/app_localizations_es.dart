@@ -36,6 +36,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get deleteAccount => 'Desactivar cuenta';
 
   @override
+  String get permanentlyDeleteAccount => 'Eliminar cuenta';
+
+  @override
   String get accountDeletionDialogMessage =>
       'Introduce el correo electrónico de la cuenta que quieres desactivar. Enviaremos un enlace de confirmación antes de bloquearla.';
 
@@ -84,6 +87,53 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get accountDeletionLoadingMessage =>
       'Estamos validando el enlace de desactivación de tu cuenta...';
+
+  @override
+  String get accountErasureDialogMessage =>
+      'Introduce el correo electrónico de la cuenta que quieres eliminar definitivamente. Enviaremos un enlace de confirmación antes de retirar tus datos.';
+
+  @override
+  String get accountErasureRequestSentTitle => 'Revisa tu correo';
+
+  @override
+  String get accountErasureRequestSentMessage =>
+      'Si existe una cuenta para este correo, hemos enviado un enlace de confirmación para completar la eliminación definitiva.';
+
+  @override
+  String get accountErasureRequestFailedTitle =>
+      'No se pudo iniciar la eliminación de la cuenta';
+
+  @override
+  String get accountErasureRequestFailedMessage =>
+      'No pudimos enviar el correo de confirmación de eliminación definitiva en este momento. Inténtalo de nuevo más tarde.';
+
+  @override
+  String get accountErasureOpenEmailTitle => 'Abre el correo de eliminación';
+
+  @override
+  String get accountErasureOpenEmailMessage =>
+      'Usa el enlace de confirmación de eliminación definitiva recibido por correo para borrar la cuenta y sus datos.';
+
+  @override
+  String get accountErasureConfirmedTitle => 'Cuenta eliminada';
+
+  @override
+  String get accountErasureConfirmedMessage =>
+      'Tu cuenta y los datos asociados se han eliminado definitivamente. Ya puedes cerrar esta página.';
+
+  @override
+  String get accountErasureFailedTitle => 'Eliminación de cuenta no disponible';
+
+  @override
+  String get accountErasureFailedMessage =>
+      'No pudimos confirmar este enlace de eliminación definitiva. Solicita un nuevo correo e inténtalo de nuevo.';
+
+  @override
+  String get accountErasureLoadingTitle => 'Confirmando eliminación de cuenta';
+
+  @override
+  String get accountErasureLoadingMessage =>
+      'Estamos validando el enlace de eliminación definitiva de tu cuenta...';
 
   @override
   String get reactivateAccount => 'Reactivar cuenta';
@@ -583,6 +633,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get privacyPolicy => 'Política de privacidad';
 
   @override
+  String get termsOfService => 'Términos del servicio';
+
+  @override
   String get howWeProtectYourData => 'Cómo protegemos tus datos';
 
   @override
@@ -611,7 +664,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dataRetentionDescription =>
-      'Tus datos se conservan mientras tu cuenta esté activa. Tras la desactivación de la cuenta, los datos personales se eliminan de forma permanente en un plazo de 30 días.';
+      'Tus datos se conservan mientras tu cuenta esté activa. Tras la desactivación de la cuenta, los datos personales se eliminan de forma permanente en un plazo de 1 año.';
 
   @override
   String get yourRights => 'Tus derechos';
@@ -621,7 +674,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tienes derecho a acceder, rectificar o eliminar tus datos personales en cualquier momento. Contacta con nuestro equipo de soporte para cualquier solicitud relacionada con la privacidad.';
 
   @override
-  String get privacyLastUpdated => 'Última actualización: enero de 2025';
+  String get privacyLastUpdated => 'Última actualización: 31 de agosto de 2026';
+
+  @override
+  String get reviewPublicLegalPages => 'Páginas legales públicas';
+
+  @override
+  String get reviewPublicLegalPagesDescription =>
+      'Consulta en el sitio la política de privacidad y los términos del servicio públicos más recientes.';
 
   @override
   String get yourName => 'Tu Nombre';

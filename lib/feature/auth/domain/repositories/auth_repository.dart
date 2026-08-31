@@ -53,6 +53,12 @@ abstract class AuthRepository {
   /// Conferma la cancellazione dell'account usando il token ricevuto via email.
   Future<void> confirmAccountDeletion({required String token});
 
+  /// Richiede l'invio dell'email di conferma per eliminare definitivamente l'account.
+  Future<void> requestAccountErasure({required String email});
+
+  /// Conferma l'eliminazione definitiva dell'account usando il token ricevuto via email.
+  Future<void> confirmAccountErasure({required String token});
+
   /// Richiede l'invio dell'email di conferma per riattivare l'account.
   Future<void> requestAccountReactivation({required String email});
 

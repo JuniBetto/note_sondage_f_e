@@ -119,6 +119,22 @@ class AuthUseCase {
     }
   }
 
+  Future<void> requestAccountErasure({required String email}) async {
+    try {
+      return await _repository.requestAccountErasure(email: email);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> confirmAccountErasure({required String token}) async {
+    try {
+      return await _repository.confirmAccountErasure(token: token);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> requestAccountReactivation({required String email}) async {
     try {
       return await _repository.requestAccountReactivation(email: email);
