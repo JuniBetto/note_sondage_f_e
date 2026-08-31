@@ -121,6 +121,13 @@ class _MainAppState extends State<MainApp> {
     if (_isDuplicateNotification(notification.notificationId)) {
       return;
     }
+    if (notification.eventType == 'NOTIFICATION_PREFERENCES_UPDATED') {
+      // Preferences are a per-account setting: when saved on another device
+      // this event lets the current session refresh its local copy live,
+      // instead of showing stale toggles until the page is reloaded.
+      unawaited(getIt<NotificationPreferencesCubit>().loadPreferences(force: true));
+      return;
+    }
 
     final suppressChatNotification =
         _isChatNotification(notification) && _isChatRouteOpen();

@@ -543,6 +543,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Rappels pour les tâches qui vous sont assignées ou proches de l\'échéance';
 
   @override
+  String get eventNotifications => 'Notifications d\'événements';
+
+  @override
+  String get eventNotificationsSubtitle =>
+      'Nouveaux événements, modifications et rappels de calendrier';
+
+  @override
   String get debugTools => 'Outils de débogage';
 
   @override

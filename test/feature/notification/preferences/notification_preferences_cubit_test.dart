@@ -88,6 +88,7 @@ void main() {
           shiftAlertsEnabled: false,
           chatMessagesEnabled: true,
           taskRemindersEnabled: true,
+          eventRemindersEnabled: true,
         );
 
         backendAuth.getPreferencesHandler = () async => preferences;
@@ -150,6 +151,7 @@ void main() {
           shiftAlertsEnabled: true,
           chatMessagesEnabled: true,
           taskRemindersEnabled: true,
+          eventRemindersEnabled: true,
         );
         const updatedPreferences = NotificationPreferencesEntity(
           emailEnabled: false,
@@ -160,6 +162,7 @@ void main() {
           shiftAlertsEnabled: false,
           chatMessagesEnabled: false,
           taskRemindersEnabled: false,
+          eventRemindersEnabled: false,
         );
 
         backendAuth.getPreferencesHandler = () async => initialPreferences;
@@ -222,6 +225,7 @@ void main() {
           shiftAlertsEnabled: true,
           chatMessagesEnabled: true,
           taskRemindersEnabled: true,
+          eventRemindersEnabled: true,
         );
         const updatedPreferences = NotificationPreferencesEntity(
           emailEnabled: false,
@@ -232,6 +236,7 @@ void main() {
           shiftAlertsEnabled: false,
           chatMessagesEnabled: false,
           taskRemindersEnabled: false,
+          eventRemindersEnabled: false,
         );
 
         backendAuth.getPreferencesHandler = () async => initialPreferences;

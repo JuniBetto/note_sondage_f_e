@@ -537,6 +537,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reminders for tasks assigned to you or with an upcoming due date';
 
   @override
+  String get eventNotifications => 'Event Notifications';
+
+  @override
+  String get eventNotificationsSubtitle =>
+      'New events, changes, and calendar reminders';
+
+  @override
   String get debugTools => 'Debug tools';
 
   @override

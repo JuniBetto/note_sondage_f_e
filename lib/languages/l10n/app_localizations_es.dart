@@ -544,6 +544,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Recordatorios de tareas asignadas a ti o próximas a vencer';
 
   @override
+  String get eventNotifications => 'Notificaciones de eventos';
+
+  @override
+  String get eventNotificationsSubtitle =>
+      'Nuevos eventos, cambios y recordatorios de calendario';
+
+  @override
   String get debugTools => 'Herramientas de depuración';
 
   @override
