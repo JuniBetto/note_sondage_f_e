@@ -119,6 +119,40 @@ class BackendAuthDataSource {
     }
   }
 
+  Future<void> requestAccountErasure(String email) async {
+    try {
+      await _dio.post(
+        '/public/api/account-erasure/request',
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Account erasure request failed: ${e.message}');
+      final responseData = e.response?.data;
+      throw Exception(
+        'Failed to request account erasure: '
+        '${e.response?.statusCode ?? 'no status'} – ${responseData ?? e.message}',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> confirmAccountErasure(String token) async {
+    try {
+      final response = await _dio.post(
+        '/public/api/account-erasure/confirm',
+        data: {'token': token},
+      );
+      return Map<String, dynamic>.from(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      debugPrint(
+        '[BackendAuth] Account erasure confirmation failed: ${e.message}',
+      );
+      throw Exception(
+        'Failed to confirm account erasure: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.response?.data ?? e.message}',
+      );
+    }
+  }
+
   Future<void> requestAccountReactivation(String email) async {
     try {
       await _dio.post(

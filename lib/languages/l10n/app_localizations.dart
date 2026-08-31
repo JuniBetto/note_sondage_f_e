@@ -156,6 +156,12 @@ abstract class AppLocalizations {
   /// **'Deactivate account'**
   String get deleteAccount;
 
+  /// No description provided for @permanentlyDeleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get permanentlyDeleteAccount;
+
   /// No description provided for @accountDeletionDialogMessage.
   ///
   /// In en, this message translates to:
@@ -239,6 +245,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We are validating your account deactivation link...'**
   String get accountDeletionLoadingMessage;
+
+  /// No description provided for @accountErasureDialogMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the email address of the account you want to permanently delete. We will send a confirmation link before removing your data.'**
+  String get accountErasureDialogMessage;
+
+  /// No description provided for @accountErasureRequestSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email'**
+  String get accountErasureRequestSentTitle;
+
+  /// No description provided for @accountErasureRequestSentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'If an account exists for this email, we sent a confirmation link to complete the permanent deletion.'**
+  String get accountErasureRequestSentMessage;
+
+  /// No description provided for @accountErasureRequestFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to start account deletion'**
+  String get accountErasureRequestFailedTitle;
+
+  /// No description provided for @accountErasureRequestFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not send the permanent deletion confirmation email right now. Please try again.'**
+  String get accountErasureRequestFailedMessage;
+
+  /// No description provided for @accountErasureOpenEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the deletion email'**
+  String get accountErasureOpenEmailTitle;
+
+  /// No description provided for @accountErasureOpenEmailMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the permanent deletion confirmation link from your email to remove the account and its data.'**
+  String get accountErasureOpenEmailMessage;
+
+  /// No description provided for @accountErasureConfirmedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted'**
+  String get accountErasureConfirmedTitle;
+
+  /// No description provided for @accountErasureConfirmedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account and associated data have been permanently deleted. You can close this page.'**
+  String get accountErasureConfirmedMessage;
+
+  /// No description provided for @accountErasureFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion unavailable'**
+  String get accountErasureFailedTitle;
+
+  /// No description provided for @accountErasureFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not confirm this permanent deletion link. Request a new email and try again.'**
+  String get accountErasureFailedMessage;
+
+  /// No description provided for @accountErasureLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming account deletion'**
+  String get accountErasureLoadingTitle;
+
+  /// No description provided for @accountErasureLoadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We are validating your permanent account deletion link...'**
+  String get accountErasureLoadingMessage;
 
   /// No description provided for @reactivateAccount.
   ///
@@ -1203,7 +1287,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataRetentionDescription.
   ///
   /// In en, this message translates to:
-  /// **'Your data is retained for as long as your account is active. After account deactivation, personal data is permanently removed within 30 days.'**
+  /// **'Your data is retained for as long as your account is active. After account deactivation, personal data is permanently removed within 1 year.'**
   String get dataRetentionDescription;
 
   /// No description provided for @yourRights.

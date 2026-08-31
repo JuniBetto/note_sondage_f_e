@@ -36,6 +36,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteAccount => 'Deactivate account';
 
   @override
+  String get permanentlyDeleteAccount => 'Delete account';
+
+  @override
   String get accountDeletionDialogMessage =>
       'Enter the email address of the account you want to deactivate. We will send a confirmation link before disabling it.';
 
@@ -84,6 +87,53 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountDeletionLoadingMessage =>
       'We are validating your account deactivation link...';
+
+  @override
+  String get accountErasureDialogMessage =>
+      'Enter the email address of the account you want to permanently delete. We will send a confirmation link before removing your data.';
+
+  @override
+  String get accountErasureRequestSentTitle => 'Check your email';
+
+  @override
+  String get accountErasureRequestSentMessage =>
+      'If an account exists for this email, we sent a confirmation link to complete the permanent deletion.';
+
+  @override
+  String get accountErasureRequestFailedTitle =>
+      'Unable to start account deletion';
+
+  @override
+  String get accountErasureRequestFailedMessage =>
+      'We could not send the permanent deletion confirmation email right now. Please try again.';
+
+  @override
+  String get accountErasureOpenEmailTitle => 'Open the deletion email';
+
+  @override
+  String get accountErasureOpenEmailMessage =>
+      'Use the permanent deletion confirmation link from your email to remove the account and its data.';
+
+  @override
+  String get accountErasureConfirmedTitle => 'Account deleted';
+
+  @override
+  String get accountErasureConfirmedMessage =>
+      'Your account and associated data have been permanently deleted. You can close this page.';
+
+  @override
+  String get accountErasureFailedTitle => 'Account deletion unavailable';
+
+  @override
+  String get accountErasureFailedMessage =>
+      'We could not confirm this permanent deletion link. Request a new email and try again.';
+
+  @override
+  String get accountErasureLoadingTitle => 'Confirming account deletion';
+
+  @override
+  String get accountErasureLoadingMessage =>
+      'We are validating your permanent account deletion link...';
 
   @override
   String get reactivateAccount => 'Reactivate account';
@@ -607,7 +657,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dataRetentionDescription =>
-      'Your data is retained for as long as your account is active. After account deactivation, personal data is permanently removed within 30 days.';
+      'Your data is retained for as long as your account is active. After account deactivation, personal data is permanently removed within 1 year.';
 
   @override
   String get yourRights => 'Your Rights';

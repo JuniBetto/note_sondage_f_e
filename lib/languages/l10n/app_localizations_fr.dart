@@ -36,6 +36,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deleteAccount => 'Désactiver le compte';
 
   @override
+  String get permanentlyDeleteAccount => 'Supprimer le compte';
+
+  @override
   String get accountDeletionDialogMessage =>
       'Saisissez l\'adresse e-mail du compte à désactiver. Nous enverrons un lien de confirmation avant de le bloquer.';
 
@@ -85,6 +88,54 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get accountDeletionLoadingMessage =>
       'Nous vérifions votre lien de désactivation du compte...';
+
+  @override
+  String get accountErasureDialogMessage =>
+      'Saisissez l\'adresse e-mail du compte à supprimer définitivement. Nous enverrons un lien de confirmation avant de retirer vos données.';
+
+  @override
+  String get accountErasureRequestSentTitle => 'Vérifiez votre e-mail';
+
+  @override
+  String get accountErasureRequestSentMessage =>
+      'Si un compte existe pour cet e-mail, nous avons envoyé un lien de confirmation pour terminer la suppression définitive.';
+
+  @override
+  String get accountErasureRequestFailedTitle =>
+      'Impossible de démarrer la suppression du compte';
+
+  @override
+  String get accountErasureRequestFailedMessage =>
+      'Nous n\'avons pas pu envoyer l\'e-mail de confirmation de suppression définitive pour le moment. Réessayez plus tard.';
+
+  @override
+  String get accountErasureOpenEmailTitle => 'Ouvrez l\'e-mail de suppression';
+
+  @override
+  String get accountErasureOpenEmailMessage =>
+      'Utilisez le lien de confirmation de suppression définitive reçu par e-mail pour supprimer le compte et ses données.';
+
+  @override
+  String get accountErasureConfirmedTitle => 'Compte supprimé';
+
+  @override
+  String get accountErasureConfirmedMessage =>
+      'Votre compte et les données associées ont été supprimés définitivement. Vous pouvez fermer cette page.';
+
+  @override
+  String get accountErasureFailedTitle => 'Suppression du compte indisponible';
+
+  @override
+  String get accountErasureFailedMessage =>
+      'Nous n\'avons pas pu confirmer ce lien de suppression définitive. Demandez un nouvel e-mail et réessayez.';
+
+  @override
+  String get accountErasureLoadingTitle =>
+      'Confirmation de la suppression du compte';
+
+  @override
+  String get accountErasureLoadingMessage =>
+      'Nous vérifions votre lien de suppression définitive du compte...';
 
   @override
   String get reactivateAccount => 'Réactiver le compte';
@@ -613,7 +664,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dataRetentionDescription =>
-      'Vos données sont conservées tant que votre compte est actif. Après la désactivation du compte, les données personnelles sont supprimées définitivement sous 30 jours.';
+      'Vos données sont conservées tant que votre compte est actif. Après la désactivation du compte, les données personnelles sont supprimées définitivement en 1 an.';
 
   @override
   String get yourRights => 'Vos droits';

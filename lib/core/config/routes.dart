@@ -37,6 +37,7 @@ import 'package:note_sondage/ui/web/settings/settings_web.dart';
 import 'package:note_sondage/ui/app_keys.dart';
 import 'package:note_sondage/ui/widgets/about_page.dart';
 import 'package:note_sondage/ui/widgets/auth/confirm_account_deletion_page.dart';
+import 'package:note_sondage/ui/widgets/auth/confirm_account_erasure_page.dart';
 import 'package:note_sondage/ui/widgets/auth/confirm_account_reactivation_page.dart';
 import 'package:note_sondage/ui/widgets/auth/confirm_registration_page.dart';
 import 'package:note_sondage/ui/widgets/auth/reset_password_page.dart';
@@ -504,6 +505,15 @@ GoRouter createRouter(BuildContext context) {
         ),
       ),
       GoRoute(
+        path: RouterPaths.confirmAccountErasure,
+        name: RouterPaths.confirmAccountErasure,
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          child: ConfirmAccountErasurePage(
+            queryParameters: state.uri.queryParameters,
+          ),
+        ),
+      ),
+      GoRoute(
         path: RouterPaths.confirmAccountReactivation,
         name: RouterPaths.confirmAccountReactivation,
         pageBuilder: (context, state) => NoTransitionPage<void>(
@@ -540,6 +550,7 @@ GoRouter createRouter(BuildContext context) {
           isGuestOnlyRoute ||
           currentPath == RouterPaths.confirmRegistration ||
           currentPath == RouterPaths.confirmAccountDeletion ||
+          currentPath == RouterPaths.confirmAccountErasure ||
           currentPath == RouterPaths.confirmAccountReactivation ||
           currentPath == RouterPaths.resetPassword;
 
@@ -596,6 +607,7 @@ abstract class RouterPaths {
   static const about = '/about';
   static const confirmRegistration = '/confirm-registration';
   static const confirmAccountDeletion = '/confirm-account-deletion';
+  static const confirmAccountErasure = '/confirm-account-erasure';
   static const confirmAccountReactivation = '/confirm-account-reactivation';
   static const resetPassword = '/reset-password';
   static const team = '/team';

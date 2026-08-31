@@ -14,6 +14,7 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/auth/mfa_sign_in_dialog.dart';
+import 'package:note_sondage/ui/widgets/auth/request_account_erasure_dialog.dart';
 import 'package:note_sondage/ui/widgets/auth/phone_sign_in_dialog.dart';
 import 'package:note_sondage/ui/widgets/auth/request_account_deletion_dialog.dart';
 import 'package:note_sondage/ui/widgets/auth/request_account_reactivation_dialog.dart';
@@ -206,6 +207,15 @@ class _AuthTabLoginState extends State<AuthTabLogin>
     await showDialog<bool>(
       context: context,
       builder: (_) => RequestAccountReactivationDialog(
+        initialEmail: _loginEmailController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> _openAccountErasureDialog() async {
+    await showDialog<bool>(
+      context: context,
+      builder: (_) => RequestAccountErasureDialog(
         initialEmail: _loginEmailController.text.trim(),
       ),
     );
@@ -418,6 +428,20 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                           child: Text(
                             localization.reactivateAccount,
                             style: textTheme.bodyLarge,
+                          ),
+                        ),
+                        CustomAppButton(
+                          type: ButtonType.outlined,
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: colorScheme.errorColor,
+                          borderColor: colorScheme.errorColor,
+                          onPressed: _openAccountErasureDialog,
+                          isActive: true,
+                          child: Text(
+                            localization.permanentlyDeleteAccount,
+                            style: textTheme.bodyLarge?.copyWith(
+                              color: colorScheme.errorColor,
+                            ),
                           ),
                         ),
                       ],

@@ -36,6 +36,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get deleteAccount => 'Disattiva account';
 
   @override
+  String get permanentlyDeleteAccount => 'Elimina account';
+
+  @override
   String get accountDeletionDialogMessage =>
       'Inserisci l\'email dell\'account che vuoi disattivare. Ti invieremo un link di conferma prima di bloccarlo.';
 
@@ -84,6 +87,54 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get accountDeletionLoadingMessage =>
       'Stiamo verificando il link di disattivazione del tuo account...';
+
+  @override
+  String get accountErasureDialogMessage =>
+      'Inserisci l\'email dell\'account che vuoi eliminare definitivamente. Ti invieremo un link di conferma prima di rimuovere i tuoi dati.';
+
+  @override
+  String get accountErasureRequestSentTitle => 'Controlla la tua email';
+
+  @override
+  String get accountErasureRequestSentMessage =>
+      'Se esiste un account con questa email, abbiamo inviato un link di conferma per completare l\'eliminazione definitiva.';
+
+  @override
+  String get accountErasureRequestFailedTitle =>
+      'Impossibile avviare l\'eliminazione dell\'account';
+
+  @override
+  String get accountErasureRequestFailedMessage =>
+      'Non siamo riusciti a inviare l\'email di conferma dell\'eliminazione definitiva. Riprova tra poco.';
+
+  @override
+  String get accountErasureOpenEmailTitle => 'Apri l\'email di eliminazione';
+
+  @override
+  String get accountErasureOpenEmailMessage =>
+      'Usa il link di conferma ricevuto via email per eliminare l\'account e i dati associati.';
+
+  @override
+  String get accountErasureConfirmedTitle => 'Account eliminato';
+
+  @override
+  String get accountErasureConfirmedMessage =>
+      'Il tuo account e i dati associati sono stati eliminati definitivamente. Ora puoi chiudere questa pagina.';
+
+  @override
+  String get accountErasureFailedTitle =>
+      'Eliminazione account non disponibile';
+
+  @override
+  String get accountErasureFailedMessage =>
+      'Non siamo riusciti a confermare questo link di eliminazione definitiva. Richiedi una nuova email e riprova.';
+
+  @override
+  String get accountErasureLoadingTitle => 'Conferma eliminazione account';
+
+  @override
+  String get accountErasureLoadingMessage =>
+      'Stiamo verificando il link di eliminazione definitiva del tuo account...';
 
   @override
   String get reactivateAccount => 'Riattiva account';
@@ -611,7 +662,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dataRetentionDescription =>
-      'I tuoi dati vengono conservati finché il tuo account è attivo. Dopo la disattivazione dell\'account, i dati personali vengono rimossi definitivamente entro 30 giorni.';
+      'I tuoi dati vengono conservati finché il tuo account è attivo. Dopo la disattivazione dell\'account, i dati personali vengono rimossi definitivamente entro 1 anno.';
 
   @override
   String get yourRights => 'I tuoi diritti';

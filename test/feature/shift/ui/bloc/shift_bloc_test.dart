@@ -72,6 +72,10 @@ class _FakeAuthRepository implements AuthRepository {
       throw UnimplementedError();
 
   @override
+  Future<void> confirmAccountErasure({required String token}) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> confirmAccountReactivation({required String token}) =>
       throw UnimplementedError();
 
@@ -104,6 +108,10 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> requestAccountDeletion({required String email}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> requestAccountErasure({required String email}) =>
       throw UnimplementedError();
 
   @override

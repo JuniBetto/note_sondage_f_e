@@ -505,6 +505,32 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> requestAccountErasure({required String email}) async {
+    await _backendAuth.requestAccountErasure(email.trim());
+  }
+
+  @override
+  Future<void> confirmAccountErasure({required String token}) async {
+    final response = await _backendAuth.confirmAccountErasure(token.trim());
+    final erasedFirebaseUid = response['firebaseUid']?.toString().trim();
+    final currentUser = _firebaseAuth.currentUser;
+
+    if (currentUser != null &&
+        erasedFirebaseUid != null &&
+        erasedFirebaseUid.isNotEmpty &&
+        currentUser.uid == erasedFirebaseUid) {
+      await signOut();
+      return;
+    }
+
+    try {
+      await currentUser?.reload();
+    } catch (_) {
+      // Ignore reload failures for public confirmation flows.
+    }
+  }
+
+  @override
   Future<void> requestAccountReactivation({required String email}) async {
     await _backendAuth.requestAccountReactivation(email.trim());
   }
