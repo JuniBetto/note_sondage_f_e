@@ -7,6 +7,7 @@ class NotificationPreferencesEntity {
   final bool shiftAlertsEnabled;
   final bool chatMessagesEnabled;
   final bool taskRemindersEnabled;
+  final bool eventRemindersEnabled;
 
   const NotificationPreferencesEntity({
     required this.emailEnabled,
@@ -17,6 +18,7 @@ class NotificationPreferencesEntity {
     required this.shiftAlertsEnabled,
     required this.chatMessagesEnabled,
     required this.taskRemindersEnabled,
+    required this.eventRemindersEnabled,
   });
 
   static const defaults = NotificationPreferencesEntity(
@@ -28,6 +30,7 @@ class NotificationPreferencesEntity {
     shiftAlertsEnabled: true,
     chatMessagesEnabled: true,
     taskRemindersEnabled: true,
+    eventRemindersEnabled: true,
   );
 
   factory NotificationPreferencesEntity.fromJson(Map<String, dynamic> json) {
@@ -47,6 +50,7 @@ class NotificationPreferencesEntity {
       shiftAlertsEnabled: readBool('shiftAlertsEnabled', true),
       chatMessagesEnabled: readBool('chatMessagesEnabled', true),
       taskRemindersEnabled: readBool('taskRemindersEnabled', true),
+      eventRemindersEnabled: readBool('eventRemindersEnabled', true),
     );
   }
 
@@ -60,6 +64,7 @@ class NotificationPreferencesEntity {
       'shiftAlertsEnabled': shiftAlertsEnabled,
       'chatMessagesEnabled': chatMessagesEnabled,
       'taskRemindersEnabled': taskRemindersEnabled,
+      'eventRemindersEnabled': eventRemindersEnabled,
     };
   }
 
@@ -72,6 +77,7 @@ class NotificationPreferencesEntity {
     bool? shiftAlertsEnabled,
     bool? chatMessagesEnabled,
     bool? taskRemindersEnabled,
+    bool? eventRemindersEnabled,
   }) {
     return NotificationPreferencesEntity(
       emailEnabled: emailEnabled ?? this.emailEnabled,
@@ -84,6 +90,8 @@ class NotificationPreferencesEntity {
       shiftAlertsEnabled: shiftAlertsEnabled ?? this.shiftAlertsEnabled,
       chatMessagesEnabled: chatMessagesEnabled ?? this.chatMessagesEnabled,
       taskRemindersEnabled: taskRemindersEnabled ?? this.taskRemindersEnabled,
+      eventRemindersEnabled:
+          eventRemindersEnabled ?? this.eventRemindersEnabled,
     );
   }
 }

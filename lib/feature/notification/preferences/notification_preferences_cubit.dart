@@ -33,18 +33,15 @@ class NotificationPreferencesCubit extends Cubit<NotificationPreferencesState> {
       await _localNotificationService.setShiftNotificationsEnabled(
         backendPreferences.shiftAlertsEnabled,
       );
-      // taskRemindersEnabled isn't persisted by the backend yet, so the
-      // locally-scheduled alarm flag (which IS durable) is the source of
-      // truth instead of the backend's always-true fallback.
-      final taskRemindersEnabled = await _localNotificationService
-          .areTaskNotificationsEnabled();
-      final preferences = backendPreferences.copyWith(
-        taskRemindersEnabled: taskRemindersEnabled,
+      // Keeps the locally-scheduled task reminder alarms in sync with the
+      // backend value (which is now the source of truth for this toggle).
+      await _localNotificationService.setTaskNotificationsEnabled(
+        backendPreferences.taskRemindersEnabled,
       );
       emit(
         state.copyWith(
           status: NotificationPreferencesStatus.loaded,
-          preferences: preferences,
+          preferences: backendPreferences,
           errorMessage: null,
         ),
       );
@@ -74,19 +71,13 @@ class NotificationPreferencesCubit extends Cubit<NotificationPreferencesState> {
       await _localNotificationService.setShiftNotificationsEnabled(
         backendSaved.shiftAlertsEnabled,
       );
-      // Same client-only caveat as loadPreferences: persist locally and
-      // trust what was just requested rather than the backend's response,
-      // since it silently drops this field instead of echoing it back.
       await _localNotificationService.setTaskNotificationsEnabled(
-        preferences.taskRemindersEnabled,
-      );
-      final saved = backendSaved.copyWith(
-        taskRemindersEnabled: preferences.taskRemindersEnabled,
+        backendSaved.taskRemindersEnabled,
       );
       emit(
         state.copyWith(
           status: NotificationPreferencesStatus.loaded,
-          preferences: saved,
+          preferences: backendSaved,
           errorMessage: null,
         ),
       );

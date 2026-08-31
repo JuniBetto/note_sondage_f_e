@@ -1074,6 +1074,18 @@ abstract class AppLocalizations {
   /// **'Reminders for tasks assigned to you or with an upcoming due date'**
   String get taskNotificationsSubtitle;
 
+  /// No description provided for @eventNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Event Notifications'**
+  String get eventNotifications;
+
+  /// No description provided for @eventNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New events, changes, and calendar reminders'**
+  String get eventNotificationsSubtitle;
+
   /// No description provided for @debugTools.
   ///
   /// In en, this message translates to:

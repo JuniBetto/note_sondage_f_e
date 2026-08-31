@@ -541,6 +541,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Promemoria per i task assegnati a te o in scadenza';
 
   @override
+  String get eventNotifications => 'Notifiche eventi';
+
+  @override
+  String get eventNotificationsSubtitle =>
+      'Nuovi eventi, modifiche e promemoria di calendario';
+
+  @override
   String get debugTools => 'Strumenti debug';
 
   @override
