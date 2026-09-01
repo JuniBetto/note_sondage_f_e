@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -59,6 +60,37 @@ void main() {
         await FirebaseAuth.instance.setSettings(
           appVerificationDisabledForTesting: true,
         );
+      }
+
+      // 2b. Attiva Firebase App Check per bloccare chiamate dirette alle API
+      //     Firebase (Auth, ecc.) che non provengono da questa app.
+      //     In debug usa i provider "debug" (richiedono di registrare il
+      //     debug token stampato in console su Firebase Console > App Check).
+      //     Sul web serve una site key reCAPTCHA Enterprise (variabile
+      //     RECAPTCHA_V3_SITE_KEY, registrata così in Firebase Console >
+      //     App Check per l'app web): se non è configurata, l'attivazione
+      //     sul web viene saltata.
+      try {
+        final webProvider = RuntimeConfig.recaptchaV3SiteKey.isEmpty
+            ? null
+            : ReCaptchaEnterpriseProvider(RuntimeConfig.recaptchaV3SiteKey);
+        if (!kIsWeb || webProvider != null) {
+          await FirebaseAppCheck.instance.activate(
+            androidProvider: kDebugMode
+                ? AndroidProvider.debug
+                : AndroidProvider.playIntegrity,
+            appleProvider:
+                kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+            webProvider: webProvider,
+          );
+        } else {
+          debugPrint(
+            '[AppCheck] RECAPTCHA_V3_SITE_KEY non configurata, '
+            'App Check disattivato sul web.',
+          );
+        }
+      } catch (e) {
+        debugPrint('[AppCheck] Attivazione fallita: $e');
       }
 
       // 3. Setup dependency injection (sincrono — va prima delle init async)

@@ -46,6 +46,13 @@ class RuntimeConfig {
     defaultValue: false,
   );
 
+  // Site key reCAPTCHA v3 per Firebase App Check (solo web).
+  // Creata in Firebase Console > App Check > App web > Registra > reCAPTCHA v3.
+  static const String recaptchaV3SiteKey = String.fromEnvironment(
+    'RECAPTCHA_V3_SITE_KEY',
+    defaultValue: '',
+  );
+
   static const bool _workflowActionsFeatureFlag = bool.fromEnvironment(
     'ENABLE_WORKFLOW_ACTIONS',
     defaultValue: false,
