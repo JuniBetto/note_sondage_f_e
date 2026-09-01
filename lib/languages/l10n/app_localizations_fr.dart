@@ -138,6 +138,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Nous vérifions votre lien de suppression définitive du compte...';
 
   @override
+  String get accountErasureReadyTitle => 'Confirmer la suppression définitive';
+
+  @override
+  String get accountErasureReadyMessage =>
+      'Cette action supprime définitivement votre compte et les données associées. Elle est irréversible.';
+
+  @override
+  String get confirmAccountErasure => 'Supprimer définitivement le compte';
+
+  @override
   String get reactivateAccount => 'Réactiver le compte';
 
   @override

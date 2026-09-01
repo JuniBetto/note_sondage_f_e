@@ -28,11 +28,11 @@ class _ConfirmAccountErasurePageState extends State<ConfirmAccountErasurePage> {
     _authUseCase = GetIt.instance<AuthUseCase>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(_confirmErasure());
+      _prepareConfirmation();
     });
   }
 
-  Future<void> _confirmErasure() async {
+  void _prepareConfirmation() {
     final status = widget.queryParameters['status']?.trim().toLowerCase();
     final localization = AppLocalizations.of(context)!;
 
@@ -70,6 +70,27 @@ class _ConfirmAccountErasurePageState extends State<ConfirmAccountErasurePage> {
       });
       return;
     }
+
+    setState(() {
+      _state = _ConfirmErasureViewState.ready(
+        title: localization.accountErasureReadyTitle,
+        message: localization.accountErasureReadyMessage,
+      );
+    });
+  }
+
+  Future<void> _confirmErasure() async {
+    final token = widget.queryParameters['token']?.trim();
+    final localization = AppLocalizations.of(context)!;
+
+    if (token == null || token.isEmpty) {
+      _prepareConfirmation();
+      return;
+    }
+
+    setState(() {
+      _state = const _ConfirmErasureViewState.loading();
+    });
 
     try {
       await _authUseCase.confirmAccountErasure(token: token);
@@ -150,13 +171,24 @@ class _ConfirmAccountErasurePageState extends State<ConfirmAccountErasurePage> {
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
                       ),
                       const SizedBox(height: 24),
-                      Row(
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
                         children: [
+                          if (_state.showConfirmButton) ...[
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: colorScheme.error,
+                                foregroundColor: colorScheme.onError,
+                              ),
+                              onPressed: () => unawaited(_confirmErasure()),
+                              child: Text(localization.confirmAccountErasure),
+                            ),
+                          ],
                           FilledButton(
                             onPressed: () => context.go(RouterPaths.login),
                             child: Text(localization.backToLogin),
                           ),
-                          const SizedBox(width: 12),
                           if (_state.showRetry)
                             OutlinedButton(
                               onPressed: () {
@@ -189,6 +221,7 @@ class _ConfirmErasureViewState {
     required this.message,
     required this.kind,
     this.showRetry = false,
+    this.showConfirmButton = false,
   });
 
   const _ConfirmErasureViewState.loading()
@@ -219,6 +252,17 @@ class _ConfirmErasureViewState {
          kind: _ConfirmErasureKind.info,
        );
 
+  const _ConfirmErasureViewState.ready({
+    required String title,
+    required String message,
+  }) : this._(
+         icon: Icons.delete_forever_outlined,
+         title: title,
+         message: message,
+         kind: _ConfirmErasureKind.info,
+         showConfirmButton: true,
+       );
+
   const _ConfirmErasureViewState.error({
     required String title,
     required String message,
@@ -235,6 +279,7 @@ class _ConfirmErasureViewState {
   final String message;
   final _ConfirmErasureKind kind;
   final bool showRetry;
+  final bool showConfirmButton;
 
   Color accentColor(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;

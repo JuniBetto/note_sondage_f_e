@@ -324,6 +324,24 @@ abstract class AppLocalizations {
   /// **'We are validating your permanent account deletion link...'**
   String get accountErasureLoadingMessage;
 
+  /// No description provided for @accountErasureReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm permanent account deletion'**
+  String get accountErasureReadyTitle;
+
+  /// No description provided for @accountErasureReadyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This action permanently removes your account and associated data. It cannot be undone.'**
+  String get accountErasureReadyMessage;
+
+  /// No description provided for @confirmAccountErasure.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account permanently'**
+  String get confirmAccountErasure;
+
   /// No description provided for @reactivateAccount.
   ///
   /// In en, this message translates to:
