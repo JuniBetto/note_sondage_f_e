@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_form.dart';
+import 'package:note_sondage/ui/widgets/navigation_bar.dart';
 
 class CreateSondageMobile extends StatelessWidget {
   final String? sondageId;
@@ -21,9 +22,11 @@ class CreateSondageMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = 2.0 + mobileNavBarBottomInset(context);
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
       child: SondageCreateForm(
         onCreated: onsondageCreated,
         showHeader: false,
