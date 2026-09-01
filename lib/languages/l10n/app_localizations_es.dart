@@ -136,6 +136,17 @@ class AppLocalizationsEs extends AppLocalizations {
       'Estamos validando el enlace de eliminación definitiva de tu cuenta...';
 
   @override
+  String get accountErasureReadyTitle =>
+      'Confirmar eliminación permanente de la cuenta';
+
+  @override
+  String get accountErasureReadyMessage =>
+      'Esta acción elimina definitivamente tu cuenta y los datos asociados. No se puede deshacer.';
+
+  @override
+  String get confirmAccountErasure => 'Eliminar cuenta permanentemente';
+
+  @override
   String get reactivateAccount => 'Reactivar cuenta';
 
   @override

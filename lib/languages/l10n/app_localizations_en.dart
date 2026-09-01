@@ -136,6 +136,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'We are validating your permanent account deletion link...';
 
   @override
+  String get accountErasureReadyTitle => 'Confirm permanent account deletion';
+
+  @override
+  String get accountErasureReadyMessage =>
+      'This action permanently removes your account and associated data. It cannot be undone.';
+
+  @override
+  String get confirmAccountErasure => 'Delete account permanently';
+
+  @override
   String get reactivateAccount => 'Reactivate account';
 
   @override
