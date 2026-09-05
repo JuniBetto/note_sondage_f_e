@@ -210,12 +210,23 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
     List<int>? profileImageBytes,
     String? profileImageFileName,
   }) async {
+    final firebase.UserCredential credential;
     try {
-      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+      credential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+    } on firebase.FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
 
+    // Da qui in poi l'account esiste già su Firebase: qualunque passo
+    // successivo (invio email di verifica compreso) deve terminare con un
+    // signOut(), altrimenti l'utente appena creato ma non verificato
+    // resterebbe loggato nel client se uno di questi step fallisce (es.
+    // dominio di conferma non autorizzato su Firebase → sendEmailVerification
+    // lancia prima di raggiungere il signOut()).
+    try {
       // Aggiorna il displayName se fornito
       if (displayName != null && credential.user != null) {
         await credential.user!.updateDisplayName(displayName);
@@ -232,11 +243,11 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         );
       }
 
-      final registeredUser = AuthMapper.fromFirebaseUser(currentUser);
-      await signOut();
-      return registeredUser;
+      return AuthMapper.fromFirebaseUser(currentUser);
     } on firebase.FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
+    } finally {
+      await signOut();
     }
   }
 

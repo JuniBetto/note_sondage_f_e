@@ -28,6 +28,20 @@ server {
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 
+    # Android App Links / iOS Universal Links verification files.
+    # Devono essere serviti senza redirect e con Content-Type JSON perché il
+    # link di conferma email (registrazione, reset password, ecc.) riapra
+    # l'app nativa invece del browser.
+    location = /.well-known/assetlinks.json {
+        default_type application/json;
+        try_files $uri =404;
+    }
+
+    location = /.well-known/apple-app-site-association {
+        default_type application/json;
+        try_files $uri =404;
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
     }

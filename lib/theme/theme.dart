@@ -63,7 +63,7 @@ class AppTheme {
         onPrimary: colorScheme.onPrimary,
         onSecondary: colorScheme.onSecondary,
         onSurface: colorScheme.textColor!,
-        onError: Colors.transparent,
+        onError: Colors.white,
 
         brightness: isDark ? Brightness.dark : Brightness.light,
       ),
