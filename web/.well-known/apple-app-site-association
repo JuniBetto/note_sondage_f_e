@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "HQCYCT77HU.com.teammanagement.app",
+        "paths": [
+          "/confirm-registration",
+          "/reset-password",
+          "/confirm-account-deletion",
+          "/confirm-account-erasure",
+          "/confirm-account-reactivation"
+        ]
+      }
+    ]
+  }
+}

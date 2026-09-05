@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.arthbet.noteSondage",
+      "sha256_cert_fingerprints": [
+        "B4:F1:D8:94:4B:7C:BC:B2:C1:3F:FD:CB:35:A4:22:23:91:1B:01:EF:15:A0:B3:B5:49:09:28:22:83:00:7B:AF"
+      ]
+    }
+  }
+]
