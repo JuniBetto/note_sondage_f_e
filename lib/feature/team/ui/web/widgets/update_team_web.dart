@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
@@ -348,42 +349,44 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                   const SizedBox(height: 24),
                 ],
 
-                _buildSectionTitle(
-                  context,
-                  _isItalian(context) ? 'Workflow AI' : 'Workflow AI',
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: colorScheme.homeSecondary,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                if (RuntimeConfig.enableAiFeature) ...[
+                  _buildSectionTitle(
+                    context,
+                    _isItalian(context) ? 'Workflow AI' : 'Workflow AI',
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.homeSecondary,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.borderColor!.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: AppSwitchListTile(
+                      value: _workflowAiEnabled,
+                      onChanged: _canManageWorkflowAi
+                          ? (value) {
+                              setState(() => _workflowAiEnabled = value);
+                            }
+                          : null,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        _isItalian(context)
+                            ? 'Abilita AI per questo team'
+                            : 'Enable AI for this team',
+                      ),
+                      subtitle: Text(
+                        _isItalian(context)
+                            ? 'Owner, admin o manage possono autorizzare l AI del team. Serve anche il toggle globale dell app.'
+                            : 'Owner, admin, or manage roles can authorize team AI. The app-wide global toggle is also required.',
+                      ),
                     ),
                   ),
-                  child: AppSwitchListTile(
-                    value: _workflowAiEnabled,
-                    onChanged: _canManageWorkflowAi
-                        ? (value) {
-                            setState(() => _workflowAiEnabled = value);
-                          }
-                        : null,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      _isItalian(context)
-                          ? 'Abilita AI per questo team'
-                          : 'Enable AI for this team',
-                    ),
-                    subtitle: Text(
-                      _isItalian(context)
-                          ? 'Owner, admin o manage possono autorizzare l AI del team. Serve anche il toggle globale dell app.'
-                          : 'Owner, admin, or manage roles can authorize team AI. The app-wide global toggle is also required.',
-                    ),
-                  ),
-                ),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+                ],
 
                 // ── Members Section ──
                 _buildSectionTitle(context, localization.userList),

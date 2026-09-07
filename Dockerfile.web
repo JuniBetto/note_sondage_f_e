@@ -22,6 +22,7 @@ RUN test -f ./.env.web \
       --dart-define=APPLE_STORE_URL="${APPLE_STORE_URL}" \
       --dart-define=ANDROID_STORE_URL="${ANDROID_STORE_URL}" \
       --dart-define=ENABLE_WORKFLOW_ACTIONS="${ENABLE_WORKFLOW_ACTIONS}" \
+      --dart-define=ENABLE_AI_FEATURE="${ENABLE_AI_FEATURE}" \
       --dart-define=SENTRY_DSN="${SENTRY_DSN}" \
       --dart-define=RECAPTCHA_V3_SITE_KEY="${RECAPTCHA_V3_SITE_KEY}"
 

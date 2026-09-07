@@ -59,6 +59,12 @@ class RuntimeConfig {
   );
   static bool? _enableWorkflowActionsOverride;
 
+  static const bool _aiFeatureFlag = bool.fromEnvironment(
+    'ENABLE_AI_FEATURE',
+    defaultValue: false,
+  );
+  static bool? _enableAiFeatureOverride;
+
   static const String emailConfirmationUrl = String.fromEnvironment(
     'EMAIL_CONFIRMATION_URL',
     defaultValue: '',
@@ -149,9 +155,17 @@ class RuntimeConfig {
       _enableWorkflowActionsOverride ??
       !kReleaseMode || _workflowActionsFeatureFlag;
 
+  static bool get enableAiFeature =>
+      _enableAiFeatureOverride ?? _aiFeatureFlag;
+
   @visibleForTesting
   static void debugSetEnableWorkflowActionsOverride(bool? value) {
     _enableWorkflowActionsOverride = value;
+  }
+
+  @visibleForTesting
+  static void debugSetEnableAiFeatureOverride(bool? value) {
+    _enableAiFeatureOverride = value;
   }
 
   static AppEnvironment? _environmentFromString(String rawValue) {
