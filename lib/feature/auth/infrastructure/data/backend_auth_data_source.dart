@@ -358,9 +358,12 @@ class BackendAuthDataSource {
     }
   }
 
-  Future<List<UserDeviceEntity>> getCurrentDevices() async {
+  Future<List<UserDeviceEntity>> getCurrentDevices({Options? options}) async {
     try {
-      final response = await _authenticatedDio.get('/api/users/me/devices');
+      final response = await _authenticatedDio.get(
+        '/api/users/me/devices',
+        options: options,
+      );
       final list = response.data as List<dynamic>? ?? [];
       return list
           .map(
@@ -373,6 +376,26 @@ class BackendAuthDataSource {
       debugPrint('[BackendAuth] Devices fetch failed: ${e.message}');
       throw Exception(
         'Failed to fetch current devices: '
+        '${e.response?.statusCode ?? 'no status'} – ${e.message}',
+      );
+    }
+  }
+
+  /// Revoca un device dell'utente corrente (usato al logout per fermare le
+  /// notifiche push su quel device). [options] permette di forzare
+  /// esplicitamente gli header Authorization/X-User-Id quando la sessione
+  /// Firebase locale è già stata invalidata (vedi
+  /// FirebaseAuthRepositoryImpl._revokeCurrentPushDevice).
+  Future<void> revokeDevice(String deviceId, {Options? options}) async {
+    try {
+      await _authenticatedDio.delete(
+        '/api/users/me/devices/$deviceId',
+        options: options,
+      );
+    } on DioException catch (e) {
+      debugPrint('[BackendAuth] Device revoke failed: ${e.message}');
+      throw Exception(
+        'Failed to revoke device: '
         '${e.response?.statusCode ?? 'no status'} – ${e.message}',
       );
     }

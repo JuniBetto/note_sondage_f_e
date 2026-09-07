@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -31,6 +32,17 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
       'pending_registration_avatar_file_name';
   static const _webPhoneSessionPrefix = 'web-phone:';
 
+  // Chiavi SharedPreferences condivise con PushNotificationService: usate
+  // qui solo per revocare il device push corrente al logout (vedi
+  // _revokeCurrentPushDevice). Duplicate volutamente (non importiamo
+  // PushNotificationService) per non introdurre una dipendenza incrociata
+  // tra il livello auth e il feature notification.
+  static const _pushDeviceFingerprintKey = 'push_device_fingerprint';
+  static const _lastRegisteredPushTokenKey = 'last_registered_push_token';
+  static const _lastRegisteredPushUserIdKey = 'last_registered_push_user_id';
+  static const _lastRegisteredPushAtKey = 'last_registered_push_at';
+  static const _pushDeviceRevokeTimeout = Duration(seconds: 5);
+
   final firebase.FirebaseAuth _firebaseAuth;
   final BackendAuthDataSource _backendAuth;
   final TokenService _tokenService;
@@ -41,6 +53,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   String? _backendExchangeUid;
   DateTime? _lastSuccessfulExchangeAt;
   String? _lastSuccessfulExchangeUid;
+  String? _lastKnownFirebaseUid;
 
   FirebaseAuthRepositoryImpl({
     firebase.FirebaseAuth? firebaseAuth,
@@ -130,6 +143,7 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   Stream<AuthUserEntity> get authStateChanges {
     return _firebaseAuth.authStateChanges().map((firebaseUser) {
       if (firebaseUser != null) {
+        _lastKnownFirebaseUid = firebaseUser.uid;
         if (_shouldTreatAsPendingEmailVerification(firebaseUser)) {
           _backendExchangeInFlight = null;
           _backendExchangeUid = null;
@@ -144,10 +158,85 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
         _backendExchangeUid = null;
         _lastSuccessfulExchangeAt = null;
         _lastSuccessfulExchangeUid = null;
-        unawaited(_tokenService.clearToken());
+        // Firebase ha già azzerato currentUser a questo punto: catturiamo
+        // l'ultimo UID noto e il JWT (non ancora ripulito) per poter
+        // provare a revocare il device push anche in questo caso di
+        // "logout silenzioso" (token scaduto, account disabilitato,
+        // sessione invalidata server-side) che non passa da signOut().
+        final lastKnownUid = _lastKnownFirebaseUid;
+        _lastKnownFirebaseUid = null;
+        unawaited(() async {
+          final backendJwt = await _tokenService.getToken();
+          await _revokeCurrentPushDevice(
+            backendJwt: backendJwt,
+            firebaseUid: lastKnownUid,
+          );
+          await _tokenService.clearToken();
+        }());
       }
       return AuthMapper.fromFirebaseUser(firebaseUser);
     });
+  }
+
+  /// Revoca (best-effort) il device push corrente sul backend, così che
+  /// smetta di ricevere notifiche dopo che l'app risulta sloggata — sia per
+  /// logout esplicito sia per invalidazione "silenziosa" della sessione.
+  ///
+  /// Non lancia mai eccezioni: un fallimento qui non deve mai bloccare né
+  /// far fallire il logout. [backendJwt] e [firebaseUid] vanno passati
+  /// esplicitamente (anziché letti da _firebaseAuth/_tokenService al volo)
+  /// perché nel percorso "logout silenzioso" _firebaseAuth.currentUser è
+  /// già null quando questo metodo viene chiamato, e AuthInterceptor
+  /// popolerebbe altrimenti Authorization/X-User-Id come vuoti.
+  Future<void> _revokeCurrentPushDevice({
+    required String? backendJwt,
+    required String? firebaseUid,
+  }) async {
+    if (backendJwt == null ||
+        backendJwt.isEmpty ||
+        firebaseUid == null ||
+        firebaseUid.isEmpty) {
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final fingerprint = prefs.getString(_pushDeviceFingerprintKey);
+      if (fingerprint == null || fingerprint.isEmpty) {
+        return;
+      }
+
+      final authOptions = Options(
+        headers: {
+          'Authorization': 'Bearer $backendJwt',
+          'X-User-Id': firebaseUid,
+        },
+      );
+
+      final devices = await _backendAuth
+          .getCurrentDevices(options: authOptions)
+          .timeout(_pushDeviceRevokeTimeout);
+      final matches = devices.where(
+        (d) => d.deviceFingerprint == fingerprint && !d.revoked,
+      );
+      if (matches.isEmpty) {
+        return;
+      }
+
+      await _backendAuth
+          .revokeDevice(matches.first.id, options: authOptions)
+          .timeout(_pushDeviceRevokeTimeout);
+
+      // Evita che il prossimo login su questo device salti la
+      // ri-registrazione push per via della cache "già registrato".
+      await prefs.remove(_lastRegisteredPushUserIdKey);
+      await prefs.remove(_lastRegisteredPushTokenKey);
+      await prefs.remove(_lastRegisteredPushAtKey);
+      debugPrint('[Auth] Push device revoked on logout for $firebaseUid.');
+    } catch (e) {
+      debugPrint(
+        '[Auth] Push device revoke on logout failed (non-blocking): $e',
+      );
+    }
   }
 
   @override
@@ -1030,6 +1119,14 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> signOut() async {
     try {
+      // Revoca il device push mentre Firebase user e JWT sono ancora validi
+      // (servono per autenticare la richiesta al backend). Va fatto PRIMA
+      // di clearToken()/firebaseAuth.signOut() qui sotto.
+      await _revokeCurrentPushDevice(
+        backendJwt: await _tokenService.getToken(),
+        firebaseUid: _firebaseAuth.currentUser?.uid,
+      );
+
       // Rimuovi il JWT del backend
       await _tokenService.clearToken();
       _pendingMfaResolver = null;
