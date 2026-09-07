@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
@@ -269,20 +270,22 @@ class _SettingsMobileState extends State<SettingsMobile> {
                         ),
                         showDivider: true,
                       ),
-                      _SettingTile(
-                        icon: Icons.auto_awesome_rounded,
-                        iconColor: const Color(0xFF00A86B),
-                        title: 'AI',
-                        subtitle:
-                            Localizations.localeOf(context).languageCode == 'it'
-                            ? 'Autorizzazione globale AI'
-                            : 'Global AI authorization',
-                        onTap: () => _showSettingModal(
-                          context,
-                          const SettingsAiMobile(),
+                      if (RuntimeConfig.enableAiFeature)
+                        _SettingTile(
+                          icon: Icons.auto_awesome_rounded,
+                          iconColor: const Color(0xFF00A86B),
+                          title: 'AI',
+                          subtitle:
+                              Localizations.localeOf(context).languageCode ==
+                                  'it'
+                              ? 'Autorizzazione globale AI'
+                              : 'Global AI authorization',
+                          onTap: () => _showSettingModal(
+                            context,
+                            const SettingsAiMobile(),
+                          ),
+                          showDivider: false,
                         ),
-                        showDivider: false,
-                      ),
                     ],
                   ),
                 ),

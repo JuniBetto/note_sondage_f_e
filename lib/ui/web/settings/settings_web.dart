@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -142,15 +143,16 @@ class _SettingsWebState extends State<SettingsWeb> {
                           isSmallScreen: isExpanded,
                           lastIndexes: lastIndexes,
                         ),
-                        SidebarItem(
-                          isSettings: true,
-                          key: const ValueKey(2),
-                          icon: Icons.auto_awesome_rounded,
-                          label: 'AI',
-                          index: 6,
-                          isSmallScreen: isExpanded,
-                          lastIndexes: lastIndexes,
-                        ),
+                        if (RuntimeConfig.enableAiFeature)
+                          SidebarItem(
+                            isSettings: true,
+                            key: const ValueKey(2),
+                            icon: Icons.auto_awesome_rounded,
+                            label: 'AI',
+                            index: 6,
+                            isSmallScreen: isExpanded,
+                            lastIndexes: lastIndexes,
+                          ),
                         SidebarItem(
                           isSettings: true,
                           key: const ValueKey(6),

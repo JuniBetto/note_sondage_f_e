@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
@@ -376,50 +377,52 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                         const SizedBox(height: 24),
                       ],
 
-                      _buildSectionHeader(
-                        context,
-                        _isItalian(context) ? 'AI workflow' : 'Workflow AI',
-                        Icons.auto_awesome_rounded,
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: colorScheme.homeSecondary,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: colorScheme.borderColor!.withValues(
-                              alpha: 0.3,
+                      if (RuntimeConfig.enableAiFeature) ...[
+                        _buildSectionHeader(
+                          context,
+                          _isItalian(context) ? 'AI workflow' : 'Workflow AI',
+                          Icons.auto_awesome_rounded,
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: colorScheme.homeSecondary,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: colorScheme.borderColor!.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                          ),
+                          child: AppSwitchListTile(
+                            value: _workflowAiEnabled,
+                            onChanged:
+                                widget.readOnly ||
+                                    (_isEditMode &&
+                                        !_teamPermissions.canAccessRoleManager)
+                                ? null
+                                : (value) {
+                                    setState(() {
+                                      _workflowAiEnabled = value;
+                                    });
+                                  },
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              _isItalian(context)
+                                  ? 'Abilita AI per questo team'
+                                  : 'Enable AI for this team',
+                            ),
+                            subtitle: Text(
+                              _isItalian(context)
+                                  ? 'Richiede anche l attivazione globale nelle impostazioni generali dell app.'
+                                  : 'Also requires the global AI setting to be enabled in the app settings.',
                             ),
                           ),
                         ),
-                        child: AppSwitchListTile(
-                          value: _workflowAiEnabled,
-                          onChanged:
-                              widget.readOnly ||
-                                  (_isEditMode &&
-                                      !_teamPermissions.canAccessRoleManager)
-                              ? null
-                              : (value) {
-                                  setState(() {
-                                    _workflowAiEnabled = value;
-                                  });
-                                },
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            _isItalian(context)
-                                ? 'Abilita AI per questo team'
-                                : 'Enable AI for this team',
-                          ),
-                          subtitle: Text(
-                            _isItalian(context)
-                                ? 'Richiede anche l attivazione globale nelle impostazioni generali dell app.'
-                                : 'Also requires the global AI setting to be enabled in the app settings.',
-                          ),
-                        ),
-                      ),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
+                      ],
 
                       // ── Members Section ──
                       _buildSectionHeader(
