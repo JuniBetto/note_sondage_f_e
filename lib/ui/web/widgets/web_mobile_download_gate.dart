@@ -8,13 +8,23 @@ class WebMobileDownloadGate extends StatelessWidget {
     super.key,
     required this.child,
     this.breakpoint = 576,
+    this.bypass = false,
   });
 
   final Widget child;
   final double breakpoint;
 
+  /// Quando true, salta del tutto il controllo sulla larghezza dello schermo
+  /// e mostra sempre [child]. Usato per le pagine di conferma raggiunte da
+  /// link email (vedi [RouterPaths.webMobileGateBypassRoutes]), che devono
+  /// restare utilizzabili anche da un browser mobile sotto [breakpoint].
+  final bool bypass;
+
   @override
   Widget build(BuildContext context) {
+    if (bypass) {
+      return child;
+    }
     final width = MediaQuery.sizeOf(context).width;
     if (width >= breakpoint) {
       return child;

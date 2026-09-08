@@ -652,7 +652,24 @@ class _MainAppState extends State<MainApp> {
                     final content = child ?? const SizedBox.shrink();
                     final appContent = !kIsWeb
                         ? content
-                        : WebMobileDownloadGate(child: content);
+                        : ListenableBuilder(
+                            listenable: _router!.routeInformationProvider,
+                            builder: (context, routedChild) {
+                              final currentPath = _router!
+                                  .routeInformationProvider
+                                  .value
+                                  .uri
+                                  .path;
+                              final bypassGate = RouterPaths
+                                  .webMobileGateBypassRoutes
+                                  .contains(currentPath);
+                              return WebMobileDownloadGate(
+                                bypass: bypassGate,
+                                child: routedChild!,
+                              );
+                            },
+                            child: content,
+                          );
                     return Stack(
                       children: [
                         Positioned.fill(child: appContent),
