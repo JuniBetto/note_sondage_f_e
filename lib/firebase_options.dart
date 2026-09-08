@@ -36,7 +36,8 @@ class DefaultFirebaseOptions {
       projectId: "notesondage",
       storageBucket: "notesondage.firebasestorage.app",
       messagingSenderId: "907402131431",
-      appId: "1:907402131431:web:7da10e38061b426fed6f42"
+      appId: "1:907402131431:web:7da10e38061b426fed6f42",
+      measurementId: "G-F3M0LCN0E6"
   );
 
   static const FirebaseOptions android = FirebaseOptions(

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -91,6 +92,15 @@ void main() {
         }
       } catch (e) {
         debugPrint('[AppCheck] Attivazione fallita: $e');
+      }
+
+      // 2c. Attiva Firebase Analytics (raccolta eventi/schermate).
+      //     Non deve mai bloccare l'avvio dell'app: se fallisce, si logga
+      //     e si prosegue senza analytics per questa sessione.
+      try {
+        await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+      } catch (e) {
+        debugPrint('[Analytics] Attivazione fallita: $e');
       }
 
       // 3. Setup dependency injection (sincrono — va prima delle init async)
