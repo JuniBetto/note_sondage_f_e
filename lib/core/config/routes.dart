@@ -610,6 +610,20 @@ abstract class RouterPaths {
   static const confirmAccountErasure = '/confirm-account-erasure';
   static const confirmAccountReactivation = '/confirm-account-reactivation';
   static const resetPassword = '/reset-password';
+
+  /// Route raggiunte tramite link/bottone dentro un'email, dove l'utente deve
+  /// completare un'azione di conferma (es. cancellazione account, reset
+  /// password). Usata da [WebMobileDownloadGate] in main_app.dart per
+  /// bypassare il blocco "scarica l'app" sotto i 576px: chi arriva da questi
+  /// link va spesso da mobile e deve poter completare l'azione dal browser.
+  static const Set<String> webMobileGateBypassRoutes = {
+    confirmRegistration,
+    confirmAccountDeletion,
+    confirmAccountErasure,
+    confirmAccountReactivation,
+    resetPassword,
+  };
+
   static const team = '/team';
   static const forgotPassword = '/forgot_password';
   static const splashScreen = '/splash_screen';

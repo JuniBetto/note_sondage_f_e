@@ -22,6 +22,7 @@ class LoginWeb extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final localization = AppLocalizations.of(context)!;
+    final isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -68,7 +69,7 @@ class LoginWeb extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.all(4.0),
                     width: 400,
-                    height: 800,
+                    constraints: const BoxConstraints(maxHeight: 800),
                     child: isForgetPassword!
                         ? ForgetPassword()
                         : AuthTabLogin(queryParameters: queryParameters),
@@ -76,14 +77,24 @@ class LoginWeb extends StatelessWidget {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 680),
-                  child: const PublicLegalLinksPanel(centered: true),
-                ),
-              ),
+            // Nascosto mentre la tastiera è aperta: da spazio al form
+            // (già scrollabile al suo interno) invece di restare fisso
+            // e "rubare" altezza utile sopra la tastiera. Stesso pattern
+            // usato in login_mobile.dart per lo stesso problema.
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              child: isKeyboardVisible
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 680),
+                          child: const PublicLegalLinksPanel(centered: true),
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),
