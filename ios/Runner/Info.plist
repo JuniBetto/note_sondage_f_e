@@ -10,6 +10,11 @@
     <!-- Se l'app potrebbe usare il microfono -->
     <key>NSMicrophoneUsageDescription</key>
     <string>Questa applicazione richiede l'accesso al microfono per la registrazione di note vocali.</string>
+    <!-- Richiesta da Apple perché il selettore immagini (image_picker) referenzia le
+         API di CoreLocation per leggere gli eventuali metadati di geolocalizzazione
+         delle foto. L'app non usa la posizione per nessuna propria funzionalità. -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Questa applicazione non utilizza la tua posizione per le proprie funzionalità. Questo permesso può essere richiesto automaticamente dalla libreria di selezione immagini per leggere gli eventuali metadati di geolocalizzazione delle foto scelte dalla galleria.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleURLTypes</key>
