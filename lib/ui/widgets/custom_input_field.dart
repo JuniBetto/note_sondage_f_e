@@ -55,6 +55,13 @@ class _CustomInputFieldState extends State<CustomInputField> {
       return _kDigitsOnlyFormatter;
     }
 
+    // Le password non vanno mai forzate in minuscolo, anche se il chiamante
+    // non ha esplicitamente passato toLowerCase: false: l'utente deve poter
+    // digitare la password esattamente come l'ha scelta.
+    if (widget.isPassword) {
+      return [];
+    }
+
     // Se non è un numero ed è richiesto il minuscolo, applica il formattatore
     if (widget.toLowerCase) {
       return [
