@@ -32,6 +32,29 @@ class InviteFormData {
   }
 }
 
+/// Restituisce un messaggio d'errore se [email] e' gia' presente in [invites]
+/// (confronto case-insensitive, spazi ai bordi ignorati), escludendo la voce
+/// il cui email controller e' [excludeController] (la riga che si sta
+/// compilando in questo momento). Usato per impedire di invitare due volte lo
+/// stesso indirizzo nella stessa lista di inviti in sospeso, sia in
+/// creazione che in modifica di un team, su web e mobile.
+String? duplicateInviteEmailError(
+  String email,
+  List<InviteFormData> invites,
+  TextEditingController excludeController,
+) {
+  final normalized = email.trim().toLowerCase();
+  if (normalized.isEmpty) return null;
+
+  final isDuplicate = invites.any(
+    (invite) =>
+        invite.emailController != excludeController &&
+        invite.emailController.text.trim().toLowerCase() == normalized,
+  );
+
+  return isDuplicate ? 'This email has already been added to the list.' : null;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // UserFormData — mantenuto per compatibilità (update_team, edit membro).
 // ─────────────────────────────────────────────────────────────────────────────

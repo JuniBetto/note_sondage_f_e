@@ -119,6 +119,7 @@ class _AddUserWebState extends State<AddUserWeb> {
                       return _buildNewInviteFormWeb(
                         context,
                         current,
+                        widget.listInviteFormData,
                         selectedRoles,
                         _addEmptyInvite,
                       );
@@ -137,6 +138,7 @@ class _AddUserWebState extends State<AddUserWeb> {
 Widget _buildNewInviteFormWeb(
   BuildContext context,
   InviteFormData formData,
+  List<InviteFormData> allInvites,
   List<RoleEntity> roles,
   void Function()? onPressed,
 ) {
@@ -151,7 +153,13 @@ Widget _buildNewInviteFormWeb(
         CustomInputField(
           hintText: localization.email,
           controller: formData.emailController,
-          validator: emailValidator,
+          validator: (value) =>
+              emailValidator(value) ??
+              duplicateInviteEmailError(
+                value ?? '',
+                allInvites,
+                formData.emailController,
+              ),
         ),
         LayoutBuilder(
           builder: (context, constraints) {

@@ -123,6 +123,7 @@ class _AddUserMobileState extends State<AddUserMobile> {
                   return buildNewInviteForm(
                     context,
                     current,
+                    widget.listInviteFormData,
                     selectedRoles,
                     _addEmptyInvite,
                   );
@@ -139,6 +140,7 @@ class _AddUserMobileState extends State<AddUserMobile> {
 Widget buildNewInviteForm(
   BuildContext context,
   InviteFormData formData,
+  List<InviteFormData> allInvites,
   List<RoleEntity> roles,
   void Function()? onPressed,
 ) {
@@ -153,7 +155,13 @@ Widget buildNewInviteForm(
         CustomInputField(
           hintText: localization.email,
           controller: formData.emailController,
-          validator: emailValidator,
+          validator: (value) =>
+              emailValidator(value) ??
+              duplicateInviteEmailError(
+                value ?? '',
+                allInvites,
+                formData.emailController,
+              ),
         ),
         LayoutBuilder(
           builder: (context, constraints) {

@@ -51,6 +51,10 @@ class _TeamsMobileState extends State<TeamsMobile>
   }
 
   void _handleTeamCreated() {
+    // Chiude la tastiera: al momento della creazione il focus puo' essere
+    // ancora su un campo del form (es. descrizione o email invito), e senza
+    // questo restava aperta anche dopo il cambio tab.
+    FocusScope.of(context).unfocus();
     // Torna alla tab dei team selezionati: la lista e la cache sono gia'
     // aggiornate ottimisticamente dal bloc.
     tabController.animateTo(0);

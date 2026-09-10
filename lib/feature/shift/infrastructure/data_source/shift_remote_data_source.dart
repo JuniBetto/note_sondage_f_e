@@ -83,6 +83,13 @@ class ShiftRemoteDataSource {
     await _dio.delete('/api/aggregate/shift/profiles/$profileId');
   }
 
+  /// Hides a system profile from this user's view (personal preference,
+  /// synced across the user's devices; the system profile itself is
+  /// untouched for everyone else).
+  Future<void> hideSystemProfile(String profileId) async {
+    await _dio.post('/api/aggregate/shift/profiles/$profileId/hide');
+  }
+
   // ── Assignments ───────────────────────────────────────────────────────────
 
   Future<List<ShiftAssignmentEntity>> getAssignments({

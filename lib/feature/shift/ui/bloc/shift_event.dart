@@ -77,6 +77,16 @@ class DeleteShiftProfileEvent extends ShiftEvent {
   List<Object?> get props => [profileId];
 }
 
+/// Hides a system profile from this user's view (personal preference,
+/// synced across the user's devices via the backend).
+class HideSystemShiftProfileEvent extends ShiftEvent {
+  final String profileId;
+  HideSystemShiftProfileEvent(this.profileId);
+
+  @override
+  List<Object?> get props => [profileId];
+}
+
 class LoadShiftAssignmentsEvent extends ShiftEvent {
   final DateTime from;
   final DateTime to;

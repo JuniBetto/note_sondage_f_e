@@ -33,6 +33,8 @@ abstract class ShiftRepository {
 
   Future<void> deleteProfile(String profileId);
 
+  Future<void> hideSystemProfile(String profileId);
+
   Future<List<ShiftAssignmentEntity>> getAssignments({
     required DateTime from,
     required DateTime to,
