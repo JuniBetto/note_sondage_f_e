@@ -96,6 +96,11 @@ class ShiftRepositoryImpl implements ShiftRepository {
   }
 
   @override
+  Future<void> hideSystemProfile(String profileId) async {
+    await _remote.hideSystemProfile(profileId);
+  }
+
+  @override
   Future<List<ShiftAssignmentEntity>> getAssignments({
     required DateTime from,
     required DateTime to,

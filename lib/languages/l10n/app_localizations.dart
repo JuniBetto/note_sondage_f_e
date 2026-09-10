@@ -123,13 +123,13 @@ abstract class AppLocalizations {
   /// No description provided for @gladYouAreBack.
   ///
   /// In en, this message translates to:
-  /// **'Glad you\'re back.!'**
+  /// **'Glad you\'re back !'**
   String get gladYouAreBack;
 
   /// No description provided for @welcomeBack.
   ///
   /// In en, this message translates to:
-  /// **'Welcome back .!'**
+  /// **'Welcome back !'**
   String get welcomeBack;
 
   /// No description provided for @email.

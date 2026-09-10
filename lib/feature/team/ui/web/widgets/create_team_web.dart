@@ -469,9 +469,13 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
         return;
       }
 
+      // Dedup difensivo: la riga ancora aperta (non confermata con "Add User")
+      // potrebbe ripetere l'email di una riga gia' aggiunta alla lista.
+      final seenInviteEmails = <String>{};
       final pendingInvitations = listInviteFormData
           .where((d) => d.emailController.text.trim().isNotEmpty)
           .map((d) => d.toEntity())
+          .where((entity) => seenInviteEmails.add(entity.email.toLowerCase()))
           .toList();
 
       final team = TeamEntity(

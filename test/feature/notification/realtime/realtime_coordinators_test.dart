@@ -149,6 +149,21 @@ void main() {
         expect(decision.alarmMinutesBefore, 30);
       },
     );
+
+    test('refreshes profiles for SHIFT_PROFILES_CHANGED', () {
+      final coordinator = ShiftRealtimeCoordinator();
+      final decision = coordinator.resolveDecision(
+        buildRealtimeNotification(
+          eventType: 'SHIFT_PROFILES_CHANGED',
+          sourceService: 'shift-service',
+        ),
+        currentUserId: 'user-1',
+      );
+
+      expect(decision.refreshProfiles, isTrue);
+      expect(decision.refreshCalendar, isFalse);
+      expect(decision.showAlarmBanner, isFalse);
+    });
   });
 
   group('ClockingRealtimeCoordinator', () {

@@ -215,6 +215,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     on<CreateShiftProfileEvent>(_onCreateProfile);
     on<UpdateShiftProfileEvent>(_onUpdateProfile);
     on<DeleteShiftProfileEvent>(_onDeleteProfile);
+    on<HideSystemShiftProfileEvent>(_onHideSystemProfile);
     on<LoadShiftAssignmentsEvent>(_onLoadAssignments);
     on<RemoveAssignmentsForTeamEvent>(_onRemoveAssignmentsForTeam);
     on<ShiftAssignmentCreateCommittedEvent>(_onAssignmentCreateCommitted);
@@ -225,6 +226,17 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     on<AssignShiftBatchEvent>(_onAssignBatch);
     on<UpdateShiftAssignmentEvent>(_onUpdateAssignment);
     on<DeleteShiftAssignmentEvent>(_onDeleteAssignment);
+  }
+
+  /// True se [error] e' una risposta 404 dal backend: il profilo mirato
+  /// dall'operazione non esiste (piu') lato server, tipicamente perche' e'
+  /// gia' stato cancellato da un altro dispositivo prima che il realtime
+  /// facesse in tempo a sincronizzare questo. In quel caso non ha senso
+  /// mostrare un errore tecnico ne' fare rollback (ripristinerebbe nella
+  /// cache un profilo che non esiste piu'): la cache locale va invece
+  /// allineata alla realta' del server.
+  bool _isProfileNotFoundError(Object error) {
+    return error is DioException && error.response?.statusCode == 404;
   }
 
   Future<void> _onLoadProfiles(
@@ -378,6 +390,23 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
           }
         } catch (e) {
           if (!isClosed) {
+            if (_isProfileNotFoundError(e)) {
+              // Gia' cancellato server-side (es. da un altro dispositivo):
+              // non ha senso ripristinare la versione precedente, che non
+              // esiste piu'. Rimuoviamo il profilo dalla cache invece di
+              // fare rollback, con un messaggio che spiega perche'.
+              add(
+                ShiftMutationFailedEvent(
+                  message:
+                      'This profile was deleted elsewhere and no longer exists.',
+                  rollbackProfiles: rollbackProfiles
+                      .where((p) => p.id != event.profileId)
+                      .toList(),
+                  syncingProfileIdsToClear: {event.profileId},
+                ),
+              );
+              return;
+            }
             add(
               ShiftMutationFailedEvent(
                 message: AppErrorMessageResolver.resolve(
@@ -422,6 +451,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
           }
         } catch (e) {
           if (!isClosed) {
+            if (_isProfileNotFoundError(e)) {
+              // Gia' cancellato server-side (es. da un altro dispositivo
+              // prima che il realtime sincronizzasse questo): la cache
+              // locale l'ha gia' rimosso, quindi il risultato voluto e'
+              // gia' raggiunto. Nessun rollback, nessun errore.
+              add(ShiftProfileDeleteCommittedEvent(event.profileId));
+              return;
+            }
             add(
               ShiftMutationFailedEvent(
                 message: AppErrorMessageResolver.resolve(
@@ -441,6 +478,29 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
           AppErrorMessageResolver.resolve(
             e,
             fallback: 'We could not delete the shift profile right now.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onHideSystemProfile(
+    HideSystemShiftProfileEvent event,
+    Emitter<ShiftState> emit,
+  ) async {
+    try {
+      await _repository.hideSystemProfile(event.profileId);
+    } catch (e) {
+      if (_isProfileNotFoundError(e)) {
+        // The profile no longer exists server-side, so there is nothing
+        // left to hide: the desired outcome is already true.
+        return;
+      }
+      emit(
+        ShiftError(
+          AppErrorMessageResolver.resolve(
+            e,
+            fallback: 'We could not hide this profile right now.',
           ),
         ),
       );

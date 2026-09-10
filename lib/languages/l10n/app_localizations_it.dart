@@ -18,10 +18,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get register => 'Registrati';
 
   @override
-  String get gladYouAreBack => 'Siamo felici di riaverti.!';
+  String get gladYouAreBack => 'Siamo felici di riaverti !';
 
   @override
-  String get welcomeBack => 'Bentornato.!';
+  String get welcomeBack => 'Bentornato !';
 
   @override
   String get email => 'Email';

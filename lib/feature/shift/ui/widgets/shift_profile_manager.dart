@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
@@ -27,6 +30,62 @@ class ShiftProfileManager extends StatefulWidget {
 class _ShiftProfileManagerState extends State<ShiftProfileManager> {
   static final List<String> _shiftPalette = _buildShiftPalette();
 
+  // Copia locale reattiva di widget.profiles: quando il manager e' aperto
+  // dentro un bottom sheet modale (mobile), il setState() della pagina
+  // padre non ricostruisce il contenuto del modal, quindi un nuovo profilo
+  // creato/aggiornato/eliminato non compariva finche' non si riapriva il
+  // foglio. Ascoltando qui lo stesso ShiftBloc, il manager resta aggiornato
+  // da solo indipendentemente da dove viene incorporato.
+  late List<ShiftProfileEntity> _profiles;
+
+  // Nascosti in questa sessione, per un feedback visivo istantaneo dopo la
+  // duplicazione: la fonte di verita' resta il backend (vedi
+  // HideSystemShiftProfileEvent), che esclude i profili nascosti gia' al
+  // prossimo caricamento — su questo stesso dispositivo o su un altro.
+  Set<String> _hiddenSystemProfileIds = const <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _profiles = List<ShiftProfileEntity>.from(widget.profiles);
+  }
+
+  @override
+  void didUpdateWidget(covariant ShiftProfileManager oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(oldWidget.profiles, widget.profiles)) {
+      setState(() {
+        _profiles = List<ShiftProfileEntity>.from(widget.profiles);
+      });
+    }
+  }
+
+  void _upsertProfile(ShiftProfileEntity profile) {
+    setState(() {
+      _profiles = [
+        ..._profiles.where((item) => item.id != profile.id),
+        profile,
+      ];
+    });
+  }
+
+  void _removeProfile(String profileId) {
+    setState(() {
+      _profiles = _profiles.where((item) => item.id != profileId).toList();
+    });
+  }
+
+  /// Nasconde il profilo di sistema [profileId] da questa vista dopo che e'
+  /// stato duplicato in un profilo personalizzato. Aggiornamento visivo
+  /// immediato qui + persistenza lato backend, cosi' resta nascosto anche
+  /// sugli altri dispositivi dello stesso utente.
+  void _hideSystemProfile(String profileId) {
+    setState(() {
+      _hiddenSystemProfileIds = {..._hiddenSystemProfileIds, profileId};
+    });
+    context.read<ShiftBloc>().add(HideSystemShiftProfileEvent(profileId));
+  }
+
   void _showCreateDialog() {
     _showProfileFormDialog(context, existing: null);
   }
@@ -35,26 +94,31 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
     _showProfileFormDialog(context, existing: profile);
   }
 
+  /// Apre il form di creazione pre-compilato con i valori di [profile] (un
+  /// profilo di sistema). Il backend rifiuta la modifica diretta dei profili
+  /// di sistema (sono globali, condivisi da tutta l'app), quindi qui si crea
+  /// sempre un nuovo profilo personalizzato: il profilo di sistema originale
+  /// resta invariato per tutti gli altri team.
+  void _showDuplicateDialog(ShiftProfileEntity profile) {
+    _showProfileFormDialog(context, template: profile);
+  }
+
   Future<void> _showProfileFormDialog(
     BuildContext context, {
     ShiftProfileEntity? existing,
+    ShiftProfileEntity? template,
   }) async {
     final loc = AppLocalizations.of(context)!;
-    final nameCtrl = TextEditingController(text: existing?.name ?? '');
-    String selectedColorHex = _normalizeHexColor(existing?.color ?? '#4A90D9');
-    TimeOfDay startTime = existing != null
-        ? TimeOfDay(
-            hour: existing.startTime.hour,
-            minute: existing.startTime.minute,
-          )
+    final source = existing ?? template;
+    final nameCtrl = TextEditingController(text: source?.name ?? '');
+    String selectedColorHex = _normalizeHexColor(source?.color ?? '#4A90D9');
+    TimeOfDay startTime = source != null
+        ? TimeOfDay(hour: source.startTime.hour, minute: source.startTime.minute)
         : const TimeOfDay(hour: 9, minute: 0);
-    TimeOfDay endTime = existing != null
-        ? TimeOfDay(
-            hour: existing.endTime.hour,
-            minute: existing.endTime.minute,
-          )
+    TimeOfDay endTime = source != null
+        ? TimeOfDay(hour: source.endTime.hour, minute: source.endTime.minute)
         : const TimeOfDay(hour: 18, minute: 0);
-    bool overnight = existing?.overnight ?? false;
+    bool overnight = source?.overnight ?? false;
     bool isPublic = existing?.isPublic ?? false;
 
     bool hasValidTimeRange() {
@@ -83,6 +147,9 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
             isPublic: isPublic,
           ),
         );
+        if (template != null) {
+          _hideSystemProfile(template.id);
+        }
       } else {
         context.read<ShiftBloc>().add(
           UpdateShiftProfileEvent(
@@ -385,78 +452,105 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
     final loc = AppLocalizations.of(context)!;
     final theme = context.theme;
     final colorScheme = theme.colorScheme;
-    final systemProfiles = widget.profiles.where((p) => p.isSystem).toList();
-    final customProfiles = widget.profiles.where((p) => !p.isSystem).toList();
+    final systemProfiles = _profiles
+        .where((p) => p.isSystem && !_hiddenSystemProfileIds.contains(p.id))
+        .toList();
+    final customProfiles = _profiles.where((p) => !p.isSystem).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        Text(
-          loc.shiftProfile,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ...systemProfiles.map(
-                  (p) => _ProfileTile(
-                    profile: p,
-                    isSystem: true,
-                    isSyncing: widget.syncingProfileIds.contains(p.id),
+    return BlocListener<ShiftBloc, ShiftState>(
+      listener: (context, state) {
+        if (state is ShiftProfileCreated) {
+          _upsertProfile(state.profile);
+        } else if (state is ShiftProfileUpdated) {
+          _upsertProfile(state.profile);
+        } else if (state is ShiftProfileDeleted) {
+          _removeProfile(state.profileId);
+        } else if (state is ShiftProfilesLoaded) {
+          // Ricaricamento completo (es. innescato da un evento realtime
+          // SHIFT_PROFILES_CHANGED arrivato da un altro dispositivo): la
+          // lista dal server e' gia' filtrata correttamente, quindi la
+          // sostituiamo cosi' com'e'.
+          setState(() {
+            _profiles = List<ShiftProfileEntity>.from(state.profiles);
+          });
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Text(
+            loc.shiftProfile,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        loc.customProfile,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      IconButton.filled(
+                        onPressed: _showCreateDialog,
+                        icon: Icon(Icons.add, size: 18),
+                        tooltip: loc.createCustomProfile,
+                        style: IconButton.styleFrom(
+                          backgroundColor: colorScheme.bgNavbarbutton,
+                          foregroundColor: colorScheme.textInvertedColor,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const Divider(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      loc.customProfile,
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    IconButton.filled(
-                      onPressed: _showCreateDialog,
-                      icon: Icon(Icons.add, size: 18),
-                      tooltip: loc.createCustomProfile,
-                      style: IconButton.styleFrom(
-                        backgroundColor: colorScheme.bgNavbarbutton,
-                        foregroundColor: colorScheme.textInvertedColor,
+                  const SizedBox(height: 4),
+                  if (customProfiles.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        loc.noShiftsThisMonth,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.descriptionColor,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                if (customProfiles.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      loc.noShiftsThisMonth,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.descriptionColor,
-                        fontSize: 13,
-                      ),
+                  ...customProfiles.map(
+                    (p) => _ProfileTile(
+                      profile: p,
+                      isSystem: false,
+                      isOwner: widget.isOwner,
+                      isSyncing: widget.syncingProfileIds.contains(p.id),
+                      onEdit: () => _showEditDialog(p),
+                      onDelete: () => _confirmDelete(p),
                     ),
                   ),
-                ...customProfiles.map(
-                  (p) => _ProfileTile(
-                    profile: p,
-                    isSystem: false,
-                    isOwner: widget.isOwner,
-                    isSyncing: widget.syncingProfileIds.contains(p.id),
-                    onEdit: () => _showEditDialog(p),
-                    onDelete: () => _confirmDelete(p),
+                  const Divider(height: 24),
+                  Text(
+                    loc.systemProfile,
+                    style: Theme.of(context).textTheme.labelLarge,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  ...systemProfiles.map(
+                    (p) => _ProfileTile(
+                      profile: p,
+                      isSystem: true,
+                      isSyncing: widget.syncingProfileIds.contains(p.id),
+                      onDuplicate: () => _showDuplicateDialog(p),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -468,6 +562,7 @@ class _ProfileTile extends StatelessWidget {
   final bool isSyncing;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onDuplicate;
 
   const _ProfileTile({
     required this.profile,
@@ -476,6 +571,7 @@ class _ProfileTile extends StatelessWidget {
     this.isSyncing = false,
     this.onEdit,
     this.onDelete,
+    this.onDuplicate,
   });
 
   @override
@@ -571,19 +667,29 @@ class _ProfileTile extends StatelessWidget {
           style: const TextStyle(fontSize: 12),
         ),
         trailing: isSystem
-            ? Chip(
-                label: Text(
-                  loc.systemProfile,
-                  style: textTheme.bodySmall!.copyWith(
-                    color: colorScheme.textColor,
-                  ), //const TextStyle(fontSize: 10),
-                ),
-                backgroundColor: color,
-                padding: EdgeInsets.zero,
-                elevation: 6,
-                shape: const StadiumBorder(),
-                // Forma a stadio
-                side: BorderSide.none,
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Chip(
+                    label: Text(
+                      loc.systemProfile,
+                      style: textTheme.bodySmall!.copyWith(
+                        color: colorScheme.textColor,
+                      ), //const TextStyle(fontSize: 10),
+                    ),
+                    backgroundColor: color,
+                    padding: EdgeInsets.zero,
+                    elevation: 6,
+                    shape: const StadiumBorder(),
+                    // Forma a stadio
+                    side: BorderSide.none,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.content_copy_outlined, size: 15),
+                    onPressed: isSyncing ? null : onDuplicate,
+                    tooltip: loc.createCustomProfile,
+                  ),
+                ],
               )
             : (profile.isPublic && !isOwner)
             ? const SizedBox.shrink()

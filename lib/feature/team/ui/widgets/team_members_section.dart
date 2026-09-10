@@ -245,6 +245,15 @@ class _TeamMembersSectionState extends State<TeamMembersSection> {
         AppSnackBar.showError(context, selfTeamInviteBlockedMessage(context));
         return;
       }
+      if (isDuplicatePendingInvite(
+        invitedEmail: email,
+        pendingInvitationEmails: _invitations
+            .where((invitation) => invitation.isCancellable)
+            .map((invitation) => invitation.invitedEmail),
+      )) {
+        AppSnackBar.showError(context, duplicatePendingInviteMessage(context));
+        return;
+      }
       final optimisticId =
           'local-invite-${DateTime.now().microsecondsSinceEpoch}';
       final optimisticInvitation = TeamInvitationEntity(

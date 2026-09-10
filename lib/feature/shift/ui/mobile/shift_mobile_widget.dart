@@ -460,6 +460,9 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     if (shiftDecision.refreshCalendar || clockingDecision.refreshClocking) {
       unawaited(_loadShiftAbsenceStatuses());
     }
+    if (shiftDecision.refreshProfiles) {
+      context.read<ShiftBloc>().add(LoadShiftProfilesEvent());
+    }
   }
 
   /// Consumes any pending deep-link intent queued by [ShiftOpenIntentController]

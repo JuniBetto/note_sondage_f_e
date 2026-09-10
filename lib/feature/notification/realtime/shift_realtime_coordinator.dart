@@ -8,6 +8,7 @@ class ShiftRealtimeCoordinator {
     'SHIFT_UPDATED',
     'SHIFT_DELETED',
     'SHIFT_ALARM_REMINDER',
+    'SHIFT_PROFILES_CHANGED',
   };
 
   bool isManagedShiftNotification(RealtimeNotification notification) {
@@ -21,6 +22,10 @@ class ShiftRealtimeCoordinator {
   }) {
     if (!isManagedShiftNotification(notification)) {
       return ShiftRealtimeDecision.none;
+    }
+
+    if (notification.eventType == 'SHIFT_PROFILES_CHANGED') {
+      return const ShiftRealtimeDecision(refreshProfiles: true);
     }
 
     final isAlarm = notification.eventType == 'SHIFT_ALARM_REMINDER';
@@ -42,6 +47,7 @@ class ShiftRealtimeCoordinator {
 
 class ShiftRealtimeDecision {
   final bool refreshCalendar;
+  final bool refreshProfiles;
   final bool showAlarmBanner;
   final String? alarmShiftDate;
   final String? alarmProfileName;
@@ -49,6 +55,7 @@ class ShiftRealtimeDecision {
 
   const ShiftRealtimeDecision({
     this.refreshCalendar = false,
+    this.refreshProfiles = false,
     this.showAlarmBanner = false,
     this.alarmShiftDate,
     this.alarmProfileName,

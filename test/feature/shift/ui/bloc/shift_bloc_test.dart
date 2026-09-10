@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -188,10 +189,12 @@ class _FakeShiftRepository implements ShiftRepository {
     String? targetUserId,
   })?
   assignHandler;
+  Future<void> Function(String)? hideSystemProfileHandler;
 
   int getProfilesCalls = 0;
   int getAssignmentsCalls = 0;
   int assignCalls = 0;
+  final List<String> hiddenProfileIds = [];
 
   @override
   Future<ShiftAssignmentEntity> assign({
@@ -270,8 +273,17 @@ class _FakeShiftRepository implements ShiftRepository {
   Future<void> deleteAssignment(String assignmentId) =>
       throw UnimplementedError();
 
+  Future<void> Function(String)? deleteProfileHandler;
+
   @override
-  Future<void> deleteProfile(String profileId) => throw UnimplementedError();
+  Future<void> deleteProfile(String profileId) =>
+      deleteProfileHandler?.call(profileId) ?? Future.value();
+
+  @override
+  Future<void> hideSystemProfile(String profileId) {
+    hiddenProfileIds.add(profileId);
+    return hideSystemProfileHandler?.call(profileId) ?? Future.value();
+  }
 
   @override
   Future<ShiftReplacementCandidatesEntity> findReplacementCandidates(
@@ -341,6 +353,8 @@ class _FakeShiftRepository implements ShiftRepository {
     String? targetUserId,
   }) => throw UnimplementedError();
 
+  Future<ShiftProfileEntity> Function(String)? updateProfileHandler;
+
   @override
   Future<ShiftProfileEntity> updateProfile(
     String profileId, {
@@ -351,7 +365,12 @@ class _FakeShiftRepository implements ShiftRepository {
     required List<int> alarmOffsets,
     String? color,
     bool isPublic = false,
-  }) => throw UnimplementedError();
+  }) {
+    if (updateProfileHandler != null) {
+      return updateProfileHandler!(profileId);
+    }
+    throw UnimplementedError();
+  }
 }
 
 class SpyShiftLocalDataSource extends ShiftLocalDataSource {
@@ -885,5 +904,135 @@ void main() {
         await subscription.cancel();
       },
     );
+
+    test(
+      'HideSystemShiftProfileEvent calls the repository with the profile id',
+      () async {
+        bloc.add(HideSystemShiftProfileEvent('system-profile-1'));
+        await pumpEventQueue();
+
+        expect(repository.hiddenProfileIds, <String>['system-profile-1']);
+      },
+    );
+
+    test(
+      'HideSystemShiftProfileEvent emits ShiftError when the repository fails',
+      () async {
+        repository.hideSystemProfileHandler = (_) =>
+            Future<void>.error(Exception('backend down'));
+        final emittedStates = <ShiftState>[];
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(HideSystemShiftProfileEvent('system-profile-1'));
+        await pumpEventQueue();
+
+        expect(
+          emittedStates.single,
+          isA<ShiftError>().having(
+            (state) => state.message,
+            'error message',
+            contains('backend down'),
+          ),
+        );
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
+      'HideSystemShiftProfileEvent stays silent when the profile is already gone (404)',
+      () async {
+        repository.hideSystemProfileHandler = (_) =>
+            Future<void>.error(_notFoundDioException('/profiles/x/hide'));
+        final emittedStates = <ShiftState>[];
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(HideSystemShiftProfileEvent('already-gone'));
+        await pumpEventQueue();
+
+        expect(emittedStates, isEmpty);
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
+      'DeleteShiftProfileEvent treats a 404 as already deleted: no rollback, no error',
+      () async {
+        localDataSource.storedProfiles = [
+          _buildProfile(id: 'stale-profile', name: 'Stale'),
+        ];
+        bloc.add(LoadShiftProfilesEvent());
+        await pumpEventQueue(times: 10);
+
+        repository.deleteProfileHandler = (_) => Future<void>.error(
+          _notFoundDioException('/profiles/stale-profile'),
+        );
+        final emittedStates = <ShiftState>[];
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(DeleteShiftProfileEvent('stale-profile'));
+        await pumpEventQueue(times: 10);
+
+        expect(emittedStates.whereType<ShiftError>(), isEmpty);
+        expect(
+          emittedStates.whereType<ShiftProfilesLoaded>().last.profiles
+              .map((profile) => profile.id),
+          isNot(contains('stale-profile')),
+        );
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
+      'UpdateShiftProfileEvent removes a profile deleted elsewhere on 404 instead of restoring it',
+      () async {
+        localDataSource.storedProfiles = [
+          _buildProfile(id: 'stale-profile-2', name: 'Stale'),
+        ];
+        bloc.add(LoadShiftProfilesEvent());
+        await pumpEventQueue(times: 10);
+
+        repository.updateProfileHandler = (_) => Future<ShiftProfileEntity>.error(
+          _notFoundDioException('/profiles/stale-profile-2'),
+        );
+        final emittedStates = <ShiftState>[];
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(
+          UpdateShiftProfileEvent(
+            profileId: 'stale-profile-2',
+            name: 'Renamed',
+            color: '#000000',
+            startTime: const TimeOfDay(hour: 9, minute: 0),
+            endTime: const TimeOfDay(hour: 17, minute: 0),
+            overnight: false,
+            alarmOffsets: const [],
+          ),
+        );
+        await pumpEventQueue(times: 10);
+
+        expect(
+          emittedStates.whereType<ShiftError>().single.message,
+          'This profile was deleted elsewhere and no longer exists.',
+        );
+        expect(
+          emittedStates.whereType<ShiftProfilesLoaded>().last.profiles
+              .map((profile) => profile.id),
+          isNot(contains('stale-profile-2')),
+        );
+
+        await subscription.cancel();
+      },
+    );
   });
+}
+
+DioException _notFoundDioException(String path) {
+  final requestOptions = RequestOptions(path: path);
+  return DioException(
+    requestOptions: requestOptions,
+    response: Response(requestOptions: requestOptions, statusCode: 404),
+  );
 }
