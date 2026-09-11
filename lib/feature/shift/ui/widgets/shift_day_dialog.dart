@@ -16,6 +16,7 @@ import 'package:note_sondage/feature/sondage/ui/web/widgets/create_sondage_web.d
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_create_prefill.dart';
 import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_profile_display_filter.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_replacement_candidates_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_swap_request_dialog.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
@@ -2156,7 +2157,9 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: widget.profiles.map((p) {
+                        children: preferCustomOverDuplicateSystemProfiles(
+                          widget.profiles,
+                        ).map((p) {
                           final selected = _selectedProfile?.id == p.id;
                           return GestureDetector(
                             onTap: _readOnly ? null : () => _applyProfile(p),
@@ -2522,7 +2525,9 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                                   child: _MemberSpecificProfileTile(
                                     label: member.displayLabel(context),
                                     subtitle: member.secondaryLabel(context),
-                                    profiles: widget.profiles,
+                                    profiles: preferCustomOverDuplicateSystemProfiles(
+                                      widget.profiles,
+                                    ),
                                     selectedProfileId:
                                         _memberProfileIds[member.userId!],
                                     onProfileChanged: (profileId) =>

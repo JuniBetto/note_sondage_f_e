@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_profile_display_filter.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
@@ -71,6 +72,8 @@ class _ShiftAutoPlanPreviewAssignmentEditorDialogState
     extends State<_ShiftAutoPlanPreviewAssignmentEditorDialog> {
   late String? _selectedUserId;
   late ShiftProfileEntity? _selectedProfile;
+  late final List<ShiftProfileEntity> _pickerProfiles =
+      preferCustomOverDuplicateSystemProfiles(widget.profiles);
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   late bool _overnight;
@@ -105,6 +108,22 @@ class _ShiftAutoPlanPreviewAssignmentEditorDialogState
     _selectedProfile = widget.profiles
         .where((profile) => profile.id == initial?.profileId)
         .firstOrNull;
+    if (_selectedProfile != null &&
+        !_pickerProfiles.contains(_selectedProfile)) {
+      // The assigned profile is a system profile since superseded by a
+      // same-named custom duplicate (filtered out of _pickerProfiles):
+      // point the selection at the duplicate so it stays a valid dropdown
+      // value instead of a value no longer present in `items`.
+      _selectedProfile =
+          _pickerProfiles
+              .where(
+                (profile) =>
+                    profile.name.trim().toLowerCase() ==
+                    _selectedProfile!.name.trim().toLowerCase(),
+              )
+              .firstOrNull ??
+          _selectedProfile;
+    }
     _startTime =
         initial?.startTime ??
         _selectedProfile?.startTime ??
@@ -192,7 +211,7 @@ class _ShiftAutoPlanPreviewAssignmentEditorDialogState
                     es: 'Perfil de turno',
                   ),
                 ),
-                items: widget.profiles
+                items: _pickerProfiles
                     .map(
                       (profile) => DropdownMenuItem<ShiftProfileEntity>(
                         value: profile,
