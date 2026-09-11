@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_profile_display_filter.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
@@ -452,10 +453,11 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
     final loc = AppLocalizations.of(context)!;
     final theme = context.theme;
     final colorScheme = theme.colorScheme;
-    final systemProfiles = _profiles
+    final visibleProfiles = preferCustomOverDuplicateSystemProfiles(_profiles);
+    final systemProfiles = visibleProfiles
         .where((p) => p.isSystem && !_hiddenSystemProfileIds.contains(p.id))
         .toList();
-    final customProfiles = _profiles.where((p) => !p.isSystem).toList();
+    final customProfiles = visibleProfiles.where((p) => !p.isSystem).toList();
 
     return BlocListener<ShiftBloc, ShiftState>(
       listener: (context, state) {

@@ -6,6 +6,7 @@ import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_profile_display_filter.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
@@ -244,8 +245,9 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final compact = widget.compact || MediaQuery.of(context).size.width < 720;
-    final profiles = [...widget.profiles]
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final profiles =
+        preferCustomOverDuplicateSystemProfiles(widget.profiles)
+          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     return AlertDialog(
       insetPadding: EdgeInsets.symmetric(
