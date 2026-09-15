@@ -90,6 +90,11 @@ class RuntimeConfig {
     defaultValue: 'https://teammanagement.it',
   );
 
+  static const String tutorialPlaylistUrl = String.fromEnvironment(
+    'TUTORIAL_PLAYLIST_URL',
+    defaultValue: '',
+  );
+
   static const String sentryDsn = String.fromEnvironment(
     'SENTRY_DSN',
     defaultValue: defaultSentryDsn,
@@ -139,6 +144,7 @@ class RuntimeConfig {
   static String get resolvedAndroidStoreUrl => androidStoreUrl.trim();
   static String get resolvedMarketingSiteUrl =>
       normalizeBaseUrl(marketingSiteUrl.trim());
+  static String get resolvedTutorialPlaylistUrl => tutorialPlaylistUrl.trim();
   static String get sentryEnvironment => currentEnvironment.sentryName;
 
   static bool get hasCustomApiBaseUrl => resolvedApiBaseUrl.isNotEmpty;
@@ -151,6 +157,8 @@ class RuntimeConfig {
   static bool get hasAppleStoreUrl => resolvedAppleStoreUrl.isNotEmpty;
   static bool get hasAndroidStoreUrl => resolvedAndroidStoreUrl.isNotEmpty;
   static bool get hasMarketingSiteUrl => resolvedMarketingSiteUrl.isNotEmpty;
+  static bool get hasTutorialPlaylistUrl =>
+      resolvedTutorialPlaylistUrl.isNotEmpty;
   static bool get enableWorkflowActions =>
       _enableWorkflowActionsOverride ??
       !kReleaseMode || _workflowActionsFeatureFlag;

@@ -444,6 +444,12 @@ abstract class AppLocalizations {
   /// **'Review tutorial'**
   String get reviewTutorial;
 
+  /// No description provided for @videoTutorial.
+  ///
+  /// In en, this message translates to:
+  /// **'Video Tutorial'**
+  String get videoTutorial;
+
   /// No description provided for @tutorialPrevious.
   ///
   /// In en, this message translates to:
@@ -4743,6 +4749,774 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit'**
   String get eventCalendarEditPeriodLabel;
+
+  /// No description provided for @tutorialChatHeaderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat header'**
+  String get tutorialChatHeaderTitle;
+
+  /// No description provided for @tutorialChatHeaderMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you can confirm which conversation is open and quickly return to the chat list.'**
+  String get tutorialChatHeaderMobileDescription;
+
+  /// No description provided for @tutorialChatMessagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get tutorialChatMessagesTitle;
+
+  /// No description provided for @tutorialChatMessagesMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll through messages, reactions, and attachments in chronological order in this area.'**
+  String get tutorialChatMessagesMobileDescription;
+
+  /// No description provided for @tutorialChatWriteMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message'**
+  String get tutorialChatWriteMessageTitle;
+
+  /// No description provided for @tutorialChatComposerMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this composer to type, attach files or images, and quickly send a new message.'**
+  String get tutorialChatComposerMobileDescription;
+
+  /// No description provided for @tutorialChatOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat overview'**
+  String get tutorialChatOverviewTitle;
+
+  /// No description provided for @tutorialChatOverviewMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Start here to quickly choose which conversation to open between team channels and direct chats.'**
+  String get tutorialChatOverviewMobileDescription;
+
+  /// No description provided for @tutorialChatTeamChannelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team channels'**
+  String get tutorialChatTeamChannelsTitle;
+
+  /// No description provided for @tutorialChatTeamChannelsMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This section gathers your shared team conversations with status and recent message previews.'**
+  String get tutorialChatTeamChannelsMobileDescription;
+
+  /// No description provided for @tutorialChatDirectChatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct chats'**
+  String get tutorialChatDirectChatsTitle;
+
+  /// No description provided for @tutorialChatDirectChatsMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you can reopen private conversations already started with members of your teams.'**
+  String get tutorialChatDirectChatsMobileDescription;
+
+  /// No description provided for @tutorialChatHeaderWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This header shows the open conversation and lets you quickly return to the chat list.'**
+  String get tutorialChatHeaderWebDescription;
+
+  /// No description provided for @tutorialChatTimelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message timeline'**
+  String get tutorialChatTimelineTitle;
+
+  /// No description provided for @tutorialChatTimelineWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll through the conversation here, review reactions, and open any shared attachments.'**
+  String get tutorialChatTimelineWebDescription;
+
+  /// No description provided for @tutorialChatComposerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Composer'**
+  String get tutorialChatComposerTitle;
+
+  /// No description provided for @tutorialChatComposerWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'From this area you can type, attach documents or images, and send a new message.'**
+  String get tutorialChatComposerWebDescription;
+
+  /// No description provided for @tutorialChatOverviewWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Start here to choose a team conversation or reopen an existing direct chat.'**
+  String get tutorialChatOverviewWebDescription;
+
+  /// No description provided for @tutorialChatTeamChannelsWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'These cards show your shared team channels with a summary and quick access to each conversation.'**
+  String get tutorialChatTeamChannelsWebDescription;
+
+  /// No description provided for @tutorialChatDirectChatsWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you can reopen private conversations already started with other team members.'**
+  String get tutorialChatDirectChatsWebDescription;
+
+  /// No description provided for @tutorialClockingStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current status'**
+  String get tutorialClockingStatusTitle;
+
+  /// No description provided for @tutorialClockingStatusDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This section gives you an instant view of your clocking status and the main information for the current day.'**
+  String get tutorialClockingStatusDescription;
+
+  /// No description provided for @tutorialClockingActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocking actions'**
+  String get tutorialClockingActionsTitle;
+
+  /// No description provided for @tutorialClockingActionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this area to pick the right team and register your clock-in or clock-out.'**
+  String get tutorialClockingActionsDescription;
+
+  /// No description provided for @tutorialClockingHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocking history'**
+  String get tutorialClockingHistoryTitle;
+
+  /// No description provided for @tutorialClockingHistoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review status changes and history here, including the records filtered by the selected team.'**
+  String get tutorialClockingHistoryDescription;
+
+  /// No description provided for @tutorialClockingOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clocking overview'**
+  String get tutorialClockingOverviewTitle;
+
+  /// No description provided for @tutorialClockingOverviewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This header introduces the clocking area and its main purpose.'**
+  String get tutorialClockingOverviewDescription;
+
+  /// No description provided for @tutorialEventFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter events'**
+  String get tutorialEventFilterTitle;
+
+  /// No description provided for @tutorialEventFilterDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch between active and archived events with one tap.'**
+  String get tutorialEventFilterDescription;
+
+  /// No description provided for @tutorialEventListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Event list'**
+  String get tutorialEventListTitle;
+
+  /// No description provided for @tutorialEventListDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your events in list or calendar view: tap a card for details.'**
+  String get tutorialEventListDescription;
+
+  /// No description provided for @tutorialEventCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New event'**
+  String get tutorialEventCreateTitle;
+
+  /// No description provided for @tutorialEventCreateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Quickly create a new non-shift event, like a meeting.'**
+  String get tutorialEventCreateDescription;
+
+  /// No description provided for @tutorialShiftCalendarArchiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar and archive'**
+  String get tutorialShiftCalendarArchiveTitle;
+
+  /// No description provided for @tutorialShiftCalendarArchiveMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this switcher to move between the active calendar and the archive of hidden shifts.'**
+  String get tutorialShiftCalendarArchiveMobileDescription;
+
+  /// No description provided for @tutorialShiftArchiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift archive'**
+  String get tutorialShiftArchiveTitle;
+
+  /// No description provided for @tutorialShiftCalendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift calendar'**
+  String get tutorialShiftCalendarTitle;
+
+  /// No description provided for @tutorialShiftArchiveMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This view shows archived shifts and lets you restore them when needed.'**
+  String get tutorialShiftArchiveMobileDescription;
+
+  /// No description provided for @tutorialShiftCalendarMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day to create or edit the shifts available on that date.'**
+  String get tutorialShiftCalendarMobileDescription;
+
+  /// No description provided for @tutorialShiftCalendarArchiveWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this switcher to move from the calendar view to the archived shifts view.'**
+  String get tutorialShiftCalendarArchiveWebDescription;
+
+  /// No description provided for @tutorialShiftCalendarViewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar view'**
+  String get tutorialShiftCalendarViewTitle;
+
+  /// No description provided for @tutorialShiftArchiveWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Find archived shifts here and restore them when needed.'**
+  String get tutorialShiftArchiveWebDescription;
+
+  /// No description provided for @tutorialShiftCalendarWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a calendar day to create or edit shifts.'**
+  String get tutorialShiftCalendarWebDescription;
+
+  /// No description provided for @tutorialShiftProfilesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift profiles'**
+  String get tutorialShiftProfilesTitle;
+
+  /// No description provided for @tutorialShiftProfilesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this side panel to create and reuse ready-made shift profiles.'**
+  String get tutorialShiftProfilesDescription;
+
+  /// No description provided for @tutorialSurveyOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey overview'**
+  String get tutorialSurveyOverviewTitle;
+
+  /// No description provided for @tutorialSurveyOverviewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This header explains the feed at a glance and lets you refresh the survey data.'**
+  String get tutorialSurveyOverviewDescription;
+
+  /// No description provided for @tutorialSurveySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search survey, team, or option'**
+  String get tutorialSurveySearchHint;
+
+  /// No description provided for @tutorialSurveyQuickStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick stats'**
+  String get tutorialSurveyQuickStatsTitle;
+
+  /// No description provided for @tutorialSurveyQuickStatsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'See how many draft, active, and closed surveys you currently have in the feed.'**
+  String get tutorialSurveyQuickStatsDescription;
+
+  /// No description provided for @tutorialSurveyListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey list'**
+  String get tutorialSurveyListTitle;
+
+  /// No description provided for @tutorialSurveyListMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this list to open, edit, or delete the surveys that belong to you or your teams.'**
+  String get tutorialSurveyListMobileDescription;
+
+  /// No description provided for @tutorialSurveyFeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey feed'**
+  String get tutorialSurveyFeedTitle;
+
+  /// No description provided for @tutorialSurveyFeedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this section to review the survey feed, refresh it, and open the creation subpage.'**
+  String get tutorialSurveyFeedDescription;
+
+  /// No description provided for @tutorialSurveyFeedStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed statistics'**
+  String get tutorialSurveyFeedStatsTitle;
+
+  /// No description provided for @tutorialSurveyFeedStatsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'These chips summarize draft, active, and closed surveys in your feed.'**
+  String get tutorialSurveyFeedStatsDescription;
+
+  /// No description provided for @tutorialSurveyListWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the main feed area: open, edit, or delete surveys from here.'**
+  String get tutorialSurveyListWebDescription;
+
+  /// No description provided for @tutorialTaskFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter tasks'**
+  String get tutorialTaskFilterTitle;
+
+  /// No description provided for @tutorialTaskFilterDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter tasks by status, or switch to the archived view.'**
+  String get tutorialTaskFilterDescription;
+
+  /// No description provided for @tutorialTaskListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task list'**
+  String get tutorialTaskListTitle;
+
+  /// No description provided for @tutorialTaskListDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Here are all your tasks: tap a card to open its details and manage it.'**
+  String get tutorialTaskListDescription;
+
+  /// No description provided for @tutorialTaskCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New task'**
+  String get tutorialTaskCreateTitle;
+
+  /// No description provided for @tutorialTaskCreateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Quickly create a new personal or team task.'**
+  String get tutorialTaskCreateDescription;
+
+  /// No description provided for @tutorialTeamNameDescriptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and description'**
+  String get tutorialTeamNameDescriptionTitle;
+
+  /// No description provided for @tutorialTeamNameMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Start here by giving the team a clear name and, if useful, a short description so everyone understands the purpose.'**
+  String get tutorialTeamNameMobileDescription;
+
+  /// No description provided for @tutorialTeamColorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team color'**
+  String get tutorialTeamColorTitle;
+
+  /// No description provided for @tutorialTeamColorMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the color that will make this team easy to recognize throughout the app.'**
+  String get tutorialTeamColorMobileDescription;
+
+  /// No description provided for @tutorialTeamMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team members'**
+  String get tutorialTeamMembersTitle;
+
+  /// No description provided for @tutorialTeamMembersMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this section to choose who should join the team and prepare the invitations before creating it.'**
+  String get tutorialTeamMembersMobileDescription;
+
+  /// No description provided for @tutorialTeamCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the team'**
+  String get tutorialTeamCreateTitle;
+
+  /// No description provided for @tutorialTeamCreateMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once the name, color, and members are ready, use this button to create the team and send any invitations.'**
+  String get tutorialTeamCreateMobileDescription;
+
+  /// No description provided for @tutorialTeamListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team list'**
+  String get tutorialTeamListTitle;
+
+  /// No description provided for @tutorialTeamListDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This section contains all of your teams. Tap any team to open its details and manage it more closely.'**
+  String get tutorialTeamListDescription;
+
+  /// No description provided for @tutorialTeamLayoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team layout'**
+  String get tutorialTeamLayoutTitle;
+
+  /// No description provided for @tutorialTeamLayoutDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch between grid and list layouts here depending on whether you want a quick visual overview or a denser list.'**
+  String get tutorialTeamLayoutDescription;
+
+  /// No description provided for @tutorialTeamNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New team'**
+  String get tutorialTeamNewTitle;
+
+  /// No description provided for @tutorialTeamNewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the creation subpage here to configure a new team with its name, color, and members.'**
+  String get tutorialTeamNewDescription;
+
+  /// No description provided for @tutorialTeamListLayoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'List layout'**
+  String get tutorialTeamListLayoutTitle;
+
+  /// No description provided for @tutorialTeamListLayoutDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch how teams are displayed here by choosing between a grid and a list layout.'**
+  String get tutorialTeamListLayoutDescription;
+
+  /// No description provided for @tutorialTeamAreaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Teams area'**
+  String get tutorialTeamAreaTitle;
+
+  /// No description provided for @tutorialTeamAreaDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This area contains all available teams. Click any card to open the selected team detail page.'**
+  String get tutorialTeamAreaDescription;
+
+  /// No description provided for @tutorialTeamNameWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this section to define the new team identity with a clear name and a short description.'**
+  String get tutorialTeamNameWebDescription;
+
+  /// No description provided for @tutorialTeamColorWebTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get tutorialTeamColorWebTitle;
+
+  /// No description provided for @tutorialTeamColorWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a distinctive color so the team is easier to recognize across the app.'**
+  String get tutorialTeamColorWebDescription;
+
+  /// No description provided for @tutorialTeamMembersWebTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get tutorialTeamMembersWebTitle;
+
+  /// No description provided for @tutorialTeamMembersWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the people you want to invite here so the team is ready before the final save.'**
+  String get tutorialTeamMembersWebDescription;
+
+  /// No description provided for @tutorialTeamCreateWebTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create action'**
+  String get tutorialTeamCreateWebTitle;
+
+  /// No description provided for @tutorialTeamCreateWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once everything is ready, use this button to create the team and send the prepared invitations.'**
+  String get tutorialTeamCreateWebDescription;
+
+  /// No description provided for @tutorialNavigationTeamsMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore teams, open details, and manage collaboration from here.'**
+  String get tutorialNavigationTeamsMobileDescription;
+
+  /// No description provided for @tutorialNavigationPlanningDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you can find shifts, tasks, events, and clocking: everything you need to plan and track your workday.'**
+  String get tutorialNavigationPlanningDescription;
+
+  /// No description provided for @tutorialNavigationSurveysMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review available surveys here and keep an eye on their progress.'**
+  String get tutorialNavigationSurveysMobileDescription;
+
+  /// No description provided for @tutorialNavigationHomeMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This screen gives you a quick overview of the most important information.'**
+  String get tutorialNavigationHomeMobileDescription;
+
+  /// No description provided for @tutorialNavigationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get tutorialNavigationTitle;
+
+  /// No description provided for @tutorialNavigationBarDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the bottom bar to move quickly between the main sections of the app.'**
+  String get tutorialNavigationBarDescription;
+
+  /// No description provided for @tutorialSettingsProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get tutorialSettingsProfileTitle;
+
+  /// No description provided for @tutorialSettingsProfileMobileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap this card to open your profile and edit your account details.'**
+  String get tutorialSettingsProfileMobileDescription;
+
+  /// No description provided for @tutorialSettingsPreferencesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalize theme, language, and notifications here to match your preferences.'**
+  String get tutorialSettingsPreferencesDescription;
+
+  /// No description provided for @tutorialSettingsSupportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy and support'**
+  String get tutorialSettingsSupportTitle;
+
+  /// No description provided for @tutorialSettingsSupportDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This section contains privacy information, support contacts, and helpful options.'**
+  String get tutorialSettingsSupportDescription;
+
+  /// No description provided for @tutorialNavigationSidebarDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this sidebar to move quickly between the main areas of the app.'**
+  String get tutorialNavigationSidebarDescription;
+
+  /// No description provided for @tutorialNavigationNotificationsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your latest alerts, invites, and updates appear here without leaving the current page.'**
+  String get tutorialNavigationNotificationsDescription;
+
+  /// No description provided for @tutorialNavigationTeamsWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage teams, members, and the main collaboration actions from this area.'**
+  String get tutorialNavigationTeamsWebDescription;
+
+  /// No description provided for @tutorialNavigationClockingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this section to track clock-ins, clock-outs, and breaks quickly.'**
+  String get tutorialNavigationClockingDescription;
+
+  /// No description provided for @tutorialNavigationSurveysWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you can review surveys, open them, and keep track of their status.'**
+  String get tutorialNavigationSurveysWebDescription;
+
+  /// No description provided for @tutorialNavigationShiftsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This page gathers your shifts and their operational details in one place.'**
+  String get tutorialNavigationShiftsDescription;
+
+  /// No description provided for @tutorialNavigationTasksDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Track the team operational tasks here with status, priority, and assignment.'**
+  String get tutorialNavigationTasksDescription;
+
+  /// No description provided for @tutorialNavigationChatDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the team conversation here and send messages in real time.'**
+  String get tutorialNavigationChatDescription;
+
+  /// No description provided for @tutorialNavigationHomeWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The dashboard gives you the most important overview of your workspace.'**
+  String get tutorialNavigationHomeWebDescription;
+
+  /// No description provided for @tutorialSettingsProfileWebDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open your profile here to update the most important account details.'**
+  String get tutorialSettingsProfileWebDescription;
+
+  /// No description provided for @tutorialSettingsMenuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings menu'**
+  String get tutorialSettingsMenuTitle;
+
+  /// No description provided for @tutorialSettingsMenuDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this column to move quickly between language, notifications, privacy, and support.'**
+  String get tutorialSettingsMenuDescription;
+
+  /// No description provided for @tutorialSettingsAccountProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account profile'**
+  String get tutorialSettingsAccountProfileTitle;
+
+  /// No description provided for @tutorialSettingsNotificationsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose here how you want to receive important updates and alerts.'**
+  String get tutorialSettingsNotificationsDescription;
+
+  /// No description provided for @tutorialSettingsContactDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This area gathers the best ways to contact support.'**
+  String get tutorialSettingsContactDescription;
+
+  /// No description provided for @tutorialSettingsPrivacyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review privacy and data protection information in this section.'**
+  String get tutorialSettingsPrivacyDescription;
+
+  /// No description provided for @tutorialSettingsAccountDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your profile, security, and personal preferences from here.'**
+  String get tutorialSettingsAccountDescription;
+
+  /// No description provided for @tutorialSettingsLanguageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the language that feels most comfortable for using the app.'**
+  String get tutorialSettingsLanguageDescription;
+
+  /// No description provided for @tutorialHomeWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to your dashboard'**
+  String get tutorialHomeWelcomeTitle;
+
+  /// No description provided for @tutorialHomeWelcomeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This top section immediately sets the context for the day and gives you a first overview of your workspace.'**
+  String get tutorialHomeWelcomeDescription;
+
+  /// No description provided for @tutorialHomeStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Key statistics'**
+  String get tutorialHomeStatsTitle;
+
+  /// No description provided for @tutorialHomeStatsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'These cards summarize your active teams, members, surveys, clocking activity, and daily shifts at a glance.'**
+  String get tutorialHomeStatsDescription;
+
+  /// No description provided for @tutorialHomeNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending notifications'**
+  String get tutorialHomeNotificationsTitle;
+
+  /// No description provided for @tutorialHomeNotificationsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This section contains invites, requests, and notifications that still need your attention.'**
+  String get tutorialHomeNotificationsDescription;
+
+  /// No description provided for @tutorialHomeQuickActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get tutorialHomeQuickActionsTitle;
+
+  /// No description provided for @tutorialHomeQuickActionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use these shortcuts to jump directly into the main areas and start an action quickly.'**
+  String get tutorialHomeQuickActionsDescription;
+
+  /// No description provided for @tutorialHomeActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent activity'**
+  String get tutorialHomeActivityTitle;
+
+  /// No description provided for @tutorialHomeActivityDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This list helps you follow what happened recently across teams, shifts, clocking, and surveys.'**
+  String get tutorialHomeActivityDescription;
 }
 
 class _AppLocalizationsDelegate

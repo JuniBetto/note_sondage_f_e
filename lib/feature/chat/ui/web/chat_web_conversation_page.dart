@@ -246,48 +246,26 @@ class _ChatWebConversationPageState extends State<ChatWebConversationPage> {
   }
 
   String _headerTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Intestazione chat';
-    }
-    return 'Chat header';
+    return AppLocalizations.of(context)!.tutorialChatHeaderTitle;
   }
 
   String _headerDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Qui vedi la conversazione aperta e puoi tornare velocemente all\'elenco chat.';
-    }
-    return 'This header shows the open conversation and lets you quickly return to the chat list.';
+    return AppLocalizations.of(context)!.tutorialChatHeaderWebDescription;
   }
 
   String _timelineTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Timeline messaggi';
-    }
-    return 'Message timeline';
+    return AppLocalizations.of(context)!.tutorialChatTimelineTitle;
   }
 
   String _timelineDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Qui scorri i messaggi della conversazione, controlli reazioni e apri eventuali allegati.';
-    }
-    return 'Scroll through the conversation here, review reactions, and open any shared attachments.';
+    return AppLocalizations.of(context)!.tutorialChatTimelineWebDescription;
   }
 
   String _composerTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Composer';
-    }
-    return 'Composer';
+    return AppLocalizations.of(context)!.tutorialChatComposerTitle;
   }
 
   String _composerDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Da questa area puoi scrivere, allegare documenti o immagini e inviare un nuovo messaggio.';
-    }
-    return 'From this area you can type, attach documents or images, and send a new message.';
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
+    return AppLocalizations.of(context)!.tutorialChatComposerWebDescription;
   }
 }

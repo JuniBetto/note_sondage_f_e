@@ -219,24 +219,17 @@ class _MainMobileState extends State<MainMobile> {
   }
 
   String _pageDescription(BuildContext context, int navIndex) {
-    final isItalian = _isItalian(context);
     return switch (navIndex) {
-      1 =>
-        isItalian
-            ? 'Qui puoi esplorare i team, aprire i dettagli e gestire la collaborazione.'
-            : 'Explore teams, open details, and manage collaboration from here.',
-      3 =>
-        isItalian
-            ? 'Qui trovi turni, task, eventi e timbrature: tutto ciò che serve per pianificare e seguire la tua giornata di lavoro.'
-            : 'Here you can find shifts, tasks, events, and clocking: everything you need to plan and track your workday.',
-      4 =>
-        isItalian
-            ? 'Qui trovi i sondaggi disponibili e puoi seguirne l\'avanzamento.'
-            : 'Review available surveys here and keep an eye on their progress.',
-      _ =>
-        isItalian
-            ? 'Questa schermata ti offre una panoramica rapida delle informazioni più importanti.'
-            : 'This screen gives you a quick overview of the most important information.',
+      1 => AppLocalizations.of(
+        context,
+      )!.tutorialNavigationTeamsMobileDescription,
+      3 => AppLocalizations.of(context)!.tutorialNavigationPlanningDescription,
+      4 => AppLocalizations.of(
+        context,
+      )!.tutorialNavigationSurveysMobileDescription,
+      _ => AppLocalizations.of(
+        context,
+      )!.tutorialNavigationHomeMobileDescription,
     };
   }
 
@@ -244,23 +237,11 @@ class _MainMobileState extends State<MainMobile> {
     BuildContext context,
     AppLocalizations localizations,
   ) {
-    if (_isItalian(context)) {
-      return 'Navigazione';
-    }
-
-    return 'Navigation';
+    return AppLocalizations.of(context)!.tutorialNavigationTitle;
   }
 
   String _navigationDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Usa questa barra in basso per passare velocemente tra le sezioni principali dell\'app.';
-    }
-
-    return 'Use the bottom bar to move quickly between the main sections of the app.';
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
+    return AppLocalizations.of(context)!.tutorialNavigationBarDescription;
   }
 
   bool _shouldBypassShowcaseInDebug() {

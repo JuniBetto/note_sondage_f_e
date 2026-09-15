@@ -603,28 +603,20 @@ class _EventWorkspaceState extends State<EventWorkspace> {
     );
   }
 
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
-  }
-
   String _filterTitle(BuildContext context) {
-    return _isItalian(context) ? 'Filtra gli eventi' : 'Filter events';
+    return AppLocalizations.of(context)!.tutorialEventFilterTitle;
   }
 
   String _filterDescription(BuildContext context) {
-    return _isItalian(context)
-        ? 'Passa dagli eventi attivi a quelli archiviati con un tocco.'
-        : 'Switch between active and archived events with one tap.';
+    return AppLocalizations.of(context)!.tutorialEventFilterDescription;
   }
 
   String _listTitle(BuildContext context) {
-    return _isItalian(context) ? 'Elenco eventi' : 'Event list';
+    return AppLocalizations.of(context)!.tutorialEventListTitle;
   }
 
   String _listDescription(BuildContext context) {
-    return _isItalian(context)
-        ? 'Qui trovi i tuoi eventi in elenco o calendario: tocca una card per i dettagli.'
-        : 'Your events in list or calendar view: tap a card for details.';
+    return AppLocalizations.of(context)!.tutorialEventListDescription;
   }
 
   @override
@@ -673,10 +665,10 @@ class _EventWorkspaceState extends State<EventWorkspace> {
         }
       },
       createButtonKey: _createButtonKey,
-      createButtonTitle: _isItalian(context) ? 'Nuovo evento' : 'New event',
-      createButtonDescription: _isItalian(context)
-          ? 'Crea rapidamente un nuovo evento non legato ai turni, come una riunione.'
-          : 'Quickly create a new non-shift event, like a meeting.',
+      createButtonTitle: AppLocalizations.of(context)!.tutorialEventCreateTitle,
+      createButtonDescription: AppLocalizations.of(
+        context,
+      )!.tutorialEventCreateDescription,
       filterKey: _filterKey,
       filterTitle: _filterTitle(context),
       filterDescription: _filterDescription(context),

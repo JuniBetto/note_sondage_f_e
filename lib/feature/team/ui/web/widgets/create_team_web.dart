@@ -208,12 +208,12 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                   const SizedBox(height: 12),
                   Showcase(
                     key: _teamInfoKey,
-                    title: _isItalian(context)
-                        ? 'Nome e descrizione'
-                        : 'Name and description',
-                    description: _isItalian(context)
-                        ? 'Qui definisci l\'identità della nuova squadra: nome chiaro e descrizione del gruppo.'
-                        : 'Use this section to define the new team identity with a clear name and a short description.',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialTeamNameDescriptionTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialTeamNameWebDescription,
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -264,10 +264,12 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                   const SizedBox(height: 12),
                   Showcase(
                     key: _teamColorKey,
-                    title: _isItalian(context) ? 'Colore' : 'Color',
-                    description: _isItalian(context)
-                        ? 'Scegli un colore distintivo per riconoscere la squadra più velocemente.'
-                        : 'Choose a distinctive color so the team is easier to recognize across the app.',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialTeamColorWebTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialTeamColorWebDescription,
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -356,10 +358,12 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                   const SizedBox(height: 12),
                   Showcase(
                     key: _teamMembersKey,
-                    title: _isItalian(context) ? 'Membri' : 'Members',
-                    description: _isItalian(context)
-                        ? 'Aggiungi qui le persone da invitare e prepara la squadra prima del salvataggio finale.'
-                        : 'Add the people you want to invite here so the team is ready before the final save.',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialTeamMembersWebTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialTeamMembersWebDescription,
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -380,12 +384,12 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                   // ── Create Button ──
                   Showcase(
                     key: _teamActionKey,
-                    title: _isItalian(context)
-                        ? 'Conferma creazione'
-                        : 'Create action',
-                    description: _isItalian(context)
-                        ? 'Quando tutto è pronto, questo pulsante crea la squadra e invia gli inviti preparati.'
-                        : 'Once everything is ready, use this button to create the team and send the prepared invitations.',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialTeamCreateWebTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialTeamCreateWebDescription,
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: CustomAppButton(

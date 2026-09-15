@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/team/ui/widgets/responsive_grid_teams.dart';
@@ -71,10 +72,10 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
         final toggleIconSize = useLandscapeCompactLayout ? 22.0 : 28.0;
         final teamList = Showcase(
           key: _teamListKey,
-          title: _isItalian(context) ? 'Elenco squadre' : 'Team list',
-          description: _isItalian(context)
-              ? 'Questa sezione raccoglie tutte le tue squadre. Tocca una squadra per aprirne i dettagli o gestirla più da vicino.'
-              : 'This section contains all of your teams. Tap any team to open its details and manage it more closely.',
+          title: AppLocalizations.of(context)!.tutorialTeamListTitle,
+          description: AppLocalizations.of(
+            context,
+          )!.tutorialTeamListDescription,
           child: SizedBox(
             width: double.infinity,
             child: DecoratedBox(
@@ -104,10 +105,10 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
           alignment: Alignment.centerRight,
           child: Showcase(
             key: _viewToggleKey,
-            title: _isItalian(context) ? 'Vista team' : 'Team layout',
-            description: _isItalian(context)
-                ? 'Qui scegli se vedere i team in griglia o in lista, così puoi leggere più velocemente o avere una panoramica più visuale.'
-                : 'Switch between grid and list layouts here depending on whether you want a quick visual overview or a denser list.',
+            title: AppLocalizations.of(context)!.tutorialTeamLayoutTitle,
+            description: AppLocalizations.of(
+              context,
+            )!.tutorialTeamLayoutDescription,
             child: VisualType(
               size: toggleIconSize,
               isActive1: isGridView == 1,
@@ -139,9 +140,9 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
               SizedBox(height: sectionSpacing),
               AppSearchField(
                 controller: _searchController,
-                hintText: _isItalian(context)
-                    ? 'Cerca team per nome o descrizione'
-                    : 'Search teams by name or description',
+                hintText: AppLocalizations.of(
+                  context,
+                )!.searchTeamsByNameOrDescription,
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
@@ -164,9 +165,9 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
                 SizedBox(height: sectionSpacing),
                 AppSearchField(
                   controller: _searchController,
-                  hintText: _isItalian(context)
-                      ? 'Cerca team per nome o descrizione'
-                      : 'Search teams by name or description',
+                  hintText: AppLocalizations.of(
+                    context,
+                  )!.searchTeamsByNameOrDescription,
                   onChanged: (value) {
                     setState(() {
                       _searchQuery = value;
@@ -199,9 +200,5 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
         keys: <GlobalKey>[_viewToggleKey, _teamListKey],
       );
     });
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
   }
 }

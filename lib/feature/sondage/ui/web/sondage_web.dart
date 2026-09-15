@@ -284,12 +284,10 @@ class _SondageWebState extends State<SondageWeb> {
               children: [
                 Showcase(
                   key: _headerKey,
-                  title: _isItalian(context)
-                      ? 'Feed dei sondaggi'
-                      : 'Survey feed',
-                  description: _isItalian(context)
-                      ? 'Qui controlli il feed dei sondaggi, puoi aggiornarlo e aprire la sotto-pagina di creazione.'
-                      : 'Use this section to review the survey feed, refresh it, and open the creation subpage.',
+                  title: AppLocalizations.of(context)!.tutorialSurveyFeedTitle,
+                  description: AppLocalizations.of(
+                    context,
+                  )!.tutorialSurveyFeedDescription,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
                     child: Wrap(
@@ -319,9 +317,9 @@ class _SondageWebState extends State<SondageWeb> {
                               const SizedBox(height: 14),
                               AppSearchField(
                                 controller: _searchController,
-                                hintText: _isItalian(context)
-                                    ? 'Cerca sondaggio, team o opzione'
-                                    : 'Search survey, team, or option',
+                                hintText: AppLocalizations.of(
+                                  context,
+                                )!.tutorialSurveySearchHint,
                                 onChanged: (value) {
                                   setState(() {
                                     _searchQuery = value;
@@ -367,12 +365,12 @@ class _SondageWebState extends State<SondageWeb> {
                 if (isRefreshing) const LinearProgressIndicator(minHeight: 2),
                 Showcase(
                   key: _statsKey,
-                  title: _isItalian(context)
-                      ? 'Statistiche del feed'
-                      : 'Feed statistics',
-                  description: _isItalian(context)
-                      ? 'Questi indicatori riassumono bozze, sondaggi attivi e sondaggi chiusi.'
-                      : 'These chips summarize draft, active, and closed surveys in your feed.',
+                  title: AppLocalizations.of(
+                    context,
+                  )!.tutorialSurveyFeedStatsTitle,
+                  description: AppLocalizations.of(
+                    context,
+                  )!.tutorialSurveyFeedStatsDescription,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 18),
                     child: Wrap(
@@ -434,12 +432,12 @@ class _SondageWebState extends State<SondageWeb> {
                 Expanded(
                   child: Showcase(
                     key: _listKey,
-                    title: _isItalian(context)
-                        ? 'Lista dei sondaggi'
-                        : 'Survey list',
-                    description: _isItalian(context)
-                        ? 'Questa è la zona principale del feed: apri, modifica o elimina i sondaggi da qui.'
-                        : 'This is the main feed area: open, edit, or delete surveys from here.',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialSurveyListTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialSurveyListWebDescription,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
                       child: SizedBox(
@@ -497,10 +495,6 @@ class _SondageWebState extends State<SondageWeb> {
         keys: <GlobalKey>[_headerKey, _statsKey, _listKey],
       );
     });
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
   }
 
   List<SondageEntity> _filterSondages(

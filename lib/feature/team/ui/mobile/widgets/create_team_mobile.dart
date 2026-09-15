@@ -264,12 +264,12 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       const SizedBox(height: 10),
                       Showcase(
                         key: _teamInfoKey,
-                        title: _isItalian(context)
-                            ? 'Nome e descrizione'
-                            : 'Name and description',
-                        description: _isItalian(context)
-                            ? 'Inizia da qui: dai un nome chiaro alla squadra e, se vuoi, aggiungi una descrizione per spiegare lo scopo del gruppo.'
-                            : 'Start here by giving the team a clear name and, if useful, a short description so everyone understands the purpose.',
+                        title: AppLocalizations.of(
+                          context,
+                        )!.tutorialTeamNameDescriptionTitle,
+                        description: AppLocalizations.of(
+                          context,
+                        )!.tutorialTeamNameMobileDescription,
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -310,12 +310,12 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       const SizedBox(height: 10),
                       Showcase(
                         key: _teamColorKey,
-                        title: _isItalian(context)
-                            ? 'Colore della squadra'
-                            : 'Team color',
-                        description: _isItalian(context)
-                            ? 'Scegli il colore che renderà la squadra riconoscibile nelle liste e nelle altre schermate dell\'app.'
-                            : 'Pick the color that will make this team easy to recognize throughout the app.',
+                        title: AppLocalizations.of(
+                          context,
+                        )!.tutorialTeamColorTitle,
+                        description: AppLocalizations.of(
+                          context,
+                        )!.tutorialTeamColorMobileDescription,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -433,12 +433,12 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       const SizedBox(height: 10),
                       Showcase(
                         key: _teamMembersKey,
-                        title: _isItalian(context)
-                            ? 'Membri della squadra'
-                            : 'Team members',
-                        description: _isItalian(context)
-                            ? 'Qui scegli chi invitare nella squadra. Puoi aggiungere utenti e prepararli prima di creare il team.'
-                            : 'Use this section to choose who should join the team and prepare the invitations before creating it.',
+                        title: AppLocalizations.of(
+                          context,
+                        )!.tutorialTeamMembersTitle,
+                        description: AppLocalizations.of(
+                          context,
+                        )!.tutorialTeamMembersMobileDescription,
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -487,12 +487,12 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       else
                         Showcase(
                           key: _teamActionKey,
-                          title: _isItalian(context)
-                              ? 'Crea la squadra'
-                              : 'Create the team',
-                          description: _isItalian(context)
-                              ? 'Quando nome, colore e membri sono pronti, usa questo pulsante per creare la squadra e inviare gli eventuali inviti.'
-                              : 'Once the name, color, and members are ready, use this button to create the team and send any invitations.',
+                          title: AppLocalizations.of(
+                            context,
+                          )!.tutorialTeamCreateTitle,
+                          description: AppLocalizations.of(
+                            context,
+                          )!.tutorialTeamCreateMobileDescription,
                           child: SizedBox(
                             width: double.infinity,
                             child: CustomAppButton(

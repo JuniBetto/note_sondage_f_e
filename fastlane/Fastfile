@@ -25,6 +25,7 @@ def dart_define_args
     "API_BASE_URL" => ENV["API_BASE_URL"],
     "EMAIL_CONFIRMATION_URL" => ENV["EMAIL_CONFIRMATION_URL"],
     "SENTRY_DSN" => ENV["SENTRY_DSN"],
+    "TUTORIAL_PLAYLIST_URL" => ENV["TUTORIAL_PLAYLIST_URL"],
     "APP_ENV" => ENV["APP_ENV"].to_s.strip.empty? ? "Prod" : ENV["APP_ENV"].strip,
   }.filter_map do |key, value|
     next if value.to_s.strip.empty?

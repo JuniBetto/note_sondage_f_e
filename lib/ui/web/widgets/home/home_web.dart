@@ -122,12 +122,12 @@ class _HomeWebState extends State<HomeWeb> {
                   // ═══════════════════════════════
                   Showcase(
                     key: _bannerKey,
-                    title: _isItalian(context)
-                        ? 'Benvenuto nella dashboard'
-                        : 'Welcome to your dashboard',
-                    description: _isItalian(context)
-                        ? 'Questa parte alta ti dà subito il contesto della giornata e una panoramica iniziale del tuo spazio di lavoro.'
-                        : 'This top section immediately sets the context for the day and gives you a first overview of your workspace.',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialHomeWelcomeTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialHomeWelcomeDescription,
                     child: _WelcomeBanner(isNarrow: isNarrow),
                   ),
                   const SizedBox(height: 24),
@@ -137,12 +137,10 @@ class _HomeWebState extends State<HomeWeb> {
                   // ═══════════════════════════════
                   Showcase(
                     key: _statsKey,
-                    title: _isItalian(context)
-                        ? 'Statistiche principali'
-                        : 'Key statistics',
-                    description: _isItalian(context)
-                        ? 'Queste card riassumono subito squadre attive, membri, sondaggi, timbrature e turni del giorno.'
-                        : 'These cards summarize your active teams, members, surveys, clocking activity, and daily shifts at a glance.',
+                    title: AppLocalizations.of(context)!.tutorialHomeStatsTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialHomeStatsDescription,
                     child: isNarrow
                         ? Column(
                             children: [
@@ -358,12 +356,12 @@ class _HomeWebState extends State<HomeWeb> {
                   // ═══════════════════════════════
                   Showcase(
                     key: _notificationsKey,
-                    title: _isItalian(context)
-                        ? 'Notifiche in attesa'
-                        : 'Pending notifications',
-                    description: _isItalian(context)
-                        ? 'Qui trovi inviti, richieste e notifiche che aspettano ancora una tua azione.'
-                        : 'This section contains invites, requests, and notifications that still need your attention.',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialHomeNotificationsTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialHomeNotificationsDescription,
                     child: const PendingNotificationsCard(maxItems: 5),
                   ),
                   const SizedBox(height: 24),
@@ -376,23 +374,23 @@ class _HomeWebState extends State<HomeWeb> {
                           children: [
                             Showcase(
                               key: _quickActionsKey,
-                              title: _isItalian(context)
-                                  ? 'Azioni rapide'
-                                  : 'Quick actions',
-                              description: _isItalian(context)
-                                  ? 'Usa questi collegamenti per entrare subito nelle aree principali e iniziare un\'azione.'
-                                  : 'Use these shortcuts to jump directly into the main areas and start an action quickly.',
+                              title: AppLocalizations.of(
+                                context,
+                              )!.tutorialHomeQuickActionsTitle,
+                              description: AppLocalizations.of(
+                                context,
+                              )!.tutorialHomeQuickActionsDescription,
                               child: _QuickActionsCard(),
                             ),
                             const SizedBox(height: 16),
                             Showcase(
                               key: _activityKey,
-                              title: _isItalian(context)
-                                  ? 'Attività recenti'
-                                  : 'Recent activity',
-                              description: _isItalian(context)
-                                  ? 'Questa lista ti aiuta a seguire cosa è successo di recente tra team, turni, timbrature e sondaggi.'
-                                  : 'This list helps you follow what happened recently across teams, shifts, clocking, and surveys.',
+                              title: AppLocalizations.of(
+                                context,
+                              )!.tutorialHomeActivityTitle,
+                              description: AppLocalizations.of(
+                                context,
+                              )!.tutorialHomeActivityDescription,
                               child: _RecentActivityCard(
                                 activities: activities,
                                 isLoading: isLoading,
@@ -407,12 +405,12 @@ class _HomeWebState extends State<HomeWeb> {
                               flex: 2,
                               child: Showcase(
                                 key: _quickActionsKey,
-                                title: _isItalian(context)
-                                    ? 'Azioni rapide'
-                                    : 'Quick actions',
-                                description: _isItalian(context)
-                                    ? 'Usa questi collegamenti per entrare subito nelle aree principali e iniziare un\'azione.'
-                                    : 'Use these shortcuts to jump directly into the main areas and start an action quickly.',
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.tutorialHomeQuickActionsTitle,
+                                description: AppLocalizations.of(
+                                  context,
+                                )!.tutorialHomeQuickActionsDescription,
                                 child: _QuickActionsCard(),
                               ),
                             ),
@@ -421,12 +419,12 @@ class _HomeWebState extends State<HomeWeb> {
                               flex: 3,
                               child: Showcase(
                                 key: _activityKey,
-                                title: _isItalian(context)
-                                    ? 'Attività recenti'
-                                    : 'Recent activity',
-                                description: _isItalian(context)
-                                    ? 'Questa lista ti aiuta a seguire cosa è successo di recente tra team, turni, timbrature e sondaggi.'
-                                    : 'This list helps you follow what happened recently across teams, shifts, clocking, and surveys.',
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.tutorialHomeActivityTitle,
+                                description: AppLocalizations.of(
+                                  context,
+                                )!.tutorialHomeActivityDescription,
                                 child: _RecentActivityCard(
                                   activities: activities,
                                   isLoading: isLoading,
@@ -466,10 +464,6 @@ class _HomeWebState extends State<HomeWeb> {
         ],
       );
     });
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
   }
 }
 

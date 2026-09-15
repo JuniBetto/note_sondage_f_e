@@ -114,12 +114,12 @@ class _ClockingWebState extends State<ClockingWeb> {
                   // ═══════════════════════════════
                   Showcase(
                     key: _headerKey,
-                    title: _isItalian(context)
-                        ? 'Panoramica timbratura'
-                        : 'Clocking overview',
-                    description: _isItalian(context)
-                        ? 'Questa intestazione riassume l\'area di timbratura e il suo scopo principale.'
-                        : 'This header introduces the clocking area and its main purpose.',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialClockingOverviewTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialClockingOverviewDescription,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -305,10 +305,6 @@ class _ClockingWebState extends State<ClockingWeb> {
         keys: <GlobalKey>[_headerKey],
       );
     });
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
   }
 
   static DateTime _normalizeDate(DateTime value) {
