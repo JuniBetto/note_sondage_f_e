@@ -498,49 +498,27 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
   }
 
   String _introTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Panoramica chat';
-    }
-    return 'Chat overview';
+    return AppLocalizations.of(context)!.tutorialChatOverviewTitle;
   }
 
   String _introDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Da qui puoi scegliere una conversazione del team o riaprire una chat diretta già esistente.';
-    }
-    return 'Start here to choose a team conversation or reopen an existing direct chat.';
+    return AppLocalizations.of(context)!.tutorialChatOverviewWebDescription;
   }
 
   String _teamChannelsTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Canali del team';
-    }
-    return 'Team channels';
+    return AppLocalizations.of(context)!.tutorialChatTeamChannelsTitle;
   }
 
   String _teamChannelsDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Queste card mostrano i canali condivisi dei team con riepilogo e accesso rapido alla conversazione.';
-    }
-    return 'These cards show your shared team channels with a summary and quick access to each conversation.';
+    return AppLocalizations.of(context)!.tutorialChatTeamChannelsWebDescription;
   }
 
   String _directChatsTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Chat dirette';
-    }
-    return 'Direct chats';
+    return AppLocalizations.of(context)!.tutorialChatDirectChatsTitle;
   }
 
   String _directChatsDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Qui trovi le conversazioni private già avviate con altri membri del team.';
-    }
-    return 'Here you can reopen private conversations already started with other team members.';
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
+    return AppLocalizations.of(context)!.tutorialChatDirectChatsWebDescription;
   }
 }
 

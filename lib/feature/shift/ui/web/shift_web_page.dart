@@ -689,9 +689,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
     final confirmed = await showAppConfirmationDialog(
       context,
       title: localization.deleteAllShiftsForDayTitle,
-      message: localization.deleteAllShiftsForDayMessage(
-        dayAssignments.length,
-      ),
+      message: localization.deleteAllShiftsForDayMessage(dayAssignments.length),
       confirmLabel: localization.deleteAction,
       destructive: true,
     );
@@ -1616,12 +1614,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                   ],
                   Showcase(
                     key: _archiveToggleKey,
-                    title: _isItalian(context)
-                        ? 'Calendario e archivio'
-                        : 'Calendar and archive',
-                    description: _isItalian(context)
-                        ? 'Usa qui il selettore per passare dalla vista calendario all\'archivio dei turni.'
-                        : 'Use this switcher to move from the calendar view to the archived shifts view.',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialShiftCalendarArchiveTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialShiftCalendarArchiveWebDescription,
                     child: ArchiveViewToggle(
                       showArchivedOnly: _showArchivedOnly,
                       primaryCount: foregroundAssignments.length,
@@ -1643,19 +1641,19 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                           child: Showcase(
                             key: _calendarKey,
                             title: _showArchivedOnly
-                                ? (_isItalian(context)
-                                      ? 'Archivio turni'
-                                      : 'Shift archive')
-                                : (_isItalian(context)
-                                      ? 'Vista calendario'
-                                      : 'Calendar view'),
+                                ? (AppLocalizations.of(
+                                    context,
+                                  )!.tutorialShiftArchiveTitle)
+                                : (AppLocalizations.of(
+                                    context,
+                                  )!.tutorialShiftCalendarViewTitle),
                             description: _showArchivedOnly
-                                ? (_isItalian(context)
-                                      ? 'Qui trovi i turni archiviati e puoi ripristinarli.'
-                                      : 'Find archived shifts here and restore them when needed.')
-                                : (_isItalian(context)
-                                      ? 'Tocca un giorno del calendario per creare o modificare i turni.'
-                                      : 'Tap a calendar day to create or edit shifts.'),
+                                ? (AppLocalizations.of(
+                                    context,
+                                  )!.tutorialShiftArchiveWebDescription)
+                                : (AppLocalizations.of(
+                                    context,
+                                  )!.tutorialShiftCalendarWebDescription),
                             child: _showArchivedOnly
                                 ? ShiftArchivedAssignmentsList(
                                     assignments: archivedAssignments,
@@ -1705,12 +1703,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                         const SizedBox(width: 24),
                         Showcase(
                           key: _profilesKey,
-                          title: _isItalian(context)
-                              ? 'Profili turno'
-                              : 'Shift profiles',
-                          description: _isItalian(context)
-                              ? 'Questa sezione laterale ti permette di creare e riutilizzare profili orari pronti.'
-                              : 'Use this side panel to create and reuse ready-made shift profiles.',
+                          title: AppLocalizations.of(
+                            context,
+                          )!.tutorialShiftProfilesTitle,
+                          description: AppLocalizations.of(
+                            context,
+                          )!.tutorialShiftProfilesDescription,
                           child: SizedBox(
                             width: 280,
                             child: Card(

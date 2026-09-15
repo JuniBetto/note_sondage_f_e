@@ -205,6 +205,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewTutorial => 'Review tutorial';
 
   @override
+  String get videoTutorial => 'Video Tutorial';
+
+  @override
   String get tutorialPrevious => 'Previous';
 
   @override
@@ -2625,4 +2628,465 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventCalendarEditPeriodLabel => 'Edit';
+
+  @override
+  String get tutorialChatHeaderTitle => 'Chat header';
+
+  @override
+  String get tutorialChatHeaderMobileDescription =>
+      'Here you can confirm which conversation is open and quickly return to the chat list.';
+
+  @override
+  String get tutorialChatMessagesTitle => 'Messages';
+
+  @override
+  String get tutorialChatMessagesMobileDescription =>
+      'Scroll through messages, reactions, and attachments in chronological order in this area.';
+
+  @override
+  String get tutorialChatWriteMessageTitle => 'Write a message';
+
+  @override
+  String get tutorialChatComposerMobileDescription =>
+      'Use this composer to type, attach files or images, and quickly send a new message.';
+
+  @override
+  String get tutorialChatOverviewTitle => 'Chat overview';
+
+  @override
+  String get tutorialChatOverviewMobileDescription =>
+      'Start here to quickly choose which conversation to open between team channels and direct chats.';
+
+  @override
+  String get tutorialChatTeamChannelsTitle => 'Team channels';
+
+  @override
+  String get tutorialChatTeamChannelsMobileDescription =>
+      'This section gathers your shared team conversations with status and recent message previews.';
+
+  @override
+  String get tutorialChatDirectChatsTitle => 'Direct chats';
+
+  @override
+  String get tutorialChatDirectChatsMobileDescription =>
+      'Here you can reopen private conversations already started with members of your teams.';
+
+  @override
+  String get tutorialChatHeaderWebDescription =>
+      'This header shows the open conversation and lets you quickly return to the chat list.';
+
+  @override
+  String get tutorialChatTimelineTitle => 'Message timeline';
+
+  @override
+  String get tutorialChatTimelineWebDescription =>
+      'Scroll through the conversation here, review reactions, and open any shared attachments.';
+
+  @override
+  String get tutorialChatComposerTitle => 'Composer';
+
+  @override
+  String get tutorialChatComposerWebDescription =>
+      'From this area you can type, attach documents or images, and send a new message.';
+
+  @override
+  String get tutorialChatOverviewWebDescription =>
+      'Start here to choose a team conversation or reopen an existing direct chat.';
+
+  @override
+  String get tutorialChatTeamChannelsWebDescription =>
+      'These cards show your shared team channels with a summary and quick access to each conversation.';
+
+  @override
+  String get tutorialChatDirectChatsWebDescription =>
+      'Here you can reopen private conversations already started with other team members.';
+
+  @override
+  String get tutorialClockingStatusTitle => 'Current status';
+
+  @override
+  String get tutorialClockingStatusDescription =>
+      'This section gives you an instant view of your clocking status and the main information for the current day.';
+
+  @override
+  String get tutorialClockingActionsTitle => 'Clocking actions';
+
+  @override
+  String get tutorialClockingActionsDescription =>
+      'Use this area to pick the right team and register your clock-in or clock-out.';
+
+  @override
+  String get tutorialClockingHistoryTitle => 'Clocking history';
+
+  @override
+  String get tutorialClockingHistoryDescription =>
+      'Review status changes and history here, including the records filtered by the selected team.';
+
+  @override
+  String get tutorialClockingOverviewTitle => 'Clocking overview';
+
+  @override
+  String get tutorialClockingOverviewDescription =>
+      'This header introduces the clocking area and its main purpose.';
+
+  @override
+  String get tutorialEventFilterTitle => 'Filter events';
+
+  @override
+  String get tutorialEventFilterDescription =>
+      'Switch between active and archived events with one tap.';
+
+  @override
+  String get tutorialEventListTitle => 'Event list';
+
+  @override
+  String get tutorialEventListDescription =>
+      'Your events in list or calendar view: tap a card for details.';
+
+  @override
+  String get tutorialEventCreateTitle => 'New event';
+
+  @override
+  String get tutorialEventCreateDescription =>
+      'Quickly create a new non-shift event, like a meeting.';
+
+  @override
+  String get tutorialShiftCalendarArchiveTitle => 'Calendar and archive';
+
+  @override
+  String get tutorialShiftCalendarArchiveMobileDescription =>
+      'Use this switcher to move between the active calendar and the archive of hidden shifts.';
+
+  @override
+  String get tutorialShiftArchiveTitle => 'Shift archive';
+
+  @override
+  String get tutorialShiftCalendarTitle => 'Shift calendar';
+
+  @override
+  String get tutorialShiftArchiveMobileDescription =>
+      'This view shows archived shifts and lets you restore them when needed.';
+
+  @override
+  String get tutorialShiftCalendarMobileDescription =>
+      'Tap a day to create or edit the shifts available on that date.';
+
+  @override
+  String get tutorialShiftCalendarArchiveWebDescription =>
+      'Use this switcher to move from the calendar view to the archived shifts view.';
+
+  @override
+  String get tutorialShiftCalendarViewTitle => 'Calendar view';
+
+  @override
+  String get tutorialShiftArchiveWebDescription =>
+      'Find archived shifts here and restore them when needed.';
+
+  @override
+  String get tutorialShiftCalendarWebDescription =>
+      'Tap a calendar day to create or edit shifts.';
+
+  @override
+  String get tutorialShiftProfilesTitle => 'Shift profiles';
+
+  @override
+  String get tutorialShiftProfilesDescription =>
+      'Use this side panel to create and reuse ready-made shift profiles.';
+
+  @override
+  String get tutorialSurveyOverviewTitle => 'Survey overview';
+
+  @override
+  String get tutorialSurveyOverviewDescription =>
+      'This header explains the feed at a glance and lets you refresh the survey data.';
+
+  @override
+  String get tutorialSurveySearchHint => 'Search survey, team, or option';
+
+  @override
+  String get tutorialSurveyQuickStatsTitle => 'Quick stats';
+
+  @override
+  String get tutorialSurveyQuickStatsDescription =>
+      'See how many draft, active, and closed surveys you currently have in the feed.';
+
+  @override
+  String get tutorialSurveyListTitle => 'Survey list';
+
+  @override
+  String get tutorialSurveyListMobileDescription =>
+      'Use this list to open, edit, or delete the surveys that belong to you or your teams.';
+
+  @override
+  String get tutorialSurveyFeedTitle => 'Survey feed';
+
+  @override
+  String get tutorialSurveyFeedDescription =>
+      'Use this section to review the survey feed, refresh it, and open the creation subpage.';
+
+  @override
+  String get tutorialSurveyFeedStatsTitle => 'Feed statistics';
+
+  @override
+  String get tutorialSurveyFeedStatsDescription =>
+      'These chips summarize draft, active, and closed surveys in your feed.';
+
+  @override
+  String get tutorialSurveyListWebDescription =>
+      'This is the main feed area: open, edit, or delete surveys from here.';
+
+  @override
+  String get tutorialTaskFilterTitle => 'Filter tasks';
+
+  @override
+  String get tutorialTaskFilterDescription =>
+      'Filter tasks by status, or switch to the archived view.';
+
+  @override
+  String get tutorialTaskListTitle => 'Task list';
+
+  @override
+  String get tutorialTaskListDescription =>
+      'Here are all your tasks: tap a card to open its details and manage it.';
+
+  @override
+  String get tutorialTaskCreateTitle => 'New task';
+
+  @override
+  String get tutorialTaskCreateDescription =>
+      'Quickly create a new personal or team task.';
+
+  @override
+  String get tutorialTeamNameDescriptionTitle => 'Name and description';
+
+  @override
+  String get tutorialTeamNameMobileDescription =>
+      'Start here by giving the team a clear name and, if useful, a short description so everyone understands the purpose.';
+
+  @override
+  String get tutorialTeamColorTitle => 'Team color';
+
+  @override
+  String get tutorialTeamColorMobileDescription =>
+      'Pick the color that will make this team easy to recognize throughout the app.';
+
+  @override
+  String get tutorialTeamMembersTitle => 'Team members';
+
+  @override
+  String get tutorialTeamMembersMobileDescription =>
+      'Use this section to choose who should join the team and prepare the invitations before creating it.';
+
+  @override
+  String get tutorialTeamCreateTitle => 'Create the team';
+
+  @override
+  String get tutorialTeamCreateMobileDescription =>
+      'Once the name, color, and members are ready, use this button to create the team and send any invitations.';
+
+  @override
+  String get tutorialTeamListTitle => 'Team list';
+
+  @override
+  String get tutorialTeamListDescription =>
+      'This section contains all of your teams. Tap any team to open its details and manage it more closely.';
+
+  @override
+  String get tutorialTeamLayoutTitle => 'Team layout';
+
+  @override
+  String get tutorialTeamLayoutDescription =>
+      'Switch between grid and list layouts here depending on whether you want a quick visual overview or a denser list.';
+
+  @override
+  String get tutorialTeamNewTitle => 'New team';
+
+  @override
+  String get tutorialTeamNewDescription =>
+      'Open the creation subpage here to configure a new team with its name, color, and members.';
+
+  @override
+  String get tutorialTeamListLayoutTitle => 'List layout';
+
+  @override
+  String get tutorialTeamListLayoutDescription =>
+      'Switch how teams are displayed here by choosing between a grid and a list layout.';
+
+  @override
+  String get tutorialTeamAreaTitle => 'Teams area';
+
+  @override
+  String get tutorialTeamAreaDescription =>
+      'This area contains all available teams. Click any card to open the selected team detail page.';
+
+  @override
+  String get tutorialTeamNameWebDescription =>
+      'Use this section to define the new team identity with a clear name and a short description.';
+
+  @override
+  String get tutorialTeamColorWebTitle => 'Color';
+
+  @override
+  String get tutorialTeamColorWebDescription =>
+      'Choose a distinctive color so the team is easier to recognize across the app.';
+
+  @override
+  String get tutorialTeamMembersWebTitle => 'Members';
+
+  @override
+  String get tutorialTeamMembersWebDescription =>
+      'Add the people you want to invite here so the team is ready before the final save.';
+
+  @override
+  String get tutorialTeamCreateWebTitle => 'Create action';
+
+  @override
+  String get tutorialTeamCreateWebDescription =>
+      'Once everything is ready, use this button to create the team and send the prepared invitations.';
+
+  @override
+  String get tutorialNavigationTeamsMobileDescription =>
+      'Explore teams, open details, and manage collaboration from here.';
+
+  @override
+  String get tutorialNavigationPlanningDescription =>
+      'Here you can find shifts, tasks, events, and clocking: everything you need to plan and track your workday.';
+
+  @override
+  String get tutorialNavigationSurveysMobileDescription =>
+      'Review available surveys here and keep an eye on their progress.';
+
+  @override
+  String get tutorialNavigationHomeMobileDescription =>
+      'This screen gives you a quick overview of the most important information.';
+
+  @override
+  String get tutorialNavigationTitle => 'Navigation';
+
+  @override
+  String get tutorialNavigationBarDescription =>
+      'Use the bottom bar to move quickly between the main sections of the app.';
+
+  @override
+  String get tutorialSettingsProfileTitle => 'Profile';
+
+  @override
+  String get tutorialSettingsProfileMobileDescription =>
+      'Tap this card to open your profile and edit your account details.';
+
+  @override
+  String get tutorialSettingsPreferencesDescription =>
+      'Personalize theme, language, and notifications here to match your preferences.';
+
+  @override
+  String get tutorialSettingsSupportTitle => 'Privacy and support';
+
+  @override
+  String get tutorialSettingsSupportDescription =>
+      'This section contains privacy information, support contacts, and helpful options.';
+
+  @override
+  String get tutorialNavigationSidebarDescription =>
+      'Use this sidebar to move quickly between the main areas of the app.';
+
+  @override
+  String get tutorialNavigationNotificationsDescription =>
+      'Your latest alerts, invites, and updates appear here without leaving the current page.';
+
+  @override
+  String get tutorialNavigationTeamsWebDescription =>
+      'Manage teams, members, and the main collaboration actions from this area.';
+
+  @override
+  String get tutorialNavigationClockingDescription =>
+      'Use this section to track clock-ins, clock-outs, and breaks quickly.';
+
+  @override
+  String get tutorialNavigationSurveysWebDescription =>
+      'Here you can review surveys, open them, and keep track of their status.';
+
+  @override
+  String get tutorialNavigationShiftsDescription =>
+      'This page gathers your shifts and their operational details in one place.';
+
+  @override
+  String get tutorialNavigationTasksDescription =>
+      'Track the team operational tasks here with status, priority, and assignment.';
+
+  @override
+  String get tutorialNavigationChatDescription =>
+      'Follow the team conversation here and send messages in real time.';
+
+  @override
+  String get tutorialNavigationHomeWebDescription =>
+      'The dashboard gives you the most important overview of your workspace.';
+
+  @override
+  String get tutorialSettingsProfileWebDescription =>
+      'Open your profile here to update the most important account details.';
+
+  @override
+  String get tutorialSettingsMenuTitle => 'Settings menu';
+
+  @override
+  String get tutorialSettingsMenuDescription =>
+      'Use this column to move quickly between language, notifications, privacy, and support.';
+
+  @override
+  String get tutorialSettingsAccountProfileTitle => 'Account profile';
+
+  @override
+  String get tutorialSettingsNotificationsDescription =>
+      'Choose here how you want to receive important updates and alerts.';
+
+  @override
+  String get tutorialSettingsContactDescription =>
+      'This area gathers the best ways to contact support.';
+
+  @override
+  String get tutorialSettingsPrivacyDescription =>
+      'Review privacy and data protection information in this section.';
+
+  @override
+  String get tutorialSettingsAccountDescription =>
+      'Update your profile, security, and personal preferences from here.';
+
+  @override
+  String get tutorialSettingsLanguageDescription =>
+      'Choose the language that feels most comfortable for using the app.';
+
+  @override
+  String get tutorialHomeWelcomeTitle => 'Welcome to your dashboard';
+
+  @override
+  String get tutorialHomeWelcomeDescription =>
+      'This top section immediately sets the context for the day and gives you a first overview of your workspace.';
+
+  @override
+  String get tutorialHomeStatsTitle => 'Key statistics';
+
+  @override
+  String get tutorialHomeStatsDescription =>
+      'These cards summarize your active teams, members, surveys, clocking activity, and daily shifts at a glance.';
+
+  @override
+  String get tutorialHomeNotificationsTitle => 'Pending notifications';
+
+  @override
+  String get tutorialHomeNotificationsDescription =>
+      'This section contains invites, requests, and notifications that still need your attention.';
+
+  @override
+  String get tutorialHomeQuickActionsTitle => 'Quick actions';
+
+  @override
+  String get tutorialHomeQuickActionsDescription =>
+      'Use these shortcuts to jump directly into the main areas and start an action quickly.';
+
+  @override
+  String get tutorialHomeActivityTitle => 'Recent activity';
+
+  @override
+  String get tutorialHomeActivityDescription =>
+      'This list helps you follow what happened recently across teams, shifts, clocking, and surveys.';
 }

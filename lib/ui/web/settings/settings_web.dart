@@ -21,6 +21,7 @@ import 'package:note_sondage/ui/web/widgets/sidebar_item.dart';
 import 'package:note_sondage/ui/widgets/auth/contact_email_setup_card.dart';
 import 'package:note_sondage/ui/widgets/authenticated_user_summary_card.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsWeb extends StatefulWidget {
   const SettingsWeb({super.key, this.child});
@@ -86,10 +87,25 @@ class _SettingsWebState extends State<SettingsWeb> {
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: _replayTutorial,
-                icon: const Icon(Icons.help_outline_rounded, size: 18),
-                label: Text(localizations.reviewTutorial),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (RuntimeConfig.hasTutorialPlaylistUrl)
+                    OutlinedButton.icon(
+                      onPressed: _openTutorialPlaylist,
+                      icon: const Icon(
+                        Icons.play_circle_outline_rounded,
+                        size: 18,
+                      ),
+                      label: Text(localizations.videoTutorial),
+                    ),
+                  OutlinedButton.icon(
+                    onPressed: _replayTutorial,
+                    icon: const Icon(Icons.help_outline_rounded, size: 18),
+                    label: Text(localizations.reviewTutorial),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -242,6 +258,14 @@ class _SettingsWebState extends State<SettingsWeb> {
     );
   }
 
+  Future<void> _openTutorialPlaylist() async {
+    final uri = Uri.tryParse(RuntimeConfig.resolvedTutorialPlaylistUrl);
+    if (uri == null) {
+      return;
+    }
+    await launchUrl(uri, webOnlyWindowName: '_blank');
+  }
+
   bool _supportsTutorial(int tabIndex) {
     return tabIndex == 0 ||
         tabIndex == 1 ||
@@ -252,35 +276,19 @@ class _SettingsWebState extends State<SettingsWeb> {
   }
 
   String _profileTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Profilo';
-    }
-
-    return 'Profile';
+    return AppLocalizations.of(context)!.tutorialSettingsProfileTitle;
   }
 
   String _profileDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Da qui puoi aprire il profilo e aggiornare i dati principali del tuo account.';
-    }
-
-    return 'Open your profile here to update the most important account details.';
+    return AppLocalizations.of(context)!.tutorialSettingsProfileWebDescription;
   }
 
   String _menuTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Menu impostazioni';
-    }
-
-    return 'Settings menu';
+    return AppLocalizations.of(context)!.tutorialSettingsMenuTitle;
   }
 
   String _menuDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Questa colonna ti permette di passare rapidamente tra lingua, notifiche, privacy e supporto.';
-    }
-
-    return 'Use this column to move quickly between language, notifications, privacy, and support.';
+    return AppLocalizations.of(context)!.tutorialSettingsMenuDescription;
   }
 
   String _contentTitle(
@@ -292,39 +300,21 @@ class _SettingsWebState extends State<SettingsWeb> {
       1 => localizations.notification,
       2 => localizations.contactUs,
       3 => localizations.privacy,
-      5 => _isItalian(context) ? 'Profilo account' : 'Account profile',
+      5 => AppLocalizations.of(context)!.tutorialSettingsAccountProfileTitle,
       _ => localizations.language,
     };
   }
 
   String _contentDescription(BuildContext context, int tabIndex) {
-    final isItalian = _isItalian(context);
     return switch (tabIndex) {
-      1 =>
-        isItalian
-            ? 'Qui decidi come ricevere aggiornamenti e avvisi importanti.'
-            : 'Choose here how you want to receive important updates and alerts.',
-      2 =>
-        isItalian
-            ? 'Questa area raccoglie i canali utili per contattare il supporto.'
-            : 'This area gathers the best ways to contact support.',
-      3 =>
-        isItalian
-            ? 'Qui puoi consultare le informazioni legate a privacy e protezione dei dati.'
-            : 'Review privacy and data protection information in this section.',
-      5 =>
-        isItalian
-            ? 'Qui puoi aggiornare profilo, sicurezza e preferenze personali.'
-            : 'Update your profile, security, and personal preferences from here.',
-      _ =>
-        isItalian
-            ? 'Da qui puoi scegliere la lingua più comoda per usare l\'app.'
-            : 'Choose the language that feels most comfortable for using the app.',
+      1 => AppLocalizations.of(
+        context,
+      )!.tutorialSettingsNotificationsDescription,
+      2 => AppLocalizations.of(context)!.tutorialSettingsContactDescription,
+      3 => AppLocalizations.of(context)!.tutorialSettingsPrivacyDescription,
+      5 => AppLocalizations.of(context)!.tutorialSettingsAccountDescription,
+      _ => AppLocalizations.of(context)!.tutorialSettingsLanguageDescription,
     };
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
   }
 }
 

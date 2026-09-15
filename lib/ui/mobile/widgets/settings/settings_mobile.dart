@@ -21,6 +21,7 @@ import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_bloc.dart'
 import 'package:note_sondage/ui/widgets/theme_config/bloc/theme/theme_state.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/ui/widgets/navigation_bar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsMobile extends StatefulWidget {
   const SettingsMobile({super.key});
@@ -332,8 +333,17 @@ class _SettingsMobileState extends State<SettingsMobile> {
                         subtitle: localization.getInTouchWithOurSupportTeam,
                         onTap: () =>
                             _showSettingModal(context, const ContactUsMobile()),
-                        showDivider: false,
+                        showDivider: RuntimeConfig.hasTutorialPlaylistUrl,
                       ),
+                      if (RuntimeConfig.hasTutorialPlaylistUrl)
+                        _SettingTile(
+                          icon: Icons.play_circle_outline_rounded,
+                          iconColor: const Color(0xFFFF5722),
+                          title: localization.videoTutorial,
+                          subtitle: '',
+                          onTap: _openTutorialPlaylist,
+                          showDivider: false,
+                        ),
                     ],
                   ),
                 ),
@@ -478,58 +488,40 @@ class _SettingsMobileState extends State<SettingsMobile> {
   }
 
   String _profileTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Profilo';
-    }
-
-    return 'Profile';
+    return AppLocalizations.of(context)!.tutorialSettingsProfileTitle;
   }
 
   String _profileDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Tocca questa card per aprire il profilo e modificare le informazioni del tuo account.';
-    }
-
-    return 'Tap this card to open your profile and edit your account details.';
+    return AppLocalizations.of(
+      context,
+    )!.tutorialSettingsProfileMobileDescription;
   }
 
   String _preferencesTitle(
     BuildContext context,
     AppLocalizations localization,
   ) {
-    if (_isItalian(context)) {
-      return 'Preferenze';
-    }
-
     return localization.preferences;
   }
 
   String _preferencesDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Qui puoi personalizzare tema, lingua e notifiche in base alle tue preferenze.';
-    }
-
-    return 'Personalize theme, language, and notifications here to match your preferences.';
+    return AppLocalizations.of(context)!.tutorialSettingsPreferencesDescription;
   }
 
   String _supportTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Privacy e supporto';
-    }
-
-    return 'Privacy and support';
+    return AppLocalizations.of(context)!.tutorialSettingsSupportTitle;
   }
 
   String _supportDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'In questa sezione trovi privacy, contatti utili e opzioni di supporto.';
-    }
-
-    return 'This section contains privacy information, support contacts, and helpful options.';
+    return AppLocalizations.of(context)!.tutorialSettingsSupportDescription;
   }
 
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
+  Future<void> _openTutorialPlaylist() async {
+    final uri = Uri.tryParse(RuntimeConfig.resolvedTutorialPlaylistUrl);
+    if (uri == null) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 

@@ -110,12 +110,12 @@ class _TeamsWebState extends State<TeamsWeb> {
                         children: [
                           Showcase(
                             key: _createButtonKey,
-                            title: _isItalian(context)
-                                ? 'Nuova squadra'
-                                : 'New team',
-                            description: _isItalian(context)
-                                ? 'Apri qui la sotto-pagina di creazione per configurare una nuova squadra con nome, colore e membri.'
-                                : 'Open the creation subpage here to configure a new team with its name, color, and members.',
+                            title: AppLocalizations.of(
+                              context,
+                            )!.tutorialTeamNewTitle,
+                            description: AppLocalizations.of(
+                              context,
+                            )!.tutorialTeamNewDescription,
                             child: FilledButton.icon(
                               onPressed: () {
                                 CustomDialog(
@@ -178,12 +178,12 @@ class _TeamsWebState extends State<TeamsWeb> {
                     children: [
                       Showcase(
                         key: _viewToggleKey,
-                        title: _isItalian(context)
-                            ? 'Vista della lista'
-                            : 'List layout',
-                        description: _isItalian(context)
-                            ? 'Puoi cambiare il modo in cui le squadre vengono mostrate, passando da griglia a lista.'
-                            : 'Switch how teams are displayed here by choosing between a grid and a list layout.',
+                        title: AppLocalizations.of(
+                          context,
+                        )!.tutorialTeamListLayoutTitle,
+                        description: AppLocalizations.of(
+                          context,
+                        )!.tutorialTeamListLayoutDescription,
                         child: VisualType(
                           isActive1: isGridView == 1,
                           isActive2: isGridView == 2,
@@ -209,12 +209,10 @@ class _TeamsWebState extends State<TeamsWeb> {
                 Expanded(
                   child: Showcase(
                     key: _teamListKey,
-                    title: _isItalian(context)
-                        ? 'Elenco delle squadre'
-                        : 'Teams area',
-                    description: _isItalian(context)
-                        ? 'Qui trovi tutte le squadre disponibili. Un click su una card apre il dettaglio della squadra selezionata.'
-                        : 'This area contains all available teams. Click any card to open the selected team detail page.',
+                    title: AppLocalizations.of(context)!.tutorialTeamAreaTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialTeamAreaDescription,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
                       child: SizedBox(
@@ -269,9 +267,5 @@ class _TeamsWebState extends State<TeamsWeb> {
         keys: <GlobalKey>[_createButtonKey, _viewToggleKey, _teamListKey],
       );
     });
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
   }
 }

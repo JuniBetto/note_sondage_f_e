@@ -508,49 +508,31 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
   }
 
   String _introTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Panoramica chat';
-    }
-    return 'Chat overview';
+    return AppLocalizations.of(context)!.tutorialChatOverviewTitle;
   }
 
   String _introDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Da qui scegli rapidamente quale conversazione aprire tra canali del team e chat dirette.';
-    }
-    return 'Start here to quickly choose which conversation to open between team channels and direct chats.';
+    return AppLocalizations.of(context)!.tutorialChatOverviewMobileDescription;
   }
 
   String _teamChannelsTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Canali del team';
-    }
-    return 'Team channels';
+    return AppLocalizations.of(context)!.tutorialChatTeamChannelsTitle;
   }
 
   String _teamChannelsDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Questa sezione raccoglie le conversazioni condivise dei tuoi team con stato e messaggi recenti.';
-    }
-    return 'This section gathers your shared team conversations with status and recent message previews.';
+    return AppLocalizations.of(
+      context,
+    )!.tutorialChatTeamChannelsMobileDescription;
   }
 
   String _directChatsTitle(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Chat dirette';
-    }
-    return 'Direct chats';
+    return AppLocalizations.of(context)!.tutorialChatDirectChatsTitle;
   }
 
   String _directChatsDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Qui trovi le conversazioni private già avviate con i membri dei tuoi team.';
-    }
-    return 'Here you can reopen private conversations already started with members of your teams.';
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
+    return AppLocalizations.of(
+      context,
+    )!.tutorialChatDirectChatsMobileDescription;
   }
 }
 

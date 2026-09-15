@@ -209,6 +209,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reviewTutorial => 'Revoir le tutoriel';
 
   @override
+  String get videoTutorial => 'Tutoriel vidéo';
+
+  @override
   String get tutorialPrevious => 'Précédent';
 
   @override
@@ -2664,4 +2667,466 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventCalendarEditPeriodLabel => 'Modifier';
+
+  @override
+  String get tutorialChatHeaderTitle => 'En-tête de la conversation';
+
+  @override
+  String get tutorialChatHeaderMobileDescription =>
+      'Vérifiez ici quelle conversation est ouverte et revenez rapidement à la liste des conversations.';
+
+  @override
+  String get tutorialChatMessagesTitle => 'Messages';
+
+  @override
+  String get tutorialChatMessagesMobileDescription =>
+      'Parcourez ici les messages, les réactions et les pièces jointes dans l\'ordre chronologique.';
+
+  @override
+  String get tutorialChatWriteMessageTitle => 'Écrire un message';
+
+  @override
+  String get tutorialChatComposerMobileDescription =>
+      'Utilisez cette zone pour écrire, joindre des fichiers ou des images et envoyer rapidement un nouveau message.';
+
+  @override
+  String get tutorialChatOverviewTitle => 'Vue d\'ensemble des conversations';
+
+  @override
+  String get tutorialChatOverviewMobileDescription =>
+      'Commencez ici pour choisir rapidement une conversation parmi les canaux d\'équipe et les conversations privées.';
+
+  @override
+  String get tutorialChatTeamChannelsTitle => 'Canaux d\'équipe';
+
+  @override
+  String get tutorialChatTeamChannelsMobileDescription =>
+      'Cette section regroupe les conversations partagées de vos équipes, avec leur statut et un aperçu des messages récents.';
+
+  @override
+  String get tutorialChatDirectChatsTitle => 'Conversations privées';
+
+  @override
+  String get tutorialChatDirectChatsMobileDescription =>
+      'Retrouvez ici les conversations privées déjà entamées avec les membres de vos équipes.';
+
+  @override
+  String get tutorialChatHeaderWebDescription =>
+      'Cet en-tête indique la conversation ouverte et permet de revenir rapidement à la liste des conversations.';
+
+  @override
+  String get tutorialChatTimelineTitle => 'Historique des messages';
+
+  @override
+  String get tutorialChatTimelineWebDescription =>
+      'Parcourez la conversation ici, consultez les réactions et ouvrez les pièces jointes partagées.';
+
+  @override
+  String get tutorialChatComposerTitle => 'Zone de rédaction';
+
+  @override
+  String get tutorialChatComposerWebDescription =>
+      'Depuis cette zone, vous pouvez écrire, joindre des documents ou des images et envoyer un nouveau message.';
+
+  @override
+  String get tutorialChatOverviewWebDescription =>
+      'Commencez ici pour choisir une conversation d\'équipe ou rouvrir une conversation privée existante.';
+
+  @override
+  String get tutorialChatTeamChannelsWebDescription =>
+      'Ces cartes présentent les canaux partagés de vos équipes, avec un résumé et un accès rapide à chaque conversation.';
+
+  @override
+  String get tutorialChatDirectChatsWebDescription =>
+      'Retrouvez ici les conversations privées déjà entamées avec d\'autres membres de l\'équipe.';
+
+  @override
+  String get tutorialClockingStatusTitle => 'Statut actuel';
+
+  @override
+  String get tutorialClockingStatusDescription =>
+      'Cette section vous donne un aperçu immédiat de votre statut de pointage et des principales informations de la journée.';
+
+  @override
+  String get tutorialClockingActionsTitle => 'Actions de pointage';
+
+  @override
+  String get tutorialClockingActionsDescription =>
+      'Utilisez cette zone pour choisir l\'équipe concernée et enregistrer votre entrée ou votre sortie.';
+
+  @override
+  String get tutorialClockingHistoryTitle => 'Historique des pointages';
+
+  @override
+  String get tutorialClockingHistoryDescription =>
+      'Consultez ici les changements de statut et l\'historique, y compris les enregistrements filtrés par équipe sélectionnée.';
+
+  @override
+  String get tutorialClockingOverviewTitle => 'Vue d\'ensemble des pointages';
+
+  @override
+  String get tutorialClockingOverviewDescription =>
+      'Cet en-tête présente l\'espace de pointage et sa fonction principale.';
+
+  @override
+  String get tutorialEventFilterTitle => 'Filtrer les événements';
+
+  @override
+  String get tutorialEventFilterDescription =>
+      'Passez des événements actifs aux événements archivés en un geste.';
+
+  @override
+  String get tutorialEventListTitle => 'Liste des événements';
+
+  @override
+  String get tutorialEventListDescription =>
+      'Vos événements en vue liste ou calendrier : touchez une carte pour en consulter les détails.';
+
+  @override
+  String get tutorialEventCreateTitle => 'Nouvel événement';
+
+  @override
+  String get tutorialEventCreateDescription =>
+      'Créez rapidement un événement autre qu\'un quart de travail, par exemple une réunion.';
+
+  @override
+  String get tutorialShiftCalendarArchiveTitle => 'Calendrier et archives';
+
+  @override
+  String get tutorialShiftCalendarArchiveMobileDescription =>
+      'Utilisez ce sélecteur pour passer du calendrier actif aux archives des quarts masqués.';
+
+  @override
+  String get tutorialShiftArchiveTitle => 'Archives des quarts';
+
+  @override
+  String get tutorialShiftCalendarTitle => 'Calendrier des quarts';
+
+  @override
+  String get tutorialShiftArchiveMobileDescription =>
+      'Cette vue présente les quarts archivés et permet de les restaurer si nécessaire.';
+
+  @override
+  String get tutorialShiftCalendarMobileDescription =>
+      'Touchez un jour pour créer ou modifier les quarts de cette date.';
+
+  @override
+  String get tutorialShiftCalendarArchiveWebDescription =>
+      'Utilisez ce sélecteur pour passer de la vue calendrier à la vue des quarts archivés.';
+
+  @override
+  String get tutorialShiftCalendarViewTitle => 'Vue calendrier';
+
+  @override
+  String get tutorialShiftArchiveWebDescription =>
+      'Retrouvez ici les quarts archivés et restaurez-les si nécessaire.';
+
+  @override
+  String get tutorialShiftCalendarWebDescription =>
+      'Sélectionnez un jour du calendrier pour créer ou modifier des quarts.';
+
+  @override
+  String get tutorialShiftProfilesTitle => 'Profils de quart';
+
+  @override
+  String get tutorialShiftProfilesDescription =>
+      'Utilisez ce panneau latéral pour créer et réutiliser des profils de quart prédéfinis.';
+
+  @override
+  String get tutorialSurveyOverviewTitle => 'Vue d\'ensemble des sondages';
+
+  @override
+  String get tutorialSurveyOverviewDescription =>
+      'Cet en-tête présente le fil en un coup d\'œil et permet d\'actualiser les données des sondages.';
+
+  @override
+  String get tutorialSurveySearchHint =>
+      'Rechercher un sondage, une équipe ou une option';
+
+  @override
+  String get tutorialSurveyQuickStatsTitle => 'Statistiques rapides';
+
+  @override
+  String get tutorialSurveyQuickStatsDescription =>
+      'Consultez le nombre de sondages en brouillon, actifs et clôturés actuellement présents dans le fil.';
+
+  @override
+  String get tutorialSurveyListTitle => 'Liste des sondages';
+
+  @override
+  String get tutorialSurveyListMobileDescription =>
+      'Utilisez cette liste pour ouvrir, modifier ou supprimer vos sondages ou ceux de vos équipes.';
+
+  @override
+  String get tutorialSurveyFeedTitle => 'Fil des sondages';
+
+  @override
+  String get tutorialSurveyFeedDescription =>
+      'Utilisez cette section pour consulter le fil des sondages, l\'actualiser et ouvrir la page de création.';
+
+  @override
+  String get tutorialSurveyFeedStatsTitle => 'Statistiques du fil';
+
+  @override
+  String get tutorialSurveyFeedStatsDescription =>
+      'Ces indicateurs résument les sondages en brouillon, actifs et clôturés de votre fil.';
+
+  @override
+  String get tutorialSurveyListWebDescription =>
+      'Voici la zone principale du fil : ouvrez, modifiez ou supprimez des sondages depuis cet espace.';
+
+  @override
+  String get tutorialTaskFilterTitle => 'Filtrer les tâches';
+
+  @override
+  String get tutorialTaskFilterDescription =>
+      'Filtrez les tâches par statut ou passez à la vue des archives.';
+
+  @override
+  String get tutorialTaskListTitle => 'Liste des tâches';
+
+  @override
+  String get tutorialTaskListDescription =>
+      'Retrouvez toutes vos tâches ici : touchez une carte pour ouvrir ses détails et la gérer.';
+
+  @override
+  String get tutorialTaskCreateTitle => 'Nouvelle tâche';
+
+  @override
+  String get tutorialTaskCreateDescription =>
+      'Créez rapidement une nouvelle tâche personnelle ou d\'équipe.';
+
+  @override
+  String get tutorialTeamNameDescriptionTitle => 'Nom et description';
+
+  @override
+  String get tutorialTeamNameMobileDescription =>
+      'Commencez par donner à l\'équipe un nom clair et, si nécessaire, une courte description pour que chacun comprenne son objectif.';
+
+  @override
+  String get tutorialTeamColorTitle => 'Couleur de l\'équipe';
+
+  @override
+  String get tutorialTeamColorMobileDescription =>
+      'Choisissez la couleur qui permettra de reconnaître facilement cette équipe dans toute l\'application.';
+
+  @override
+  String get tutorialTeamMembersTitle => 'Membres de l\'équipe';
+
+  @override
+  String get tutorialTeamMembersMobileDescription =>
+      'Utilisez cette section pour choisir les membres de l\'équipe et préparer les invitations avant sa création.';
+
+  @override
+  String get tutorialTeamCreateTitle => 'Créer l\'équipe';
+
+  @override
+  String get tutorialTeamCreateMobileDescription =>
+      'Une fois le nom, la couleur et les membres définis, utilisez ce bouton pour créer l\'équipe et envoyer les invitations éventuelles.';
+
+  @override
+  String get tutorialTeamListTitle => 'Liste des équipes';
+
+  @override
+  String get tutorialTeamListDescription =>
+      'Cette section contient toutes vos équipes. Touchez une équipe pour ouvrir ses détails et la gérer.';
+
+  @override
+  String get tutorialTeamLayoutTitle => 'Affichage des équipes';
+
+  @override
+  String get tutorialTeamLayoutDescription =>
+      'Passez ici de la grille à la liste selon que vous préférez une vue d\'ensemble visuelle ou une liste plus compacte.';
+
+  @override
+  String get tutorialTeamNewTitle => 'Nouvelle équipe';
+
+  @override
+  String get tutorialTeamNewDescription =>
+      'Ouvrez ici la page de création pour configurer une nouvelle équipe avec son nom, sa couleur et ses membres.';
+
+  @override
+  String get tutorialTeamListLayoutTitle => 'Disposition de la liste';
+
+  @override
+  String get tutorialTeamListLayoutDescription =>
+      'Modifiez ici l\'affichage des équipes en choisissant une disposition en grille ou en liste.';
+
+  @override
+  String get tutorialTeamAreaTitle => 'Espace des équipes';
+
+  @override
+  String get tutorialTeamAreaDescription =>
+      'Cet espace contient toutes les équipes disponibles. Cliquez sur une carte pour ouvrir les détails de l\'équipe sélectionnée.';
+
+  @override
+  String get tutorialTeamNameWebDescription =>
+      'Utilisez cette section pour définir l\'identité de la nouvelle équipe avec un nom clair et une courte description.';
+
+  @override
+  String get tutorialTeamColorWebTitle => 'Couleur';
+
+  @override
+  String get tutorialTeamColorWebDescription =>
+      'Choisissez une couleur distinctive pour reconnaître plus facilement l\'équipe dans toute l\'application.';
+
+  @override
+  String get tutorialTeamMembersWebTitle => 'Membres';
+
+  @override
+  String get tutorialTeamMembersWebDescription =>
+      'Ajoutez ici les personnes à inviter pour préparer l\'équipe avant l\'enregistrement final.';
+
+  @override
+  String get tutorialTeamCreateWebTitle => 'Création de l\'équipe';
+
+  @override
+  String get tutorialTeamCreateWebDescription =>
+      'Une fois tout prêt, utilisez ce bouton pour créer l\'équipe et envoyer les invitations préparées.';
+
+  @override
+  String get tutorialNavigationTeamsMobileDescription =>
+      'Explorez les équipes, ouvrez leurs détails et gérez la collaboration depuis cet espace.';
+
+  @override
+  String get tutorialNavigationPlanningDescription =>
+      'Retrouvez ici les quarts, les tâches, les événements et les pointages : tout ce qu\'il vous faut pour planifier et suivre votre journée de travail.';
+
+  @override
+  String get tutorialNavigationSurveysMobileDescription =>
+      'Consultez ici les sondages disponibles et suivez leur progression.';
+
+  @override
+  String get tutorialNavigationHomeMobileDescription =>
+      'Cet écran vous donne un aperçu rapide des informations les plus importantes.';
+
+  @override
+  String get tutorialNavigationTitle => 'Navigation';
+
+  @override
+  String get tutorialNavigationBarDescription =>
+      'Utilisez la barre inférieure pour passer rapidement d\'une section principale de l\'application à une autre.';
+
+  @override
+  String get tutorialSettingsProfileTitle => 'Profil';
+
+  @override
+  String get tutorialSettingsProfileMobileDescription =>
+      'Touchez cette carte pour ouvrir votre profil et modifier les informations de votre compte.';
+
+  @override
+  String get tutorialSettingsPreferencesDescription =>
+      'Personnalisez ici le thème, la langue et les notifications selon vos préférences.';
+
+  @override
+  String get tutorialSettingsSupportTitle => 'Confidentialité et assistance';
+
+  @override
+  String get tutorialSettingsSupportDescription =>
+      'Cette section regroupe les informations sur la confidentialité, les contacts et les options d\'assistance.';
+
+  @override
+  String get tutorialNavigationSidebarDescription =>
+      'Utilisez cette barre latérale pour passer rapidement d\'un espace principal de l\'application à un autre.';
+
+  @override
+  String get tutorialNavigationNotificationsDescription =>
+      'Retrouvez ici vos dernières alertes, invitations et mises à jour sans quitter la page actuelle.';
+
+  @override
+  String get tutorialNavigationTeamsWebDescription =>
+      'Gérez les équipes, les membres et les principales actions de collaboration depuis cet espace.';
+
+  @override
+  String get tutorialNavigationClockingDescription =>
+      'Utilisez cette section pour enregistrer rapidement les entrées, les sorties et les pauses.';
+
+  @override
+  String get tutorialNavigationSurveysWebDescription =>
+      'Retrouvez ici les sondages, ouvrez-les et suivez facilement leur statut.';
+
+  @override
+  String get tutorialNavigationShiftsDescription =>
+      'Cette page regroupe vos quarts et les informations pratiques associées.';
+
+  @override
+  String get tutorialNavigationTasksDescription =>
+      'Suivez ici les tâches de l\'équipe avec leur statut, leur priorité et leur attribution.';
+
+  @override
+  String get tutorialNavigationChatDescription =>
+      'Suivez ici la conversation de l\'équipe et envoyez des messages en temps réel.';
+
+  @override
+  String get tutorialNavigationHomeWebDescription =>
+      'Le tableau de bord présente les informations essentielles de votre espace de travail.';
+
+  @override
+  String get tutorialSettingsProfileWebDescription =>
+      'Ouvrez votre profil ici pour mettre à jour les principales informations de votre compte.';
+
+  @override
+  String get tutorialSettingsMenuTitle => 'Menu des paramètres';
+
+  @override
+  String get tutorialSettingsMenuDescription =>
+      'Utilisez cette colonne pour passer rapidement entre la langue, les notifications, la confidentialité et l\'assistance.';
+
+  @override
+  String get tutorialSettingsAccountProfileTitle => 'Profil du compte';
+
+  @override
+  String get tutorialSettingsNotificationsDescription =>
+      'Choisissez ici comment recevoir les mises à jour et les alertes importantes.';
+
+  @override
+  String get tutorialSettingsContactDescription =>
+      'Cet espace regroupe les moyens utiles pour contacter l\'assistance.';
+
+  @override
+  String get tutorialSettingsPrivacyDescription =>
+      'Consultez dans cette section les informations sur la confidentialité et la protection des données.';
+
+  @override
+  String get tutorialSettingsAccountDescription =>
+      'Mettez à jour ici votre profil, votre sécurité et vos préférences personnelles.';
+
+  @override
+  String get tutorialSettingsLanguageDescription =>
+      'Choisissez la langue dans laquelle vous préférez utiliser l\'application.';
+
+  @override
+  String get tutorialHomeWelcomeTitle => 'Bienvenue sur votre tableau de bord';
+
+  @override
+  String get tutorialHomeWelcomeDescription =>
+      'Cette section supérieure présente le contexte de la journée et un premier aperçu de votre espace de travail.';
+
+  @override
+  String get tutorialHomeStatsTitle => 'Statistiques clés';
+
+  @override
+  String get tutorialHomeStatsDescription =>
+      'Ces cartes résument en un coup d\'œil vos équipes actives, membres, sondages, pointages et quarts du jour.';
+
+  @override
+  String get tutorialHomeNotificationsTitle => 'Notifications en attente';
+
+  @override
+  String get tutorialHomeNotificationsDescription =>
+      'Cette section contient les invitations, demandes et notifications qui nécessitent encore votre attention.';
+
+  @override
+  String get tutorialHomeQuickActionsTitle => 'Actions rapides';
+
+  @override
+  String get tutorialHomeQuickActionsDescription =>
+      'Utilisez ces raccourcis pour accéder directement aux espaces principaux et lancer rapidement une action.';
+
+  @override
+  String get tutorialHomeActivityTitle => 'Activité récente';
+
+  @override
+  String get tutorialHomeActivityDescription =>
+      'Cette liste permet de suivre l\'activité récente des équipes, des quarts, des pointages et des sondages.';
 }

@@ -177,12 +177,12 @@ class _ClockingMobileState extends State<ClockingMobile> {
                 _maybeWrapShowcase(
                   enabled: !useLandscapeCompactLayout,
                   key: _statusKey,
-                  title: _isItalian(context)
-                      ? 'Stato attuale'
-                      : 'Current status',
-                  description: _isItalian(context)
-                      ? 'Questa sezione ti mostra subito lo stato della tua timbratura e le informazioni principali della giornata.'
-                      : 'This section gives you an instant view of your clocking status and the main information for the current day.',
+                  title: AppLocalizations.of(
+                    context,
+                  )!.tutorialClockingStatusTitle,
+                  description: AppLocalizations.of(
+                    context,
+                  )!.tutorialClockingStatusDescription,
                   child: statusCard,
                 ),
                 SizedBox(height: sectionSpacing),
@@ -193,12 +193,12 @@ class _ClockingMobileState extends State<ClockingMobile> {
                 _maybeWrapShowcase(
                   enabled: !useLandscapeCompactLayout,
                   key: _actionKey,
-                  title: _isItalian(context)
-                      ? 'Azioni di timbratura'
-                      : 'Clocking actions',
-                  description: _isItalian(context)
-                      ? 'Da qui puoi selezionare la squadra corretta e registrare entrata o uscita.'
-                      : 'Use this area to pick the right team and register your clock-in or clock-out.',
+                  title: AppLocalizations.of(
+                    context,
+                  )!.tutorialClockingActionsTitle,
+                  description: AppLocalizations.of(
+                    context,
+                  )!.tutorialClockingActionsDescription,
                   child: actionSection,
                 ),
 
@@ -210,12 +210,12 @@ class _ClockingMobileState extends State<ClockingMobile> {
                 _maybeWrapShowcase(
                   enabled: !useLandscapeCompactLayout,
                   key: _historyKey,
-                  title: _isItalian(context)
-                      ? 'Storico timbrature'
-                      : 'Clocking history',
-                  description: _isItalian(context)
-                      ? 'Qui puoi controllare i cambi di stato e lo storico filtrato anche per squadra.'
-                      : 'Review status changes and history here, including the records filtered by the selected team.',
+                  title: AppLocalizations.of(
+                    context,
+                  )!.tutorialClockingHistoryTitle,
+                  description: AppLocalizations.of(
+                    context,
+                  )!.tutorialClockingHistoryDescription,
                   child: historySection,
                 ),
               ],
@@ -255,10 +255,6 @@ class _ClockingMobileState extends State<ClockingMobile> {
       return;
     }
     setState(() => _selectedTeamId = nextSelectedTeamId);
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
   }
 
   static DateTime _normalizeDate(DateTime value) {

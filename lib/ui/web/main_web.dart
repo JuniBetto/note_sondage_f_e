@@ -444,60 +444,30 @@ class _MainWebState extends State<MainWeb> {
   }
 
   String _navDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Usa questa barra laterale per spostarti rapidamente tra le aree principali dell\'app.';
-    }
-
-    return 'Use this sidebar to move quickly between the main areas of the app.';
+    return AppLocalizations.of(context)!.tutorialNavigationSidebarDescription;
   }
 
   String _notificationsDescription(BuildContext context) {
-    if (_isItalian(context)) {
-      return 'Qui trovi notifiche, inviti e aggiornamenti importanti senza lasciare la pagina corrente.';
-    }
-
-    return 'Your latest alerts, invites, and updates appear here without leaving the current page.';
+    return AppLocalizations.of(
+      context,
+    )!.tutorialNavigationNotificationsDescription;
   }
 
   String _contentDescription(BuildContext context, int navIndex) {
-    final isItalian = _isItalian(context);
     if (navIndex == 8) {
       return AppLocalizations.of(context)!.eventNavShowcaseDescription;
     }
     return switch (navIndex) {
-      1 =>
-        isItalian
-            ? 'Qui gestisci i team, i membri e le azioni principali legate alla collaborazione.'
-            : 'Manage teams, members, and the main collaboration actions from this area.',
-      3 =>
-        isItalian
-            ? 'Questa sezione ti aiuta a registrare entrate, uscite e pause in modo rapido.'
-            : 'Use this section to track clock-ins, clock-outs, and breaks quickly.',
-      4 =>
-        isItalian
-            ? 'Qui trovi i sondaggi, puoi aprirli e seguirne facilmente lo stato.'
-            : 'Here you can review surveys, open them, and keep track of their status.',
-      5 =>
-        isItalian
-            ? 'Questa pagina raccoglie i tuoi turni e i relativi dettagli operativi.'
-            : 'This page gathers your shifts and their operational details in one place.',
-      6 =>
-        isItalian
-            ? 'Qui segui i task operativi del team, con stato, priorita e assegnazione.'
-            : 'Track the team operational tasks here with status, priority, and assignment.',
-      7 =>
-        isItalian
-            ? 'Qui puoi seguire la conversazione del team e inviare messaggi in tempo reale.'
-            : 'Follow the team conversation here and send messages in real time.',
-      _ =>
-        isItalian
-            ? 'La dashboard ti mostra il riepilogo più importante del tuo spazio di lavoro.'
-            : 'The dashboard gives you the most important overview of your workspace.',
+      1 => AppLocalizations.of(context)!.tutorialNavigationTeamsWebDescription,
+      3 => AppLocalizations.of(context)!.tutorialNavigationClockingDescription,
+      4 => AppLocalizations.of(
+        context,
+      )!.tutorialNavigationSurveysWebDescription,
+      5 => AppLocalizations.of(context)!.tutorialNavigationShiftsDescription,
+      6 => AppLocalizations.of(context)!.tutorialNavigationTasksDescription,
+      7 => AppLocalizations.of(context)!.tutorialNavigationChatDescription,
+      _ => AppLocalizations.of(context)!.tutorialNavigationHomeWebDescription,
     };
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
   }
 
   String _eventsLabel(BuildContext context) {

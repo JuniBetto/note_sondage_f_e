@@ -1089,28 +1089,20 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     );
   }
 
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
-  }
-
   String _filterTitle(BuildContext context) {
-    return _isItalian(context) ? 'Filtra i task' : 'Filter tasks';
+    return AppLocalizations.of(context)!.tutorialTaskFilterTitle;
   }
 
   String _filterDescription(BuildContext context) {
-    return _isItalian(context)
-        ? 'Filtra i task per stato oppure passa alla vista degli archiviati.'
-        : 'Filter tasks by status, or switch to the archived view.';
+    return AppLocalizations.of(context)!.tutorialTaskFilterDescription;
   }
 
   String _listTitle(BuildContext context) {
-    return _isItalian(context) ? 'Elenco task' : 'Task list';
+    return AppLocalizations.of(context)!.tutorialTaskListTitle;
   }
 
   String _listDescription(BuildContext context) {
-    return _isItalian(context)
-        ? 'Qui trovi tutti i task: tocca una card per aprire i dettagli e gestirla.'
-        : 'Here are all your tasks: tap a card to open its details and manage it.';
+    return AppLocalizations.of(context)!.tutorialTaskListDescription;
   }
 
   Widget _buildDetailPanelCard(
@@ -1351,12 +1343,12 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                       });
                     },
                     createButtonKey: _createButtonKey,
-                    createButtonTitle: _isItalian(context)
-                        ? 'Nuovo task'
-                        : 'New task',
-                    createButtonDescription: _isItalian(context)
-                        ? 'Crea rapidamente un nuovo task personale o per un team.'
-                        : 'Quickly create a new personal or team task.',
+                    createButtonTitle: AppLocalizations.of(
+                      context,
+                    )!.tutorialTaskCreateTitle,
+                    createButtonDescription: AppLocalizations.of(
+                      context,
+                    )!.tutorialTaskCreateDescription,
                   ),
                 ),
                 Padding(

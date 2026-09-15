@@ -713,9 +713,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     final confirmed = await showAppConfirmationDialog(
       context,
       title: localization.deleteAllShiftsForDayTitle,
-      message: localization.deleteAllShiftsForDayMessage(
-        dayAssignments.length,
-      ),
+      message: localization.deleteAllShiftsForDayMessage(dayAssignments.length),
       confirmLabel: localization.deleteAction,
       destructive: true,
     );
@@ -1667,12 +1665,12 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                 ],
                 Showcase(
                   key: _archiveToggleKey,
-                  title: _isItalian(context)
-                      ? 'Calendario e archivio'
-                      : 'Calendar and archive',
-                  description: _isItalian(context)
-                      ? 'Usa questo selettore per passare dal calendario attivo all\'archivio dei turni nascosti.'
-                      : 'Use this switcher to move between the active calendar and the archive of hidden shifts.',
+                  title: AppLocalizations.of(
+                    context,
+                  )!.tutorialShiftCalendarArchiveTitle,
+                  description: AppLocalizations.of(
+                    context,
+                  )!.tutorialShiftCalendarArchiveMobileDescription,
                   child: ArchiveViewToggle(
                     showArchivedOnly: _showArchivedOnly,
                     primaryCount: foregroundAssignments.length,
@@ -1689,19 +1687,19 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                   child: Showcase(
                     key: _calendarKey,
                     title: _showArchivedOnly
-                        ? (_isItalian(context)
-                              ? 'Archivio turni'
-                              : 'Shift archive')
-                        : (_isItalian(context)
-                              ? 'Calendario turni'
-                              : 'Shift calendar'),
+                        ? (AppLocalizations.of(
+                            context,
+                          )!.tutorialShiftArchiveTitle)
+                        : (AppLocalizations.of(
+                            context,
+                          )!.tutorialShiftCalendarTitle),
                     description: _showArchivedOnly
-                        ? (_isItalian(context)
-                              ? 'Qui ritrovi i turni archiviati e puoi riaprirli quando servono.'
-                              : 'This view shows archived shifts and lets you restore them when needed.')
-                        : (_isItalian(context)
-                              ? 'Tocca un giorno per creare o modificare i turni disponibili in quella data.'
-                              : 'Tap a day to create or edit the shifts available on that date.'),
+                        ? (AppLocalizations.of(
+                            context,
+                          )!.tutorialShiftArchiveMobileDescription)
+                        : (AppLocalizations.of(
+                            context,
+                          )!.tutorialShiftCalendarMobileDescription),
                     child: BlocBuilder<ShiftTextSizeCubit, ShiftTextSize>(
                       bloc: _shiftTextSizeCubit,
                       builder: (context, textSize) {

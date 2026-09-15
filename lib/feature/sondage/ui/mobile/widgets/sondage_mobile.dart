@@ -388,12 +388,12 @@ class _SondageMobileState extends State<SondageMobile>
 
                             final summaryHeader = Showcase(
                               key: _summaryKey,
-                              title: _isItalian(context)
-                                  ? 'Panoramica sondaggi'
-                                  : 'Survey overview',
-                              description: _isItalian(context)
-                                  ? 'Questa intestazione ti aiuta a capire subito cosa stai guardando e ti permette di aggiornare il feed.'
-                                  : 'This header explains the feed at a glance and lets you refresh the survey data.',
+                              title: AppLocalizations.of(
+                                context,
+                              )!.tutorialSurveyOverviewTitle,
+                              description: AppLocalizations.of(
+                                context,
+                              )!.tutorialSurveyOverviewDescription,
                               child: Row(
                                 children: [
                                   Expanded(
@@ -414,9 +414,9 @@ class _SondageMobileState extends State<SondageMobile>
                                         const SizedBox(height: 12),
                                         AppSearchField(
                                           controller: _searchController,
-                                          hintText: _isItalian(context)
-                                              ? 'Cerca sondaggio, team o opzione'
-                                              : 'Search survey, team, or option',
+                                          hintText: AppLocalizations.of(
+                                            context,
+                                          )!.tutorialSurveySearchHint,
                                           onChanged: (value) {
                                             setState(() {
                                               _searchQuery = value;
@@ -436,12 +436,12 @@ class _SondageMobileState extends State<SondageMobile>
                             );
                             final statsSection = Showcase(
                               key: _statsKey,
-                              title: _isItalian(context)
-                                  ? 'Statistiche rapide'
-                                  : 'Quick stats',
-                              description: _isItalian(context)
-                                  ? 'Qui vedi quante bozze, quanti sondaggi attivi e quanti chiusi hai nel feed.'
-                                  : 'See how many draft, active, and closed surveys you currently have in the feed.',
+                              title: AppLocalizations.of(
+                                context,
+                              )!.tutorialSurveyQuickStatsTitle,
+                              description: AppLocalizations.of(
+                                context,
+                              )!.tutorialSurveyQuickStatsDescription,
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: Wrap(
@@ -472,12 +472,12 @@ class _SondageMobileState extends State<SondageMobile>
                             );
                             final listSection = Showcase(
                               key: _listKey,
-                              title: _isItalian(context)
-                                  ? 'Lista dei sondaggi'
-                                  : 'Survey list',
-                              description: _isItalian(context)
-                                  ? 'Da questa lista puoi aprire, modificare o eliminare i sondaggi che ti competono.'
-                                  : 'Use this list to open, edit, or delete the surveys that belong to you or your teams.',
+                              title: AppLocalizations.of(
+                                context,
+                              )!.tutorialSurveyListTitle,
+                              description: AppLocalizations.of(
+                                context,
+                              )!.tutorialSurveyListMobileDescription,
                               child: SondageDisplay(
                                 sondages: filteredSondages,
                                 onViewChanged: _handleViewTypeChanged,
@@ -568,10 +568,6 @@ class _SondageMobileState extends State<SondageMobile>
         keys: <GlobalKey>[_summaryKey, _statsKey, _listKey],
       );
     });
-  }
-
-  bool _isItalian(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'it';
   }
 
   List<SondageEntity> _filterSondages(

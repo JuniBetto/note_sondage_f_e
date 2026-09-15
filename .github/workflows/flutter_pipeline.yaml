@@ -279,6 +279,7 @@ jobs:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          TUTORIAL_PLAYLIST_URL: ${{ secrets.TUTORIAL_PLAYLIST_URL }}
           APP_ENV: ${{ env.APP_ENV }}
           APP_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
           APP_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
@@ -396,6 +397,7 @@ jobs:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          TUTORIAL_PLAYLIST_URL: ${{ secrets.TUTORIAL_PLAYLIST_URL }}
           APP_ENV: ${{ env.APP_ENV }}
           APP_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
           APP_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
