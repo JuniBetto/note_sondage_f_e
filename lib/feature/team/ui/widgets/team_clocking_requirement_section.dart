@@ -201,8 +201,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
                     field: _AlarmField.reminder,
                     title: isItalian ? 'Promemoria utente' : 'User reminder',
                     subtitle: isItalian
-                        ? 'Orario in cui ricordare al membro di timbrare.'
-                        : 'Time used to remind the member to clock in.',
+                        ? 'Orario locale di ciascun membro in cui ricordare di timbrare.'
+                        : 'Reminder time in each member\'s local timezone.',
                     defaultValue: reminderTime,
                     enabled: !readOnly && clockingRequired,
                     onTapDefault: () =>
@@ -216,8 +216,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
                         ? 'Controllo timbratura mancante'
                         : 'Missing clocking check',
                     subtitle: isItalian
-                        ? 'Dopo questo orario l\'owner riceve un avviso se manca una registrazione.'
-                        : 'After this time the owner is alerted when a required entry is still missing.',
+                        ? 'Dopo questo orario locale del membro, l\'owner riceve un avviso se manca una registrazione.'
+                        : 'After this time in the member\'s timezone, the owner is alerted if an entry is missing.',
                     defaultValue: missingAlertTime,
                     enabled: !readOnly && clockingRequired,
                     onTapDefault: () => _pickTime(
@@ -234,8 +234,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
                         ? 'Controllo timbratura aperta'
                         : 'Open clocking check',
                     subtitle: isItalian
-                        ? 'Dopo questo orario l\'owner viene avvisato se una timbratura non e stata chiusa.'
-                        : 'After this time the owner is alerted when a clocking is still open.',
+                        ? 'Dopo questo orario locale del membro, l\'owner viene avvisato se una timbratura non è stata chiusa.'
+                        : 'After this time in the member\'s timezone, the owner is alerted if a clocking is still open.',
                     defaultValue: openAlertTime,
                     enabled: !readOnly && clockingRequired,
                     onTapDefault: () => _pickTime(

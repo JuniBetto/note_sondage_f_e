@@ -10,6 +10,8 @@ import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/app_lifecycle_bloc.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
+import 'package:note_sondage/feature/auth/infrastructure/timezone/user_timezone_sync.dart';
 import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
@@ -56,6 +58,7 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
+  late final UserTimezoneSync _timezoneSync;
   GoRouter? _router;
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
   StreamSubscription<RealtimeNotification>? _pushSubscription;
@@ -67,6 +70,13 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
+    _timezoneSync = UserTimezoneSync(
+      currentUserId: () {
+        final state = getIt<AuthBloc>().state;
+        return state.status == AuthStatus.authenticated ? state.user.uid : null;
+      },
+      saveTimezone: BackendAuthDataSource().syncUserTimezone,
+    );
     _realtimeSubscription = getIt<RealtimeNotificationService>().stream.listen(
       _handleRealtimeNotification,
     );
@@ -97,6 +107,7 @@ class _MainAppState extends State<MainApp> {
 
   @override
   void dispose() {
+    _timezoneSync.dispose();
     _realtimeSubscription?.cancel();
     _pushSubscription?.cancel();
     _localActionSubscription?.cancel();
@@ -116,7 +127,9 @@ class _MainAppState extends State<MainApp> {
       // every (re)connect so a missed event still surfaces within seconds
       // instead of requiring a manual reload. Runs before the duplicate
       // guard below since it must fire on every reconnect, not just once.
-      unawaited(getIt<NotificationCenterCubit>().loadNotifications(force: true));
+      unawaited(
+        getIt<NotificationCenterCubit>().loadNotifications(force: true),
+      );
     }
     if (_isDuplicateNotification(notification.notificationId)) {
       return;
@@ -125,7 +138,9 @@ class _MainAppState extends State<MainApp> {
       // Preferences are a per-account setting: when saved on another device
       // this event lets the current session refresh its local copy live,
       // instead of showing stale toggles until the page is reloaded.
-      unawaited(getIt<NotificationPreferencesCubit>().loadPreferences(force: true));
+      unawaited(
+        getIt<NotificationPreferencesCubit>().loadPreferences(force: true),
+      );
       return;
     }
 
@@ -476,6 +491,10 @@ class _MainAppState extends State<MainApp> {
     final notificationCenterCubit = getIt<NotificationCenterCubit>();
 
     if (state.status == AuthStatus.authenticated && state.user.uid.isNotEmpty) {
+      final lifecycle = WidgetsBinding.instance.lifecycleState;
+      if (lifecycle == null || lifecycle == AppLifecycleState.resumed) {
+        _timezoneSync.resume();
+      }
       realtimeService.connect(state.user.uid);
       unawaited(pushNotificationService.syncDeviceRegistration());
       unawaited(notificationPreferencesCubit.loadPreferences());
@@ -493,6 +512,7 @@ class _MainAppState extends State<MainApp> {
     }
 
     if (state.status == AuthStatus.unauthenticated) {
+      _timezoneSync.pause();
       realtimeService.disconnect();
       notificationPreferencesCubit.reset();
       notificationCenterCubit.reset();
@@ -511,6 +531,7 @@ class _MainAppState extends State<MainApp> {
     AppLifecycleBlocState state,
   ) {
     if (state.status != AppLifecycleStatusEnum.active) {
+      _timezoneSync.pause();
       return;
     }
 
@@ -520,6 +541,7 @@ class _MainAppState extends State<MainApp> {
       return;
     }
 
+    _timezoneSync.resume();
     getIt<RealtimeNotificationService>().connect(authState.user.uid);
     unawaited(getIt<PushNotificationService>().syncDeviceRegistration());
     unawaited(NotificationNavigation.drainPending(context: context));
