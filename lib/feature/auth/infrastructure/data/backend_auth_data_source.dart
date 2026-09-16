@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/core/network/token_service.dart';
 import 'package:note_sondage/feature/auth/domain/entities/user_device_entity.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
 import 'package:note_sondage/feature/notification/preferences/notification_preferences_entity.dart';
@@ -67,6 +68,22 @@ class BackendAuthDataSource {
         '${e.response?.statusCode ?? 'no status'} – ${e.message}',
       );
     }
+  }
+
+  Future<void> syncUserTimezone(String userId, String timezone) async {
+    final token = await TokenService().getTokenForUser(userId);
+    if (token == null || token.isEmpty) {
+      throw StateError(
+        'Backend session not ready for timezone synchronization',
+      );
+    }
+    // Bind this update to the requested account's JWT. The authenticated Dio
+    // interceptor could otherwise switch accounts while this request awaits.
+    await _dio.put(
+      '/api/users/me/timezone',
+      data: {'timezone': timezone},
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
   }
 
   Future<void> requestPasswordReset(String email) async {

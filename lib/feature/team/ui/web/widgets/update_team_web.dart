@@ -72,6 +72,9 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
   late final TeamBloc _teamBloc;
   final TeamMemberUseCase _teamMemberUseCase = getIt<TeamMemberUseCase>();
   List<TeamMemberEntity> _clockingOverrideMembers = const <TeamMemberEntity>[];
+  // Local-only until "Modifica" is pressed — see _handleClockingOverrideChanged.
+  final Map<String, TeamMemberClockingAlarmOverrideEntity>
+  _pendingOverrideChanges = {};
   bool _isLoading = true;
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
 
@@ -113,25 +116,53 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
     }
   }
 
+  // Only updates local state — the change is not sent to the backend until
+  // the user presses "Modifica" (see _onSave / _persistPendingOverrides),
+  // so an override picked here has no effect if the form is never saved.
   Future<void> _handleClockingOverrideChanged(
     TeamMemberEntity member,
     TeamMemberClockingAlarmOverrideEntity override,
   ) async {
+    final memberId = member.id;
+    if (memberId == null) return;
+    setState(() {
+      _clockingOverrideMembers = _clockingOverrideMembers
+          .map(
+            (item) => item.id == memberId
+                ? item.copyWith(clockingAlarmOverride: override)
+                : item,
+          )
+          .toList();
+      _pendingOverrideChanges[memberId] = override;
+    });
+  }
+
+  Future<bool> _persistPendingOverrides() async {
+    if (_pendingOverrideChanges.isEmpty) {
+      return true;
+    }
     try {
-      final updatedMember = await _teamMemberUseCase
-          .updateClockingAlarmOverride(
-            teamId: widget.teamId!,
-            memberId: member.id!,
-            override: override,
-          );
-      if (!mounted) return;
-      setState(() {
-        _clockingOverrideMembers = _clockingOverrideMembers
-            .map((item) => item.id == updatedMember.id ? updatedMember : item)
-            .toList();
-      });
+      for (final entry in _pendingOverrideChanges.entries) {
+        final updatedMember = await _teamMemberUseCase
+            .updateClockingAlarmOverride(
+              teamId: widget.teamId!,
+              memberId: entry.key,
+              override: entry.value,
+            );
+        if (!mounted) return false;
+        setState(() {
+          _clockingOverrideMembers = _clockingOverrideMembers
+              .map(
+                (item) =>
+                    item.id == updatedMember.id ? updatedMember : item,
+              )
+              .toList();
+        });
+      }
+      _pendingOverrideChanges.clear();
+      return true;
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted) return false;
       AppSnackBar.showError(
         context,
         AppErrorMessageResolver.resolve(
@@ -141,6 +172,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
               : 'We could not update the custom alarm time.',
         ),
       );
+      return false;
     }
   }
 
@@ -548,13 +580,17 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
     );
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
     if (_formKey.currentState?.validate() ?? false) {
       final clockingDateRangeError = _clockingDateRangeError();
       if (clockingDateRangeError != null) {
         AppSnackBar.showWarning(context, clockingDateRangeError);
         return;
       }
+      if (!await _persistPendingOverrides()) {
+        return;
+      }
+      if (!mounted) return;
       final listteamMember = <TeamMemberUpdateTeam>[];
       final dataToSave = listUserFormData.length > 1
           ? listUserFormData.sublist(0, listUserFormData.length - 1)
