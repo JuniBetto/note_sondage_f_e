@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_clocking_alarm_override_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/repositories/crud_service.dart';
@@ -76,6 +77,26 @@ class TeamMemberRemoteDataSource extends CrudService<TeamMemberEntity> {
       return TeamMemberMapper.fromJson(memberJson);
     } catch (e) {
       throw Exception('Failed to update planning constraints: $e');
+    }
+  }
+
+  Future<TeamMemberEntity> updateClockingAlarmOverride({
+    required String teamId,
+    required String memberId,
+    required TeamMemberClockingAlarmOverrideEntity override,
+  }) async {
+    try {
+      final response = await DioClient().dio.put(
+        '$endpoint/$teamId/members/$memberId/clocking-alarm-override',
+        data: TeamMemberMapper.clockingAlarmOverrideToJson(override),
+      );
+      final memberJson = Map<String, dynamic>.from(
+        response.data as Map<String, dynamic>,
+      );
+      memberJson['team_id'] ??= teamId;
+      return TeamMemberMapper.fromJson(memberJson);
+    } catch (e) {
+      throw Exception('Failed to update clocking alarm override: $e');
     }
   }
 

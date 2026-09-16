@@ -8,11 +8,15 @@ import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/team_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_clocking_alarm_override_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/helper/self_admin_invite_guard.dart';
 import 'package:note_sondage/feature/team/ui/helper/user_form_data.dart';
@@ -68,6 +72,8 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
 
   List<String> selectedColor = [];
   late final TeamBloc _teamBloc;
+  final TeamMemberUseCase _teamMemberUseCase = getIt<TeamMemberUseCase>();
+  List<TeamMemberEntity> _clockingOverrideMembers = const <TeamMemberEntity>[];
   bool _isLoading = false;
   String? _ownerUserId;
   bool _clockingRequired = false;
@@ -101,6 +107,54 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
       _teamBloc.add(LoadTeamByIdEvent(widget.teamId!));
       _realtimeSubscription = getIt<RealtimeNotificationService>().stream
           .listen(_handleRealtimeNotification);
+      unawaited(_loadClockingOverrideMembers());
+    }
+  }
+
+  Future<void> _loadClockingOverrideMembers() async {
+    final teamId = widget.teamId;
+    if (teamId == null || teamId.isEmpty) {
+      return;
+    }
+    try {
+      final members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
+      if (!mounted) return;
+      setState(() {
+        _clockingOverrideMembers = members;
+      });
+    } catch (_) {
+      // Best effort: the "+" simply won't have candidates to pick from.
+    }
+  }
+
+  Future<void> _handleClockingOverrideChanged(
+    TeamMemberEntity member,
+    TeamMemberClockingAlarmOverrideEntity override,
+  ) async {
+    try {
+      final updatedMember = await _teamMemberUseCase
+          .updateClockingAlarmOverride(
+            teamId: widget.teamId!,
+            memberId: member.id!,
+            override: override,
+          );
+      if (!mounted) return;
+      setState(() {
+        _clockingOverrideMembers = _clockingOverrideMembers
+            .map((item) => item.id == updatedMember.id ? updatedMember : item)
+            .toList();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackBar.showError(
+        context,
+        AppErrorMessageResolver.resolve(
+          error,
+          fallback: _isItalian(context)
+              ? 'Non siamo riusciti ad aggiornare l\'orario personalizzato.'
+              : 'We could not update the custom alarm time.',
+        ),
+      );
     }
   }
 
@@ -373,6 +427,11 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                             setState(() => _clockingOpenAlertTime = value);
                           },
                           readOnly: widget.readOnly,
+                          teamId: widget.teamId,
+                          members: _clockingOverrideMembers,
+                          onOverrideChanged: !widget.readOnly && _isEditMode
+                              ? _handleClockingOverrideChanged
+                              : null,
                         ),
                         const SizedBox(height: 24),
                       ],
