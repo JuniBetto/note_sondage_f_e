@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_clocking_alarm_override_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
@@ -132,6 +133,22 @@ class TeamMemberUseCase {
       );
     } catch (e) {
       throw Exception('Failed to update planning constraints: $e');
+    }
+  }
+
+  Future<TeamMemberEntity> updateClockingAlarmOverride({
+    required String teamId,
+    required String memberId,
+    required TeamMemberClockingAlarmOverrideEntity override,
+  }) async {
+    try {
+      return await repository.updateClockingAlarmOverride(
+        teamId: teamId,
+        memberId: memberId,
+        override: override,
+      );
+    } catch (e) {
+      throw Exception('Failed to update clocking alarm override: $e');
     }
   }
 

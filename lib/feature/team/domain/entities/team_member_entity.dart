@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:note_sondage/feature/team/domain/entities/team_member_clocking_alarm_override_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 
@@ -23,6 +24,7 @@ class TeamMemberEntity {
   final String? fileName;
   final String? initialName;
   final TeamMemberPlanningConstraintsEntity? planningConstraints;
+  final TeamMemberClockingAlarmOverrideEntity? clockingAlarmOverride;
 
   TeamMemberEntity({
     this.id,
@@ -37,6 +39,7 @@ class TeamMemberEntity {
     this.fileName,
     this.initialName,
     this.planningConstraints,
+    this.clockingAlarmOverride,
   });
 
   /// Returns true if there's an image to upload
@@ -55,6 +58,7 @@ class TeamMemberEntity {
     String? fileName,
     String? initialName,
     TeamMemberPlanningConstraintsEntity? planningConstraints,
+    TeamMemberClockingAlarmOverrideEntity? clockingAlarmOverride,
   }) {
     return TeamMemberEntity(
       id: id ?? this.id,
@@ -69,6 +73,8 @@ class TeamMemberEntity {
       fileName: fileName ?? this.fileName,
       initialName: initialName ?? this.initialName,
       planningConstraints: planningConstraints ?? this.planningConstraints,
+      clockingAlarmOverride:
+          clockingAlarmOverride ?? this.clockingAlarmOverride,
     );
   }
 }

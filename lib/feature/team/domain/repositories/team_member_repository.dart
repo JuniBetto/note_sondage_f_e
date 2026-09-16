@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:note_sondage/feature/team/domain/entities/team_invitation_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_clocking_alarm_override_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 
@@ -28,6 +29,12 @@ abstract class TeamMemberRepository {
     required String teamId,
     required String memberId,
     required TeamMemberPlanningConstraintsEntity constraints,
+  });
+
+  Future<TeamMemberEntity> updateClockingAlarmOverride({
+    required String teamId,
+    required String memberId,
+    required TeamMemberClockingAlarmOverrideEntity override,
   });
 
   Future<TeamMemberEntity> uploadProfileImage({

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:note_sondage/feature/team/domain/entities/team_member_clocking_alarm_override_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_planning_constraints_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
@@ -24,6 +25,9 @@ class TeamMemberMapper {
       initialName: (json['initialname'] ?? json['fullName'])?.toString() ?? '',
       planningConstraints: _planningConstraintsFromJson(
         json['planningConstraints'] as Map<String, dynamic>?,
+      ),
+      clockingAlarmOverride: _clockingAlarmOverrideFromJson(
+        json['clockingAlarmOverride'] as Map<String, dynamic>?,
       ),
     );
   }
@@ -132,5 +136,42 @@ class TeamMemberMapper {
       assignedMonthlyMinutes: (json['assignedMonthlyMinutes'] as num?)?.toInt(),
       notes: json['notes']?.toString(),
     );
+  }
+
+  static Map<String, dynamic> clockingAlarmOverrideToJson(
+    TeamMemberClockingAlarmOverrideEntity override,
+  ) {
+    return {
+      'reminderTime': _overrideTimeForApi(override.reminderTime),
+      'missingAlertTime': _overrideTimeForApi(override.missingAlertTime),
+      'openAlertTime': _overrideTimeForApi(override.openAlertTime),
+    };
+  }
+
+  static TeamMemberClockingAlarmOverrideEntity? _clockingAlarmOverrideFromJson(
+    Map<String, dynamic>? json,
+  ) {
+    if (json == null || json.isEmpty) {
+      return null;
+    }
+    final override = TeamMemberClockingAlarmOverrideEntity(
+      reminderTime: _normalizeOverrideTimeString(json['reminderTime']),
+      missingAlertTime: _normalizeOverrideTimeString(json['missingAlertTime']),
+      openAlertTime: _normalizeOverrideTimeString(json['openAlertTime']),
+    );
+    return override.isEmpty ? null : override;
+  }
+
+  static String? _overrideTimeForApi(String? value) {
+    final normalized = _normalizeOverrideTimeString(value);
+    return normalized == null ? null : '$normalized:00';
+  }
+
+  static String? _normalizeOverrideTimeString(dynamic raw) {
+    final value = raw?.toString().trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value.length >= 5 ? value.substring(0, 5) : value;
   }
 }
