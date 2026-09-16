@@ -239,6 +239,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
               final useManualEntryMode =
                   !selectedDateIsToday &&
                   !hasVacationOnSelectedDate &&
+                  // Never offer "insert clocking" for a day that already has
+                  // an open/unclosed entry — the user must close it (via the
+                  // normal clock-out action) instead of inserting a new one.
+                  activeRecordForSelectedDate == null &&
                   !_dismissedManualEntryDates.contains(
                     _effectiveSelectedDate,
                   ) &&
@@ -474,8 +478,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
                       child: CustomAppButton(
                         onPressed: isBusy
                             ? null
-                            : () =>
-                                  _requestUnlockForOpenRecord(activeRecord),
+                            : () => _requestUnlockForOpenRecord(activeRecord),
                         type: ButtonType.outlined,
                         isActive: true,
                         fullWidth: true,
