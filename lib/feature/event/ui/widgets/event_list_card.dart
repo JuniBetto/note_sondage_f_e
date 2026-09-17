@@ -9,12 +9,26 @@ class EventListCard extends StatelessWidget {
   const EventListCard({
     super.key,
     required this.event,
+    required this.isArchivedForMe,
+    required this.canEdit,
     required this.onEdit,
     required this.onArchiveToggle,
     required this.onDeleteArchived,
   });
 
   final EventEntity event;
+
+  /// Whether *this viewer* has personally archived the event — a purely
+  /// local preference (like team/survey/shift archiving), so it's available
+  /// to every user regardless of [canEdit].
+  final bool isArchivedForMe;
+
+  /// Whether the current user is allowed to manage this event (owner/admin
+  /// of its team, a role with Admin/Manage permission, or the creator for a
+  /// personal event). The edit and permanent-delete actions are hidden
+  /// rather than shown disabled when this is false, so nobody taps into a
+  /// form (or a destructive action) that will just fail.
+  final bool canEdit;
   final VoidCallback onEdit;
   final VoidCallback onArchiveToggle;
   final VoidCallback onDeleteArchived;
@@ -58,15 +72,23 @@ class EventListCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              _EventTypeChip(
+              EventTypeChip(
                 label: event.allDay ? loc.eventAllDayLabel : loc.eventChipLabel,
                 foreground: appPrimary,
               ),
             ],
           ),
+          if ((event.createdByDisplayName ?? '').isNotEmpty) ...[
+            const SizedBox(height: 12),
+            EventMetaRow(
+              icon: Icons.person_outline,
+              label: loc.eventCreatedByLabel,
+              value: event.createdByDisplayName!,
+            ),
+          ],
           if ((event.location ?? '').isNotEmpty) ...[
             const SizedBox(height: 12),
-            _EventMetaRow(
+            EventMetaRow(
               icon: Icons.place_outlined,
               label: loc.eventLocationLabel,
               value: event.location!,
@@ -80,14 +102,14 @@ class EventListCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          _EventMetaRow(
+          EventMetaRow(
             icon: Icons.group_outlined,
             label: loc.eventParticipantsLabel,
             value: participants,
           ),
           if ((event.workflowMetadata?.sourceType ?? '').isNotEmpty) ...[
             const SizedBox(height: 12),
-            _EventTypeChip(
+            EventTypeChip(
               label: loc.eventSourceLabel(event.workflowMetadata!.sourceType!),
               foreground: colorScheme.iconLabel ?? appPrimary,
               soft: true,
@@ -98,25 +120,29 @@ class EventListCard extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              OutlinedButton.icon(
-                onPressed: event.isArchived ? null : onEdit,
-                icon: const Icon(Icons.edit_outlined),
-                label: Text(loc.eventEditAction),
-              ),
+              if (canEdit)
+                OutlinedButton.icon(
+                  onPressed: isArchivedForMe ? null : onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: Text(loc.eventEditAction),
+                ),
+              // Archiving is a personal "hide from my view" preference, like
+              // team/survey/shift archiving — every viewer can toggle it for
+              // themselves, no management permission required.
               OutlinedButton.icon(
                 onPressed: onArchiveToggle,
                 icon: Icon(
-                  event.isArchived
+                  isArchivedForMe
                       ? Icons.unarchive_outlined
                       : Icons.archive_outlined,
                 ),
                 label: Text(
-                  event.isArchived
+                  isArchivedForMe
                       ? loc.eventRestoreAction
                       : loc.eventArchiveAction,
                 ),
               ),
-              if (event.isArchived)
+              if (canEdit && isArchivedForMe)
                 TextButton.icon(
                   onPressed: onDeleteArchived,
                   icon: const Icon(Icons.delete_outline),
@@ -129,35 +155,39 @@ class EventListCard extends StatelessWidget {
     );
   }
 
-  String _formatSchedule(BuildContext context, EventEntity event) {
-    final localizations = MaterialLocalizations.of(context);
-    final loc = AppLocalizations.of(context)!;
-    final startDate = localizations.formatFullDate(event.startsAt);
-    final startTime = localizations.formatTimeOfDay(
-      TimeOfDay.fromDateTime(event.startsAt),
-    );
-    if (event.allDay) {
-      return '$startDate • ${loc.eventScheduleAllDaySuffix}';
-    }
-
-    final endsAt = event.endsAt;
-    if (endsAt == null) {
-      return '$startDate • $startTime';
-    }
-
-    final endDate = localizations.formatFullDate(endsAt);
-    final endTime = localizations.formatTimeOfDay(
-      TimeOfDay.fromDateTime(endsAt),
-    );
-    if (startDate == endDate) {
-      return '$startDate • $startTime - $endTime';
-    }
-    return '$startDate • $startTime → $endDate • $endTime';
-  }
+  String _formatSchedule(BuildContext context, EventEntity event) =>
+      formatEventSchedule(context, event);
 }
 
-class _EventMetaRow extends StatelessWidget {
-  const _EventMetaRow({
+/// Shared by [EventListCard] and the event detail dialog so the two views
+/// never drift apart on how a schedule reads.
+String formatEventSchedule(BuildContext context, EventEntity event) {
+  final localizations = MaterialLocalizations.of(context);
+  final loc = AppLocalizations.of(context)!;
+  final startDate = localizations.formatFullDate(event.startsAt);
+  final startTime = localizations.formatTimeOfDay(
+    TimeOfDay.fromDateTime(event.startsAt),
+  );
+  if (event.allDay) {
+    return '$startDate • ${loc.eventScheduleAllDaySuffix}';
+  }
+
+  final endsAt = event.endsAt;
+  if (endsAt == null) {
+    return '$startDate • $startTime';
+  }
+
+  final endDate = localizations.formatFullDate(endsAt);
+  final endTime = localizations.formatTimeOfDay(TimeOfDay.fromDateTime(endsAt));
+  if (startDate == endDate) {
+    return '$startDate • $startTime - $endTime';
+  }
+  return '$startDate • $startTime → $endDate • $endTime';
+}
+
+class EventMetaRow extends StatelessWidget {
+  const EventMetaRow({
+    super.key,
     required this.icon,
     required this.label,
     required this.value,
@@ -196,8 +226,9 @@ class _EventMetaRow extends StatelessWidget {
   }
 }
 
-class _EventTypeChip extends StatelessWidget {
-  const _EventTypeChip({
+class EventTypeChip extends StatelessWidget {
+  const EventTypeChip({
+    super.key,
     required this.label,
     required this.foreground,
     this.soft = false,

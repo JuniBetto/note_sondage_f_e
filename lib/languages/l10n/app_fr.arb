@@ -111,6 +111,7 @@
     "roleDescription": "Description du role",
     "selectedPermission": "Selection de la Permission",
     "editTeam": "Modifier equipe",
+    "saveTeam": "Enregistrer equipe",
     "teamDetails": "Details de l'equipe",
     "language": "Langue",
     "notification": "Notification",
@@ -240,6 +241,7 @@
     "noTeamsFound": "Aucune équipe trouvée",
     "deleteTeamTitle": "Supprimer l'équipe",
     "deleteTeamMessage": "Voulez-vous vraiment supprimer cette équipe ? Cette action est irréversible.",
+    "teamDeletedSuccess": "Equipe supprimee avec succes.",
     "deleteRoleTitle": "Supprimer le rôle",
     "deleteRoleMessage": "Voulez-vous vraiment supprimer ce rôle ?",
     "defaultRole": "Rôle par défaut",
@@ -412,12 +414,22 @@
     "shiftEndMustBeAfterStart": "L'heure de fin doit être postérieure à l'heure de début. Si le quart se termine le lendemain, activez Quart de nuit.",
     "alarms": "Alarmes",
     "createCustomProfile": "Créer un profil personnalisé",
+    "shiftProfileCreatedSuccess": "Profil personnalisé créé avec succès.",
     "editShiftProfile": "Modifier le profil",
     "shiftProfileName": "Nom du profil",
     "shiftColor": "Couleur",
     "deleteShiftProfileConfirm": "Voulez-vous vraiment supprimer ce profil ?",
+    "shiftProfileDeletedSuccess": "Profil supprime avec succes.",
     "deleteShiftTitle": "Supprimer le quart",
     "deleteShiftMessage": "Voulez-vous vraiment supprimer ce quart ?",
+    "shiftAssignmentDeletedSuccess": "{count, plural, =1{Quart supprime avec succes.} other{{count} quarts supprimes avec succes.}}",
+    "@shiftAssignmentDeletedSuccess": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "publicProfile": "Public",
     "privateProfile": "Privé",
     "visibleToTeamMembers": "Visible par tous les membres de l'équipe",
@@ -1006,6 +1018,8 @@
     "eventEndNotSet": "Fin non définie",
     "eventRemoveEndAction": "Supprimer la fin",
     "eventLocationLabel": "Lieu",
+    "eventCreatedByLabel": "Créé par",
+    "eventScheduleLabel": "Quand",
     "eventParticipantsLabel": "Participants",
     "eventParticipantsEmptyTeam": "Cette équipe n'a pas encore d'autres membres à ajouter.",
     "eventTitleRequiredError": "Le titre est obligatoire.",
@@ -1017,6 +1031,8 @@
     "eventRestoreAction": "Restaurer",
     "eventArchiveAction": "Archiver",
     "eventDeleteAction": "Supprimer",
+    "deleteEventTitle": "Supprimer l'evenement",
+    "deleteEventMessage": "Voulez-vous vraiment supprimer definitivement cet evenement ? Cette action est irreversible.",
     "eventEmptyArchivedTitle": "Aucun événement archivé",
     "eventEmptyActiveTitle": "Aucun événement actif",
     "eventEmptyArchivedSubtitle": "Les événements archivés apparaîtront ici.",

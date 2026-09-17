@@ -1659,7 +1659,7 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
       if (!mounted) {
         return;
       }
-      AppSnackBar.showSuccess(
+      AppSnackBar.showSuccessOverlay(
         context,
         _localizedShiftDayText(
           context,
@@ -2157,54 +2157,58 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: preferCustomOverDuplicateSystemProfiles(
-                          widget.profiles,
-                        ).map((p) {
-                          final selected = _selectedProfile?.id == p.id;
-                          return GestureDetector(
-                            onTap: _readOnly ? null : () => _applyProfile(p),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: selected
-                                    ? p.displayColor.withValues(alpha: 0.2)
-                                    : mutedSurface,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: selected
-                                      ? p.displayColor
-                                      : borderColor,
-                                  width: selected ? 2 : 1,
+                        children:
+                            preferCustomOverDuplicateSystemProfiles(
+                              widget.profiles,
+                            ).map((p) {
+                              final selected = _selectedProfile?.id == p.id;
+                              return GestureDetector(
+                                onTap: _readOnly
+                                    ? null
+                                    : () => _applyProfile(p),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: selected
+                                        ? p.displayColor.withValues(alpha: 0.2)
+                                        : mutedSurface,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: selected
+                                          ? p.displayColor
+                                          : borderColor,
+                                      width: selected ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: p.displayColor,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        p.name,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              fontWeight: selected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w400,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: p.displayColor,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    p.name,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      fontWeight: selected
-                                          ? FontWeight.w700
-                                          : FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                              );
+                            }).toList(),
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -2525,9 +2529,10 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                                   child: _MemberSpecificProfileTile(
                                     label: member.displayLabel(context),
                                     subtitle: member.secondaryLabel(context),
-                                    profiles: preferCustomOverDuplicateSystemProfiles(
-                                      widget.profiles,
-                                    ),
+                                    profiles:
+                                        preferCustomOverDuplicateSystemProfiles(
+                                          widget.profiles,
+                                        ),
                                     selectedProfileId:
                                         _memberProfileIds[member.userId!],
                                     onProfileChanged: (profileId) =>

@@ -559,7 +559,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
             if (!rootSondageBloc.isClosed) {
               rootSondageBloc.add(RemoveCachedSondageEvent(widget.sondageId));
             }
-            AppSnackBar.showSuccess(context, localization.surveyDeleted);
+            AppSnackBar.showSuccessOverlay(context, localization.surveyDeleted);
             if (context.canPop()) {
               context.pop();
             } else {

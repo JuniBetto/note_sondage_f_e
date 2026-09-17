@@ -152,10 +152,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
         if (!mounted) return false;
         setState(() {
           _clockingOverrideMembers = _clockingOverrideMembers
-              .map(
-                (item) =>
-                    item.id == updatedMember.id ? updatedMember : item,
-              )
+              .map((item) => item.id == updatedMember.id ? updatedMember : item)
               .toList();
         });
       }
@@ -536,7 +533,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                           vertical: 4,
                         ),
                         child: Text(
-                          localization.editTeam,
+                          localization.saveTeam,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

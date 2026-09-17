@@ -542,7 +542,7 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
             if (!rootSondageBloc.isClosed) {
               rootSondageBloc.add(RemoveCachedSondageEvent(widget.sondageId));
             }
-            AppSnackBar.showSuccess(context, localization.surveyDeleted);
+            AppSnackBar.showSuccessOverlay(context, localization.surveyDeleted);
             context.go(RouterPaths.sondage);
             return;
           }

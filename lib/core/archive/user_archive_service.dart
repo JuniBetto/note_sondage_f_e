@@ -5,6 +5,7 @@ class ArchiveBuckets {
   static const String sondages = 'sondages';
   static const String clockingRecords = 'clocking_records';
   static const String shiftAssignments = 'shift_assignments';
+  static const String events = 'events';
 }
 
 class UserArchiveService {

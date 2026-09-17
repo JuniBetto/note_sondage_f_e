@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/ui/app_keys.dart';
@@ -13,12 +14,53 @@ class AppSnackBar {
 
   static ValueNotifier<Object?> get overlayListenable => _overlayNotifier;
 
+  static int _successOverlayGeneration = 0;
+  static final ValueNotifier<SuccessOverlayData?> _successOverlayNotifier =
+      ValueNotifier<SuccessOverlayData?>(null);
+
+  static ValueListenable<SuccessOverlayData?> get successOverlayListenable =>
+      _successOverlayNotifier;
+
   static void showSuccess(
     BuildContext context,
     String message, {
     String? title,
   }) {
     _show(context, message, type: AppSnackBarType.success, title: title);
+  }
+
+  /// Shows the blocking, celebratory checkmark confirmation used for
+  /// requests that previously had no success feedback at all (permessi,
+  /// ferie, malattia, sblocco turno). Auto-dismisses on its own; there is no
+  /// manual close action since it is meant to be a brief confirmation.
+  static void showSuccessOverlay(
+    BuildContext context,
+    String message, {
+    String? title,
+  }) {
+    final generation = ++_successOverlayGeneration;
+    final resolvedMessage = message.trim().isEmpty
+        ? _defaultMessage(AppSnackBarType.success)
+        : message.trim();
+    final resolvedTitle = title ?? _defaultTitle(AppSnackBarType.success);
+
+    _successOverlayNotifier.value = SuccessOverlayData(
+      key: 'app-success-overlay-$generation',
+      title: resolvedTitle,
+      message: resolvedMessage,
+    );
+
+    Future<void>.delayed(const Duration(milliseconds: 2200), () {
+      if (_successOverlayGeneration != generation) {
+        return;
+      }
+      _successOverlayNotifier.value = null;
+    });
+  }
+
+  static void dismissSuccessOverlay() {
+    _successOverlayGeneration++;
+    _successOverlayNotifier.value = null;
   }
 
   static void showWarning(
@@ -230,6 +272,20 @@ class AppSnackBar {
   }
 }
 
+/// Payload for [AppSnackBar.showSuccessOverlay], consumed by the overlay
+/// host mounted once at the app root (see `main_app.dart`).
+class SuccessOverlayData {
+  const SuccessOverlayData({
+    required this.key,
+    required this.title,
+    required this.message,
+  });
+
+  final String key;
+  final String title;
+  final String message;
+}
+
 class _OverlayBannerData {
   const _OverlayBannerData({
     required this.key,
@@ -311,7 +367,7 @@ class _AppSnackBarContent extends StatelessWidget {
 }
 
 class _SnackBarStyle {
-   _SnackBarStyle({
+  _SnackBarStyle({
     required this.icon,
     required this.backgroundColor,
     required this.borderColor,

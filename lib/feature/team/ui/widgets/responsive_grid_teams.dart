@@ -539,9 +539,8 @@ Widget viewScrollWebMobile(
                   : () => onArchiveToggle(teamId),
               onDeleteTap: isSelectionMode
                   ? null
-                  : (teamId) {
-                      teamBloc.add(DeleteTeamEvent(teamId));
-                    },
+                  : (teamId) =>
+                        _deleteTeamWithFeedback(context, teamBloc, teamId),
             )
           : TeamComponentRow(
               key: ValueKey('team_row_$teamId'),
@@ -567,9 +566,8 @@ Widget viewScrollWebMobile(
                   : () => onArchiveToggle(teamId),
               onDeleteTap: isSelectionMode
                   ? null
-                  : (teamId) {
-                      teamBloc.add(DeleteTeamEvent(teamId));
-                    },
+                  : (teamId) =>
+                        _deleteTeamWithFeedback(context, teamBloc, teamId),
             );
     }).toList(),
   );
@@ -580,4 +578,29 @@ Widget viewScrollWebMobile(
         ? SingleChildScrollView(scrollDirection: Axis.vertical, child: content)
         : content,
   );
+}
+
+/// Confirming "delete" previously just fired [DeleteTeamEvent] with no
+/// feedback at all. This waits for the bloc's eventual [TeamDeleted] (the
+/// optimistic removal is confirmed, or already-committed) or [TeamError]
+/// state so the user actually sees whether it worked.
+void _deleteTeamWithFeedback(
+  BuildContext context,
+  TeamBloc teamBloc,
+  String teamId,
+) {
+  final localization = AppLocalizations.of(context)!;
+  teamBloc.add(DeleteTeamEvent(teamId));
+  teamBloc.stream
+      .firstWhere((state) => state is TeamDeleted || state is TeamError)
+      .then((state) {
+        if (state is TeamDeleted) {
+          AppSnackBar.showSuccessOverlay(
+            context,
+            localization.teamDeletedSuccess,
+          );
+        } else if (state is TeamError) {
+          AppSnackBar.showError(context, state.message);
+        }
+      });
 }

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:note_sondage/core/archive/user_archive_service.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
@@ -16,6 +17,7 @@ import 'package:note_sondage/feature/event/domain/use_case/event_use_case.dart';
 import 'package:note_sondage/feature/event/ui/event_density_scope.dart';
 import 'package:note_sondage/feature/event/ui/event_text_size_cubit.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_calendar_view.dart';
+import 'package:note_sondage/feature/event/ui/widgets/event_detail_dialog.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_editor_dialog.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_empty_state.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_list_card.dart';
@@ -29,6 +31,8 @@ import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dar
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 enum EventViewMode { card, calendar }
 
@@ -73,13 +77,31 @@ class _EventWorkspaceState extends State<EventWorkspace> {
   final EventTextSizeCubit _eventTextSizeCubit =
       GetIt.instance<EventTextSizeCubit>();
 
+  final UserArchiveService _archiveService =
+      GetIt.instance<UserArchiveService>();
+
   /// `null` means "My Events" — the caller's own events across every team,
   /// mirroring Shift's model rather than a single always-selected team.
   String? _selectedTeamId;
+
+  /// Every event visible to the caller (server no longer distinguishes
+  /// archived here — see [_locallyArchivedEventIds]).
   List<EventEntity> _events = const <EventEntity>[];
-  List<EventEntity> _archivedEvents = const <EventEntity>[];
+
+  /// Which events *this device's user* has archived. Unlike a team-managed
+  /// edit/delete, archiving an event is purely personal — like team, survey
+  /// and shift archiving elsewhere in the app — so it never touches the
+  /// server and needs no permission: it only hides the event from your own
+  /// view, never from teammates.
+  Set<String> _locallyArchivedEventIds = const <String>{};
+  List<EventEntity> get _activeEvents => _events
+      .where((event) => !_locallyArchivedEventIds.contains(event.id))
+      .toList(growable: false);
+  List<EventEntity> get _archivedEvents => _events
+      .where((event) => _locallyArchivedEventIds.contains(event.id))
+      .toList(growable: false);
+
   bool _loading = false;
-  bool _loadingArchived = false;
   bool _showArchived = false;
   EventViewMode _viewMode = EventViewMode.card;
   DateTime _calendarWeekStart = mondayOfWeek(DateTime.now());
@@ -136,7 +158,6 @@ class _EventWorkspaceState extends State<EventWorkspace> {
         setState(() {
           _selectedTeamId = nextInitialTeamId;
           _events = const <EventEntity>[];
-          _archivedEvents = const <EventEntity>[];
           if (nextInitialEventId == null) {
             _showArchived = false;
           }
@@ -173,13 +194,11 @@ class _EventWorkspaceState extends State<EventWorkspace> {
       return;
     }
     unawaited(_refresh());
-    if (_showArchived) {
-      unawaited(_loadArchivedIfNeeded(force: true));
-    }
   }
 
   List<TeamEntity> get _teams {
-    final state = context.watch<TeamBloc>().state;
+    // Also read by tap/dialog callbacks, where subscribing is not allowed.
+    final state = context.read<TeamBloc>().state;
     if (state is! TeamsLoaded) {
       return const <TeamEntity>[];
     }
@@ -275,6 +294,24 @@ class _EventWorkspaceState extends State<EventWorkspace> {
     return permissions.contains('ADMIN') || permissions.contains('MANAGE');
   }
 
+  /// Mirrors the backend rule ("Solo owner, admin o ruoli con permessi
+  /// Admin/Manage possono gestire gli eventi del team") so the edit action
+  /// is hidden instead of failing with a 400 once the user taps it. A
+  /// personal event (no team) is editable only by whoever created it.
+  bool _canEditEvent(EventEntity event) {
+    final teamId = event.teamId?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      return event.createdByUserId.trim() == _currentUid;
+    }
+    final team = _teams
+        .where((candidate) => candidate.id?.trim() == teamId)
+        .firstOrNull;
+    if (team == null) {
+      return false;
+    }
+    return _canManageTeam(team);
+  }
+
   TeamMemberforView? _findCurrentTeamMember(String teamId) {
     final members = _teamMembersByTeamId[teamId];
     if (members == null || members.isEmpty) return null;
@@ -354,7 +391,7 @@ class _EventWorkspaceState extends State<EventWorkspace> {
       }
 
       final targetTeamId = _normalizeOptionalId(event.teamId);
-      final shouldShowArchived = event.isArchived;
+      final shouldShowArchived = _locallyArchivedEventIds.contains(event.id);
       final shouldRefresh =
           _selectedTeamId != targetTeamId ||
           _showArchived != shouldShowArchived;
@@ -363,11 +400,8 @@ class _EventWorkspaceState extends State<EventWorkspace> {
           _selectedTeamId = targetTeamId;
           _showArchived = shouldShowArchived;
           _events = const <EventEntity>[];
-          _archivedEvents = const <EventEntity>[];
         });
         await _refresh();
-      } else if (shouldShowArchived) {
-        await _loadArchivedIfNeeded(force: true);
       }
 
       if (!mounted) {
@@ -384,21 +418,19 @@ class _EventWorkspaceState extends State<EventWorkspace> {
   Future<void> _refresh() async {
     setState(() {
       _loading = true;
-      if (_showArchived) {
-        _loadingArchived = true;
-      }
     });
     try {
-      final active = await _eventUseCase.getEventsByTeam(_selectedTeamId);
-      final archived = _showArchived
-          ? await _eventUseCase.getArchivedEventsByTeam(_selectedTeamId)
-          : _archivedEvents;
+      final events = await _eventUseCase.getEventsByTeam(_selectedTeamId);
+      final archivedIds = await _archiveService.loadArchivedIds(
+        userId: _currentUid,
+        bucket: ArchiveBuckets.events,
+      );
       if (!mounted) {
         return;
       }
       setState(() {
-        _events = active;
-        _archivedEvents = archived;
+        _events = events;
+        _locallyArchivedEventIds = archivedIds;
       });
     } catch (e) {
       if (mounted) {
@@ -408,37 +440,6 @@ class _EventWorkspaceState extends State<EventWorkspace> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _loadingArchived = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadArchivedIfNeeded({bool force = false}) async {
-    if (!force && _archivedEvents.isNotEmpty) {
-      return;
-    }
-    setState(() {
-      _loadingArchived = true;
-    });
-    try {
-      final archived = await _eventUseCase.getArchivedEventsByTeam(
-        _selectedTeamId,
-      );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _archivedEvents = archived;
-      });
-    } catch (e) {
-      if (mounted) {
-        _showMessage(AppLocalizations.of(context)!.eventLoadArchivedError(e));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _loadingArchived = false;
         });
       }
     }
@@ -480,7 +481,7 @@ class _EventWorkspaceState extends State<EventWorkspace> {
             createdByDisplayName: _actorDisplayName,
           ),
         );
-        _showMessage(loc.eventCreateSuccess);
+        AppSnackBar.showSuccessOverlay(context, loc.eventCreateSuccess);
       } else {
         await _eventUseCase.updateEvent(
           event.id,
@@ -496,7 +497,7 @@ class _EventWorkspaceState extends State<EventWorkspace> {
             participantDisplayNames: result.participantDisplayNames,
           ),
         );
-        _showMessage(loc.eventUpdateSuccess);
+        AppSnackBar.showSuccessOverlay(context, loc.eventUpdateSuccess);
       }
       await _refresh();
     } catch (e) {
@@ -504,33 +505,55 @@ class _EventWorkspaceState extends State<EventWorkspace> {
     }
   }
 
+  /// Purely local and personal — like archiving a team, a survey or a shift
+  /// elsewhere in the app, this never touches the server and needs no
+  /// management permission. It only hides the event from *your* view;
+  /// teammates keep seeing it exactly as before.
   Future<void> _toggleArchive(EventEntity event) async {
     final loc = AppLocalizations.of(context)!;
-    try {
-      if (event.isArchived) {
-        await _eventUseCase.unarchiveEvent(event.id);
-        _showMessage(loc.eventRestoreSuccess);
-      } else {
-        await _eventUseCase.archiveEvent(event.id);
-        _showMessage(loc.eventArchiveSuccess);
-      }
-      await _refresh();
-      if (_showArchived) {
-        await _loadArchivedIfNeeded(force: true);
-      }
-    } catch (e) {
-      _showMessage(loc.eventOperationFailedError(e));
-    }
+    final wasArchivedForMe = _locallyArchivedEventIds.contains(event.id);
+    await _archiveService.setArchived(
+      userId: _currentUid,
+      bucket: ArchiveBuckets.events,
+      itemId: event.id,
+      archived: !wasArchivedForMe,
+    );
+    if (!mounted) return;
+    setState(() {
+      _locallyArchivedEventIds = wasArchivedForMe
+          ? ({..._locallyArchivedEventIds}..remove(event.id))
+          : {..._locallyArchivedEventIds, event.id};
+    });
+    AppSnackBar.showSuccessOverlay(
+      context,
+      wasArchivedForMe ? loc.eventRestoreSuccess : loc.eventArchiveSuccess,
+    );
   }
 
   Future<void> _deleteArchived(EventEntity event) async {
     final loc = AppLocalizations.of(context)!;
+    // This is a permanent, unrecoverable delete — unlike every other delete
+    // flow in the app (team/sondage/task/shift) it had no confirmation step
+    // at all before this.
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: loc.deleteEventTitle,
+      message: loc.deleteEventMessage,
+      confirmLabel: loc.eventDeleteAction,
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
     try {
       await _eventUseCase.deleteEventPermanently(event.id);
-      _showMessage(loc.eventDeletePermanentlySuccess);
+      if (!mounted) return;
+      AppSnackBar.showSuccessOverlay(
+        context,
+        loc.eventDeletePermanentlySuccess,
+      );
       await _refresh();
-      await _loadArchivedIfNeeded(force: true);
     } catch (e) {
+      if (!mounted) return;
       _showMessage(loc.eventDeleteError(e));
     }
   }
@@ -621,12 +644,14 @@ class _EventWorkspaceState extends State<EventWorkspace> {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe during build so team/permission changes still refresh the UI.
+    context.watch<TeamBloc>();
     final loc = AppLocalizations.of(context)!;
     final teams = _teams;
     _ensureTeamAccessContextLoaded(teams);
     final manageableTeams = _manageableTeams;
 
-    final selectedItems = _showArchived ? _archivedEvents : _events;
+    final selectedItems = _showArchived ? _archivedEvents : _activeEvents;
     final emptyStateTitle = _selectedTeamId == null
         ? loc.eventMyEventsEmptyTitle
         : (_showArchived
@@ -643,7 +668,7 @@ class _EventWorkspaceState extends State<EventWorkspace> {
       teams: manageableTeams,
       selectedTeamId: _selectedTeamId,
       showArchived: _showArchived,
-      activeCount: _events.length,
+      activeCount: _activeEvents.length,
       archivedCount: _archivedEvents.length,
       viewMode: _viewMode,
       onViewModeChanged: (value) => setState(() => _viewMode = value),
@@ -652,17 +677,13 @@ class _EventWorkspaceState extends State<EventWorkspace> {
         setState(() {
           _selectedTeamId = value;
           _events = const <EventEntity>[];
-          _archivedEvents = const <EventEntity>[];
         });
         await _refresh();
       },
-      onArchivedToggle: (selected) async {
+      onArchivedToggle: (selected) {
         setState(() {
           _showArchived = selected;
         });
-        if (selected) {
-          await _loadArchivedIfNeeded();
-        }
       },
       createButtonKey: _createButtonKey,
       createButtonTitle: AppLocalizations.of(context)!.tutorialEventCreateTitle,
@@ -674,9 +695,7 @@ class _EventWorkspaceState extends State<EventWorkspace> {
       filterDescription: _filterDescription(context),
     );
 
-    final loadingIndicator =
-        (_loading || (_showArchived && _loadingArchived)) &&
-            selectedItems.isEmpty
+    final loadingIndicator = _loading && selectedItems.isEmpty
         ? const Center(
             child: Padding(
               padding: EdgeInsets.all(24),
@@ -705,7 +724,12 @@ class _EventWorkspaceState extends State<EventWorkspace> {
               weekStart: _calendarWeekStart,
               onWeekStartChanged: (value) =>
                   setState(() => _calendarWeekStart = value),
-              onEventTap: (event) => _openEditor(event: event),
+              onEventTap: (event) => showEventDetailDialog(
+                context,
+                event: event,
+                canEdit: _canEditEvent(event),
+                onEdit: () => _openEditor(event: event),
+              ),
               emptyStateTitle: emptyStateTitle,
               emptyStateSubtitle: emptyStateSubtitle,
             ),
@@ -741,6 +765,10 @@ class _EventWorkspaceState extends State<EventWorkspace> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: EventListCard(
                           event: event,
+                          isArchivedForMe: _locallyArchivedEventIds.contains(
+                            event.id,
+                          ),
+                          canEdit: _canEditEvent(event),
                           onEdit: () => _openEditor(event: event),
                           onArchiveToggle: () => _toggleArchive(event),
                           onDeleteArchived: () => _deleteArchived(event),

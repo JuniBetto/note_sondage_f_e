@@ -381,6 +381,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editTeam => 'Edit team';
 
   @override
+  String get saveTeam => 'Save team';
+
+  @override
   String get teamDetails => 'Team details';
 
   @override
@@ -798,6 +801,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteTeamMessage =>
       'Are you sure you want to delete this team? This action cannot be undone.';
+
+  @override
+  String get teamDeletedSuccess => 'Team deleted successfully.';
 
   @override
   String get deleteRoleTitle => 'Delete role';
@@ -1279,6 +1285,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createCustomProfile => 'Create Custom Profile';
 
   @override
+  String get shiftProfileCreatedSuccess =>
+      'Custom profile created successfully.';
+
+  @override
   String get editShiftProfile => 'Edit Profile';
 
   @override
@@ -1292,11 +1302,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to delete this profile?';
 
   @override
+  String get shiftProfileDeletedSuccess => 'Profile deleted successfully.';
+
+  @override
   String get deleteShiftTitle => 'Delete shift';
 
   @override
   String get deleteShiftMessage =>
       'Are you sure you want to delete this shift?';
+
+  @override
+  String shiftAssignmentDeletedSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count shifts deleted successfully.',
+      one: 'Shift deleted successfully.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get publicProfile => 'Public';
@@ -2501,6 +2525,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventLocationLabel => 'Location';
 
   @override
+  String get eventCreatedByLabel => 'Created by';
+
+  @override
+  String get eventScheduleLabel => 'When';
+
+  @override
   String get eventParticipantsLabel => 'Participants';
 
   @override
@@ -2535,6 +2565,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventDeleteAction => 'Delete';
+
+  @override
+  String get deleteEventTitle => 'Delete event';
+
+  @override
+  String get deleteEventMessage =>
+      'Are you sure you want to permanently delete this event? This action cannot be undone.';
 
   @override
   String get eventEmptyArchivedTitle => 'No archived events';

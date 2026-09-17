@@ -35,12 +35,21 @@ class ChatMessageBubble extends StatelessWidget {
     final bubbleAlignment = message.mine
         ? CrossAxisAlignment.end
         : CrossAxisAlignment.start;
+    // Incoming bubbles are a light tint of the team's accent color, with
+    // white text drawn on top unconditionally. At the old 0.14 alpha that
+    // tint sits almost flush with a white/light background, so the white
+    // text was nearly unreadable in light mode (fine in dark mode, where the
+    // same tint composites against a dark canvas instead — left untouched).
     final bubbleColor = message.mine
         ? accentColor.withValues(alpha: 0.96)
-        : accentColor.withValues(alpha: 0.14);
-    final textColor = Colors.white; /*message.mine
+        : accentColor.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.14 : 0.38,
+          );
+    final textColor = Colors.white;/* message.mine
         ? Colors.white
-        : Colors.white.withAlpha(90);*/
+        : Colors.white.withValues(blue: theme.brightness == Brightness.dark ? null: 100,
+      red: theme.brightness == Brightness.dark ? null: 100,
+      green: theme.brightness == Brightness.dark ? null: 100);*/
     final metaColor = theme.colorScheme.calendarTextBg;
     final maxBubbleWidth = MediaQuery.sizeOf(context).width * 0.68;
     final nameUser = message.senderName.split('@')[0];

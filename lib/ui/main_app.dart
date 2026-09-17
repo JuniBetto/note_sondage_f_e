@@ -40,6 +40,7 @@ import 'package:note_sondage/ui/app_keys.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/setting_Navigation_bloc/setting_navigation_bloc.dart';
 import 'package:note_sondage/ui/web/widgets/web_mobile_download_gate.dart';
+import 'package:note_sondage/ui/widgets/animated_checkmark.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_bloc.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_state.dart';
@@ -696,6 +697,7 @@ class _MainAppState extends State<MainApp> {
                       children: [
                         Positioned.fill(child: appContent),
                         const _AppSnackBarOverlayHost(),
+                        const Positioned.fill(child: _SuccessOverlayHost()),
                       ],
                     );
                   },
@@ -840,6 +842,121 @@ class _AppSnackBarContentHost extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Renders [AppSnackBar.showSuccessOverlay]'s blocking checkmark
+/// confirmation. Mounted once at the app root so any screen can trigger it
+/// through the static API without needing its own [Overlay].
+class _SuccessOverlayHost extends StatefulWidget {
+  const _SuccessOverlayHost();
+
+  @override
+  State<_SuccessOverlayHost> createState() => _SuccessOverlayHostState();
+}
+
+class _SuccessOverlayHostState extends State<_SuccessOverlayHost> {
+  SuccessOverlayData? _lastData;
+
+  @override
+  void initState() {
+    super.initState();
+    AppSnackBar.successOverlayListenable.addListener(_onDataChanged);
+  }
+
+  @override
+  void dispose() {
+    AppSnackBar.successOverlayListenable.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() {
+    final data = AppSnackBar.successOverlayListenable.value;
+    // Only update the cache on a new banner; keep the last one on screen
+    // while it fades out instead of popping the content away instantly.
+    if (data != null) {
+      setState(() => _lastData = data);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<SuccessOverlayData?>(
+      valueListenable: AppSnackBar.successOverlayListenable,
+      builder: (context, data, _) {
+        final visible = data != null;
+        final display = data ?? _lastData;
+        return IgnorePointer(
+          ignoring: !visible,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 220),
+            opacity: visible ? 1 : 0,
+            child: ColoredBox(
+              color: const Color(0x59000000),
+              child: Center(
+                child: display == null
+                    ? const SizedBox.shrink()
+                    : _SuccessOverlayCard(
+                        key: ValueKey<String>(display.key),
+                        title: display.title,
+                        message: display.message,
+                      ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SuccessOverlayCard extends StatelessWidget {
+  const _SuccessOverlayCard({
+    super.key,
+    required this.title,
+    required this.message,
+  });
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 300),
+      child: Material(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        elevation: 12,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const AnimatedCheckmark(size: 72),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -658,7 +658,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     if (!mounted || createdTask == null) {
       return;
     }
-    AppSnackBar.showSuccess(context, l10n.taskCreateSuccess);
+    AppSnackBar.showSuccessOverlay(context, l10n.taskCreateSuccess);
     if (createdTask.teamId == _selectedTeamId) {
       await _loadTasksForSelectedTeam();
     }
@@ -702,7 +702,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     if (!mounted || updated == null) {
       return;
     }
-    AppSnackBar.showSuccess(context, l10n.taskUpdateSuccess);
+    AppSnackBar.showSuccessOverlay(context, l10n.taskUpdateSuccess);
     await _loadTasksForSelectedTeam();
   }
 
@@ -985,7 +985,10 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
           _selectedTaskId = null;
         }
       });
-      AppSnackBar.showSuccess(context, l10n.taskDeletePermanentlySuccess);
+      AppSnackBar.showSuccessOverlay(
+        context,
+        l10n.taskDeletePermanentlySuccess,
+      );
     } catch (_) {
       if (!mounted) {
         return;
@@ -1234,8 +1237,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                           onTaskTap: (task) => isSplitView
                               ? _selectTask(task)
                               : _openTaskDetail(task),
-                          assigneeAvatarUrlByUserId:
-                              _assigneeAvatarUrlByUserId,
+                          assigneeAvatarUrlByUserId: _assigneeAvatarUrlByUserId,
                         ),
                       ),
                     )

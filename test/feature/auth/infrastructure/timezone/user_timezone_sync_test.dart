@@ -26,6 +26,7 @@ void main() {
     sync.resume();
     await tester.pump();
     expect(saved.length, 2);
+    sync.dispose();
   });
 
   testWidgets('detects travel while open and retries failed updates', (
@@ -52,6 +53,7 @@ void main() {
     fail = false;
     await tester.pump(const Duration(minutes: 1));
     expect(saved, ['Europe/Rome', 'America/New_York']);
+    sync.dispose();
   });
 
   testWidgets('does not send a stale timezone after account switch', (
@@ -77,6 +79,7 @@ void main() {
     detected.complete('Europe/Rome');
     await tester.pump();
     expect(saved, ['second:America/Mexico_City']);
+    sync.dispose();
   });
 
   testWidgets('timezone detection failure never invents a UTC fallback', (
@@ -99,6 +102,7 @@ void main() {
     fail = false;
     await tester.pump(const Duration(minutes: 1));
     expect(saved, ['Asia/Kathmandu']);
+    sync.dispose();
   });
 
   testWidgets('does not sync without a signed-in user', (tester) async {
@@ -115,5 +119,6 @@ void main() {
     sync.resume();
     await tester.pump(const Duration(minutes: 1));
     expect(reads, 0);
+    sync.dispose();
   });
 }
