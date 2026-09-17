@@ -33,6 +33,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.d
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 enum EventViewMode { card, calendar }
 
@@ -481,6 +482,7 @@ class _EventWorkspaceState extends State<EventWorkspace> {
             createdByDisplayName: _actorDisplayName,
           ),
         );
+        if (!mounted) return;
         AppSnackBar.showSuccessOverlay(context, loc.eventCreateSuccess);
       } else {
         await _eventUseCase.updateEvent(
@@ -497,10 +499,12 @@ class _EventWorkspaceState extends State<EventWorkspace> {
             participantDisplayNames: result.participantDisplayNames,
           ),
         );
+        if (!mounted) return;
         AppSnackBar.showSuccessOverlay(context, loc.eventUpdateSuccess);
       }
       await _refresh();
     } catch (e) {
+      if (!mounted) return;
       _showMessage(loc.eventSaveError(e));
     }
   }
@@ -776,20 +780,22 @@ class _EventWorkspaceState extends State<EventWorkspace> {
                       ),
                   ],
                 ));
-      content = RefreshIndicator(
-        onRefresh: _refresh,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            header,
-            const SizedBox(height: 16),
-            _buildShowcase(
-              showcaseKey: _listKey,
-              title: _listTitle(context),
-              description: _listDescription(context),
-              child: itemsSection,
-            ),
-          ],
+      content = ScrollOverflowHint(
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              header,
+              const SizedBox(height: 16),
+              _buildShowcase(
+                showcaseKey: _listKey,
+                title: _listTitle(context),
+                description: _listDescription(context),
+                child: itemsSection,
+              ),
+            ],
+          ),
         ),
       );
     }

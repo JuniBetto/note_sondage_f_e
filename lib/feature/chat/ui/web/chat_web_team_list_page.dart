@@ -24,6 +24,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 class ChatWebTeamListPage extends StatefulWidget {
   const ChatWebTeamListPage({super.key});
@@ -319,104 +320,108 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
                 builder: (context, constraints) {
                   final cardWidth = constraints.maxWidth < 1120 ? 320.0 : 360.0;
 
-                  return SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildShowcase(
-                          showcaseKey: _teamChannelsKey,
-                          title: _teamChannelsTitle(context),
-                          description: _teamChannelsDescription(context),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                loc.chatTeamChannels,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Wrap(
-                                spacing: 16,
-                                runSpacing: 16,
-                                children: [
-                                  for (final team in _teams)
-                                    if (team.id != null)
-                                      SizedBox(
-                                        width: cardWidth,
-                                        child: ChatTeamListCard(
-                                          team: team,
-                                          compact: false,
-                                          summary: _summaryByTeamId[team.id!],
-                                          memberCountOverride: team.memberCount,
-                                          onTap: () =>
-                                              _openTeamConversation(team.id!),
-                                        ),
-                                      ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        _buildShowcase(
-                          showcaseKey: _directChatsKey,
-                          title: _directChatsTitle(context),
-                          description: _directChatsDescription(context),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                loc.chatDirectChats,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              if (_directEntries.isEmpty)
+                  return ScrollOverflowHint(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildShowcase(
+                            showcaseKey: _teamChannelsKey,
+                            title: _teamChannelsTitle(context),
+                            description: _teamChannelsDescription(context),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  loc.chatNoDirectContacts,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
+                                  loc.chatTeamChannels,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
                                   ),
-                                )
-                              else
+                                ),
+                                const SizedBox(height: 16),
                                 Wrap(
                                   spacing: 16,
                                   runSpacing: 16,
                                   children: [
-                                    for (final entry in _directEntries)
-                                      SizedBox(
-                                        width: cardWidth,
-                                        child: ChatDirectListCard(
-                                          compact: false,
-                                          title: entry.displayName,
-                                          teamName: entry.team.name,
-                                          preview:
-                                              entry.summary?.lastMessagePreview,
-                                          avatarUrl:
-                                              entry
-                                                  .summary
-                                                  ?.participantAvatarUrl ??
-                                              entry.member.imageUrl,
-                                          unreadCount:
-                                              entry.summary?.unreadCount ?? 0,
-                                          accentColor:
-                                              ChatThemeTokens.resolveTeamAccentColor(
-                                                entry.team.color,
-                                                theme.colorScheme.primary,
-                                              ),
-                                          onTap: () =>
-                                              _openDirectConversation(entry),
+                                    for (final team in _teams)
+                                      if (team.id != null)
+                                        SizedBox(
+                                          width: cardWidth,
+                                          child: ChatTeamListCard(
+                                            team: team,
+                                            compact: false,
+                                            summary: _summaryByTeamId[team.id!],
+                                            memberCountOverride:
+                                                team.memberCount,
+                                            onTap: () =>
+                                                _openTeamConversation(team.id!),
+                                          ),
                                         ),
-                                      ),
                                   ],
                                 ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 28),
+                          _buildShowcase(
+                            showcaseKey: _directChatsKey,
+                            title: _directChatsTitle(context),
+                            description: _directChatsDescription(context),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  loc.chatDirectChats,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                if (_directEntries.isEmpty)
+                                  Text(
+                                    loc.chatNoDirectContacts,
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  )
+                                else
+                                  Wrap(
+                                    spacing: 16,
+                                    runSpacing: 16,
+                                    children: [
+                                      for (final entry in _directEntries)
+                                        SizedBox(
+                                          width: cardWidth,
+                                          child: ChatDirectListCard(
+                                            compact: false,
+                                            title: entry.displayName,
+                                            teamName: entry.team.name,
+                                            preview: entry
+                                                .summary
+                                                ?.lastMessagePreview,
+                                            avatarUrl:
+                                                entry
+                                                    .summary
+                                                    ?.participantAvatarUrl ??
+                                                entry.member.imageUrl,
+                                            unreadCount:
+                                                entry.summary?.unreadCount ?? 0,
+                                            accentColor:
+                                                ChatThemeTokens.resolveTeamAccentColor(
+                                                  entry.team.color,
+                                                  theme.colorScheme.primary,
+                                                ),
+                                            onTap: () =>
+                                                _openDirectConversation(entry),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

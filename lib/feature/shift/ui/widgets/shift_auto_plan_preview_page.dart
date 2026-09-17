@@ -18,6 +18,7 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/theme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 String _localizedPreviewPageText(
   BuildContext context, {
@@ -96,8 +97,7 @@ class ShiftAutoPlanPreviewPage extends StatefulWidget {
       compact: compact,
     );
 
-    final useCompactLayout =
-        compact || MediaQuery.of(context).size.width < 720;
+    final useCompactLayout = compact || MediaQuery.of(context).size.width < 720;
 
     if (!useCompactLayout) {
       return showDialog<ShiftAutoPlanPreviewConfirmationResult>(
@@ -368,7 +368,9 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
     final colorScheme = theme.colorScheme;
     final mediaSize = MediaQuery.of(context).size;
     final dialogBackground =
-        colorScheme.dialogBackgroundColor ?? colorScheme.bgSurface ?? theme.scaffoldBackgroundColor;
+        colorScheme.dialogBackgroundColor ??
+        colorScheme.bgSurface ??
+        theme.scaffoldBackgroundColor;
     final titleColor = colorScheme.textColor ?? colorScheme.onSurface;
     final wideLayout = !_compact;
 
@@ -431,146 +433,149 @@ class _ShiftAutoPlanPreviewPageState extends State<ShiftAutoPlanPreviewPage> {
                   color: theme.dividerColor.withValues(alpha: 0.16),
                 ),
                 Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(
-                      _compact ? 12 : 24,
-                      0,
-                      _compact ? 12 : 24,
-                      12,
-                    ),
-                    children: [
-                      ShiftAutoPlanPreviewHeaderCard(
-                        compact: _compact,
-                        fullyFeasible: _currentPreview.fullyFeasible,
-                        statusLabel: _currentPreview.fullyFeasible
-                            ? _loc.shiftAutoPlanPreviewStatusFeasible
-                            : _loc.shiftAutoPlanPreviewStatusNeedsReview,
-                        dateRangeLabel: _formatDateRange(
-                          widget.request.from,
-                          widget.request.to,
-                        ),
-                        description: _hasPendingManualChanges
-                            ? _localizedPreviewPageText(
-                                context,
-                                it: 'Hai modifiche manuali in bozza. Ricalcola la preview per verificare il nuovo snapshot prima della conferma.',
-                                en: 'You have pending manual edits. Recalculate the preview to validate the new snapshot before confirming.',
-                                fr: 'Des modifications manuelles sont en attente. Recalculez l\'aperçu avant de confirmer.',
-                                es: 'Hay cambios manuales pendientes. Recalcula la vista previa antes de confirmar.',
-                              )
-                            : (_currentPreview.fullyFeasible
-                                  ? _loc.shiftAutoPlanPreviewReadyDescription
-                                  : _loc.shiftAutoPlanPreviewNeedsReviewDescription),
+                  child: ScrollOverflowHint(
+                    child: ListView(
+                      padding: EdgeInsets.fromLTRB(
+                        _compact ? 12 : 24,
+                        0,
+                        _compact ? 12 : 24,
+                        12,
                       ),
-                      if (_hasPendingManualChanges) ...[
-                        const SizedBox(height: 12),
-                        _PendingChangesCard(
+                      children: [
+                        ShiftAutoPlanPreviewHeaderCard(
                           compact: _compact,
-                          title: _localizedPreviewPageText(
-                            context,
-                            it: 'Modifiche manuali in attesa',
-                            en: 'Pending manual changes',
-                            fr: 'Modifications en attente',
-                            es: 'Cambios manuales pendientes',
+                          fullyFeasible: _currentPreview.fullyFeasible,
+                          statusLabel: _currentPreview.fullyFeasible
+                              ? _loc.shiftAutoPlanPreviewStatusFeasible
+                              : _loc.shiftAutoPlanPreviewStatusNeedsReview,
+                          dateRangeLabel: _formatDateRange(
+                            widget.request.from,
+                            widget.request.to,
                           ),
-                          description: _localizedPreviewPageText(
-                            context,
-                            it: 'Le modifiche locali non sono ancora state validate. Usa "Ricalcola" per generare un nuovo snapshot coerente.',
-                            en: 'Local edits have not been validated yet. Use "Recalculate" to generate a new consistent snapshot.',
-                            fr: 'Les modifications locales ne sont pas encore validees. Utilisez "Recalculer".',
-                            es: 'Los cambios locales aun no han sido validados. Usa "Recalcular".',
-                          ),
+                          description: _hasPendingManualChanges
+                              ? _localizedPreviewPageText(
+                                  context,
+                                  it: 'Hai modifiche manuali in bozza. Ricalcola la preview per verificare il nuovo snapshot prima della conferma.',
+                                  en: 'You have pending manual edits. Recalculate the preview to validate the new snapshot before confirming.',
+                                  fr: 'Des modifications manuelles sont en attente. Recalculez l\'aperçu avant de confirmer.',
+                                  es: 'Hay cambios manuales pendientes. Recalcula la vista previa antes de confirmar.',
+                                )
+                              : (_currentPreview.fullyFeasible
+                                    ? _loc.shiftAutoPlanPreviewReadyDescription
+                                    : _loc.shiftAutoPlanPreviewNeedsReviewDescription),
                         ),
-                      ],
-                      const SizedBox(height: 12),
-                      ShiftAutoPlanPreviewSummaryCard(
-                        compact: _compact,
-                        title: _loc.shiftAutoPlanPreviewSummaryTitle,
-                        metrics: [
-                          ShiftAutoPlanPreviewSummaryMetric(
-                            label: _loc.shiftAutoPlanPreviewNewShifts,
-                            value: _visibleCreatedAssignmentsCount,
-                          ),
-                          ShiftAutoPlanPreviewSummaryMetric(
-                            label: _loc.shiftAutoPlanPreviewPreserved,
-                            value: _visiblePreservedAssignmentsCount,
-                          ),
-                          ShiftAutoPlanPreviewSummaryMetric(
-                            label: _loc.shiftAutoPlanPreviewToRemove,
-                            value: _visibleDeletedAssignmentsCount,
-                          ),
-                          ShiftAutoPlanPreviewSummaryMetric(
-                            label: _loc.shiftAutoPlanPreviewUncoveredSlots,
-                            value: _currentPreview.uncoveredSlotsCount,
-                            emphasize: _currentPreview.uncoveredSlotsCount > 0,
+                        if (_hasPendingManualChanges) ...[
+                          const SizedBox(height: 12),
+                          _PendingChangesCard(
+                            compact: _compact,
+                            title: _localizedPreviewPageText(
+                              context,
+                              it: 'Modifiche manuali in attesa',
+                              en: 'Pending manual changes',
+                              fr: 'Modifications en attente',
+                              es: 'Cambios manuales pendientes',
+                            ),
+                            description: _localizedPreviewPageText(
+                              context,
+                              it: 'Le modifiche locali non sono ancora state validate. Usa "Ricalcola" per generare un nuovo snapshot coerente.',
+                              en: 'Local edits have not been validated yet. Use "Recalculate" to generate a new consistent snapshot.',
+                              fr: 'Les modifications locales ne sont pas encore validees. Utilisez "Recalculer".',
+                              es: 'Los cambios locales aun no han sido validados. Usa "Recalcular".',
+                            ),
                           ),
                         ],
-                      ),
-                      if (_blockingIssues.isNotEmpty) ...[
                         const SizedBox(height: 12),
-                        ShiftAutoPlanPreviewWarningsCard(
+                        ShiftAutoPlanPreviewSummaryCard(
                           compact: _compact,
-                          title: _localizedPreviewPageText(
-                            context,
-                            it: 'Problemi bloccanti',
-                            en: 'Blocking issues',
-                            fr: 'Problemes bloquants',
-                            es: 'Problemas bloqueantes',
+                          title: _loc.shiftAutoPlanPreviewSummaryTitle,
+                          metrics: [
+                            ShiftAutoPlanPreviewSummaryMetric(
+                              label: _loc.shiftAutoPlanPreviewNewShifts,
+                              value: _visibleCreatedAssignmentsCount,
+                            ),
+                            ShiftAutoPlanPreviewSummaryMetric(
+                              label: _loc.shiftAutoPlanPreviewPreserved,
+                              value: _visiblePreservedAssignmentsCount,
+                            ),
+                            ShiftAutoPlanPreviewSummaryMetric(
+                              label: _loc.shiftAutoPlanPreviewToRemove,
+                              value: _visibleDeletedAssignmentsCount,
+                            ),
+                            ShiftAutoPlanPreviewSummaryMetric(
+                              label: _loc.shiftAutoPlanPreviewUncoveredSlots,
+                              value: _currentPreview.uncoveredSlotsCount,
+                              emphasize:
+                                  _currentPreview.uncoveredSlotsCount > 0,
+                            ),
+                          ],
+                        ),
+                        if (_blockingIssues.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          ShiftAutoPlanPreviewWarningsCard(
+                            compact: _compact,
+                            title: _localizedPreviewPageText(
+                              context,
+                              it: 'Problemi bloccanti',
+                              en: 'Blocking issues',
+                              fr: 'Problemes bloquants',
+                              es: 'Problemas bloqueantes',
+                            ),
+                            warnings: _blockingIssues
+                                .map((issue) => _formatMessage(issue.message))
+                                .toList(growable: false),
                           ),
-                          warnings: _blockingIssues
-                              .map((issue) => _formatMessage(issue.message))
-                              .toList(growable: false),
+                        ],
+                        if (_warningIssues.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          ShiftAutoPlanPreviewWarningsCard(
+                            compact: _compact,
+                            title: _localizedPreviewPageText(
+                              context,
+                              it: 'Discrepanze e warning',
+                              en: 'Warnings and discrepancies',
+                              fr: 'Avertissements et ecarts',
+                              es: 'Advertencias y discrepancias',
+                            ),
+                            warnings: _warningIssues
+                                .map((issue) => _formatMessage(issue.message))
+                                .toList(growable: false),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        ShiftAutoPlanPreviewLegendCard(
+                          compact: _compact,
+                          title: _loc.shiftAutoPlanPreviewCalendarTitle,
+                          description:
+                              _loc.shiftAutoPlanPreviewCalendarDescription,
+                          createLabel: _actionLabel(
+                            ShiftAutoPlanPreviewAction.create,
+                          ),
+                          preserveLabel: _actionLabel(
+                            ShiftAutoPlanPreviewAction.preserve,
+                          ),
+                          deleteLabel: _actionLabel(
+                            ShiftAutoPlanPreviewAction.delete,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ShiftAutoPlanPreviewCalendarCard(
+                          compact: _compact,
+                          assignments: _calendarAssignments,
+                          focusedMonth: _focusedMonth,
+                          onMonthChanged: (value) {
+                            setState(() {
+                              _focusedMonth = DateTime(
+                                value.year,
+                                value.month,
+                                1,
+                              );
+                            });
+                          },
+                          onDayTap: _openDayPreview,
+                          emptyMessage: _loc.shiftAutoPlanPreviewEmpty,
                         ),
                       ],
-                      if (_warningIssues.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        ShiftAutoPlanPreviewWarningsCard(
-                          compact: _compact,
-                          title: _localizedPreviewPageText(
-                            context,
-                            it: 'Discrepanze e warning',
-                            en: 'Warnings and discrepancies',
-                            fr: 'Avertissements et ecarts',
-                            es: 'Advertencias y discrepancias',
-                          ),
-                          warnings: _warningIssues
-                              .map((issue) => _formatMessage(issue.message))
-                              .toList(growable: false),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      ShiftAutoPlanPreviewLegendCard(
-                        compact: _compact,
-                        title: _loc.shiftAutoPlanPreviewCalendarTitle,
-                        description:
-                            _loc.shiftAutoPlanPreviewCalendarDescription,
-                        createLabel: _actionLabel(
-                          ShiftAutoPlanPreviewAction.create,
-                        ),
-                        preserveLabel: _actionLabel(
-                          ShiftAutoPlanPreviewAction.preserve,
-                        ),
-                        deleteLabel: _actionLabel(
-                          ShiftAutoPlanPreviewAction.delete,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ShiftAutoPlanPreviewCalendarCard(
-                        compact: _compact,
-                        assignments: _calendarAssignments,
-                        focusedMonth: _focusedMonth,
-                        onMonthChanged: (value) {
-                          setState(() {
-                            _focusedMonth = DateTime(
-                              value.year,
-                              value.month,
-                              1,
-                            );
-                          });
-                        },
-                        onDayTap: _openDayPreview,
-                        emptyMessage: _loc.shiftAutoPlanPreviewEmpty,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
                 ShiftAutoPlanPreviewFooter(

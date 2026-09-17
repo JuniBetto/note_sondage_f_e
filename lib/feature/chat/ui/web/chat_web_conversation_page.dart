@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
-import 'package:note_sondage/feature/chat/ui/widgets/chat_back_button.dart';
+import 'package:note_sondage/ui/widgets/app_back_button.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/team_chat_screen.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
@@ -121,7 +121,7 @@ class _ChatWebConversationPageState extends State<ChatWebConversationPage> {
                 description: _headerDescription(context),
                 child: Row(
                   children: [
-                    ChatBackButton(onPressed: _handleBack),
+                    AppBackButton(onPressed: _handleBack),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

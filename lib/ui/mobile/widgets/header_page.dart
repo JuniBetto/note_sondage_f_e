@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/theme/theme.dart';
+import 'package:note_sondage/ui/widgets/app_back_button.dart';
 
 class HeaderPage extends StatelessWidget implements PreferredSizeWidget {
   const HeaderPage({
@@ -29,9 +30,8 @@ class HeaderPage extends StatelessWidget implements PreferredSizeWidget {
       systemOverlayStyle: AppTheme.overlayStyleForBackground(backgroundColor),
       elevation: 0,
       leading: showBackButton
-          ? IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: onBackPressed,
+          ? AppBackButton(
+              onPressed: onBackPressed ?? () => Navigator.maybePop(context),
             )
           : null,
       centerTitle: true,

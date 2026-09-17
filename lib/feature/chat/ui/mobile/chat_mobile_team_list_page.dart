@@ -24,6 +24,8 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/navigation_bar.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 class ChatMobileTeamListPage extends StatefulWidget {
   const ChatMobileTeamListPage({
@@ -58,8 +60,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
   // paint the previous data instantly and refresh it silently in the
   // background instead.
   static List<TeamEntity>? _cachedTeams;
-  static Map<String, ChatTeamConversationSummaryEntity>?
-  _cachedSummaryByTeamId;
+  static Map<String, ChatTeamConversationSummaryEntity>? _cachedSummaryByTeamId;
   static List<_DirectChatEntry>? _cachedDirectEntries;
 
   final GlobalKey _introKey = GlobalKey();
@@ -367,101 +368,111 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
           color: colorScheme.bgColor,
           borderRadius: BorderRadius.circular(24),
         ),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(4, 2, 4, 18),
-          children: [
-            _buildShowcase(
-              showcaseKey: _introKey,
-              title: _introTitle(context),
-              description: _introDescription(context),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      loc.chatChooseConversation,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      loc.chatListDescriptionMobile,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+        child: ScrollOverflowHint(
+          child: ListView(
+            // The shell Scaffold uses extendBody: true for the floating nav
+            // bar's frosted look, so without this the last card (and this
+            // widget's own "more below" hint) end up rendered underneath it.
+            padding: EdgeInsets.fromLTRB(
+              4,
+              2,
+              4,
+              18 + mobileNavBarBottomInset(context),
             ),
-            _buildShowcase(
-              showcaseKey: _teamChannelsKey,
-              title: _teamChannelsTitle(context),
-              description: _teamChannelsDescription(context),
-              child: Column(
-                children: [
-                  _SectionLabel(title: loc.chatTeamChannels),
-                  const SizedBox(height: 10),
-                  for (final team in _teams) ...[
-                    if (team.id != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: ChatTeamListCard(
-                          team: team,
-                          compact: true,
-                          summary: _summaryByTeamId[team.id!],
-                          memberCountOverride: team.memberCount,
-                          onTap: () => _openTeamConversation(team.id!),
+            children: [
+              _buildShowcase(
+                showcaseKey: _introKey,
+                title: _introTitle(context),
+                description: _introDescription(context),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        loc.chatChooseConversation,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildShowcase(
-              showcaseKey: _directChatsKey,
-              title: _directChatsTitle(context),
-              description: _directChatsDescription(context),
-              child: Column(
-                children: [
-                  _SectionLabel(title: loc.chatDirectChats),
-                  const SizedBox(height: 10),
-                  if (_directEntries.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                      child: Text(
-                        loc.chatNoDirectContacts,
+                      const SizedBox(height: 6),
+                      Text(
+                        loc.chatListDescriptionMobile,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    ),
-                  for (final entry in _directEntries)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: ChatDirectListCard(
-                        compact: true,
-                        title: entry.displayName,
-                        teamName: entry.team.name,
-                        preview: entry.summary?.lastMessagePreview,
-                        avatarUrl:
-                            entry.summary?.participantAvatarUrl ??
-                            entry.member.imageUrl,
-                        unreadCount: entry.summary?.unreadCount ?? 0,
-                        accentColor: ChatThemeTokens.resolveTeamAccentColor(
-                          entry.team.color,
-                          theme.colorScheme.primary,
-                        ),
-                        onTap: () => _openDirectConversation(entry),
-                      ),
-                    ),
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+              _buildShowcase(
+                showcaseKey: _teamChannelsKey,
+                title: _teamChannelsTitle(context),
+                description: _teamChannelsDescription(context),
+                child: Column(
+                  children: [
+                    _SectionLabel(title: loc.chatTeamChannels),
+                    const SizedBox(height: 10),
+                    for (final team in _teams) ...[
+                      if (team.id != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ChatTeamListCard(
+                            team: team,
+                            compact: true,
+                            summary: _summaryByTeamId[team.id!],
+                            memberCountOverride: team.memberCount,
+                            onTap: () => _openTeamConversation(team.id!),
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildShowcase(
+                showcaseKey: _directChatsKey,
+                title: _directChatsTitle(context),
+                description: _directChatsDescription(context),
+                child: Column(
+                  children: [
+                    _SectionLabel(title: loc.chatDirectChats),
+                    const SizedBox(height: 10),
+                    if (_directEntries.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                        child: Text(
+                          loc.chatNoDirectContacts,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    for (final entry in _directEntries)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: ChatDirectListCard(
+                          compact: true,
+                          title: entry.displayName,
+                          teamName: entry.team.name,
+                          preview: entry.summary?.lastMessagePreview,
+                          avatarUrl:
+                              entry.summary?.participantAvatarUrl ??
+                              entry.member.imageUrl,
+                          unreadCount: entry.summary?.unreadCount ?? 0,
+                          accentColor: ChatThemeTokens.resolveTeamAccentColor(
+                            entry.team.color,
+                            theme.colorScheme.primary,
+                          ),
+                          onTap: () => _openDirectConversation(entry),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:note_sondage/feature/team/ui/mobile/widgets/create_role.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/list_role_permission.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/ui/widgets/app_back_button.dart';
 
 class RolePage extends StatefulWidget {
   const RolePage({super.key, required this.teamId});
@@ -51,18 +52,7 @@ class _RolePageState extends State<RolePage>
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: colorScheme.homeSecondary,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: colorScheme.borderColor!.withValues(alpha: 0.3),
-              ),
-            ),
-            child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          ),
+        leading: AppBackButton(
           onPressed: () {
             if (context.canPop()) {
               context.pop();

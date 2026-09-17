@@ -45,6 +45,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 const _kSplitViewBreakpoint = 900.0;
 
@@ -1277,28 +1278,31 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                         assigneeAvatarUrlByUserId: _assigneeAvatarUrlByUserId,
                       ),
                     )
-                  : ListView.separated(
-                      padding: EdgeInsets.fromLTRB(
-                        16,
-                        0,
-                        16,
-                        isSplitView ? 16 : 24,
+                  : ScrollOverflowHint(
+                      child: ListView.separated(
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          0,
+                          16,
+                          isSplitView ? 16 : 24,
+                        ),
+                        itemCount: displayedTasks.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final task = displayedTasks[index];
+                          return TaskCard(
+                            task: task,
+                            selected:
+                                isSplitView && task.id == selectedTask?.id,
+                            onTap: () => isSplitView
+                                ? _selectTask(task)
+                                : _openTaskDetail(task),
+                            assigneeAvatarUrl:
+                                _assigneeAvatarUrlByUserId[task.assigneeUserId
+                                    ?.trim()],
+                          );
+                        },
                       ),
-                      itemCount: displayedTasks.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final task = displayedTasks[index];
-                        return TaskCard(
-                          task: task,
-                          selected: isSplitView && task.id == selectedTask?.id,
-                          onTap: () => isSplitView
-                              ? _selectTask(task)
-                              : _openTaskDetail(task),
-                          assigneeAvatarUrl:
-                              _assigneeAvatarUrlByUserId[task.assigneeUserId
-                                  ?.trim()],
-                        );
-                      },
                     ),
             );
 

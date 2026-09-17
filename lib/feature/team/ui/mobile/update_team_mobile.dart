@@ -8,6 +8,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
+import 'package:note_sondage/ui/widgets/app_back_button.dart';
 
 class UpdateTeamMobile extends StatefulWidget {
   const UpdateTeamMobile({super.key, this.teamId, this.readOnly = false});
@@ -37,18 +38,7 @@ class _UpdateTeamMobileState extends State<UpdateTeamMobile> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: colorScheme.homeSecondary,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: colorScheme.borderColor!.withValues(alpha: 0.3),
-              ),
-            ),
-            child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          ),
+        leading: AppBackButton(
           onPressed: () {
             if (context.canPop()) {
               context.pop();

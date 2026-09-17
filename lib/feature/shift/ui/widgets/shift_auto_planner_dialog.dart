@@ -12,6 +12,7 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 class ShiftAutoPlannerDialog extends StatefulWidget {
   const ShiftAutoPlannerDialog({
@@ -245,9 +246,8 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final compact = widget.compact || MediaQuery.of(context).size.width < 720;
-    final profiles =
-        preferCustomOverDuplicateSystemProfiles(widget.profiles)
-          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final profiles = preferCustomOverDuplicateSystemProfiles(widget.profiles)
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     return AlertDialog(
       insetPadding: EdgeInsets.symmetric(
@@ -264,238 +264,240 @@ class _ShiftAutoPlannerDialogState extends State<ShiftAutoPlannerDialog> {
       ),
       content: SizedBox(
         width: compact ? 340 : 500,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _plannerMode == ShiftAutoPlannerMode.rotation
-                    ? _t(
-                        it: 'Genera automaticamente i turni del team usando i profili esistenti e una rotazione equa dei membri disponibili. L\'Auto Planner si basa sui vincoli impostati per ciascun membro per generare turni più in linea con le esigenze: senza vincoli configurati potresti avere delle sorprese.',
-                        en: 'Automatically generate team shifts using existing profiles and a fair rotation of available members. The Auto Planner relies on each member\'s configured constraints to generate shifts that better match your needs — without constraints set up, you may get some surprises.',
-                        fr: 'Générez automatiquement les shifts de l’équipe à partir des profils existants et d’une rotation équitable des membres disponibles. L’Auto Planner s’appuie sur les contraintes configurées pour chaque membre afin de générer des shifts plus adaptés aux besoins : sans contraintes configurées, vous pourriez avoir des surprises.',
-                        es: 'Genera automáticamente los turnos del equipo usando los perfiles existentes y una rotación equilibrada de los miembros disponibles. El Auto Planner se basa en las restricciones configuradas para cada miembro para generar turnos más acordes a las necesidades: sin restricciones configuradas podrías llevarte alguna sorpresa.',
-                      )
-                    : _t(
-                        it: 'Copre l’intero profilo turno usando più membri del team in sequenza o in parallelo, rispettando i vincoli disponibili. Anche qui l\'Auto Planner si basa sui vincoli impostati per ciascun membro per generare turni più in linea con le esigenze: senza vincoli configurati potresti avere delle sorprese.',
-                        en: 'Cover the whole shift profile by combining multiple team members sequentially or in parallel while respecting available constraints. Here too, the Auto Planner relies on each member\'s configured constraints to generate shifts that better match your needs — without constraints set up, you may get some surprises.',
-                        fr: 'Couvrez tout le profil de shift en combinant plusieurs membres de l’équipe de façon séquentielle ou parallèle tout en respectant les contraintes disponibles. Là aussi, l’Auto Planner s’appuie sur les contraintes configurées pour chaque membre afin de générer des shifts plus adaptés aux besoins : sans contraintes configurées, vous pourriez avoir des surprises.',
-                        es: 'Cubre todo el perfil de turno combinando varios miembros del equipo de forma secuencial o en paralelo respetando las restricciones disponibles. Aquí también, el Auto Planner se basa en las restricciones configuradas para cada miembro para generar turnos más acordes a las necesidades: sin restricciones configuradas podrías llevarte alguna sorpresa.',
-                      ),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: compact ? 12.5 : 14,
+        child: ScrollOverflowHint(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _plannerMode == ShiftAutoPlannerMode.rotation
+                      ? _t(
+                          it: 'Genera automaticamente i turni del team usando i profili esistenti e una rotazione equa dei membri disponibili. L\'Auto Planner si basa sui vincoli impostati per ciascun membro per generare turni più in linea con le esigenze: senza vincoli configurati potresti avere delle sorprese.',
+                          en: 'Automatically generate team shifts using existing profiles and a fair rotation of available members. The Auto Planner relies on each member\'s configured constraints to generate shifts that better match your needs — without constraints set up, you may get some surprises.',
+                          fr: 'Générez automatiquement les shifts de l’équipe à partir des profils existants et d’une rotation équitable des membres disponibles. L’Auto Planner s’appuie sur les contraintes configurées pour chaque membre afin de générer des shifts plus adaptés aux besoins : sans contraintes configurées, vous pourriez avoir des surprises.',
+                          es: 'Genera automáticamente los turnos del equipo usando los perfiles existentes y una rotación equilibrada de los miembros disponibles. El Auto Planner se basa en las restricciones configuradas para cada miembro para generar turnos más acordes a las necesidades: sin restricciones configuradas podrías llevarte alguna sorpresa.',
+                        )
+                      : _t(
+                          it: 'Copre l’intero profilo turno usando più membri del team in sequenza o in parallelo, rispettando i vincoli disponibili. Anche qui l\'Auto Planner si basa sui vincoli impostati per ciascun membro per generare turni più in linea con le esigenze: senza vincoli configurati potresti avere delle sorprese.',
+                          en: 'Cover the whole shift profile by combining multiple team members sequentially or in parallel while respecting available constraints. Here too, the Auto Planner relies on each member\'s configured constraints to generate shifts that better match your needs — without constraints set up, you may get some surprises.',
+                          fr: 'Couvrez tout le profil de shift en combinant plusieurs membres de l’équipe de façon séquentielle ou parallèle tout en respectant les contraintes disponibles. Là aussi, l’Auto Planner s’appuie sur les contraintes configurées pour chaque membre afin de générer des shifts plus adaptés aux besoins : sans contraintes configurées, vous pourriez avoir des surprises.',
+                          es: 'Cubre todo el perfil de turno combinando varios miembros del equipo de forma secuencial o en paralelo respetando las restricciones disponibles. Aquí también, el Auto Planner se basa en las restricciones configuradas para cada miembro para generar turnos más acordes a las necesidades: sin restricciones configuradas podrías llevarte alguna sorpresa.',
+                        ),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: compact ? 12.5 : 14,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              SegmentedButton<ShiftAutoPlannerMode>(
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment<ShiftAutoPlannerMode>(
-                    value: ShiftAutoPlannerMode.rotation,
-                    label: Text(
-                      _t(
-                        it: 'Rotazione',
-                        en: 'Rotation',
-                        fr: 'Rotation',
-                        es: 'Rotación',
+                const SizedBox(height: 16),
+                SegmentedButton<ShiftAutoPlannerMode>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment<ShiftAutoPlannerMode>(
+                      value: ShiftAutoPlannerMode.rotation,
+                      label: Text(
+                        _t(
+                          it: 'Rotazione',
+                          en: 'Rotation',
+                          fr: 'Rotation',
+                          es: 'Rotación',
+                        ),
                       ),
                     ),
-                  ),
-                  ButtonSegment<ShiftAutoPlannerMode>(
-                    value: ShiftAutoPlannerMode.coverage,
-                    label: Text(
-                      _t(
-                        it: 'Copertura',
-                        en: 'Coverage',
-                        fr: 'Couverture',
-                        es: 'Cobertura',
+                    ButtonSegment<ShiftAutoPlannerMode>(
+                      value: ShiftAutoPlannerMode.coverage,
+                      label: Text(
+                        _t(
+                          it: 'Copertura',
+                          en: 'Coverage',
+                          fr: 'Couverture',
+                          es: 'Cobertura',
+                        ),
                       ),
+                    ),
+                  ],
+                  selected: {_plannerMode},
+                  onSelectionChanged: (selection) {
+                    final nextMode = selection.first;
+                    setState(() {
+                      _plannerMode = nextMode;
+                      if (_plannerMode == ShiftAutoPlannerMode.coverage) {
+                        _replaceExistingAssignments = true;
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+                ShiftCalendarTeamPicker(
+                  teams: widget.teams
+                      .where((entry) => entry.team.id != null)
+                      .toList(),
+                  selectedTeamId: _selectedTeamId,
+                  includePersonalOption: false,
+                  unselectedTitle: _t(
+                    it: 'Team',
+                    en: 'Team',
+                    fr: 'Équipe',
+                    es: 'Equipo',
+                  ),
+                  triggerSubtitle: loc.changeOrSearchTeam,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedTeamId = value;
+                      _clampProfileCountsToSelectedTeam();
+                    });
+                    unawaited(_loadAvailabilityForSelection());
+                  },
+                ),
+                if (_selectedTeamView != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _loadingAvailability
+                        ? _t(
+                            it: 'Calcolo disponibilita membri nel periodo...',
+                            en: 'Calculating member availability for the selected range...',
+                            fr: 'Calcul de la disponibilite des membres sur la periode selectionnee...',
+                            es: 'Calculando la disponibilidad de miembros en el periodo seleccionado...',
+                          )
+                        : _t(
+                            it:
+                                'Membri disponibili nel periodo: $_selectedTeamMaxPeople su $_selectedTeamTotalPeople'
+                                '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} assenti)' : ''}.',
+                            en:
+                                'Available members in the selected range: $_selectedTeamMaxPeople of $_selectedTeamTotalPeople'
+                                '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} absent)' : ''}.',
+                            fr:
+                                'Membres disponibles sur la periode selectionnee : $_selectedTeamMaxPeople sur $_selectedTeamTotalPeople'
+                                '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} absents)' : ''}.',
+                            es:
+                                'Miembros disponibles en el periodo seleccionado: $_selectedTeamMaxPeople de $_selectedTeamTotalPeople'
+                                '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} ausentes)' : ''}.',
+                          ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.descriptionColor,
                     ),
                   ),
                 ],
-                selected: {_plannerMode},
-                onSelectionChanged: (selection) {
-                  final nextMode = selection.first;
-                  setState(() {
-                    _plannerMode = nextMode;
-                    if (_plannerMode == ShiftAutoPlannerMode.coverage) {
-                      _replaceExistingAssignments = true;
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 12),
-              ShiftCalendarTeamPicker(
-                teams: widget.teams
-                    .where((entry) => entry.team.id != null)
-                    .toList(),
-                selectedTeamId: _selectedTeamId,
-                includePersonalOption: false,
-                unselectedTitle: _t(
-                  it: 'Team',
-                  en: 'Team',
-                  fr: 'Équipe',
-                  es: 'Equipo',
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _DateField(
+                      label: _t(it: 'Dal', en: 'From', fr: 'Du', es: 'Desde'),
+                      value: _from,
+                      onTap: () => _pickDate(
+                        initialDate: _from,
+                        onSelected: (value) {
+                          setState(() {
+                            _from = value;
+                            if (_to.isBefore(_from)) {
+                              _to = _from;
+                            }
+                            _clampProfileCountsToSelectedTeam();
+                          });
+                          unawaited(_loadAvailabilityForSelection());
+                        },
+                      ),
+                    ),
+                    _DateField(
+                      label: _t(it: 'Al', en: 'To', fr: 'Au', es: 'Hasta'),
+                      value: _to,
+                      onTap: () => _pickDate(
+                        initialDate: _to,
+                        firstDate: _from,
+                        onSelected: (value) {
+                          setState(() {
+                            _to = value;
+                            _clampProfileCountsToSelectedTeam();
+                          });
+                          unawaited(_loadAvailabilityForSelection());
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                triggerSubtitle: loc.changeOrSearchTeam,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedTeamId = value;
-                    _clampProfileCountsToSelectedTeam();
-                  });
-                  unawaited(_loadAvailabilityForSelection());
-                },
-              ),
-              if (_selectedTeamView != null) ...[
+                const SizedBox(height: 12),
+                AppSwitchListTile(
+                  value: _plannerMode == ShiftAutoPlannerMode.coverage
+                      ? true
+                      : _replaceExistingAssignments,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    _t(
+                      it: 'Sostituisci i turni già presenti',
+                      en: 'Replace existing assignments',
+                      fr: 'Remplacer les shifts existants',
+                      es: 'Reemplazar los turnos existentes',
+                    ),
+                  ),
+                  subtitle: Text(
+                    _plannerMode == ShiftAutoPlannerMode.coverage
+                        ? _t(
+                            it: 'Nella modalità copertura è sempre attivo per poter ricostruire la copertura completa del turno.',
+                            en: 'In coverage mode this is always enabled so the full shift coverage can be rebuilt.',
+                            fr: 'En mode couverture, cette option reste toujours active pour reconstruire toute la couverture du shift.',
+                            es: 'En modo cobertura siempre está activo para reconstruir toda la cobertura del turno.',
+                          )
+                        : _t(
+                            it: 'Se attivo, i turni del team nell’intervallo scelto verranno rigenerati.',
+                            en: 'If enabled, the team assignments in the selected range will be regenerated.',
+                            fr: 'Si activé, les affectations de l’équipe dans la période choisie seront régénérées.',
+                            es: 'Si está activo, los turnos del equipo en el intervalo seleccionado se regenerarán.',
+                          ),
+                  ),
+                  onChanged: _plannerMode == ShiftAutoPlannerMode.coverage
+                      ? null
+                      : (value) {
+                          setState(() => _replaceExistingAssignments = value);
+                        },
+                ),
                 const SizedBox(height: 8),
                 Text(
-                  _loadingAvailability
+                  _t(
+                    it: 'Profili da pianificare',
+                    en: 'Profiles to schedule',
+                    fr: 'Profils à planifier',
+                    es: 'Perfiles a planificar',
+                  ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _plannerMode == ShiftAutoPlannerMode.rotation
                       ? _t(
-                          it: 'Calcolo disponibilita membri nel periodo...',
-                          en: 'Calculating member availability for the selected range...',
-                          fr: 'Calcul de la disponibilite des membres sur la periode selectionnee...',
-                          es: 'Calculando la disponibilidad de miembros en el periodo seleccionado...',
+                          it: 'Il numero a destra indica quante persone devono coprire quel profilo turno ogni giorno selezionato.',
+                          en: 'The number on the right indicates how many people should cover that shift profile on each selected day.',
+                          fr: 'Le nombre à droite indique combien de personnes doivent couvrir ce profil de shift chaque jour sélectionné.',
+                          es: 'El número de la derecha indica cuántas personas deben cubrir ese perfil de turno en cada día seleccionado.',
                         )
                       : _t(
-                          it:
-                              'Membri disponibili nel periodo: $_selectedTeamMaxPeople su $_selectedTeamTotalPeople'
-                              '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} assenti)' : ''}.',
-                          en:
-                              'Available members in the selected range: $_selectedTeamMaxPeople of $_selectedTeamTotalPeople'
-                              '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} absent)' : ''}.',
-                          fr:
-                              'Membres disponibles sur la periode selectionnee : $_selectedTeamMaxPeople sur $_selectedTeamTotalPeople'
-                              '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} absents)' : ''}.',
-                          es:
-                              'Miembros disponibles en el periodo seleccionado: $_selectedTeamMaxPeople de $_selectedTeamTotalPeople'
-                              '${_selectedTeamAbsentUserIds.isNotEmpty ? ' (${_selectedTeamAbsentUserIds.length} ausentes)' : ''}.',
+                          it: 'Il numero a destra indica quante linee di copertura complete vuoi creare su quel profilo. Ogni linea può essere coperta da più membri sommati tra loro.',
+                          en: 'The number on the right indicates how many full coverage lanes you want for that profile. Each lane can be covered by multiple members combined together.',
+                          fr: 'Le nombre à droite indique combien de lignes de couverture complètes vous voulez pour ce profil. Chaque ligne peut être couverte par plusieurs membres combinés.',
+                          es: 'El número de la derecha indica cuántas líneas de cobertura completas quieres para ese perfil. Cada línea puede ser cubierta por varios miembros combinados.',
                         ),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.descriptionColor,
+                    fontSize: compact ? 11.5 : 12,
                   ),
                 ),
+                const SizedBox(height: 8),
+                if (profiles.isEmpty)
+                  Text(
+                    _t(
+                      it: 'Nessun profilo turno disponibile.',
+                      en: 'No shift profiles available.',
+                      fr: 'Aucun profil de shift disponible.',
+                      es: 'No hay perfiles de turno disponibles.',
+                    ),
+                  )
+                else
+                  ...profiles.map(
+                    (profile) => _buildProfileTile(profile, compact),
+                  ),
               ],
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _DateField(
-                    label: _t(it: 'Dal', en: 'From', fr: 'Du', es: 'Desde'),
-                    value: _from,
-                    onTap: () => _pickDate(
-                      initialDate: _from,
-                      onSelected: (value) {
-                        setState(() {
-                          _from = value;
-                          if (_to.isBefore(_from)) {
-                            _to = _from;
-                          }
-                          _clampProfileCountsToSelectedTeam();
-                        });
-                        unawaited(_loadAvailabilityForSelection());
-                      },
-                    ),
-                  ),
-                  _DateField(
-                    label: _t(it: 'Al', en: 'To', fr: 'Au', es: 'Hasta'),
-                    value: _to,
-                    onTap: () => _pickDate(
-                      initialDate: _to,
-                      firstDate: _from,
-                      onSelected: (value) {
-                        setState(() {
-                          _to = value;
-                          _clampProfileCountsToSelectedTeam();
-                        });
-                        unawaited(_loadAvailabilityForSelection());
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              AppSwitchListTile(
-                value: _plannerMode == ShiftAutoPlannerMode.coverage
-                    ? true
-                    : _replaceExistingAssignments,
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  _t(
-                    it: 'Sostituisci i turni già presenti',
-                    en: 'Replace existing assignments',
-                    fr: 'Remplacer les shifts existants',
-                    es: 'Reemplazar los turnos existentes',
-                  ),
-                ),
-                subtitle: Text(
-                  _plannerMode == ShiftAutoPlannerMode.coverage
-                      ? _t(
-                          it: 'Nella modalità copertura è sempre attivo per poter ricostruire la copertura completa del turno.',
-                          en: 'In coverage mode this is always enabled so the full shift coverage can be rebuilt.',
-                          fr: 'En mode couverture, cette option reste toujours active pour reconstruire toute la couverture du shift.',
-                          es: 'En modo cobertura siempre está activo para reconstruir toda la cobertura del turno.',
-                        )
-                      : _t(
-                          it: 'Se attivo, i turni del team nell’intervallo scelto verranno rigenerati.',
-                          en: 'If enabled, the team assignments in the selected range will be regenerated.',
-                          fr: 'Si activé, les affectations de l’équipe dans la période choisie seront régénérées.',
-                          es: 'Si está activo, los turnos del equipo en el intervalo seleccionado se regenerarán.',
-                        ),
-                ),
-                onChanged: _plannerMode == ShiftAutoPlannerMode.coverage
-                    ? null
-                    : (value) {
-                        setState(() => _replaceExistingAssignments = value);
-                      },
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _t(
-                  it: 'Profili da pianificare',
-                  en: 'Profiles to schedule',
-                  fr: 'Profils à planifier',
-                  es: 'Perfiles a planificar',
-                ),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _plannerMode == ShiftAutoPlannerMode.rotation
-                    ? _t(
-                        it: 'Il numero a destra indica quante persone devono coprire quel profilo turno ogni giorno selezionato.',
-                        en: 'The number on the right indicates how many people should cover that shift profile on each selected day.',
-                        fr: 'Le nombre à droite indique combien de personnes doivent couvrir ce profil de shift chaque jour sélectionné.',
-                        es: 'El número de la derecha indica cuántas personas deben cubrir ese perfil de turno en cada día seleccionado.',
-                      )
-                    : _t(
-                        it: 'Il numero a destra indica quante linee di copertura complete vuoi creare su quel profilo. Ogni linea può essere coperta da più membri sommati tra loro.',
-                        en: 'The number on the right indicates how many full coverage lanes you want for that profile. Each lane can be covered by multiple members combined together.',
-                        fr: 'Le nombre à droite indique combien de lignes de couverture complètes vous voulez pour ce profil. Chaque ligne peut être couverte par plusieurs membres combinés.',
-                        es: 'El número de la derecha indica cuántas líneas de cobertura completas quieres para ese perfil. Cada línea puede ser cubierta por varios miembros combinados.',
-                      ),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: compact ? 11.5 : 12,
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (profiles.isEmpty)
-                Text(
-                  _t(
-                    it: 'Nessun profilo turno disponibile.',
-                    en: 'No shift profiles available.',
-                    fr: 'Aucun profil de shift disponible.',
-                    es: 'No hay perfiles de turno disponibles.',
-                  ),
-                )
-              else
-                ...profiles.map(
-                  (profile) => _buildProfileTile(profile, compact),
-                ),
-            ],
+            ),
           ),
         ),
       ),

@@ -16,6 +16,7 @@ import 'package:note_sondage/feature/team/domain/use_case/team_member/team_membe
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_card.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_row.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
@@ -575,7 +576,12 @@ Widget viewScrollWebMobile(
   return Padding(
     padding: const EdgeInsets.all(0.0),
     child: wrapInScrollView
-        ? SingleChildScrollView(scrollDirection: Axis.vertical, child: content)
+        ? ScrollOverflowHint(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: content,
+            ),
+          )
         : content,
   );
 }
@@ -594,6 +600,7 @@ void _deleteTeamWithFeedback(
   teamBloc.stream
       .firstWhere((state) => state is TeamDeleted || state is TeamError)
       .then((state) {
+        if (!context.mounted) return;
         if (state is TeamDeleted) {
           AppSnackBar.showSuccessOverlay(
             context,
