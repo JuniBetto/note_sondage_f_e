@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
-class ChatBackButton extends StatelessWidget {
-  const ChatBackButton({super.key, required this.onPressed});
+/// The app's one back-button look: a chevron in a soft rounded square.
+/// Every page that needs its own back action (an `AppBar.leading` or an
+/// inline header row) should use this instead of a bare [IconButton], so
+/// every screen reads as the same control rather than each one drifting its
+/// own variant.
+class AppBackButton extends StatelessWidget {
+  const AppBackButton({super.key, required this.onPressed});
 
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return IconButton(
       onPressed: onPressed,
       icon: Container(

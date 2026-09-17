@@ -11,6 +11,7 @@ import 'package:note_sondage/feature/sondage/ui/widgets/sondage_component_card.d
 import 'package:note_sondage/feature/sondage/ui/widgets/sondage_component_row.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 class ResponsiveGridSondages extends StatefulWidget {
   const ResponsiveGridSondages({
@@ -21,6 +22,7 @@ class ResponsiveGridSondages extends StatefulWidget {
     required this.onEditTap,
     this.searchQuery = '',
     this.shrinkWrapLayout = false,
+    this.extraBottomPadding = 0,
   });
 
   final List<SondageEntity> items;
@@ -29,6 +31,13 @@ class ResponsiveGridSondages extends StatefulWidget {
   final ValueChanged<SondageEntity> onEditTap;
   final String searchQuery;
   final bool shrinkWrapLayout;
+
+  /// Extra room reserved at the bottom of the list/grid itself (not the
+  /// surrounding card background), so the last item and the scroll-overflow
+  /// hint clear a mobile-only floating bottom bar without shrinking the
+  /// decorative background that's meant to fill the whole available height.
+  /// Callers on web leave this at 0 — there is no such bar there.
+  final double extraBottomPadding;
 
   @override
   State<ResponsiveGridSondages> createState() => _ResponsiveGridSondagesState();
@@ -162,7 +171,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
             ),
           ),
           const SizedBox(height: 12),
-          Expanded(child: content),
+          Expanded(child: ScrollOverflowHint(child: content)),
         ],
       ),
     );
@@ -192,7 +201,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
           physics: widget.shrinkWrapLayout
               ? const NeverScrollableScrollPhysics()
               : null,
-          padding: EdgeInsets.zero,
+          padding: EdgeInsets.only(bottom: widget.extraBottomPadding),
           gridDelegate: gridDelegate,
           itemCount: items.length,
           itemBuilder: (context, index) {
@@ -238,7 +247,7 @@ class _ResponsiveGridSondagesState extends State<ResponsiveGridSondages> {
       physics: widget.shrinkWrapLayout
           ? const NeverScrollableScrollPhysics()
           : null,
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.only(bottom: widget.extraBottomPadding),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {

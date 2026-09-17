@@ -166,10 +166,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         if (!mounted) return false;
         setState(() {
           _clockingOverrideMembers = _clockingOverrideMembers
-              .map(
-                (item) =>
-                    item.id == updatedMember.id ? updatedMember : item,
-              )
+              .map((item) => item.id == updatedMember.id ? updatedMember : item)
               .toList();
         });
       }
@@ -607,7 +604,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                                 ),
                                 child: Text(
                                   _isEditMode
-                                      ? localization.editTeam
+                                      ? localization.saveTeam
                                       : localization.createTeam,
                                   style: const TextStyle(
                                     fontSize: 16,

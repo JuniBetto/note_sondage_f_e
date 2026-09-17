@@ -386,6 +386,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editTeam => 'Modifier equipe';
 
   @override
+  String get saveTeam => 'Enregistrer equipe';
+
+  @override
   String get teamDetails => 'Details de l\'equipe';
 
   @override
@@ -808,6 +811,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteTeamMessage =>
       'Voulez-vous vraiment supprimer cette équipe ? Cette action est irréversible.';
+
+  @override
+  String get teamDeletedSuccess => 'Equipe supprimee avec succes.';
 
   @override
   String get deleteRoleTitle => 'Supprimer le rôle';
@@ -1295,6 +1301,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createCustomProfile => 'Créer un profil personnalisé';
 
   @override
+  String get shiftProfileCreatedSuccess =>
+      'Profil personnalisé créé avec succès.';
+
+  @override
   String get editShiftProfile => 'Modifier le profil';
 
   @override
@@ -1308,10 +1318,24 @@ class AppLocalizationsFr extends AppLocalizations {
       'Voulez-vous vraiment supprimer ce profil ?';
 
   @override
+  String get shiftProfileDeletedSuccess => 'Profil supprime avec succes.';
+
+  @override
   String get deleteShiftTitle => 'Supprimer le quart';
 
   @override
   String get deleteShiftMessage => 'Voulez-vous vraiment supprimer ce quart ?';
+
+  @override
+  String shiftAssignmentDeletedSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count quarts supprimes avec succes.',
+      one: 'Quart supprime avec succes.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get publicProfile => 'Public';
@@ -2537,6 +2561,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventLocationLabel => 'Lieu';
 
   @override
+  String get eventCreatedByLabel => 'Créé par';
+
+  @override
+  String get eventScheduleLabel => 'Quand';
+
+  @override
   String get eventParticipantsLabel => 'Participants';
 
   @override
@@ -2571,6 +2601,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventDeleteAction => 'Supprimer';
+
+  @override
+  String get deleteEventTitle => 'Supprimer l\'evenement';
+
+  @override
+  String get deleteEventMessage =>
+      'Voulez-vous vraiment supprimer definitivement cet evenement ? Cette action est irreversible.';
 
   @override
   String get eventEmptyArchivedTitle => 'Aucun événement archivé';

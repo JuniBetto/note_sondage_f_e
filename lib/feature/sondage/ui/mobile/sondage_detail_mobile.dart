@@ -26,6 +26,7 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
+import 'package:note_sondage/ui/widgets/app_back_button.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 class SondageDetailMobile extends StatefulWidget {
@@ -559,7 +560,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
             if (!rootSondageBloc.isClosed) {
               rootSondageBloc.add(RemoveCachedSondageEvent(widget.sondageId));
             }
-            AppSnackBar.showSuccess(context, localization.surveyDeleted);
+            AppSnackBar.showSuccessOverlay(context, localization.surveyDeleted);
             if (context.canPop()) {
               context.pop();
             } else {
@@ -604,11 +605,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
                 appBar: AppBar(
                   backgroundColor: colorScheme.bgNavbarSurface,
                   elevation: 0,
-                  leading: IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: colorScheme.iconLabel,
-                    ),
+                  leading: AppBackButton(
                     onPressed: () {
                       if (context.canPop()) {
                         context.pop();

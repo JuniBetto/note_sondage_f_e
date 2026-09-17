@@ -721,6 +721,23 @@ class _ButtonClockingState extends State<ButtonClocking> {
     );
   }
 
+  /// Dispatches a fire-and-forget [ClockingBloc] event and waits for the
+  /// resulting [ClockingActionSuccess]/[ClockingError] state so the caller
+  /// can show real success/error feedback instead of assuming the request
+  /// went through.
+  Future<void> _dispatchAndAwaitResult(
+    ClockingEvent event, {
+    required String successMessage,
+  }) async {
+    final result = await context.read<ClockingBloc>().addAndAwaitResult(event);
+    if (!mounted) return;
+    if (result is ClockingActionSuccess) {
+      AppSnackBar.showSuccessOverlay(context, successMessage);
+    } else if (result is ClockingError) {
+      AppSnackBar.showError(context, result.message);
+    }
+  }
+
   Future<void> _onVacationAction() async {
     final localization = AppLocalizations.of(context)!;
     if (_requiresManagerApprovalForSelectedDate()) {
@@ -774,12 +791,13 @@ class _ButtonClockingState extends State<ButtonClocking> {
     );
 
     if (confirmed != true || !mounted) return;
-    context.read<ClockingBloc>().add(
+    await _dispatchAndAwaitResult(
       MarkVacationEvent(
         teamId: widget.selectedTeamId,
         date: _effectiveSelectedDate,
         note: controller.text.trim().isEmpty ? null : controller.text.trim(),
       ),
+      successMessage: localization.vacationRequestSentSuccess,
     );
   }
 
@@ -888,7 +906,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
       return;
     }
 
-    context.read<ClockingBloc>().add(
+    await _dispatchAndAwaitResult(
       MarkPermissionEvent(
         teamId: widget.selectedTeamId,
         date: _effectiveSelectedDate,
@@ -900,6 +918,7 @@ class _ButtonClockingState extends State<ButtonClocking> {
             ? null
             : noteController.text.trim(),
       ),
+      successMessage: localization.permissionRequestSentSuccess,
     );
   }
 
@@ -1037,7 +1056,10 @@ class _ButtonClockingState extends State<ButtonClocking> {
             : noteController.text.trim(),
       );
       if (!mounted) return;
-      AppSnackBar.showSuccess(context, localization.unlockRequestSentSuccess);
+      AppSnackBar.showSuccessOverlay(
+        context,
+        localization.unlockRequestSentSuccess,
+      );
     } catch (error) {
       if (!mounted) return;
       AppSnackBar.showResolvedError(

@@ -1574,7 +1574,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     );
 
     if (confirmed != true || !mounted) return;
-    context.read<ClockingBloc>().add(
+    final result = await context.read<ClockingBloc>().addAndAwaitResult(
       MarkVacationEvent(
         teamId: teamId,
         targetUserId: selectedUser.value,
@@ -1584,6 +1584,15 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
             : noteController.text.trim(),
       ),
     );
+    if (!mounted) return;
+    if (result is ClockingActionSuccess) {
+      AppSnackBar.showSuccessOverlay(
+        context,
+        localization.vacationRequestSentSuccess,
+      );
+    } else if (result is ClockingError) {
+      AppSnackBar.showError(context, result.message);
+    }
   }
 
   Future<void> _requestClockingForTeamMember() async {
@@ -1850,7 +1859,10 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
             : noteController.text.trim(),
       );
       if (!mounted) return;
-      AppSnackBar.showSuccess(context, _localizedSickRequestSentSuccess());
+      AppSnackBar.showSuccessOverlay(
+        context,
+        _localizedSickRequestSentSuccess(),
+      );
     } catch (error) {
       if (!mounted) return;
       AppSnackBar.showResolvedError(
@@ -1883,7 +1895,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
         note: window.note,
       );
       if (!mounted) return;
-      AppSnackBar.showSuccess(
+      AppSnackBar.showSuccessOverlay(
         context,
         localization.permissionRequestSentSuccess,
       );
@@ -2015,7 +2027,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     );
     if (window == null || !mounted) return;
 
-    context.read<ClockingBloc>().add(
+    final result = await context.read<ClockingBloc>().addAndAwaitResult(
       MarkPermissionEvent(
         teamId: teamId,
         targetUserId: selectedUser.value,
@@ -2025,6 +2037,15 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
         note: window.note,
       ),
     );
+    if (!mounted) return;
+    if (result is ClockingActionSuccess) {
+      AppSnackBar.showSuccessOverlay(
+        context,
+        localization.permissionRequestSentSuccess,
+      );
+    } else if (result is ClockingError) {
+      AppSnackBar.showError(context, result.message);
+    }
   }
 
   Future<void> _assignSickToTeamMember() async {
@@ -2187,7 +2208,7 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     );
 
     if (confirmed != true || !mounted) return;
-    context.read<ClockingBloc>().add(
+    final result = await context.read<ClockingBloc>().addAndAwaitResult(
       MarkSickEvent(
         teamId: teamId,
         targetUserId: selectedUser.value,
@@ -2197,6 +2218,15 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
             : noteController.text.trim(),
       ),
     );
+    if (!mounted) return;
+    if (result is ClockingActionSuccess) {
+      AppSnackBar.showSuccessOverlay(
+        context,
+        _localizedSickRequestSentSuccess(),
+      );
+    } else if (result is ClockingError) {
+      AppSnackBar.showError(context, result.message);
+    }
   }
 
   Future<_PermissionDialogResult?> _showPermissionDialog({

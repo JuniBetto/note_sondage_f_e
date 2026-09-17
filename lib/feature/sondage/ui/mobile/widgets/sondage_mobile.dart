@@ -317,9 +317,19 @@ class _SondageMobileState extends State<SondageMobile>
             final useLandscapeCompactLayout =
                 orientation == Orientation.landscape &&
                 constraints.maxHeight < 560;
-            final pagePadding = EdgeInsets.symmetric(
-              horizontal: useLandscapeCompactLayout ? 12 : 16,
-              vertical: useLandscapeCompactLayout ? 10 : 16,
+            final horizontalPagePadding = useLandscapeCompactLayout
+                ? 12.0
+                : 16.0;
+            // No bottom inset here: the TabBarView below must reach the true
+            // bottom of the page so every tab's card background (list,
+            // chat...) extends behind the floating nav bar/tutorial button
+            // instead of stopping short of it. Each tab reserves its own
+            // bottom room internally for its actual scrollable content.
+            final pagePadding = EdgeInsets.fromLTRB(
+              horizontalPagePadding,
+              useLandscapeCompactLayout ? 10 : 16,
+              horizontalPagePadding,
+              0,
             );
             final sectionSpacing = useLandscapeCompactLayout ? 8.0 : 16.0;
 
@@ -500,6 +510,13 @@ class _SondageMobileState extends State<SondageMobile>
                                     ),
                                   statsSection,
                                   const SizedBox(height: 12),
+                                  // The nav-bar bottom inset is reserved
+                                  // *inside* the list itself (see
+                                  // ResponsiveGridSondages.extraBottomPadding)
+                                  // rather than by shrinking this Expanded,
+                                  // so the card's own background still fills
+                                  // the whole available height instead of
+                                  // leaving a bare gap above the bar.
                                   Expanded(child: listSection),
                                 ],
                               );

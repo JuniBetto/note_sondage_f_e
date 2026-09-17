@@ -3,6 +3,7 @@ import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart
 import 'package:note_sondage/feature/sondage/ui/widgets/responsive_grid_sondages.dart';
 import 'package:note_sondage/feature/team/ui/widgets/visual_type.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/navigation_bar.dart';
 
 class SondageDisplay extends StatefulWidget {
   final List<SondageEntity> sondages;
@@ -49,8 +50,14 @@ class _TeamsDisplaySectionState extends State<SondageDisplay> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // The tutorial/showcase overlay renders a ghost copy of this widget
+        // with unbounded height to draw its spotlight. Treat that the same
+        // as the compact layout (no Expanded) instead of crashing with a
+        // "RenderFlex... unbounded height" error.
         final useLandscapeCompactLayout =
-            orientation == Orientation.landscape && constraints.maxHeight < 560;
+            !constraints.hasBoundedHeight ||
+            (orientation == Orientation.landscape &&
+                constraints.maxHeight < 560);
         final sectionSpacing = useLandscapeCompactLayout ? 8.0 : 16.0;
         final toggleIconSize = useLandscapeCompactLayout ? 22.0 : 28.0;
         final sondageList = SizedBox(
@@ -74,6 +81,7 @@ class _TeamsDisplaySectionState extends State<SondageDisplay> {
               onDeleteTap: widget.onDeleteTap,
               onEditTap: widget.onEditTap,
               shrinkWrapLayout: useLandscapeCompactLayout,
+              extraBottomPadding: mobileNavBarBottomInset(context),
             ),
           ),
         );

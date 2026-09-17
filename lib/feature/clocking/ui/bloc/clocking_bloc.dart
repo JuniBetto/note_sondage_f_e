@@ -771,3 +771,17 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
     emit(_loadedState());
   }
 }
+
+/// Dispatches an event and resolves once the bloc settles into the
+/// [ClockingActionSuccess]/[ClockingError] state it produces, so callers
+/// that only have a fire-and-forget `add()` (mark vacation/permission/sick,
+/// self or assigned to a team member) can still show real success/error
+/// feedback instead of assuming the request went through.
+extension ClockingBlocAwaitResult on ClockingBloc {
+  Future<ClockingState> addAndAwaitResult(ClockingEvent event) {
+    add(event);
+    return stream.firstWhere(
+      (state) => state is ClockingActionSuccess || state is ClockingError,
+    );
+  }
+}

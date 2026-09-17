@@ -23,6 +23,7 @@ import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/app_back_button.dart';
 import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
@@ -542,7 +543,7 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
             if (!rootSondageBloc.isClosed) {
               rootSondageBloc.add(RemoveCachedSondageEvent(widget.sondageId));
             }
-            AppSnackBar.showSuccess(context, localization.surveyDeleted);
+            AppSnackBar.showSuccessOverlay(context, localization.surveyDeleted);
             context.go(RouterPaths.sondage);
             return;
           }
@@ -617,13 +618,9 @@ class _SondageDetailWebState extends State<SondageDetailWeb> {
                                 ),
                                 child: Row(
                                   children: [
-                                    IconButton(
+                                    AppBackButton(
                                       onPressed: () =>
                                           context.go(RouterPaths.sondage),
-                                      icon: Icon(
-                                        Icons.arrow_back_ios_new_rounded,
-                                        color: colorScheme.iconLabel,
-                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(

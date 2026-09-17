@@ -774,6 +774,12 @@ abstract class AppLocalizations {
   /// **'Edit team'**
   String get editTeam;
 
+  /// No description provided for @saveTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Save team'**
+  String get saveTeam;
+
   /// No description provided for @teamDetails.
   ///
   /// In en, this message translates to:
@@ -1547,6 +1553,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to delete this team? This action cannot be undone.'**
   String get deleteTeamMessage;
+
+  /// No description provided for @teamDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Team deleted successfully.'**
+  String get teamDeletedSuccess;
 
   /// No description provided for @deleteRoleTitle.
   ///
@@ -2472,6 +2484,12 @@ abstract class AppLocalizations {
   /// **'Create Custom Profile'**
   String get createCustomProfile;
 
+  /// No description provided for @shiftProfileCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom profile created successfully.'**
+  String get shiftProfileCreatedSuccess;
+
   /// No description provided for @editShiftProfile.
   ///
   /// In en, this message translates to:
@@ -2496,6 +2514,12 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to delete this profile?'**
   String get deleteShiftProfileConfirm;
 
+  /// No description provided for @shiftProfileDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile deleted successfully.'**
+  String get shiftProfileDeletedSuccess;
+
   /// No description provided for @deleteShiftTitle.
   ///
   /// In en, this message translates to:
@@ -2507,6 +2531,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to delete this shift?'**
   String get deleteShiftMessage;
+
+  /// No description provided for @shiftAssignmentDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Shift deleted successfully.} other{{count} shifts deleted successfully.}}'**
+  String shiftAssignmentDeletedSuccess(int count);
 
   /// No description provided for @publicProfile.
   ///
@@ -4528,6 +4558,18 @@ abstract class AppLocalizations {
   /// **'Location'**
   String get eventLocationLabel;
 
+  /// No description provided for @eventCreatedByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Created by'**
+  String get eventCreatedByLabel;
+
+  /// No description provided for @eventScheduleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get eventScheduleLabel;
+
   /// No description provided for @eventParticipantsLabel.
   ///
   /// In en, this message translates to:
@@ -4593,6 +4635,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get eventDeleteAction;
+
+  /// No description provided for @deleteEventTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete event'**
+  String get deleteEventTitle;
+
+  /// No description provided for @deleteEventMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to permanently delete this event? This action cannot be undone.'**
+  String get deleteEventMessage;
 
   /// No description provided for @eventEmptyArchivedTitle.
   ///

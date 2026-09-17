@@ -3,6 +3,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.da
 import 'package:note_sondage/feature/chat/ui/widgets/chat_message_bubble.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 class ChatMessageTimeline extends StatelessWidget {
   const ChatMessageTimeline({
@@ -39,15 +40,17 @@ class ChatMessageTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      controller: scrollController,
-      padding: EdgeInsets.fromLTRB(
-        compact ? 10 : 18,
-        compact ? 10 : 14,
-        compact ? 10 : 18,
-        compact ? 2 : 6,
+    return ScrollOverflowHint(
+      child: ListView(
+        controller: scrollController,
+        padding: EdgeInsets.fromLTRB(
+          compact ? 10 : 18,
+          compact ? 10 : 14,
+          compact ? 10 : 18,
+          compact ? 2 : 6,
+        ),
+        children: _buildTimelineChildren(context),
       ),
-      children: _buildTimelineChildren(context),
     );
   }
 

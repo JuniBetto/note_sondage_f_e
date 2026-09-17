@@ -9,6 +9,7 @@ import 'package:note_sondage/feature/shift/ui/utils/shift_profile_display_filter
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
+import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/submit_on_enter_scope.dart';
@@ -114,7 +115,10 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
     final nameCtrl = TextEditingController(text: source?.name ?? '');
     String selectedColorHex = _normalizeHexColor(source?.color ?? '#4A90D9');
     TimeOfDay startTime = source != null
-        ? TimeOfDay(hour: source.startTime.hour, minute: source.startTime.minute)
+        ? TimeOfDay(
+            hour: source.startTime.hour,
+            minute: source.startTime.minute,
+          )
         : const TimeOfDay(hour: 9, minute: 0);
     TimeOfDay endTime = source != null
         ? TimeOfDay(hour: source.endTime.hour, minute: source.endTime.minute)
@@ -463,10 +467,18 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
       listener: (context, state) {
         if (state is ShiftProfileCreated) {
           _upsertProfile(state.profile);
+          AppSnackBar.showSuccessOverlay(
+            context,
+            AppLocalizations.of(context)!.shiftProfileCreatedSuccess,
+          );
         } else if (state is ShiftProfileUpdated) {
           _upsertProfile(state.profile);
         } else if (state is ShiftProfileDeleted) {
           _removeProfile(state.profileId);
+          AppSnackBar.showSuccessOverlay(
+            context,
+            AppLocalizations.of(context)!.shiftProfileDeletedSuccess,
+          );
         } else if (state is ShiftProfilesLoaded) {
           // Ricaricamento completo (es. innescato da un evento realtime
           // SHIFT_PROFILES_CHANGED arrivato da un altro dispositivo): la

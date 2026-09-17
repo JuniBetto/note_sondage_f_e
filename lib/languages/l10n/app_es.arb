@@ -111,6 +111,7 @@
     "roleDescription": "Descripción del rol",
     "selectedPermission": "Seleccionar permiso",
     "editTeam": "equipo edición",
+    "saveTeam": "Guardar equipo",
     "teamDetails": "Detalles del equipo",
     "language": "Idioma",
     "notification": "Notificación",
@@ -240,6 +241,7 @@
     "noTeamsFound": "No se encontraron equipos",
     "deleteTeamTitle": "Eliminar equipo",
     "deleteTeamMessage": "¿Seguro que quieres eliminar este equipo? Esta acción no se puede deshacer.",
+    "teamDeletedSuccess": "Equipo eliminado con éxito.",
     "deleteRoleTitle": "Eliminar rol",
     "deleteRoleMessage": "¿Seguro que quieres eliminar este rol?",
     "defaultRole": "Rol predeterminado",
@@ -412,12 +414,22 @@
     "shiftEndMustBeAfterStart": "La hora de fin debe ser posterior a la hora de inicio. Si el turno termina al día siguiente, activa Turno nocturno.",
     "alarms": "Alarmas",
     "createCustomProfile": "Crear perfil personalizado",
+    "shiftProfileCreatedSuccess": "Perfil personalizado creado con éxito.",
     "editShiftProfile": "Editar perfil",
     "shiftProfileName": "Nombre del perfil",
     "shiftColor": "Color",
     "deleteShiftProfileConfirm": "¿Estás seguro de que quieres eliminar este perfil?",
+    "shiftProfileDeletedSuccess": "Perfil eliminado con éxito.",
     "deleteShiftTitle": "Eliminar turno",
     "deleteShiftMessage": "¿Seguro que quieres eliminar este turno?",
+    "shiftAssignmentDeletedSuccess": "{count, plural, =1{Turno eliminado con éxito.} other{{count} turnos eliminados con éxito.}}",
+    "@shiftAssignmentDeletedSuccess": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "publicProfile": "Público",
     "privateProfile": "Privado",
     "visibleToTeamMembers": "Visible para todos los miembros del equipo",
@@ -1006,6 +1018,8 @@
     "eventEndNotSet": "Fin no establecido",
     "eventRemoveEndAction": "Quitar fin",
     "eventLocationLabel": "Ubicacion",
+    "eventCreatedByLabel": "Creado por",
+    "eventScheduleLabel": "Cuándo",
     "eventParticipantsLabel": "Participantes",
     "eventParticipantsEmptyTeam": "Este equipo todavia no tiene otros miembros para agregar.",
     "eventTitleRequiredError": "El titulo es obligatorio.",
@@ -1017,6 +1031,8 @@
     "eventRestoreAction": "Restaurar",
     "eventArchiveAction": "Archivar",
     "eventDeleteAction": "Eliminar",
+    "deleteEventTitle": "Eliminar evento",
+    "deleteEventMessage": "¿Seguro que quieres eliminar definitivamente este evento? Esta acción no se puede deshacer.",
     "eventEmptyArchivedTitle": "Ningun evento archivado",
     "eventEmptyActiveTitle": "Ningun evento activo",
     "eventEmptyArchivedSubtitle": "Los eventos archivados apareceran aqui.",

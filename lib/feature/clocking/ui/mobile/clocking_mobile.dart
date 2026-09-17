@@ -11,6 +11,8 @@ import 'package:note_sondage/feature/clocking/ui/widgets/status_clocking.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
+import 'package:note_sondage/ui/widgets/navigation_bar.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class ClockingMobile extends StatefulWidget {
@@ -154,71 +156,82 @@ class _ClockingMobileState extends State<ClockingMobile> {
             selectedDate: _selectedDate,
           );
 
-          return SingleChildScrollView(
-            padding: pagePadding,
-            child: Column(
-              children: [
-                ClockingDateSelector(
-                  selectedDate: _selectedDate,
-                  calendarFormat: _calendarFormat,
-                  onSelectedDateChanged: (value) {
-                    if (!mounted) return;
-                    setState(() => _selectedDate = _normalizeDate(value));
-                  },
-                  onFormatChanged: (value) {
-                    if (!mounted) return;
-                    setState(() => _calendarFormat = value);
-                  },
-                ),
-                SizedBox(height: sectionSpacing),
-                // ═══════════════════════════════
-                // Status + Subtitle
-                // ═══════════════════════════════
-                _maybeWrapShowcase(
-                  enabled: !useLandscapeCompactLayout,
-                  key: _statusKey,
-                  title: AppLocalizations.of(
-                    context,
-                  )!.tutorialClockingStatusTitle,
-                  description: AppLocalizations.of(
-                    context,
-                  )!.tutorialClockingStatusDescription,
-                  child: statusCard,
-                ),
-                SizedBox(height: sectionSpacing),
+          return ScrollOverflowHint(
+            child: SingleChildScrollView(
+              // The shell Scaffold uses extendBody: true for the floating
+              // nav bar's frosted look, so without the extra inset the last
+              // section (and this widget's own "more below" hint) end up
+              // rendered underneath it.
+              padding: EdgeInsets.fromLTRB(
+                pagePadding.left,
+                pagePadding.top,
+                pagePadding.right,
+                pagePadding.bottom + mobileNavBarBottomInset(context),
+              ),
+              child: Column(
+                children: [
+                  ClockingDateSelector(
+                    selectedDate: _selectedDate,
+                    calendarFormat: _calendarFormat,
+                    onSelectedDateChanged: (value) {
+                      if (!mounted) return;
+                      setState(() => _selectedDate = _normalizeDate(value));
+                    },
+                    onFormatChanged: (value) {
+                      if (!mounted) return;
+                      setState(() => _calendarFormat = value);
+                    },
+                  ),
+                  SizedBox(height: sectionSpacing),
+                  // ═══════════════════════════════
+                  // Status + Subtitle
+                  // ═══════════════════════════════
+                  _maybeWrapShowcase(
+                    enabled: !useLandscapeCompactLayout,
+                    key: _statusKey,
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialClockingStatusTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialClockingStatusDescription,
+                    child: statusCard,
+                  ),
+                  SizedBox(height: sectionSpacing),
 
-                // ═══════════════════════════════
-                // Action buttons — centered
-                // ═══════════════════════════════
-                _maybeWrapShowcase(
-                  enabled: !useLandscapeCompactLayout,
-                  key: _actionKey,
-                  title: AppLocalizations.of(
-                    context,
-                  )!.tutorialClockingActionsTitle,
-                  description: AppLocalizations.of(
-                    context,
-                  )!.tutorialClockingActionsDescription,
-                  child: actionSection,
-                ),
+                  // ═══════════════════════════════
+                  // Action buttons — centered
+                  // ═══════════════════════════════
+                  _maybeWrapShowcase(
+                    enabled: !useLandscapeCompactLayout,
+                    key: _actionKey,
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialClockingActionsTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialClockingActionsDescription,
+                    child: actionSection,
+                  ),
 
-                SizedBox(height: sectionSpacing),
+                  SizedBox(height: sectionSpacing),
 
-                // ═══════════════════════════════
-                // Tracking section
-                // ═══════════════════════════════
-                _maybeWrapShowcase(
-                  enabled: !useLandscapeCompactLayout,
-                  key: _historyKey,
-                  title: AppLocalizations.of(
-                    context,
-                  )!.tutorialClockingHistoryTitle,
-                  description: AppLocalizations.of(
-                    context,
-                  )!.tutorialClockingHistoryDescription,
-                  child: historySection,
-                ),
-              ],
+                  // ═══════════════════════════════
+                  // Tracking section
+                  // ═══════════════════════════════
+                  _maybeWrapShowcase(
+                    enabled: !useLandscapeCompactLayout,
+                    key: _historyKey,
+                    title: AppLocalizations.of(
+                      context,
+                    )!.tutorialClockingHistoryTitle,
+                    description: AppLocalizations.of(
+                      context,
+                    )!.tutorialClockingHistoryDescription,
+                    child: historySection,
+                  ),
+                ],
+              ),
             ),
           );
         },

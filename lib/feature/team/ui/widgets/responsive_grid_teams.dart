@@ -16,6 +16,7 @@ import 'package:note_sondage/feature/team/domain/use_case/team_member/team_membe
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_card.dart';
 import 'package:note_sondage/feature/team/ui/widgets/team_component_row.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
@@ -539,9 +540,8 @@ Widget viewScrollWebMobile(
                   : () => onArchiveToggle(teamId),
               onDeleteTap: isSelectionMode
                   ? null
-                  : (teamId) {
-                      teamBloc.add(DeleteTeamEvent(teamId));
-                    },
+                  : (teamId) =>
+                        _deleteTeamWithFeedback(context, teamBloc, teamId),
             )
           : TeamComponentRow(
               key: ValueKey('team_row_$teamId'),
@@ -567,9 +567,8 @@ Widget viewScrollWebMobile(
                   : () => onArchiveToggle(teamId),
               onDeleteTap: isSelectionMode
                   ? null
-                  : (teamId) {
-                      teamBloc.add(DeleteTeamEvent(teamId));
-                    },
+                  : (teamId) =>
+                        _deleteTeamWithFeedback(context, teamBloc, teamId),
             );
     }).toList(),
   );
@@ -577,7 +576,38 @@ Widget viewScrollWebMobile(
   return Padding(
     padding: const EdgeInsets.all(0.0),
     child: wrapInScrollView
-        ? SingleChildScrollView(scrollDirection: Axis.vertical, child: content)
+        ? ScrollOverflowHint(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: content,
+            ),
+          )
         : content,
   );
+}
+
+/// Confirming "delete" previously just fired [DeleteTeamEvent] with no
+/// feedback at all. This waits for the bloc's eventual [TeamDeleted] (the
+/// optimistic removal is confirmed, or already-committed) or [TeamError]
+/// state so the user actually sees whether it worked.
+void _deleteTeamWithFeedback(
+  BuildContext context,
+  TeamBloc teamBloc,
+  String teamId,
+) {
+  final localization = AppLocalizations.of(context)!;
+  teamBloc.add(DeleteTeamEvent(teamId));
+  teamBloc.stream
+      .firstWhere((state) => state is TeamDeleted || state is TeamError)
+      .then((state) {
+        if (!context.mounted) return;
+        if (state is TeamDeleted) {
+          AppSnackBar.showSuccessOverlay(
+            context,
+            localization.teamDeletedSuccess,
+          );
+        } else if (state is TeamError) {
+          AppSnackBar.showError(context, state.message);
+        }
+      });
 }

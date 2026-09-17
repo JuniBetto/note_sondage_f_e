@@ -968,7 +968,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
           targetUserId: candidate.userId,
         ),
       );
-      AppSnackBar.showSuccess(
+      AppSnackBar.showSuccessOverlay(
         context,
         _isItalian(context)
             ? 'Sostituzione avviata con ${candidate.displayName}.'
@@ -1006,7 +1006,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       if (!context.mounted) {
         return;
       }
-      AppSnackBar.showSuccess(
+      AppSnackBar.showSuccessOverlay(
         context,
         'La richiesta di modifica turno e stata inviata.',
       );
@@ -1042,7 +1042,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
       if (!context.mounted) {
         return;
       }
-      AppSnackBar.showSuccess(
+      AppSnackBar.showSuccessOverlay(
         context,
         _isItalian(context)
             ? 'La richiesta di sostituzione turno e stata inviata.'
@@ -1507,6 +1507,12 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
             }
             if (state is ShiftAssignmentDeleted) {
               _removeAssignments(state.assignmentIds);
+              AppSnackBar.showSuccessOverlay(
+                context,
+                AppLocalizations.of(
+                  context,
+                )!.shiftAssignmentDeletedSuccess(state.assignmentIds.length),
+              );
             }
             if (state is ShiftError) {
               AppSnackBar.showError(context, state.message);
