@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "907402131431-mpj5vppesjmps1qcgoptrpnaael7o8lt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.arthbet.noteSondage",
+            "certificate_hash": "a773b656bd147c4de6d50b9a06dc8e229ed5b155"
+          }
+        },
+        {
           "client_id": "907402131431-pqiaudv68qea3uufo7ectug6cnst58uf.apps.googleusercontent.com",
           "client_type": 3
         }
