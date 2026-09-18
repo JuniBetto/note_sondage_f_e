@@ -1145,6 +1145,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusPublished => 'Published';
 
   @override
+  String get list => 'List';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get sondageListSubtitle => 'Drafts and active surveys for your teams';
+
+  @override
+  String get sondageFeedSubtitle =>
+      'Unified feed of personal drafts, visible team drafts, and active surveys.';
+
+  @override
+  String get sondageCountDraft => 'Draft';
+
+  @override
+  String get sondageCountActive => 'Active';
+
+  @override
+  String get sondageCountClosed => 'Closed';
+
+  @override
   String votes(int count) {
     return '$count votes';
   }

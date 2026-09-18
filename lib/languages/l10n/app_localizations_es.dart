@@ -1161,6 +1161,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statusPublished => 'Publicado';
 
   @override
+  String get list => 'Lista';
+
+  @override
+  String get refresh => 'Actualizar';
+
+  @override
+  String get sondageListSubtitle =>
+      'Borradores y encuestas activas de tus equipos';
+
+  @override
+  String get sondageFeedSubtitle =>
+      'Feed unificado de borradores personales, borradores de equipo visibles y encuestas activas.';
+
+  @override
+  String get sondageCountDraft => 'Borradores';
+
+  @override
+  String get sondageCountActive => 'Activos';
+
+  @override
+  String get sondageCountClosed => 'Cerrados';
+
+  @override
   String votes(int count) {
     return '$count votos';
   }

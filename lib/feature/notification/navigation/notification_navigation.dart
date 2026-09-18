@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/event/navigation/event_open_intent_controll
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/task/navigation/task_open_intent_controller.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
+import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/app_keys.dart';
@@ -170,15 +171,35 @@ class NotificationNavigation {
       return false;
     }
 
-    final navIndex = switch (destination.path) {
+    final uri = Uri.parse(destination.path!);
+    final basePath = uri.path;
+
+    // /sondage/chat/conversation renders SondageMobile's bare Chat tab
+    // (no Scaffold of its own — it expects to live inside MainMobile's
+    // shell) only when no teamId is present; with a teamId it resolves to
+    // ChatMobileConversationPage instead, which has its own Scaffold and is
+    // safe to open as a standalone route. Opening the bare variant outside
+    // the shell renders without background/theme (black screen, unstyled
+    // text), so it must go through the shell like the other destinations.
+    final isBareSondageChatConversation =
+        basePath == RouterPaths.sondageChatConversation &&
+        (uri.queryParameters['teamId']?.trim().isEmpty ?? true);
+
+    final navIndex = switch (basePath) {
       RouterPaths.home => 0,
       RouterPaths.team => 1,
       RouterPaths.clocking => 3,
       RouterPaths.sondage => 4,
+      RouterPaths.sondageChat => 4,
+      _ when isBareSondageChatConversation => 4,
       _ => null,
     };
     if (navIndex == null) {
       return false;
+    }
+
+    if (navIndex == 4 && basePath != RouterPaths.sondage) {
+      SondageMobile.requestedInitialTab = 2;
     }
 
     final navigationBloc = getIt<NavigationBloc>();

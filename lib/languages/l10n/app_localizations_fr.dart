@@ -1161,6 +1161,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get statusPublished => 'Publié';
 
   @override
+  String get list => 'Liste';
+
+  @override
+  String get refresh => 'Actualiser';
+
+  @override
+  String get sondageListSubtitle =>
+      'Brouillons et sondages actifs de vos équipes';
+
+  @override
+  String get sondageFeedSubtitle =>
+      'Flux unifié des brouillons personnels, des brouillons d\'équipe visibles et des sondages actifs.';
+
+  @override
+  String get sondageCountDraft => 'Brouillons';
+
+  @override
+  String get sondageCountActive => 'Actifs';
+
+  @override
+  String get sondageCountClosed => 'Fermés';
+
+  @override
   String votes(int count) {
     return '$count votes';
   }

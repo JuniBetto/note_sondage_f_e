@@ -343,10 +343,12 @@ class _SondageMobileState extends State<SondageMobile>
                           current is SondagesLoaded ||
                           current is SondageLoading,
                       builder: (context, _) =>
-                          Text('Lista ${localization.sondage}'),
+                          Text('${localization.list} ${localization.sondage}'),
                     ),
-                    childTab2: Text('Create ${localization.sondage}'),
-                    childTab3: const Text('Chat'),
+                    childTab2: Text(
+                      '${localization.create} ${localization.sondage}',
+                    ),
+                    childTab3: Text(localization.chatTitle),
                     tabController: tabController,
                     setToUpdate: setState,
                   ),
@@ -404,25 +406,23 @@ class _SondageMobileState extends State<SondageMobile>
                               description: AppLocalizations.of(
                                 context,
                               )!.tutorialSurveyOverviewDescription,
-                              child: Row(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Bozze e sondaggi attivi dei tuoi team',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                color: Colors.grey[700],
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                  Text(
+                                    localization.sondageListSubtitle,
+                                    style: Theme.of(context).textTheme.bodyMedium
+                                        ?.copyWith(
+                                          color: Colors.grey[700],
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                        const SizedBox(height: 12),
-                                        AppSearchField(
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: AppSearchField(
                                           controller: _searchController,
                                           hintText: AppLocalizations.of(
                                             context,
@@ -433,13 +433,13 @@ class _SondageMobileState extends State<SondageMobile>
                                             });
                                           },
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: _refreshList,
-                                    icon: const Icon(Icons.refresh_rounded),
-                                    tooltip: 'Aggiorna',
+                                      ),
+                                      IconButton(
+                                        onPressed: _refreshList,
+                                        icon: const Icon(Icons.refresh_rounded),
+                                        tooltip: localization.refresh,
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -459,19 +459,19 @@ class _SondageMobileState extends State<SondageMobile>
                                   runSpacing: 8,
                                   children: [
                                     _buildSummaryChip(
-                                      label: 'Draft',
+                                      label: localization.sondageCountDraft,
                                       value: draftCount,
                                       color: Colors.orange,
                                       status: SondageStatus.draft,
                                     ),
                                     _buildSummaryChip(
-                                      label: 'Attivi',
+                                      label: localization.sondageCountActive,
                                       value: activeCount,
                                       color: Colors.green,
                                       status: SondageStatus.active,
                                     ),
                                     _buildSummaryChip(
-                                      label: 'Chiusi',
+                                      label: localization.sondageCountClosed,
                                       value: completedCount,
                                       color: Colors.red,
                                       status: SondageStatus.completed,

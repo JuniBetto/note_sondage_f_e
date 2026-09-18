@@ -2226,6 +2226,48 @@ abstract class AppLocalizations {
   /// **'Published'**
   String get statusPublished;
 
+  /// No description provided for @list.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get list;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @sondageListSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts and active surveys for your teams'**
+  String get sondageListSubtitle;
+
+  /// No description provided for @sondageFeedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unified feed of personal drafts, visible team drafts, and active surveys.'**
+  String get sondageFeedSubtitle;
+
+  /// No description provided for @sondageCountDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get sondageCountDraft;
+
+  /// No description provided for @sondageCountActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get sondageCountActive;
+
+  /// No description provided for @sondageCountClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get sondageCountClosed;
+
   /// Number of votes for an option
   ///
   /// In en, this message translates to:

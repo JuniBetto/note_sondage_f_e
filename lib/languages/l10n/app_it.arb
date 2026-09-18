@@ -363,6 +363,13 @@
     "statusClosed": "Chiuso",
     "statusCompleted": "Completato",
     "statusPublished": "Pubblicato",
+    "list": "Lista",
+    "refresh": "Aggiorna",
+    "sondageListSubtitle": "Bozze e sondaggi attivi dei tuoi team",
+    "sondageFeedSubtitle": "Feed unificato di bozze personali, bozze team visibili e sondaggi attivi.",
+    "sondageCountDraft": "Draft",
+    "sondageCountActive": "Attivi",
+    "sondageCountClosed": "Chiusi",
     "activeTurnOn": "Turno attivo su {teamName}",
     "@activeTurnOn": {
         "description": "Messaggio che mostra il turno attivo su un team",
