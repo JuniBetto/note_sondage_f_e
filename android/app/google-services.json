@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "907402131431-aru5na317v631578maj1lob2s811ushf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.arthbet.noteSondage",
+            "certificate_hash": "08efa85c548f6204897350877008b03cd8623b7e"
+          }
+        },
+        {
           "client_id": "907402131431-pqiaudv68qea3uufo7ectug6cnst58uf.apps.googleusercontent.com",
           "client_type": 3
         }
