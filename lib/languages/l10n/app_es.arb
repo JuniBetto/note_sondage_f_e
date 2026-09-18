@@ -363,6 +363,13 @@
     "statusClosed": "Cerrado",
     "statusCompleted": "Completado",
     "statusPublished": "Publicado",
+    "list": "Lista",
+    "refresh": "Actualizar",
+    "sondageListSubtitle": "Borradores y encuestas activas de tus equipos",
+    "sondageFeedSubtitle": "Feed unificado de borradores personales, borradores de equipo visibles y encuestas activas.",
+    "sondageCountDraft": "Borradores",
+    "sondageCountActive": "Activos",
+    "sondageCountClosed": "Cerrados",
     "activeTurnOn": "Turno activo en {teamName}",
     "@activeTurnOn": {
         "description": "Mensaje que muestra el turno activo en un equipo",

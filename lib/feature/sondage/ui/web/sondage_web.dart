@@ -309,7 +309,9 @@ class _SondageWebState extends State<SondageWeb> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Feed unificato di bozze personali, bozze team visibili e sondaggi attivi.',
+                                AppLocalizations.of(
+                                  context,
+                                )!.sondageFeedSubtitle,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.descriptionColor,
                                 ),
@@ -336,7 +338,7 @@ class _SondageWebState extends State<SondageWeb> {
                             OutlinedButton.icon(
                               onPressed: _refreshList,
                               icon: const Icon(Icons.refresh_rounded),
-                              label: const Text('Aggiorna'),
+                              label: Text(AppLocalizations.of(context)!.refresh),
                             ),
                             FilledButton.icon(
                               onPressed: _openCreateDialog,
@@ -378,19 +380,25 @@ class _SondageWebState extends State<SondageWeb> {
                       runSpacing: 10,
                       children: [
                         _buildStatChip(
-                          label: 'Draft',
+                          label: AppLocalizations.of(
+                            context,
+                          )!.sondageCountDraft,
                           value: draftCount,
                           color: Colors.orange,
                           status: SondageStatus.draft,
                         ),
                         _buildStatChip(
-                          label: 'Attivi',
+                          label: AppLocalizations.of(
+                            context,
+                          )!.sondageCountActive,
                           value: activeCount,
                           color: Colors.green,
                           status: SondageStatus.active,
                         ),
                         _buildStatChip(
-                          label: 'Chiusi',
+                          label: AppLocalizations.of(
+                            context,
+                          )!.sondageCountClosed,
                           value: completedCount,
                           color: Colors.red,
                           status: SondageStatus.completed,

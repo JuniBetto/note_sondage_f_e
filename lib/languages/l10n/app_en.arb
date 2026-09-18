@@ -353,6 +353,13 @@
     "statusClosed": "Closed",
     "statusCompleted": "Completed",
     "statusPublished": "Published",
+    "list": "List",
+    "refresh": "Refresh",
+    "sondageListSubtitle": "Drafts and active surveys for your teams",
+    "sondageFeedSubtitle": "Unified feed of personal drafts, visible team drafts, and active surveys.",
+    "sondageCountDraft": "Draft",
+    "sondageCountActive": "Active",
+    "sondageCountClosed": "Closed",
     "votes": "{count} votes",
     "@votes": {
         "description": "Number of votes for an option",

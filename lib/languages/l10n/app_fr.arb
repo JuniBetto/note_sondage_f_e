@@ -363,6 +363,13 @@
     "statusClosed": "Fermé",
     "statusCompleted": "Terminé",
     "statusPublished": "Publié",
+    "list": "Liste",
+    "refresh": "Actualiser",
+    "sondageListSubtitle": "Brouillons et sondages actifs de vos équipes",
+    "sondageFeedSubtitle": "Flux unifié des brouillons personnels, des brouillons d'équipe visibles et des sondages actifs.",
+    "sondageCountDraft": "Brouillons",
+    "sondageCountActive": "Actifs",
+    "sondageCountClosed": "Fermés",
     "activeTurnOn": "Tour actif sur {teamName}",
     "@activeTurnOn": {
         "description": "Message montrant le tour actif sur une équipe",
