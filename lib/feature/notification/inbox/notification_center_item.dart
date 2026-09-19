@@ -187,6 +187,14 @@ class NotificationCenterItem extends Equatable {
     return value;
   }
 
+  String? get requestedEndDate {
+    final value = metadata['requestedEndDate']?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
   String? get permissionStartTime {
     final value = metadata['permissionStartTime']?.trim();
     if (value == null || value.isEmpty) {
@@ -329,8 +337,7 @@ class NotificationCenterItem extends Equatable {
   String? get replacementOfferId => metadata['offerId']?.trim();
 
   bool supportsReplacementOfferDecision() {
-    return isReplacementOffer &&
-        (replacementOfferId?.isNotEmpty ?? false);
+    return isReplacementOffer && (replacementOfferId?.isNotEmpty ?? false);
   }
 
   bool supportsClockingDecision() {

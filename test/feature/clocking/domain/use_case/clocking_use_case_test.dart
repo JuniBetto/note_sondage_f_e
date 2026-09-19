@@ -108,6 +108,7 @@ class _FakeClockingRepository implements ClockingRepository {
   Future<ClockingRecordEntity> markVacation({
     String? teamId,
     required DateTime date,
+    DateTime? endDate,
     String? targetUserId,
     String? note,
   }) => throw UnimplementedError();
@@ -143,6 +144,7 @@ class _FakeClockingRepository implements ClockingRepository {
   Future<void> requestVacation({
     required String teamId,
     required DateTime date,
+    DateTime? endDate,
     String? note,
   }) => throw UnimplementedError();
 

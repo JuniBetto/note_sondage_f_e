@@ -192,6 +192,7 @@ class ClockingBloc extends Bloc<ClockingEvent, ClockingState> {
       () => clockingUseCase.markVacation(
         teamId: event.teamId,
         date: event.date,
+        endDate: event.endDate,
         targetUserId: event.targetUserId,
         note: event.note,
       ),

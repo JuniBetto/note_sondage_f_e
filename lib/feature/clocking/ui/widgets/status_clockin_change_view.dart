@@ -20,6 +20,7 @@ import 'package:note_sondage/theme/text_theme.dart';
 import 'package:note_sondage/ui/widgets/archive_view_toggle.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
+import 'package:note_sondage/ui/widgets/custom_date_range_picker.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 
 class StatusClockInChangeView extends StatefulWidget {
@@ -1458,12 +1459,13 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     }
 
     final selectedUser = ValueNotifier<String>(assignableMembers.first.userId);
-    final selectedDate = ValueNotifier<DateTime>(
-      DateTime(
-        (widget.selectedDate ?? DateTime.now()).year,
-        (widget.selectedDate ?? DateTime.now()).month,
-        (widget.selectedDate ?? DateTime.now()).day,
-      ),
+    final initialDay = DateTime(
+      (widget.selectedDate ?? DateTime.now()).year,
+      (widget.selectedDate ?? DateTime.now()).month,
+      (widget.selectedDate ?? DateTime.now()).day,
+    );
+    final selectedRange = ValueNotifier<DateTimeRange>(
+      DateTimeRange(start: initialDay, end: initialDay),
     );
     final noteController = TextEditingController();
     if (!mounted) return;
@@ -1522,21 +1524,26 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                     const SizedBox(height: 12),
                     CustomAppButton(
                       onPressed: () async {
-                        final picked = await showDatePicker(
+                        final picked = await showCustomDateRangePicker(
                           context: dialogContext,
-                          initialDate: selectedDate.value,
+                          initialDateRange: selectedRange.value,
                           firstDate: DateTime(2020),
                           lastDate: DateTime(2100),
                         );
                         if (picked == null) return;
-                        setDialogState(() => selectedDate.value = picked);
+                        setDialogState(() => selectedRange.value = picked);
                       },
                       type: ButtonType.outlined,
                       isActive: true,
                       fullWidth: true,
                       leadingIcon: const Icon(Icons.calendar_month_rounded),
                       child: Text(
-                        DateFormat('dd/MM/yyyy').format(selectedDate.value),
+                        selectedRange.value.start == selectedRange.value.end
+                            ? DateFormat(
+                                'dd/MM/yyyy',
+                              ).format(selectedRange.value.start)
+                            : '${DateFormat('dd/MM/yyyy').format(selectedRange.value.start)} - '
+                                  '${DateFormat('dd/MM/yyyy').format(selectedRange.value.end)}',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1578,7 +1585,8 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       MarkVacationEvent(
         teamId: teamId,
         targetUserId: selectedUser.value,
-        date: selectedDate.value,
+        date: selectedRange.value.start,
+        endDate: selectedRange.value.end,
         note: noteController.text.trim().isEmpty
             ? null
             : noteController.text.trim(),
@@ -1761,17 +1769,61 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     }
 
     final noteController = TextEditingController();
+    final initialDay = DateTime(
+      (widget.selectedDate ?? DateTime.now()).year,
+      (widget.selectedDate ?? DateTime.now()).month,
+      (widget.selectedDate ?? DateTime.now()).day,
+    );
+    final selectedRange = ValueNotifier<DateTimeRange>(
+      DateTimeRange(start: initialDay, end: initialDay),
+    );
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(localization.requestVacation),
-        content: TextField(
-          controller: noteController,
-          maxLines: 4,
-          decoration: InputDecoration(
-            labelText: localization.note,
-            hintText: localization.optionalRequestNoteHint,
-          ),
+        content: StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomAppButton(
+                    onPressed: () async {
+                      final picked = await showCustomDateRangePicker(
+                        context: dialogContext,
+                        initialDateRange: selectedRange.value,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked == null) return;
+                      setDialogState(() => selectedRange.value = picked);
+                    },
+                    type: ButtonType.outlined,
+                    isActive: true,
+                    fullWidth: true,
+                    leadingIcon: const Icon(Icons.calendar_month_rounded),
+                    child: Text(
+                      selectedRange.value.start == selectedRange.value.end
+                          ? DateFormat(
+                              'dd/MM/yyyy',
+                            ).format(selectedRange.value.start)
+                          : '${DateFormat('dd/MM/yyyy').format(selectedRange.value.start)} - '
+                                '${DateFormat('dd/MM/yyyy').format(selectedRange.value.end)}',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteController,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: localization.note,
+                      hintText: localization.optionalRequestNoteHint,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
         actions: [
           CustomAppButton(
@@ -1794,7 +1846,8 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     try {
       await _clockingUseCase.requestVacation(
         teamId: teamId,
-        date: widget.selectedDate ?? DateTime.now(),
+        date: selectedRange.value.start,
+        endDate: selectedRange.value.end,
         note: noteController.text.trim().isEmpty
             ? null
             : noteController.text.trim(),
@@ -2518,7 +2571,10 @@ class _WebRecordRow extends StatelessWidget {
                 Expanded(
                   child: _RecordTimeColumn(
                     label: 'Date',
-                    value: DateFormat('dd/MM/yyyy').format(record.date),
+                    value: record.periodEndDate != null
+                        ? '${DateFormat('dd/MM/yyyy').format(record.date)} - '
+                              '${DateFormat('dd/MM/yyyy').format(record.periodEndDate!)}'
+                        : DateFormat('dd/MM/yyyy').format(record.date),
                   ),
                 ),
                 Expanded(
@@ -2724,7 +2780,10 @@ class _MobileRecordCard extends StatelessWidget {
               children: [
                 _MiniInfo(
                   label: 'Date',
-                  value: DateFormat('dd/MM/yyyy').format(record.date),
+                  value: record.periodEndDate != null
+                      ? '${DateFormat('dd/MM/yyyy').format(record.date)} - '
+                            '${DateFormat('dd/MM/yyyy').format(record.periodEndDate!)}'
+                      : DateFormat('dd/MM/yyyy').format(record.date),
                 ),
                 _MiniInfo(
                   label: 'Clock-in',

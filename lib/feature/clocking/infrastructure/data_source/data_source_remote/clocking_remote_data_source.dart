@@ -174,6 +174,7 @@ class ClockingRemoteDataSource {
   Future<ClockingRecordEntity> markVacation({
     String? teamId,
     required DateTime date,
+    DateTime? endDate,
     String? targetUserId,
     String? note,
   }) async {
@@ -183,11 +184,19 @@ class ClockingRemoteDataSource {
         date.month,
         date.day,
       ).toIso8601String().split('T').first;
+      final formattedEndDate = endDate == null
+          ? null
+          : DateTime(
+              endDate.year,
+              endDate.month,
+              endDate.day,
+            ).toIso8601String().split('T').first;
       final response = await _dio.post(
         '/api/aggregate/clocking/vacation',
         data: {
           if (teamId != null && teamId.isNotEmpty) 'teamId': teamId,
           'date': formattedDate,
+          if (formattedEndDate != null) 'endDate': formattedEndDate,
           if (targetUserId != null && targetUserId.isNotEmpty)
             'targetUserId': targetUserId,
           if (note != null && note.isNotEmpty) 'note': note,
@@ -359,6 +368,7 @@ class ClockingRemoteDataSource {
   Future<void> requestVacation({
     required String teamId,
     required DateTime date,
+    DateTime? endDate,
     String? note,
   }) async {
     try {
@@ -367,11 +377,19 @@ class ClockingRemoteDataSource {
         date.month,
         date.day,
       ).toIso8601String().split('T').first;
+      final formattedEndDate = endDate == null
+          ? null
+          : DateTime(
+              endDate.year,
+              endDate.month,
+              endDate.day,
+            ).toIso8601String().split('T').first;
       await _dio.post(
         '/api/aggregate/clocking/request-vacation',
         data: {
           'teamId': teamId,
           'date': formattedDate,
+          if (formattedEndDate != null) 'endDate': formattedEndDate,
           if (note != null && note.isNotEmpty) 'note': note,
         },
       );

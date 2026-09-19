@@ -74,6 +74,7 @@ class ClockingMapper {
       ownerEditable: json['ownerEditable'] == true,
       canDecommit: json['canDecommit'] == true,
       canCommit: json['canCommit'] == true,
+      periodEndDate: parseDateTime(json['periodEndDate']),
     );
   }
 
@@ -109,6 +110,8 @@ class ClockingMapper {
       'ownerEditable': entity.ownerEditable,
       'canDecommit': entity.canDecommit,
       'canCommit': entity.canCommit,
+      if (entity.periodEndDate != null)
+        'periodEndDate': entity.periodEndDate!.toIso8601String(),
     };
   }
 }

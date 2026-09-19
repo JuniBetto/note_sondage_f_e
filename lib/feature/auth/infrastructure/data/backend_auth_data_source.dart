@@ -587,6 +587,7 @@ class BackendAuthDataSource {
     required String teamId,
     required String requesterUserId,
     required String requestedDate,
+    String? requestedEndDate,
     String? note,
   }) async {
     await _postClockingDecision(
@@ -595,6 +596,8 @@ class BackendAuthDataSource {
         'teamId': teamId,
         'targetUserId': requesterUserId,
         'date': requestedDate,
+        if (requestedEndDate != null && requestedEndDate.isNotEmpty)
+          'endDate': requestedEndDate,
         if (note != null && note.isNotEmpty) 'note': note,
       },
       'approve vacation request',
@@ -605,6 +608,7 @@ class BackendAuthDataSource {
     required String teamId,
     required String requesterUserId,
     required String requestedDate,
+    String? requestedEndDate,
     String? note,
   }) async {
     await _postClockingDecision(
@@ -613,6 +617,8 @@ class BackendAuthDataSource {
         'teamId': teamId,
         'targetUserId': requesterUserId,
         'date': requestedDate,
+        if (requestedEndDate != null && requestedEndDate.isNotEmpty)
+          'endDate': requestedEndDate,
         if (note != null && note.isNotEmpty) 'note': note,
       },
       'reject vacation request',

@@ -285,6 +285,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
               teamId: teamId,
               requesterUserId: requesterUserId,
               requestedDate: requestedDate,
+              requestedEndDate: item.requestedEndDate,
               note: item.metadata['note']?.trim(),
             );
             break;
@@ -477,6 +478,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             teamId: teamId,
             requesterUserId: requesterUserId,
             requestedDate: requestedDate,
+            requestedEndDate: item.requestedEndDate,
             note: item.metadata['note']?.trim(),
           );
           break;
@@ -594,6 +596,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
             teamId: teamId,
             requesterUserId: requesterUserId,
             requestedDate: requestedDate,
+            requestedEndDate: item.requestedEndDate,
             note: item.metadata['note']?.trim(),
           );
           break;

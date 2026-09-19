@@ -138,6 +138,7 @@ class ClockingRepositoryImpl implements ClockingRepository {
   Future<ClockingRecordEntity> markVacation({
     String? teamId,
     required DateTime date,
+    DateTime? endDate,
     String? targetUserId,
     String? note,
   }) async {
@@ -145,6 +146,7 @@ class ClockingRepositoryImpl implements ClockingRepository {
       return await _remote.markVacation(
         teamId: teamId,
         date: date,
+        endDate: endDate,
         targetUserId: targetUserId,
         note: note,
       );
@@ -264,10 +266,16 @@ class ClockingRepositoryImpl implements ClockingRepository {
   Future<void> requestVacation({
     required String teamId,
     required DateTime date,
+    DateTime? endDate,
     String? note,
   }) async {
     try {
-      await _remote.requestVacation(teamId: teamId, date: date, note: note);
+      await _remote.requestVacation(
+        teamId: teamId,
+        date: date,
+        endDate: endDate,
+        note: note,
+      );
     } catch (e) {
       throw Exception('Failed to request vacation: $e');
     }

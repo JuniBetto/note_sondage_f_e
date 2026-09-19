@@ -88,18 +88,20 @@ class StopBreakEvent extends ClockingEvent {
 class MarkVacationEvent extends ClockingEvent {
   final String? teamId;
   final DateTime date;
+  final DateTime? endDate;
   final String? targetUserId;
   final String? note;
 
   const MarkVacationEvent({
     required this.teamId,
     required this.date,
+    this.endDate,
     this.targetUserId,
     this.note,
   });
 
   @override
-  List<Object?> get props => [teamId, date, targetUserId, note];
+  List<Object?> get props => [teamId, date, endDate, targetUserId, note];
 }
 
 class MarkPermissionEvent extends ClockingEvent {

@@ -41,10 +41,12 @@ abstract class ClockingRepository {
     DateTime? actionAt,
   });
 
-  /// Segna una giornata come ferie per l'utente corrente o per un membro del team
+  /// Segna un giorno o un intervallo di giorni come ferie per l'utente
+  /// corrente o per un membro del team
   Future<ClockingRecordEntity> markVacation({
     String? teamId,
     required DateTime date,
+    DateTime? endDate,
     String? targetUserId,
     String? note,
   });
@@ -95,6 +97,7 @@ abstract class ClockingRepository {
   Future<void> requestVacation({
     required String teamId,
     required DateTime date,
+    DateTime? endDate,
     String? note,
   });
 

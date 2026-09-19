@@ -104,6 +104,7 @@ class ClockingUseCase {
   Future<ClockingRecordEntity> markVacation({
     String? teamId,
     required DateTime date,
+    DateTime? endDate,
     String? targetUserId,
     String? note,
   }) async {
@@ -111,6 +112,7 @@ class ClockingUseCase {
       return await repository.markVacation(
         teamId: teamId,
         date: date,
+        endDate: endDate,
         targetUserId: targetUserId,
         note: note,
       );
@@ -255,10 +257,16 @@ class ClockingUseCase {
   Future<void> requestVacation({
     required String teamId,
     required DateTime date,
+    DateTime? endDate,
     String? note,
   }) async {
     try {
-      await repository.requestVacation(teamId: teamId, date: date, note: note);
+      await repository.requestVacation(
+        teamId: teamId,
+        date: date,
+        endDate: endDate,
+        note: note,
+      );
     } catch (e) {
       throw Exception('Failed to request vacation: $e');
     }

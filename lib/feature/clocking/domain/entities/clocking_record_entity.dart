@@ -67,6 +67,11 @@ class ClockingRecordEntity {
   final bool canDecommit;
   final bool canCommit;
 
+  /// Set only when this record is one day of a multi-day vacation range,
+  /// so the UI can show the whole period even though each day of the
+  /// range is its own record.
+  final DateTime? periodEndDate;
+
   const ClockingRecordEntity({
     required this.id,
     required this.userId,
@@ -88,6 +93,7 @@ class ClockingRecordEntity {
     this.ownerEditable = false,
     this.canDecommit = false,
     this.canCommit = false,
+    this.periodEndDate,
   });
 
   ClockingRecordEntity copyWith({
@@ -111,6 +117,7 @@ class ClockingRecordEntity {
     bool? ownerEditable,
     bool? canDecommit,
     bool? canCommit,
+    DateTime? periodEndDate,
   }) {
     return ClockingRecordEntity(
       id: id ?? this.id,
@@ -134,6 +141,7 @@ class ClockingRecordEntity {
       ownerEditable: ownerEditable ?? this.ownerEditable,
       canDecommit: canDecommit ?? this.canDecommit,
       canCommit: canCommit ?? this.canCommit,
+      periodEndDate: periodEndDate ?? this.periodEndDate,
     );
   }
 
