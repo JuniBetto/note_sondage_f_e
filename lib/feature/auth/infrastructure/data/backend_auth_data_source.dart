@@ -351,6 +351,7 @@ class BackendAuthDataSource {
     String? clientApp,
     String? pushProvider,
     String? pushToken,
+    String? language,
   }) async {
     try {
       await _authenticatedDio.post(
@@ -364,6 +365,7 @@ class BackendAuthDataSource {
           if (pushProvider != null && pushProvider.isNotEmpty)
             'pushProvider': pushProvider,
           if (pushToken != null && pushToken.isNotEmpty) 'pushToken': pushToken,
+          if (language != null && language.isNotEmpty) 'language': language,
         },
       );
     } on DioException catch (e) {

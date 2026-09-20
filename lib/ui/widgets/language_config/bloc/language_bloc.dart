@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/utils/app_constant.dart';
 import 'package:note_sondage/core/utils/hive_service.dart';
+import 'package:note_sondage/feature/notification/push/push_notification_service.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_event.dart';
 import 'package:note_sondage/ui/widgets/language_config/bloc/language_state.dart';
 
@@ -51,5 +55,20 @@ class LanguageBloc extends Bloc<LanguageEvent, LanguageState> {
     );
 
     emit(LanguageChanged(Locale(event.languageCode)));
+
+    // Informa il backend della nuova lingua (best-effort, non blocca la UI,
+    // funziona anche su web) cosi' le notifiche push/in-app vengono
+    // localizzate di conseguenza.
+    if (getIt.isRegistered<PushNotificationService>()) {
+      unawaited(
+        getIt<PushNotificationService>().syncLanguagePreference().catchError((
+          Object error,
+        ) {
+          debugPrint(
+            '[LanguageBloc] Failed to sync language with backend: $error',
+          );
+        }),
+      );
+    }
   }
 }
