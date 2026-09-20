@@ -42,9 +42,9 @@ class ChatMessageBubble extends StatelessWidget {
     // same tint composites against a dark canvas instead — left untouched).
     final bubbleColor = message.mine
         ? accentColor.withValues(alpha: 0.96)
-        : accentColor.withValues(
+        : /*accentColor.withValues(
             alpha: theme.brightness == Brightness.dark ? 0.14 : 0.38,
-          );
+          );*/ Colors.grey.withValues(alpha: theme.brightness == Brightness.dark ? 0.14 : 0.99);
     final textColor = Colors.white;/* message.mine
         ? Colors.white
         : Colors.white.withValues(blue: theme.brightness == Brightness.dark ? null: 100,

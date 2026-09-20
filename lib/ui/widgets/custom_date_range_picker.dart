@@ -113,7 +113,11 @@ class _DateRangePickerContentState extends State<_DateRangePickerContent> {
             onRangeSelected: (start, end, focusedDay) {
               setState(() {
                 _rangeStart = start;
-                _rangeEnd = end;
+                // A single tap reports end as null (table_calendar expects
+                // a second tap to complete the range). Treat that as a
+                // one-day selection instead of leaving Save disabled — a
+                // second tap on a later day still extends it normally.
+                _rangeEnd = end ?? start;
                 _focusedDay = focusedDay;
               });
             },
@@ -189,9 +193,9 @@ class _DateRangePickerContentState extends State<_DateRangePickerContent> {
             const SizedBox(width: 8),
             FilledButton(
               onPressed: canSave
-                  ? () => Navigator.of(context).pop(
-                      DateTimeRange(start: _rangeStart!, end: _rangeEnd!),
-                    )
+                  ? () => Navigator.of(
+                      context,
+                    ).pop(DateTimeRange(start: _rangeStart!, end: _rangeEnd!))
                   : null,
               child: Text(l.save),
             ),

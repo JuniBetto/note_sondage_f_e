@@ -10,6 +10,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/core/utils/app_constant.dart';
+import 'package:note_sondage/core/utils/hive_service.dart';
 import 'package:note_sondage/feature/auth/domain/entities/user_device_entity.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_interaction_gate.dart';
@@ -231,6 +233,9 @@ class PushNotificationService {
   static const _lastRegisteredPushTokenKey = 'last_registered_push_token';
   static const _lastRegisteredPushUserIdKey = 'last_registered_push_user_id';
   static const _lastRegisteredPushAtKey = 'last_registered_push_at';
+  static const _lastRegisteredPushLanguageKey = 'last_registered_push_language';
+  static const _lastSyncedLanguageKey = 'last_synced_language';
+  static const _lastSyncedLanguageUserIdKey = 'last_synced_language_user_id';
   static const Duration _pushRegistrationRefreshInterval = Duration(hours: 6);
   static const Duration _registrationRetryDelay = Duration(seconds: 15);
   static const int _maxRegistrationRetryAttempts = 10;
@@ -343,7 +348,8 @@ class PushNotificationService {
         _scheduleRegistrationRetry(reason: 'fcm_token_unavailable');
         return;
       }
-      if (!await _shouldRegisterToken(firebaseUser.uid, token)) {
+      final language = _currentAppLanguage();
+      if (!await _shouldRegisterToken(firebaseUser.uid, token, language)) {
         _clearRegistrationRetry();
         return;
       }
@@ -356,8 +362,9 @@ class PushNotificationService {
         clientApp: 'flutter_app',
         pushProvider: 'FIREBASE',
         pushToken: token,
+        language: language,
       );
-      await _markTokenRegistered(firebaseUser.uid, token);
+      await _markTokenRegistered(firebaseUser.uid, token, language);
       _clearRegistrationRetry();
       _lastRegistrationErrorMessage = null;
       debugPrint(
@@ -381,6 +388,42 @@ class PushNotificationService {
         '[PushNotificationService] device registration failed: $error',
       );
       _scheduleRegistrationRetry(reason: 'registration_failed');
+    }
+  }
+
+  /// Syncs the app's currently selected language to the backend so
+  /// push/in-app notification text can be localized for this user.
+  ///
+  /// Unlike [syncDeviceRegistration], this does NOT require FCM/push
+  /// support: it runs on every platform, including web, where
+  /// [_supportsPushPlatform] is false and the FCM registration flow never
+  /// runs at all. It reuses the same device-registration endpoint (all its
+  /// push-related fields are optional server-side) purely as a transport
+  /// for the language preference.
+  Future<void> syncLanguagePreference() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return;
+
+    final language = _currentAppLanguage();
+    if (language == null) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedUserId = prefs.getString(_lastSyncedLanguageUserIdKey);
+      final cachedLanguage = prefs.getString(_lastSyncedLanguageKey);
+      if (cachedUserId == firebaseUser.uid && cachedLanguage == language) {
+        return;
+      }
+
+      final fingerprint = await _getOrCreateDeviceFingerprint();
+      await _backendAuth.registerCurrentDevice(
+        deviceFingerprint: fingerprint,
+        language: language,
+      );
+      await prefs.setString(_lastSyncedLanguageUserIdKey, firebaseUser.uid);
+      await prefs.setString(_lastSyncedLanguageKey, language);
+    } catch (error) {
+      debugPrint('[PushNotificationService] language sync failed: $error');
     }
   }
 
@@ -616,10 +659,15 @@ class PushNotificationService {
         status == AuthorizationStatus.provisional;
   }
 
-  Future<bool> _shouldRegisterToken(String userId, String token) async {
+  Future<bool> _shouldRegisterToken(
+    String userId,
+    String token,
+    String? language,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final cachedUserId = prefs.getString(_lastRegisteredPushUserIdKey);
     final cachedToken = prefs.getString(_lastRegisteredPushTokenKey);
+    final cachedLanguage = prefs.getString(_lastRegisteredPushLanguageKey);
     final cachedAtRaw = prefs.getString(_lastRegisteredPushAtKey);
     final cachedAt = cachedAtRaw == null
         ? null
@@ -628,17 +676,46 @@ class PushNotificationService {
         cachedAt != null &&
         DateTime.now().difference(cachedAt) < _pushRegistrationRefreshInterval;
 
-    return cachedUserId != userId || cachedToken != token || !isCacheFresh;
+    return cachedUserId != userId ||
+        cachedToken != token ||
+        cachedLanguage != language ||
+        !isCacheFresh;
   }
 
-  Future<void> _markTokenRegistered(String userId, String token) async {
+  Future<void> _markTokenRegistered(
+    String userId,
+    String token, [
+    String? language,
+  ]) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastRegisteredPushUserIdKey, userId);
     await prefs.setString(_lastRegisteredPushTokenKey, token);
+    if (language != null) {
+      await prefs.setString(_lastRegisteredPushLanguageKey, language);
+    } else {
+      await prefs.remove(_lastRegisteredPushLanguageKey);
+    }
     await prefs.setString(
       _lastRegisteredPushAtKey,
       DateTime.now().toIso8601String(),
     );
+  }
+
+  /// Reads the app's currently selected display language (same Hive source
+  /// LanguageBloc uses), so the backend can localize push/in-app
+  /// notification text for this user. Returns null if never set (backend
+  /// then defaults to Italian, matching pre-existing behavior).
+  String? _currentAppLanguage() {
+    try {
+      final saved = HiveService.getHive<String>(
+        languageConfigBox,
+        languageKeyBox,
+      );
+      return saved != null && saved.isNotEmpty ? saved : null;
+    } catch (error) {
+      debugPrint('[PushNotificationService] failed to read app language: $error');
+      return null;
+    }
   }
 
   Future<void> dispose() async {

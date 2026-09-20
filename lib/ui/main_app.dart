@@ -498,6 +498,7 @@ class _MainAppState extends State<MainApp> {
       }
       realtimeService.connect(state.user.uid);
       unawaited(pushNotificationService.syncDeviceRegistration());
+      unawaited(pushNotificationService.syncLanguagePreference());
       unawaited(notificationPreferencesCubit.loadPreferences());
       unawaited(notificationCenterCubit.loadNotifications(force: true));
       // Avvia lo scheduler allarmi turni
@@ -545,6 +546,7 @@ class _MainAppState extends State<MainApp> {
     _timezoneSync.resume();
     getIt<RealtimeNotificationService>().connect(authState.user.uid);
     unawaited(getIt<PushNotificationService>().syncDeviceRegistration());
+    unawaited(getIt<PushNotificationService>().syncLanguagePreference());
     unawaited(NotificationNavigation.drainPending(context: context));
   }
 
