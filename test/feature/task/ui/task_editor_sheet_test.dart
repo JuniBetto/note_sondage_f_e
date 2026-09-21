@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
+import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_priority.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
@@ -10,7 +12,30 @@ import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 
 import '../../../support/test_app.dart';
 
+class _FakeLocalNotificationService extends LocalNotificationService {
+  @override
+  Future<AlarmPermissionStatus> requestAlarmModePermissions() async {
+    return const AlarmPermissionStatus(
+      exactAlarm: true,
+      fullScreenIntent: true,
+    );
+  }
+}
+
 void main() {
+  final getIt = GetIt.instance;
+
+  setUp(() async {
+    await getIt.reset();
+    getIt.registerSingleton<LocalNotificationService>(
+      _FakeLocalNotificationService(),
+    );
+  });
+
+  tearDown(() async {
+    await getIt.reset();
+  });
+
   group('showTaskEditorSheet', () {
     testWidgets(
       'preserves the current assignee when it is no longer in the active loader list',
