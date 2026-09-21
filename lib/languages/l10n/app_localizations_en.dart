@@ -1524,6 +1524,66 @@ class AppLocalizationsEn extends AppLocalizations {
       'This section gives you an instant view of your clocking status and the main information for the current day.';
 
   @override
+  String get teamClockingRequirementTitle => 'Required clocking';
+
+  @override
+  String get teamClockingRequirementDescription =>
+      'If enabled, every team member must register a clocking, vacation, or permission entry.';
+
+  @override
+  String get teamClockingRequirementDefaultInfo =>
+      'Default: No. When enabled, the system reminds the user and alerts the owner when a clocking is missing or still open.';
+
+  @override
+  String get teamClockingRequirementStartDateTitle => 'Start date';
+
+  @override
+  String get teamClockingRequirementStartDateSubtitle =>
+      'Required clocking notifications start from this date.';
+
+  @override
+  String get teamClockingRequirementEndDateTitle => 'End date';
+
+  @override
+  String get teamClockingRequirementEndDateSubtitle =>
+      'If set, notifications stop after this date. Leave it empty to keep them active with no end date.';
+
+  @override
+  String get teamClockingRequirementNoEndDate => 'No end date';
+
+  @override
+  String get teamClockingRequirementClearEndDate => 'Clear end date';
+
+  @override
+  String get teamClockingRequirementUserReminderTitle => 'User reminder';
+
+  @override
+  String get teamClockingRequirementUserReminderSubtitle =>
+      'Reminder time in each member\'s local timezone.';
+
+  @override
+  String get teamClockingRequirementMissingCheckTitle =>
+      'Missing clocking check';
+
+  @override
+  String get teamClockingRequirementMissingCheckSubtitle =>
+      'After this time in the member\'s timezone, the owner is alerted if an entry is missing.';
+
+  @override
+  String get teamClockingRequirementOpenCheckTitle => 'Open clocking check';
+
+  @override
+  String get teamClockingRequirementOpenCheckSubtitle =>
+      'After this time in the member\'s timezone, the owner is alerted if a clocking is still open.';
+
+  @override
+  String get teamClockingRequirementAddOverrideTooltip =>
+      'Add a custom time for a member';
+
+  @override
+  String get teamClockingRequirementChooseMember => 'Choose a member';
+
+  @override
   String get personal => 'Personal';
 
   @override

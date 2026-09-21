@@ -93,6 +93,11 @@ class _MainMobileState extends State<MainMobile> {
             showcaseKey: _navigationBarKey,
             title: _navigationTitle(context, loc),
             description: _navigationDescription(context),
+            // Il target è a ridosso del bordo inferiore: forziamo il
+            // tooltip sopra per evitare che l'algoritmo di auto-posizionamento
+            // di showcaseview lo disegni nell'area occupata dalla barra di
+            // sistema Android (che non considera nei suoi calcoli).
+            tooltipPosition: TooltipPosition.top,
             child: const NavigationBarWidget(key: Key('mobile_navigation_bar')),
           ),
           floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
@@ -145,6 +150,7 @@ class _MainMobileState extends State<MainMobile> {
     required String title,
     required String description,
     required Widget child,
+    TooltipPosition? tooltipPosition,
   }) {
     if (_shouldBypassShowcaseInDebug()) {
       return child;
@@ -154,6 +160,7 @@ class _MainMobileState extends State<MainMobile> {
       key: showcaseKey,
       title: title,
       description: description,
+      tooltipPosition: tooltipPosition,
       child: child,
     );
   }

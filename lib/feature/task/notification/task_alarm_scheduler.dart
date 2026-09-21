@@ -24,6 +24,12 @@ class TaskAlarmScheduler {
   StreamSubscription<TaskState>? _subscription;
   bool _started = false;
 
+  /// Firma (data di ancoraggio + offset + titolo) dell'ultima schedulazione
+  /// riuscita per ciascun task, usata da [_cancelAndReschedule] per capire
+  /// se rischedulare è davvero necessario. Vedi il commento li' per il
+  /// perche'.
+  final Map<String, String> _lastScheduledSignature = <String, String>{};
+
   /// Avvia l'ascolto degli stati del bloc.
   void start() {
     if (_started) {
@@ -56,6 +62,7 @@ class TaskAlarmScheduler {
     _subscription?.cancel();
     _subscription = null;
     _started = false;
+    _lastScheduledSignature.clear();
     debugPrint('[TaskAlarmScheduler] stopped');
   }
 
@@ -65,11 +72,13 @@ class TaskAlarmScheduler {
     } else if (state is TaskUpdated) {
       await _cancelAndReschedule(state.task);
     } else if (state is TaskArchived) {
+      _lastScheduledSignature.remove(state.task.id);
       await _localNotifications.cancelTaskAlarms(
         taskId: state.task.id,
         alarmOffsets: state.task.reminderOffsets,
       );
     } else if (state is TaskDeleted) {
+      _lastScheduledSignature.remove(state.task.id);
       await _localNotifications.cancelTaskAlarms(
         taskId: state.task.id,
         alarmOffsets: state.task.reminderOffsets,
@@ -89,13 +98,44 @@ class TaskAlarmScheduler {
 
   /// Cancella gli allarmi precedenti e rischedula in base allo stato attuale
   /// del task (creazione, modifica, cambio stato/assegnatario, ripristino).
+  ///
+  /// [syncTasks] richiama questo metodo per ogni task ad ogni ricaricamento
+  /// della lista (apertura schermata, pull-to-refresh, dopo un salvataggio,
+  /// eventi realtime...), non solo quando qualcosa e' davvero cambiato.
+  /// [LocalNotificationService.scheduleTaskAlarms] cancella sempre prima
+  /// l'allarme esistente e lo rischedula solo se l'orario calcolato e'
+  /// ancora nel futuro: se un resync "a vuoto" capita esattamente dopo che
+  /// un allarme e' scattato ma prima che il sistema l'abbia consegnato,
+  /// cancellava un allarme gia' armato e valido senza piu' rischedularlo,
+  /// facendolo sparire nel nulla. Per questo si rischedula solo se la
+  /// configurazione (data di ancoraggio, offset, titolo) e' davvero
+  /// cambiata dall'ultima schedulazione riuscita.
   Future<void> _cancelAndReschedule(TaskEntity task) async {
     final anchorTime = task.reminderAnchorTime;
     if (task.isArchived || task.reminderOffsets.isEmpty || anchorTime == null) {
+      _lastScheduledSignature.remove(task.id);
       await _localNotifications.cancelTaskAlarms(
         taskId: task.id,
         alarmOffsets: task.reminderOffsets,
       );
+      return;
+    }
+
+    // Le notifiche task possono essere disattivate/riattivate da un toggle
+    // (vedi NotificationPreferencesCubit) senza passare da qui: se sono
+    // disattivate non ci fidiamo mai della cache, cosi' che riattivarle
+    // faccia ripartire la schedulazione al prossimo sync invece di restare
+    // bloccata perche' la firma risulta "gia' fatta".
+    final notificationsEnabled = await _localNotifications
+        .areTaskNotificationsEnabled();
+    final signature = notificationsEnabled
+        ? _signatureFor(
+            anchorTime: anchorTime,
+            offsets: task.reminderOffsets,
+            title: task.title,
+          )
+        : null;
+    if (signature != null && _lastScheduledSignature[task.id] == signature) {
       return;
     }
 
@@ -108,5 +148,14 @@ class TaskAlarmScheduler {
       anchorTime: anchorTime,
       alarmOffsets: task.reminderOffsets,
     );
+    if (signature != null) {
+      _lastScheduledSignature[task.id] = signature;
+    }
   }
+
+  String _signatureFor({
+    required DateTime anchorTime,
+    required List<int> offsets,
+    required String title,
+  }) => '${anchorTime.toIso8601String()}|${offsets.join(',')}|$title';
 }

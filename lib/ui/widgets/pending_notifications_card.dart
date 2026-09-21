@@ -287,279 +287,313 @@ class _PendingNotificationTile extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final localization = AppLocalizations.of(context)!;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: canRespond ? null : () => _handleOpen(context),
-        child: Ink(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colorScheme.homeSecondary,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSeen
-                  ? Colors.grey.withValues(alpha: 0.1)
-                  : colorScheme.selectItem!.withValues(alpha: 0.28),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+            onTap: canRespond ? null : () => _handleOpen(context),
+            child: Ink(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.homeSecondary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSeen
+                      ? Colors.grey.withValues(alpha: 0.1)
+                      : colorScheme.selectItem!.withValues(alpha: 0.28),
+                ),
+              ),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title.isEmpty ? item.eventType : item.title,
-                          style: theme.textTheme.titleSmall?.copyWith(
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title.isEmpty ? item.eventType : item.title,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.textColor,
+                              ),
+                            ),
+                            if (item.bodyWithTeamContext.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                item.bodyWithTeamContext,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.textColor,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                            if (teamName != null || roleCode != null) ...[
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  if (teamName != null)
+                                    _DetailChip(
+                                      label: 'Team: $teamName',
+                                      color: colorScheme.selectItem!,
+                                    ),
+                                  if (roleCode != null)
+                                    _DetailChip(
+                                      label: 'Ruolo: ${_formatRole(roleCode)}',
+                                      color: const Color(0xFF1B8C4A),
+                                    ),
+                                ],
+                              ),
+                            ],
+                            if (actionRequestNote != null) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.selectItem!.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      localization.note,
+                                      style: textTheme.labelMedium?.copyWith(
+                                        color: colorScheme.selectItem,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      actionRequestNote,
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        color: colorScheme.textColor,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            if (impactedShiftSummaries.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              _ImpactedItemsSection(
+                                title: _impactedShiftTitle(context),
+                                icon: Icons.event_busy_rounded,
+                                summaries: impactedShiftSummaries,
+                                textTheme: textTheme,
+                                colorScheme: colorScheme,
+                              ),
+                            ],
+                            if (impactedTaskSummaries.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              _ImpactedItemsSection(
+                                title: _impactedTaskTitle(context),
+                                icon: Icons.task_alt_rounded,
+                                summaries: impactedTaskSummaries,
+                                textTheme: textTheme,
+                                colorScheme: colorScheme,
+                              ),
+                            ],
+                            if (impactedEventSummaries.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              _ImpactedItemsSection(
+                                title: _impactedEventTitle(context),
+                                icon: Icons.event_rounded,
+                                summaries: impactedEventSummaries,
+                                textTheme: textTheme,
+                                colorScheme: colorScheme,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSeen
+                              ? Colors.grey.withValues(alpha: 0.12)
+                              : colorScheme.selectItem!.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          isSeen ? 'Vista' : 'Nuova',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: isSeen
+                                ? colorScheme.descriptionColor
+                                : colorScheme.selectItem,
                             fontWeight: FontWeight.w700,
-                            color: colorScheme.textColor,
                           ),
                         ),
-                        if (item.bodyWithTeamContext.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            item.bodyWithTeamContext,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.textColor,
-                              height: 1.35,
-                            ),
-                          ),
-                        ],
-                        if (teamName != null || roleCode != null) ...[
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              if (teamName != null)
-                                _DetailChip(
-                                  label: 'Team: $teamName',
-                                  color: colorScheme.selectItem!,
-                                ),
-                              if (roleCode != null)
-                                _DetailChip(
-                                  label: 'Ruolo: ${_formatRole(roleCode)}',
-                                  color: const Color(0xFF1B8C4A),
-                                ),
-                            ],
-                          ),
-                        ],
-                        if (actionRequestNote != null) ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: colorScheme.selectItem!.withValues(
-                                alpha: 0.08,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  localization.note,
-                                  style: textTheme.labelMedium?.copyWith(
-                                    color: colorScheme.selectItem,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  actionRequestNote,
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.textColor,
-                                    height: 1.35,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        if (impactedShiftSummaries.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          _ImpactedItemsSection(
-                            title: _impactedShiftTitle(context),
-                            icon: Icons.event_busy_rounded,
-                            summaries: impactedShiftSummaries,
-                            textTheme: textTheme,
-                            colorScheme: colorScheme,
-                          ),
-                        ],
-                        if (impactedTaskSummaries.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          _ImpactedItemsSection(
-                            title: _impactedTaskTitle(context),
-                            icon: Icons.task_alt_rounded,
-                            summaries: impactedTaskSummaries,
-                            textTheme: textTheme,
-                            colorScheme: colorScheme,
-                          ),
-                        ],
-                        if (impactedEventSummaries.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          _ImpactedItemsSection(
-                            title: _impactedEventTitle(context),
-                            icon: Icons.event_rounded,
-                            summaries: impactedEventSummaries,
-                            textTheme: textTheme,
-                            colorScheme: colorScheme,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSeen
-                          ? Colors.grey.withValues(alpha: 0.12)
-                          : colorScheme.selectItem!.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      isSeen ? 'Vista' : 'Nuova',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: isSeen
-                            ? colorScheme.descriptionColor
-                            : colorScheme.selectItem,
-                        fontWeight: FontWeight.w700,
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Icon(
-                    _leadingIconFor(item),
-                    size: 16,
-                    color: colorScheme.descriptionColor,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      _formatDate(context, item.occurredAt),
-                      style: theme.textTheme.bodySmall?.copyWith(
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(
+                        _leadingIconFor(item),
+                        size: 16,
                         color: colorScheme.descriptionColor,
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _formatDate(context, item.occurredAt),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.descriptionColor,
+                          ),
+                        ),
+                      ),
+                      if (navigationLabel != null)
+                        Text(
+                          navigationLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.selectItem,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                    ],
                   ),
-                  if (navigationLabel != null)
-                    Text(
-                      navigationLabel,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.selectItem,
-                        fontWeight: FontWeight.w700,
+                  if (canRespond) ...[
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        OutlinedButton(
+                          onPressed: isProcessing
+                              ? null
+                              : () async {
+                                  if (item.supportsReplacementOfferDecision()) {
+                                    final reason =
+                                        await showShiftReplacementRejectReasonDialog(
+                                          context: context,
+                                        );
+                                    if (reason == null ||
+                                        reason.isEmpty ||
+                                        !context.mounted) {
+                                      return;
+                                    }
+                                    context
+                                        .read<NotificationCenterCubit>()
+                                        .rejectReplacementOffer(item, reason);
+                                    return;
+                                  }
+                                  if (item.supportsClockingDecision()) {
+                                    context
+                                        .read<NotificationCenterCubit>()
+                                        .rejectClockingDecision(item);
+                                    return;
+                                  }
+                                  context
+                                      .read<NotificationCenterCubit>()
+                                      .rejectInvitation(item);
+                                },
+                          child: Text(localization.rejectRequest),
+                        ),
+                        const SizedBox(width: 10),
+                        FilledButton(
+                          onPressed: isProcessing
+                              ? null
+                              : () => item.supportsReplacementOfferDecision()
+                                    ? context
+                                          .read<NotificationCenterCubit>()
+                                          .acceptReplacementOffer(item)
+                                    : item.supportsClockingDecision()
+                                    ? context
+                                          .read<NotificationCenterCubit>()
+                                          .approveClockingDecision(item)
+                                    : context
+                                          .read<NotificationCenterCubit>()
+                                          .acceptInvitation(item),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.bgNavbarbutton,
+                          ),
+                          child: isProcessing
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(localization.approveRequest),
+                        ),
+                      ],
+                    ),
+                  ] else if (navigationLabel != null) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => _handleOpen(context),
+                        icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                        label: Text(navigationLabel),
                       ),
                     ),
-                ],
-              ),
-              if (canRespond) ...[
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    OutlinedButton(
-                      onPressed: isProcessing
-                          ? null
-                          : () async {
-                              if (item.supportsReplacementOfferDecision()) {
-                                final reason =
-                                    await showShiftReplacementRejectReasonDialog(
-                                      context: context,
-                                    );
-                                if (reason == null ||
-                                    reason.isEmpty ||
-                                    !context.mounted) {
-                                  return;
-                                }
-                                context
-                                    .read<NotificationCenterCubit>()
-                                    .rejectReplacementOffer(item, reason);
-                                return;
-                              }
-                              if (item.supportsClockingDecision()) {
-                                context
-                                    .read<NotificationCenterCubit>()
-                                    .rejectClockingDecision(item);
-                                return;
-                              }
-                              context
-                                  .read<NotificationCenterCubit>()
-                                  .rejectInvitation(item);
-                            },
-                      child: Text(localization.rejectRequest),
-                    ),
-                    const SizedBox(width: 10),
-                    FilledButton(
-                      onPressed: isProcessing
-                          ? null
-                          : () => item.supportsReplacementOfferDecision()
-                                ? context
-                                      .read<NotificationCenterCubit>()
-                                      .acceptReplacementOffer(item)
-                                : item.supportsClockingDecision()
-                                ? context
-                                      .read<NotificationCenterCubit>()
-                                      .approveClockingDecision(item)
-                                : context
-                                      .read<NotificationCenterCubit>()
-                                      .acceptInvitation(item),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.bgNavbarbutton,
+                  ] else if (!isSeen) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () => context
+                            .read<NotificationCenterCubit>()
+                            .markAsSeen(item.notificationId),
+                        child: Text(
+                          _markAsSeenLabel(context),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.textInvertedColor,
+                          ),
+                        ),
                       ),
-                      child: isProcessing
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(localization.approveRequest),
                     ),
                   ],
-                ),
-              ] else if (navigationLabel != null) ...[
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () => _handleOpen(context),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                    label: Text(navigationLabel),
-                  ),
-                ),
-              ] else if (!isSeen) ...[
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () => context
-                        .read<NotificationCenterCubit>()
-                        .markAsSeen(item.notificationId),
-                    child: Text(
-                      _markAsSeenLabel(context),
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.textInvertedColor,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
+                ],
+              ),
+            ),
           ),
         ),
-      ),
+        // Solo le notifiche che non richiedono una decisione (accetta/
+        // rifiuta) sono chiudibili singolarmente: per quelle con canRespond
+        // l'utente deve rispondere, non può semplicemente liberarsene.
+        if (!canRespond)
+          Positioned(
+            top: -8,
+            left: -8,
+            child: Material(
+              color: colorScheme.homeSecondary,
+              shape: const CircleBorder(),
+              elevation: 1,
+              child: IconButton(
+                tooltip: localization.close,
+                onPressed: isProcessing
+                    ? null
+                    : () => context.read<NotificationCenterCubit>().markAsSeen(
+                        item.notificationId,
+                      ),
+                icon: const Icon(Icons.close_rounded),
+                iconSize: 14,
+                color: colorScheme.bgNavbarbutton,
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

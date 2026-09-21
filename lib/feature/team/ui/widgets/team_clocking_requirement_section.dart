@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_clocking_alarm_override_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
@@ -87,7 +88,7 @@ class TeamClockingRequirementSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isItalian = Localizations.localeOf(context).languageCode == 'it';
+    final loc = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -109,18 +110,14 @@ class TeamClockingRequirementSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isItalian
-                          ? 'Timbratura obbligatoria'
-                          : 'Required clocking',
+                      loc.teamClockingRequirementTitle,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isItalian
-                          ? 'Se attiva, tutti i membri del team devono registrare una timbratura, ferie o permesso.'
-                          : 'If enabled, every team member must register a clocking, vacation, or permission entry.',
+                      loc.teamClockingRequirementDescription,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.descriptionColor,
                       ),
@@ -138,9 +135,7 @@ class TeamClockingRequirementSection extends StatelessWidget {
           const SizedBox(height: 12),
           _InfoLine(
             icon: Icons.notifications_active_outlined,
-            text: isItalian
-                ? 'Default: No. Quando attiva, il sistema manda un promemoria all\'utente e avvisa l\'owner se manca o resta aperta una timbratura.'
-                : 'Default: No. When enabled, the system reminds the user and alerts the owner when a clocking is missing or still open.',
+            text: loc.teamClockingRequirementDefaultInfo,
           ),
           const SizedBox(height: 16),
           AbsorbPointer(
@@ -150,10 +145,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
               child: Column(
                 children: [
                   _DateTile(
-                    title: isItalian ? 'Data di inizio' : 'Start date',
-                    subtitle: isItalian
-                        ? 'Le notifiche di timbratura obbligatoria partono da questa data.'
-                        : 'Required clocking notifications start from this date.',
+                    title: loc.teamClockingRequirementStartDateTitle,
+                    subtitle: loc.teamClockingRequirementStartDateSubtitle,
                     value:
                         _formatDateForDisplay(context, requiredStartDate) ??
                         requiredStartDate,
@@ -166,13 +159,11 @@ class TeamClockingRequirementSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   _DateTile(
-                    title: isItalian ? 'Data di fine' : 'End date',
-                    subtitle: isItalian
-                        ? 'Se impostata, le notifiche si fermano da questa data in poi. Se vuota, restano attive senza scadenza.'
-                        : 'If set, notifications stop after this date. Leave it empty to keep them active with no end date.',
+                    title: loc.teamClockingRequirementEndDateTitle,
+                    subtitle: loc.teamClockingRequirementEndDateSubtitle,
                     value:
                         _formatDateForDisplay(context, requiredEndDate) ??
-                        (isItalian ? 'Senza scadenza' : 'No end date'),
+                        loc.teamClockingRequirementNoEndDate,
                     enabled: !readOnly && clockingRequired,
                     onTap: () => _pickDate(
                       context,
@@ -189,9 +180,7 @@ class TeamClockingRequirementSection extends StatelessWidget {
                       child: TextButton.icon(
                         onPressed: () => onRequiredEndDateChanged(null),
                         icon: const Icon(Icons.close_rounded, size: 18),
-                        label: Text(
-                          isItalian ? 'Rimuovi fine' : 'Clear end date',
-                        ),
+                        label: Text(loc.teamClockingRequirementClearEndDate),
                       ),
                     ),
                   if (requiredEndDate?.trim().isNotEmpty ?? false)
@@ -199,10 +188,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
                   _buildTimeTileWithOverrides(
                     context,
                     field: _AlarmField.reminder,
-                    title: isItalian ? 'Promemoria utente' : 'User reminder',
-                    subtitle: isItalian
-                        ? 'Orario locale di ciascun membro in cui ricordare di timbrare.'
-                        : 'Reminder time in each member\'s local timezone.',
+                    title: loc.teamClockingRequirementUserReminderTitle,
+                    subtitle: loc.teamClockingRequirementUserReminderSubtitle,
                     defaultValue: reminderTime,
                     enabled: !readOnly && clockingRequired,
                     onTapDefault: () =>
@@ -212,12 +199,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
                   _buildTimeTileWithOverrides(
                     context,
                     field: _AlarmField.missing,
-                    title: isItalian
-                        ? 'Controllo timbratura mancante'
-                        : 'Missing clocking check',
-                    subtitle: isItalian
-                        ? 'Dopo questo orario locale del membro, l\'owner riceve un avviso se manca una registrazione.'
-                        : 'After this time in the member\'s timezone, the owner is alerted if an entry is missing.',
+                    title: loc.teamClockingRequirementMissingCheckTitle,
+                    subtitle: loc.teamClockingRequirementMissingCheckSubtitle,
                     defaultValue: missingAlertTime,
                     enabled: !readOnly && clockingRequired,
                     onTapDefault: () => _pickTime(
@@ -230,12 +213,8 @@ class TeamClockingRequirementSection extends StatelessWidget {
                   _buildTimeTileWithOverrides(
                     context,
                     field: _AlarmField.open,
-                    title: isItalian
-                        ? 'Controllo timbratura aperta'
-                        : 'Open clocking check',
-                    subtitle: isItalian
-                        ? 'Dopo questo orario locale del membro, l\'owner viene avvisato se una timbratura non è stata chiusa.'
-                        : 'After this time in the member\'s timezone, the owner is alerted if a clocking is still open.',
+                    title: loc.teamClockingRequirementOpenCheckTitle,
+                    subtitle: loc.teamClockingRequirementOpenCheckSubtitle,
                     defaultValue: openAlertTime,
                     enabled: !readOnly && clockingRequired,
                     onTapDefault: () => _pickTime(
@@ -355,7 +334,7 @@ class TeamClockingRequirementSection extends StatelessWidget {
     required bool enabled,
     required VoidCallback onTapDefault,
   }) {
-    final isItalian = Localizations.localeOf(context).languageCode == 'it';
+    final loc = AppLocalizations.of(context)!;
     final canManageOverrides = teamId != null && onOverrideChanged != null;
     final overriddenMembers = canManageOverrides
         ? members
@@ -388,9 +367,7 @@ class TeamClockingRequirementSection extends StatelessWidget {
             if (canManageOverrides && enabled) ...[
               const SizedBox(width: 8),
               IconButton(
-                tooltip: isItalian
-                    ? 'Aggiungi orario personalizzato per un membro'
-                    : 'Add a custom time for a member',
+                tooltip: loc.teamClockingRequirementAddOverrideTooltip,
                 onPressed: () =>
                     _addOverride(context, field, overriddenMembers),
                 icon: const Icon(Icons.add_circle_outline),
@@ -475,11 +452,11 @@ class TeamClockingRequirementSection extends StatelessWidget {
     BuildContext context,
     List<TeamMemberEntity> candidates,
   ) {
-    final isItalian = Localizations.localeOf(context).languageCode == 'it';
+    final loc = AppLocalizations.of(context)!;
     return showDialog<TeamMemberEntity>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: Text(isItalian ? 'Scegli un membro' : 'Choose a member'),
+        title: Text(loc.teamClockingRequirementChooseMember),
         children: candidates
             .map(
               (member) => SimpleDialogOption(

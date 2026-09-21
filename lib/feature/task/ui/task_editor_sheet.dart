@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
+import 'package:note_sondage/feature/notification/local/local_notification_service.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_priority.dart';
@@ -130,6 +132,8 @@ class _TaskEditorSheet extends StatefulWidget {
 }
 
 class _TaskEditorSheetState extends State<_TaskEditorSheet> {
+  final LocalNotificationService _localNotifications =
+      GetIt.instance<LocalNotificationService>();
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
@@ -322,6 +326,11 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
       return;
     }
 
+    await _requestReminderPermissionsIfNeeded();
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _saving = true;
     });
@@ -395,6 +404,23 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
           _saving = false;
         });
       }
+    }
+  }
+
+  /// Richiede (una tantum, se necessario) i permessi Android per gli allarmi
+  /// esatti quando il task ha almeno un promemoria. Rispecchia
+  /// `_requestAlarmPermissionsIfNeeded` di [ShiftDayDialog]: senza
+  /// `SCHEDULE_EXACT_ALARM` (Android 12+), [TaskAlarmScheduler] pianifica
+  /// l'allarme ma il sistema puo' non consegnarlo mai. Best-effort: un
+  /// fallimento qui non deve bloccare il salvataggio del task.
+  Future<void> _requestReminderPermissionsIfNeeded() async {
+    if (kIsWeb || _reminderOffsets.isEmpty) {
+      return;
+    }
+    try {
+      await _localNotifications.requestAlarmModePermissions();
+    } catch (error) {
+      debugPrint('[TaskEditor] Unable to request alarm permissions: $error');
     }
   }
 
