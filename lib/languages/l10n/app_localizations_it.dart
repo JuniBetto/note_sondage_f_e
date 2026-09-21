@@ -1535,6 +1535,67 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questa sezione ti mostra subito lo stato della tua timbratura e le informazioni principali della giornata.';
 
   @override
+  String get teamClockingRequirementTitle => 'Timbratura obbligatoria';
+
+  @override
+  String get teamClockingRequirementDescription =>
+      'Se attiva, tutti i membri del team devono registrare una timbratura, ferie o permesso.';
+
+  @override
+  String get teamClockingRequirementDefaultInfo =>
+      'Default: No. Quando attiva, il sistema manda un promemoria all\'utente e avvisa l\'owner se manca o resta aperta una timbratura.';
+
+  @override
+  String get teamClockingRequirementStartDateTitle => 'Data di inizio';
+
+  @override
+  String get teamClockingRequirementStartDateSubtitle =>
+      'Le notifiche di timbratura obbligatoria partono da questa data.';
+
+  @override
+  String get teamClockingRequirementEndDateTitle => 'Data di fine';
+
+  @override
+  String get teamClockingRequirementEndDateSubtitle =>
+      'Se impostata, le notifiche si fermano da questa data in poi. Se vuota, restano attive senza scadenza.';
+
+  @override
+  String get teamClockingRequirementNoEndDate => 'Senza scadenza';
+
+  @override
+  String get teamClockingRequirementClearEndDate => 'Rimuovi fine';
+
+  @override
+  String get teamClockingRequirementUserReminderTitle => 'Promemoria utente';
+
+  @override
+  String get teamClockingRequirementUserReminderSubtitle =>
+      'Orario locale di ciascun membro in cui ricordare di timbrare.';
+
+  @override
+  String get teamClockingRequirementMissingCheckTitle =>
+      'Controllo timbratura mancante';
+
+  @override
+  String get teamClockingRequirementMissingCheckSubtitle =>
+      'Dopo questo orario locale del membro, l\'owner riceve un avviso se manca una registrazione.';
+
+  @override
+  String get teamClockingRequirementOpenCheckTitle =>
+      'Controllo timbratura aperta';
+
+  @override
+  String get teamClockingRequirementOpenCheckSubtitle =>
+      'Dopo questo orario locale del membro, l\'owner viene avvisato se una timbratura non è stata chiusa.';
+
+  @override
+  String get teamClockingRequirementAddOverrideTooltip =>
+      'Aggiungi orario personalizzato per un membro';
+
+  @override
+  String get teamClockingRequirementChooseMember => 'Scegli un membro';
+
+  @override
   String get personal => 'Personale';
 
   @override

@@ -1543,6 +1543,68 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esta sección te muestra al instante el estado de tu fichaje y la información principal del día.';
 
   @override
+  String get teamClockingRequirementTitle => 'Fichaje obligatorio';
+
+  @override
+  String get teamClockingRequirementDescription =>
+      'Si está activado, cada miembro del equipo debe registrar un fichaje, vacaciones o permiso.';
+
+  @override
+  String get teamClockingRequirementDefaultInfo =>
+      'Predeterminado: No. Cuando está activado, el sistema recuerda al usuario y avisa al propietario si falta un fichaje o sigue abierto.';
+
+  @override
+  String get teamClockingRequirementStartDateTitle => 'Fecha de inicio';
+
+  @override
+  String get teamClockingRequirementStartDateSubtitle =>
+      'Las notificaciones de fichaje obligatorio comienzan a partir de esta fecha.';
+
+  @override
+  String get teamClockingRequirementEndDateTitle => 'Fecha de fin';
+
+  @override
+  String get teamClockingRequirementEndDateSubtitle =>
+      'Si se establece, las notificaciones se detienen después de esta fecha. Déjelo vacío para mantenerlas activas sin fecha límite.';
+
+  @override
+  String get teamClockingRequirementNoEndDate => 'Sin fecha de fin';
+
+  @override
+  String get teamClockingRequirementClearEndDate => 'Quitar fecha de fin';
+
+  @override
+  String get teamClockingRequirementUserReminderTitle =>
+      'Recordatorio del usuario';
+
+  @override
+  String get teamClockingRequirementUserReminderSubtitle =>
+      'Hora del recordatorio en la zona horaria local de cada miembro.';
+
+  @override
+  String get teamClockingRequirementMissingCheckTitle =>
+      'Control de fichaje faltante';
+
+  @override
+  String get teamClockingRequirementMissingCheckSubtitle =>
+      'Después de esta hora en la zona horaria del miembro, se avisa al propietario si falta un registro.';
+
+  @override
+  String get teamClockingRequirementOpenCheckTitle =>
+      'Control de fichaje abierto';
+
+  @override
+  String get teamClockingRequirementOpenCheckSubtitle =>
+      'Después de esta hora en la zona horaria del miembro, se avisa al propietario si un fichaje sigue abierto.';
+
+  @override
+  String get teamClockingRequirementAddOverrideTooltip =>
+      'Añadir un horario personalizado para un miembro';
+
+  @override
+  String get teamClockingRequirementChooseMember => 'Elegir un miembro';
+
+  @override
   String get personal => 'Personal';
 
   @override

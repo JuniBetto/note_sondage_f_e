@@ -2880,6 +2880,108 @@ abstract class AppLocalizations {
   /// **'This section gives you an instant view of your clocking status and the main information for the current day.'**
   String get clockingCurrentStatusDescription;
 
+  /// No description provided for @teamClockingRequirementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Required clocking'**
+  String get teamClockingRequirementTitle;
+
+  /// No description provided for @teamClockingRequirementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'If enabled, every team member must register a clocking, vacation, or permission entry.'**
+  String get teamClockingRequirementDescription;
+
+  /// No description provided for @teamClockingRequirementDefaultInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Default: No. When enabled, the system reminds the user and alerts the owner when a clocking is missing or still open.'**
+  String get teamClockingRequirementDefaultInfo;
+
+  /// No description provided for @teamClockingRequirementStartDateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get teamClockingRequirementStartDateTitle;
+
+  /// No description provided for @teamClockingRequirementStartDateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Required clocking notifications start from this date.'**
+  String get teamClockingRequirementStartDateSubtitle;
+
+  /// No description provided for @teamClockingRequirementEndDateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get teamClockingRequirementEndDateTitle;
+
+  /// No description provided for @teamClockingRequirementEndDateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'If set, notifications stop after this date. Leave it empty to keep them active with no end date.'**
+  String get teamClockingRequirementEndDateSubtitle;
+
+  /// No description provided for @teamClockingRequirementNoEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No end date'**
+  String get teamClockingRequirementNoEndDate;
+
+  /// No description provided for @teamClockingRequirementClearEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear end date'**
+  String get teamClockingRequirementClearEndDate;
+
+  /// No description provided for @teamClockingRequirementUserReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User reminder'**
+  String get teamClockingRequirementUserReminderTitle;
+
+  /// No description provided for @teamClockingRequirementUserReminderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder time in each member\'s local timezone.'**
+  String get teamClockingRequirementUserReminderSubtitle;
+
+  /// No description provided for @teamClockingRequirementMissingCheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing clocking check'**
+  String get teamClockingRequirementMissingCheckTitle;
+
+  /// No description provided for @teamClockingRequirementMissingCheckSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'After this time in the member\'s timezone, the owner is alerted if an entry is missing.'**
+  String get teamClockingRequirementMissingCheckSubtitle;
+
+  /// No description provided for @teamClockingRequirementOpenCheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open clocking check'**
+  String get teamClockingRequirementOpenCheckTitle;
+
+  /// No description provided for @teamClockingRequirementOpenCheckSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'After this time in the member\'s timezone, the owner is alerted if a clocking is still open.'**
+  String get teamClockingRequirementOpenCheckSubtitle;
+
+  /// No description provided for @teamClockingRequirementAddOverrideTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a custom time for a member'**
+  String get teamClockingRequirementAddOverrideTooltip;
+
+  /// No description provided for @teamClockingRequirementChooseMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a member'**
+  String get teamClockingRequirementChooseMember;
+
   /// No description provided for @personal.
   ///
   /// In en, this message translates to:

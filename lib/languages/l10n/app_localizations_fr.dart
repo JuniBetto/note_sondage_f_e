@@ -1542,6 +1542,67 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cette section vous montre immédiatement l\'état de votre pointage et les informations principales de la journée.';
 
   @override
+  String get teamClockingRequirementTitle => 'Pointage obligatoire';
+
+  @override
+  String get teamClockingRequirementDescription =>
+      'Si activé, chaque membre de l\'équipe doit enregistrer un pointage, des congés ou une permission.';
+
+  @override
+  String get teamClockingRequirementDefaultInfo =>
+      'Par défaut : Non. Lorsque activé, le système envoie un rappel à l\'utilisateur et alerte le propriétaire si un pointage est manquant ou encore ouvert.';
+
+  @override
+  String get teamClockingRequirementStartDateTitle => 'Date de début';
+
+  @override
+  String get teamClockingRequirementStartDateSubtitle =>
+      'Les notifications de pointage obligatoire commencent à partir de cette date.';
+
+  @override
+  String get teamClockingRequirementEndDateTitle => 'Date de fin';
+
+  @override
+  String get teamClockingRequirementEndDateSubtitle =>
+      'Si définie, les notifications s\'arrêtent après cette date. Laissez vide pour les garder actives sans échéance.';
+
+  @override
+  String get teamClockingRequirementNoEndDate => 'Aucune date de fin';
+
+  @override
+  String get teamClockingRequirementClearEndDate => 'Supprimer la date de fin';
+
+  @override
+  String get teamClockingRequirementUserReminderTitle => 'Rappel utilisateur';
+
+  @override
+  String get teamClockingRequirementUserReminderSubtitle =>
+      'Heure de rappel dans le fuseau horaire local de chaque membre.';
+
+  @override
+  String get teamClockingRequirementMissingCheckTitle =>
+      'Contrôle de pointage manquant';
+
+  @override
+  String get teamClockingRequirementMissingCheckSubtitle =>
+      'Après cette heure dans le fuseau horaire du membre, le propriétaire est alerté si une saisie est manquante.';
+
+  @override
+  String get teamClockingRequirementOpenCheckTitle =>
+      'Contrôle de pointage ouvert';
+
+  @override
+  String get teamClockingRequirementOpenCheckSubtitle =>
+      'Après cette heure dans le fuseau horaire du membre, le propriétaire est alerté si un pointage est encore ouvert.';
+
+  @override
+  String get teamClockingRequirementAddOverrideTooltip =>
+      'Ajouter une heure personnalisée pour un membre';
+
+  @override
+  String get teamClockingRequirementChooseMember => 'Choisir un membre';
+
+  @override
   String get personal => 'Personnel';
 
   @override
