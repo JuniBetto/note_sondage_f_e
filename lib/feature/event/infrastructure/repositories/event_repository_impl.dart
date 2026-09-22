@@ -1,5 +1,6 @@
 import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_reminder_anchor.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_update_request_entity.dart';
 import 'package:note_sondage/feature/event/domain/repositories/event_repository.dart';
 import 'package:note_sondage/feature/event/infrastructure/data_source/data_source_local/event_local_data_source.dart';
@@ -102,6 +103,21 @@ class EventRepositoryImpl implements EventRepository {
     EventUpdateRequestEntity request,
   ) async {
     final updated = await _remote.updateEvent(eventId, request);
+    await _upsertInCache(updated);
+    return updated;
+  }
+
+  @override
+  Future<EventEntity> updateMyReminder(
+    String eventId,
+    List<int> reminderOffsets,
+    EventReminderAnchor reminderAnchor,
+  ) async {
+    final updated = await _remote.updateMyReminder(
+      eventId,
+      reminderOffsets,
+      reminderAnchor,
+    );
     await _upsertInCache(updated);
     return updated;
   }

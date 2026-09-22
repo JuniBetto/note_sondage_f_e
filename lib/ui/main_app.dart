@@ -31,6 +31,7 @@ import 'package:note_sondage/feature/notification/realtime/team_realtime_coordin
 import 'package:note_sondage/feature/shift/notification/shift_alarm_scheduler.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/task/notification/task_alarm_scheduler.dart';
+import 'package:note_sondage/feature/event/notification/event_alarm_scheduler.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
@@ -505,6 +506,8 @@ class _MainAppState extends State<MainApp> {
       getIt<ShiftAlarmScheduler>().start();
       // Avvia lo scheduler promemoria task
       getIt<TaskAlarmScheduler>().start();
+      // Avvia lo scheduler promemoria evento
+      getIt<EventAlarmScheduler>().start();
       if (resetCaches) {
         _processedNotificationIds.clear();
         teamBloc.add(const ResetTeamCacheEvent());
@@ -525,6 +528,8 @@ class _MainAppState extends State<MainApp> {
       getIt<ShiftAlarmScheduler>().stop();
       // Ferma lo scheduler promemoria task
       getIt<TaskAlarmScheduler>().stop();
+      // Ferma lo scheduler promemoria evento
+      getIt<EventAlarmScheduler>().stop();
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_reminder_anchor.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_update_request_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_workflow_metadata_entity.dart';
 
@@ -24,7 +25,21 @@ class EventMapper {
       archivedAt: _parseDateTime(json['archivedAt']),
       createdAt: _parseDateTime(json['createdAt']) ?? DateTime.now(),
       updatedAt: _parseDateTime(json['updatedAt']) ?? DateTime.now(),
+      reminderOffsets: _reminderOffsetsFromJson(json['reminderOffsets']),
+      reminderAnchor: EventReminderAnchorWireValue.fromWireValue(
+        json['reminderAnchor']?.toString(),
+      ),
     );
+  }
+
+  static List<int> _reminderOffsetsFromJson(Object? raw) {
+    if (raw is! List) {
+      return const <int>[];
+    }
+    return raw
+        .map((value) => int.tryParse(value.toString().trim()))
+        .whereType<int>()
+        .toList(growable: false);
   }
 
   static Map<String, dynamic> createRequestToJson(
@@ -49,6 +64,9 @@ class EventMapper {
         'createdByDisplayName': request.createdByDisplayName!.trim(),
       if (request.workflowMetadata != null)
         'workflowMetadata': workflowMetadataToJson(request.workflowMetadata!),
+      if (request.reminderOffsets.isNotEmpty)
+        'reminderOffsets': request.reminderOffsets,
+      'reminderAnchor': request.reminderAnchor.wireValue,
     };
   }
 
@@ -68,6 +86,10 @@ class EventMapper {
         'participantUserIds': request.participantUserIds,
       if (request.participantDisplayNames != null)
         'participantDisplayNames': request.participantDisplayNames,
+      if (request.reminderOffsets != null)
+        'reminderOffsets': request.reminderOffsets,
+      if (request.reminderAnchor != null)
+        'reminderAnchor': request.reminderAnchor!.wireValue,
     };
   }
 

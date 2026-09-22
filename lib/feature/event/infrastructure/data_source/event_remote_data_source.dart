@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_reminder_anchor.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_update_request_entity.dart';
 import 'package:note_sondage/feature/event/infrastructure/data/event_mapper.dart';
 
@@ -54,6 +55,24 @@ class EventRemoteDataSource {
     final response = await _dio.patch(
       '/api/events/$eventId',
       data: EventMapper.updateRequestToJson(request),
+    );
+    return EventMapper.fromJson(Map<String, dynamic>.from(response.data));
+  }
+
+  /// Sets the CURRENT user's own reminder for this event — independent of
+  /// anyone else's, whether they're the creator or a participant. See
+  /// `PATCH /api/events/{eventId}/reminders/mine` on note_sondage_event.
+  Future<EventEntity> updateMyReminder(
+    String eventId,
+    List<int> reminderOffsets,
+    EventReminderAnchor reminderAnchor,
+  ) async {
+    final response = await _dio.patch(
+      '/api/events/$eventId/reminders/mine',
+      data: {
+        'reminderOffsets': reminderOffsets,
+        'reminderAnchor': reminderAnchor.wireValue,
+      },
     );
     return EventMapper.fromJson(Map<String, dynamic>.from(response.data));
   }

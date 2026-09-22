@@ -1,5 +1,6 @@
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_reminder_anchor.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_update_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/repositories/task_repository.dart';
@@ -136,6 +137,21 @@ class TaskRepositoryImpl implements TaskRepository {
     TaskUpdateRequestEntity request,
   ) async {
     final updated = await _remote.updateTask(taskId, request);
+    await _upsertInCache(updated);
+    return updated;
+  }
+
+  @override
+  Future<TaskEntity> updateMyReminder(
+    String taskId,
+    List<int> reminderOffsets,
+    TaskReminderAnchor reminderAnchor,
+  ) async {
+    final updated = await _remote.updateMyReminder(
+      taskId,
+      reminderOffsets,
+      reminderAnchor,
+    );
     await _upsertInCache(updated);
     return updated;
   }

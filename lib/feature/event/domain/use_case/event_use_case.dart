@@ -1,5 +1,6 @@
 import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_reminder_anchor.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_update_request_entity.dart';
 import 'package:note_sondage/feature/event/domain/repositories/event_repository.dart';
 
@@ -32,6 +33,14 @@ class EventUseCase {
     EventUpdateRequestEntity request,
   ) {
     return _repository.updateEvent(eventId, request);
+  }
+
+  Future<EventEntity> updateMyReminder(
+    String eventId,
+    List<int> reminderOffsets,
+    EventReminderAnchor reminderAnchor,
+  ) {
+    return _repository.updateMyReminder(eventId, reminderOffsets, reminderAnchor);
   }
 
   Future<EventEntity> archiveEvent(String eventId) {

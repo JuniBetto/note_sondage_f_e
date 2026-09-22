@@ -3,6 +3,7 @@ import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/ui/task_ui_support.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_meta_chip.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_reminder_offset_editor.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_status_dropdown_field.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -23,11 +24,13 @@ class TaskDetailPanel extends StatelessWidget {
     required this.canEdit,
     required this.canRestore,
     this.canDeletePermanently = false,
+    this.canSetMyReminder = false,
     this.onStatusChange,
     this.onEdit,
     this.onArchive,
     this.onRestore,
     this.onDeletePermanently,
+    this.onSetMyReminder,
     this.onOpenLinkedChat,
     this.onClose,
     this.padding = const EdgeInsets.all(20),
@@ -38,11 +41,16 @@ class TaskDetailPanel extends StatelessWidget {
   final bool canEdit;
   final bool canRestore;
   final bool canDeletePermanently;
+  // Setting your own reminder needs neither "manage task" rights nor a team
+  // role: just being the creator or the assignee — the only two people a
+  // reminder on this task could plausibly belong to.
+  final bool canSetMyReminder;
   final ValueChanged<TaskStatus>? onStatusChange;
   final VoidCallback? onEdit;
   final VoidCallback? onArchive;
   final VoidCallback? onRestore;
   final VoidCallback? onDeletePermanently;
+  final VoidCallback? onSetMyReminder;
   final VoidCallback? onOpenLinkedChat;
   final VoidCallback? onClose;
   final EdgeInsetsGeometry padding;
@@ -241,6 +249,20 @@ class TaskDetailPanel extends StatelessWidget {
             },
           ),
         const SizedBox(height: 18),
+        if (canSetMyReminder && onSetMyReminder != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: CustomAppButton(
+              onPressed: onSetMyReminder,
+              type: ButtonType.outlined,
+              isActive: true,
+              leadingIcon: const Icon(
+                Icons.notifications_outlined,
+                size: 18,
+              ),
+              child: Text(taskMyReminderSetAction(context)),
+            ),
+          ),
         if (canEdit && onEdit != null)
           CustomAppButton(
             onPressed: onEdit,

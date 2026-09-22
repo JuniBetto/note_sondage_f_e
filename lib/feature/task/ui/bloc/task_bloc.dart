@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_reminder_anchor.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_update_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/use_case/task_use_case.dart';
@@ -37,6 +38,20 @@ class TaskBloc extends Cubit<TaskState> {
 
   Future<TaskEntity> updateTaskStatus(String taskId, TaskStatus status) async {
     final task = await _useCase.updateTaskStatus(taskId, status);
+    emit(TaskUpdated(task));
+    return task;
+  }
+
+  Future<TaskEntity> updateMyReminder(
+    String taskId,
+    List<int> reminderOffsets,
+    TaskReminderAnchor reminderAnchor,
+  ) async {
+    final task = await _useCase.updateMyReminder(
+      taskId,
+      reminderOffsets,
+      reminderAnchor,
+    );
     emit(TaskUpdated(task));
     return task;
   }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_reminder_anchor.dart';
+import 'package:note_sondage/feature/event/ui/widgets/event_reminder_labels.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_reminder_offset_editor.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -17,6 +20,8 @@ class EventEditorResult {
     required this.location,
     required this.participantUserIds,
     required this.participantDisplayNames,
+    required this.reminderOffsets,
+    required this.reminderAnchor,
   });
 
   /// `null` means this is a personal event — not attached to any team.
@@ -29,6 +34,11 @@ class EventEditorResult {
   final String? location;
   final List<String> participantUserIds;
   final List<String> participantDisplayNames;
+
+  /// The creator's own reminder — see `EventWorkspace._openMyReminderSheet`
+  /// for the independent one a participant can set on the same event.
+  final List<int> reminderOffsets;
+  final EventReminderAnchor reminderAnchor;
 }
 
 Future<EventEditorResult?> showEventEditorDialog(
@@ -71,6 +81,8 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
   late DateTime _startsAt;
   DateTime? _endsAt;
   late bool _allDay;
+  late List<int> _reminderOffsets;
+  late EventReminderAnchor _reminderAnchor;
 
   @override
   void initState() {
@@ -85,6 +97,10 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
     _startsAt = event?.startsAt ?? DateTime.now().add(const Duration(hours: 1));
     _endsAt = event?.endsAt ?? _startsAt.add(const Duration(hours: 1));
     _allDay = event?.allDay ?? false;
+    _reminderOffsets = List<int>.from(
+      event?.reminderOffsets ?? const <int>[],
+    );
+    _reminderAnchor = event?.reminderAnchor ?? EventReminderAnchor.startsAt;
   }
 
   @override
@@ -239,6 +255,8 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
             .map(_memberLabel)
             .where((label) => label.isNotEmpty)
             .toList(growable: false),
+        reminderOffsets: _reminderOffsets,
+        reminderAnchor: _reminderAnchor,
       ),
     );
   }
@@ -359,6 +377,48 @@ class _EventEditorDialogState extends State<_EventEditorDialog> {
                   labelText: loc.eventLocationLabel,
                 ),
               ),
+              const SizedBox(height: 14),
+              Text(
+                eventReminderSectionLabel(context),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
+              ),
+              const SizedBox(height: 6),
+              TaskReminderOffsetEditor(
+                offsets: _reminderOffsets,
+                onChanged: (offsets) {
+                  setState(() {
+                    _reminderOffsets = offsets;
+                  });
+                },
+              ),
+              if (_reminderOffsets.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                SegmentedButton<EventReminderAnchor>(
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    textStyle: Theme.of(context).textTheme.labelSmall,
+                  ),
+                  selected: {_reminderAnchor},
+                  segments: [
+                    ButtonSegment(
+                      value: EventReminderAnchor.startsAt,
+                      label: Text(eventReminderAnchorStartsAtLabel(context)),
+                    ),
+                    ButtonSegment(
+                      value: EventReminderAnchor.endsAt,
+                      label: Text(eventReminderAnchorEndsAtLabel(context)),
+                    ),
+                  ],
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      _reminderAnchor = selection.first;
+                    });
+                  },
+                ),
+              ],
               if (widget.initialTeamId != null) ...[
                 const SizedBox(height: 12),
                 Text(

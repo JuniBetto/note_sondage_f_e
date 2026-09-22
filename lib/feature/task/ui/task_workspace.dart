@@ -15,6 +15,7 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/notification/realtime/task_realtime_coordinator.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_reminder_anchor.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_text_size.dart';
 import 'package:note_sondage/feature/task/notification/task_alarm_scheduler.dart';
@@ -30,6 +31,7 @@ import 'package:note_sondage/feature/task/ui/widgets/task_calendar_view.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_card.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_detail_panel.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_empty_state.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_reminder_offset_editor.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_status_filter_bar.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_table_view.dart';
 import 'package:note_sondage/feature/task/ui/widgets/task_timeline_view.dart';
@@ -45,6 +47,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 const _kSplitViewBreakpoint = 900.0;
@@ -584,6 +587,15 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
 
   bool _canEditTask(TaskEntity task) => _canManageTask(task);
 
+  /// Setting your own reminder doesn't need "manage task" rights — only
+  /// being the creator or the assignee, the only two people a task reminder
+  /// could plausibly belong to. This is what lets an assignee without team
+  /// management permissions set their own alarm on a task assigned to them.
+  bool _canSetMyReminder(TaskEntity task) =>
+      task.createdByUserId.trim() == _currentUid ||
+      (task.assigneeUserId?.trim().isNotEmpty == true &&
+          task.assigneeUserId!.trim() == _currentUid);
+
   /// Maps userId -> profile photo URL, built from every team's member list
   /// already loaded for permission checks — lets task cards/views show the
   /// assignee's real photo when one is set, falling back to initials
@@ -707,6 +719,150 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     await _loadTasksForSelectedTeam();
   }
 
+  /// Lets the creator OR the assignee set their own independent reminder on
+  /// [task] — unlike [_openEditTask], this needs no "manage task"/team-role
+  /// permission, only being one of those two people (see
+  /// [_canSetMyReminder]). Saving goes through [TaskBloc.updateMyReminder],
+  /// which emits `TaskUpdated` so [TaskAlarmScheduler] reschedules the local
+  /// alarm from the fresh value automatically.
+  Future<void> _openMyReminderSheet(TaskEntity task) async {
+    List<int> offsets = List<int>.from(task.reminderOffsets);
+    TaskReminderAnchor anchor = task.reminderAnchor;
+    final hasAnchorDate = task.dueAt != null || task.startAt != null;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        bool saving = false;
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+          ),
+          child: StatefulBuilder(
+            builder: (sheetContext, setModalState) {
+              final theme = Theme.of(sheetContext);
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.24),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      taskMyReminderSheetTitle(sheetContext),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      taskMyReminderSheetSubtitle(sheetContext),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (!hasAnchorDate)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          taskMyReminderNoAnchorHint(sheetContext),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    TaskReminderOffsetEditor(
+                      offsets: offsets,
+                      onChanged: (updated) =>
+                          setModalState(() => offsets = updated),
+                    ),
+                    if (offsets.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      SegmentedButton<TaskReminderAnchor>(
+                        style: SegmentedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          textStyle: theme.textTheme.labelSmall,
+                        ),
+                        selected: {anchor},
+                        segments: [
+                          ButtonSegment(
+                            value: TaskReminderAnchor.dueAt,
+                            label: Text(
+                              taskReminderAnchorDueAtLabel(sheetContext),
+                            ),
+                          ),
+                          ButtonSegment(
+                            value: TaskReminderAnchor.startAt,
+                            label: Text(
+                              taskReminderAnchorStartAtLabel(sheetContext),
+                            ),
+                          ),
+                        ],
+                        onSelectionChanged: (selection) =>
+                            setModalState(() => anchor = selection.first),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    CustomAppButton(
+                      isLoading: saving,
+                      isActive: true,
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              setModalState(() => saving = true);
+                              try {
+                                await _taskBloc.updateMyReminder(
+                                  task.id,
+                                  offsets,
+                                  anchor,
+                                );
+                                if (!sheetContext.mounted) {
+                                  return;
+                                }
+                                Navigator.of(sheetContext).pop();
+                              } catch (_) {
+                                setModalState(() => saving = false);
+                                if (!sheetContext.mounted) {
+                                  return;
+                                }
+                                AppSnackBar.showError(
+                                  sheetContext,
+                                  taskMyReminderSaveError(sheetContext),
+                                );
+                              }
+                            },
+                      leadingIcon: const Icon(Icons.check_rounded, size: 18),
+                      child: Text(taskMyReminderSaveAction(sheetContext)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+    if (!mounted) {
+      return;
+    }
+    await _refreshTasks();
+  }
+
   /// Applies a status change without leaving the persistent side panel
   /// (wide/desktop layout only — the mobile bottom sheet manages its own
   /// local copy while it is open).
@@ -775,6 +931,8 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                         _canEditTask(latestTask) &&
                         (isArchivedTask ||
                             latestTask.status == TaskStatus.canceled);
+                    final canSetMyReminder =
+                        !isArchivedTask && _canSetMyReminder(latestTask);
                     return FractionallySizedBox(
                       heightFactor: MediaQuery.of(sheetContext).size.width < 760
                           ? 0.88
@@ -807,6 +965,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                                 canEdit: canEdit,
                                 canRestore: canRestore,
                                 canDeletePermanently: canDeletePermanently,
+                                canSetMyReminder: canSetMyReminder,
                                 onStatusChange: (nextStatus) async {
                                   final rollbackTask = latestTask;
                                   setModalState(() {
@@ -848,6 +1007,11 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                                     ? () => Navigator.of(
                                         sheetContext,
                                       ).pop(_TaskDetailAction.archive)
+                                    : null,
+                                onSetMyReminder: canSetMyReminder
+                                    ? () => Navigator.of(
+                                        sheetContext,
+                                      ).pop(_TaskDetailAction.setReminder)
                                     : null,
                                 onRestore: canRestore
                                     ? () => Navigator.of(
@@ -895,6 +1059,9 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
         break;
       case _TaskDetailAction.deletePermanently:
         await _deleteTaskPermanently(latestTask);
+        break;
+      case _TaskDetailAction.setReminder:
+        await _openMyReminderSheet(latestTask);
         break;
       case _TaskDetailAction.openLinkedChat:
         _openLinkedChat(latestTask);
@@ -1121,6 +1288,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     final canDeletePermanently =
         _canEditTask(task) &&
         (isArchivedTask || task.status == TaskStatus.canceled);
+    final canSetMyReminder = !isArchivedTask && _canSetMyReminder(task);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1144,10 +1312,14 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
         canEdit: canEdit,
         canRestore: canRestore,
         canDeletePermanently: canDeletePermanently,
+        canSetMyReminder: canSetMyReminder,
         onStatusChange: (nextStatus) =>
             _handleInlineStatusChange(task, nextStatus),
         onEdit: canEdit ? () => _openEditTask(task) : null,
         onArchive: canEdit ? () => _archiveTask(task) : null,
+        onSetMyReminder: canSetMyReminder
+            ? () => _openMyReminderSheet(task)
+            : null,
         onRestore: canRestore ? () => _restoreTask(task) : null,
         onDeletePermanently: canDeletePermanently
             ? () => _deleteTaskPermanently(task)
@@ -1455,6 +1627,7 @@ enum _TaskDetailAction {
   archive,
   restore,
   deletePermanently,
+  setReminder,
   openLinkedChat,
 }
 

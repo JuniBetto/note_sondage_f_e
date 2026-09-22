@@ -8,6 +8,7 @@ import 'package:note_sondage/feature/chat/domain/use_case/chat_message_action_us
 import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_reminder_anchor.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_update_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/repositories/task_repository.dart';
@@ -115,6 +116,13 @@ class _FakeTaskRepository implements TaskRepository {
   @override
   Future<TaskEntity> updateTaskStatus(String taskId, TaskStatus status) =>
       throw UnimplementedError();
+
+  @override
+  Future<TaskEntity> updateMyReminder(
+    String taskId,
+    List<int> reminderOffsets,
+    TaskReminderAnchor reminderAnchor,
+  ) => throw UnimplementedError();
 }
 
 void main() {

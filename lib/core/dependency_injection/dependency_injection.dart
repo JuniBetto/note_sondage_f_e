@@ -77,6 +77,7 @@ import 'package:note_sondage/feature/task/navigation/task_open_intent_controller
 import 'package:note_sondage/feature/task/infrastructure/data_source/data_source_local/task_local_data_source.dart';
 import 'package:note_sondage/feature/task/infrastructure/data_source/task_remote_data_source.dart';
 import 'package:note_sondage/feature/task/notification/task_alarm_scheduler.dart';
+import 'package:note_sondage/feature/event/notification/event_alarm_scheduler.dart';
 import 'package:note_sondage/feature/task/ui/bloc/task_bloc.dart';
 import 'package:note_sondage/feature/task/ui/bloc/task_text_size_cubit.dart';
 import 'package:note_sondage/feature/task/infrastructure/repositories/task_repository_impl.dart';
@@ -455,6 +456,9 @@ void _registerBlocs() {
   );
   getIt.registerLazySingleton<EventTextSizeCubit>(
     () => EventTextSizeCubit()..load(),
+  );
+  getIt.registerLazySingleton<EventAlarmScheduler>(
+    () => EventAlarmScheduler(localNotifications: getIt<LocalNotificationService>()),
   );
   getIt.registerLazySingleton<ShiftTextSizeCubit>(
     () => ShiftTextSizeCubit()..load(),

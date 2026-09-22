@@ -1,3 +1,4 @@
+import 'package:note_sondage/feature/event/domain/entities/event_reminder_anchor.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_workflow_metadata_entity.dart';
 
 class EventEntity {
@@ -18,12 +19,14 @@ class EventEntity {
     this.createdByDisplayName,
     this.workflowMetadata,
     this.archivedAt,
+    this.reminderOffsets = const <int>[],
+    this.reminderAnchor = EventReminderAnchor.startsAt,
   });
 
   final String id;
 
   /// `null` means this is a personal event — not attached to any team,
-  /// visible only to [createdByUserId].
+  /// visible only to [createdByUserId] and its participants.
   final String? teamId;
   final String title;
   final String? description;
@@ -39,6 +42,20 @@ class EventEntity {
   final DateTime? archivedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Minuti relativi (negativi = prima) a cui schedulare i promemoria
+  /// dell'allarme, ancorati a [reminderAnchor]. Gia' scoped lato backend
+  /// all'utente che ha effettuato la richiesta: il creatore vede il proprio,
+  /// un partecipante vede il proprio (indipendente), chiunque altro vede una
+  /// lista vuota.
+  final List<int> reminderOffsets;
+
+  /// Se i promemoria sono ancorati a [startsAt] o a [endsAt].
+  final EventReminderAnchor reminderAnchor;
+
+  /// Data/ora usata per calcolare i promemoria, in base a [reminderAnchor].
+  DateTime? get reminderAnchorTime =>
+      reminderAnchor == EventReminderAnchor.endsAt ? endsAt : startsAt;
 
   bool get isArchived => archivedAt != null;
 
@@ -61,6 +78,8 @@ class EventEntity {
     bool clearArchivedAt = false,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<int>? reminderOffsets,
+    EventReminderAnchor? reminderAnchor,
   }) {
     return EventEntity(
       id: id ?? this.id,
@@ -80,6 +99,8 @@ class EventEntity {
       archivedAt: clearArchivedAt ? null : (archivedAt ?? this.archivedAt),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      reminderOffsets: reminderOffsets ?? this.reminderOffsets,
+      reminderAnchor: reminderAnchor ?? this.reminderAnchor,
     );
   }
 }
