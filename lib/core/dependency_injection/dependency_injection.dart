@@ -432,6 +432,12 @@ void _registerBlocs() {
       teamUseCase: getIt<TeamUseCase>(),
       teamMemberUseCase: getIt<TeamMemberUseCase>(),
       roleUseCase: getIt<RoleUseCase>(),
+      chatUseCase: getIt<ChatUseCase>(),
+      sondageWorkflowController: getIt<ChatMessageSondageWorkflowController>(),
+      taskWorkflowController: getIt<ChatMessageTaskWorkflowController>(),
+      shiftWorkflowController: getIt<ChatMessageShiftWorkflowController>(),
+      eventWorkflowController: getIt<ChatMessageEventWorkflowController>(),
+      suggestionService: getIt<ChatMessageSuggestionService>(),
     ),
   );
 
