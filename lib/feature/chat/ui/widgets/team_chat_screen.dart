@@ -19,7 +19,6 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_enti
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
-import 'package:note_sondage/feature/chat/domain/use_case/chat_message_action_use_case.dart';
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_section.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_direct_action_dialog.dart';
@@ -27,19 +26,15 @@ import 'package:note_sondage/feature/chat/ui/widgets/chat_image_viewer_dialog.da
 import 'package:note_sondage/feature/chat/ui/web/chat_web_layout.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_draft_attachment.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_event_workflow_controller.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_shift_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_sondage_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_models.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
-import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
-import 'package:note_sondage/feature/event/domain/use_case/event_use_case.dart';
-import 'package:note_sondage/feature/event/ui/widgets/event_editor_dialog.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
-import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
-import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
-import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
@@ -48,7 +43,6 @@ import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dar
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
-import 'package:uuid/uuid.dart';
 
 enum ChatScreenLayout { mobile, web }
 
@@ -99,16 +93,16 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       GetIt.instance<TeamMemberUseCase>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
   final ChatUseCase _chatUseCase = GetIt.instance<ChatUseCase>();
-  final ChatMessageActionUseCase _messageActionUseCase =
-      GetIt.instance<ChatMessageActionUseCase>();
   final ChatMessageSondageWorkflowController _sondageWorkflowController =
       GetIt.instance<ChatMessageSondageWorkflowController>();
   final ChatMessageSuggestionService _messageSuggestionService =
       GetIt.instance<ChatMessageSuggestionService>();
   final ChatMessageTaskWorkflowController _taskWorkflowController =
       GetIt.instance<ChatMessageTaskWorkflowController>();
-  final EventUseCase _eventUseCase = GetIt.instance<EventUseCase>();
-  final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
+  final ChatMessageShiftWorkflowController _shiftWorkflowController =
+      GetIt.instance<ChatMessageShiftWorkflowController>();
+  final ChatMessageEventWorkflowController _eventWorkflowController =
+      GetIt.instance<ChatMessageEventWorkflowController>();
   final RealtimeNotificationService _realtimeService =
       GetIt.instance<RealtimeNotificationService>();
   final WorkflowAiPreferencesCubit _workflowAiPreferencesCubit =
@@ -1556,13 +1550,11 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _messageActionUseCase.buildDraft(
-          actionType: ChatMessageActionType.createShift,
-          conversationId: conversation.id,
-          messageId: message.id,
+        () => _shiftWorkflowController.prepareDraft(
+          conversation: conversation,
+          message: message,
           teamId: teamId,
           locale: Localizations.localeOf(context).languageCode,
-          selectedMessageText: message.contentText,
           memberUserId: _selectedMemberUserId,
           memberDisplayName: _conversationDisplayName,
         ),
@@ -1585,19 +1577,19 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         );
       }
 
-      final profiles = await _shiftRepository.getProfiles();
+      final profiles = await _shiftWorkflowController.loadProfiles();
       if (!mounted) {
         return;
       }
-      final shiftResult = await showShiftDayDialog(
+      final shiftResult = await _shiftWorkflowController.openShiftDayDialog(
         context: context,
         date: shiftDraft.shiftDate,
         profiles: profiles,
         allTeams: _teams,
         initialDraft: shiftDraft,
         initialTeamId: shiftDraft.teamId ?? teamId,
-        canManagePublicShifts: true,
-        ownerTeams: _buildWorkflowOwnerTeams(
+        ownerTeams: _shiftWorkflowController.resolveOwnerTeams(
+          teams: _teams,
           preferredTeamId: shiftDraft.teamId ?? teamId,
         ),
       );
@@ -1605,7 +1597,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         return;
       }
 
-      final requests = _buildShiftRequestsFromDialog(
+      final requests = _shiftWorkflowController.buildRequestsFromDialog(
         fallbackDate: shiftDraft.shiftDate,
         result: shiftResult,
       );
@@ -1613,26 +1605,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         return;
       }
 
-      await _runWithLoadingOverlay(() async {
-        if (requests.length == 1) {
-          final request = requests.single;
-          await _shiftRepository.assign(
-            shiftDate: request.shiftDate,
-            profileId: request.profileId,
-            startTime: request.startTime,
-            endTime: request.endTime,
-            overnight: request.overnight,
-            note: request.note,
-            alarmOffsets: request.alarmOffsets,
-            isPublic: request.isPublic,
-            teamId: request.teamId,
-            teamShiftGroupId: request.teamShiftGroupId,
-            targetUserId: request.targetUserId,
-          );
-          return;
-        }
-        await _shiftRepository.assignBatch(requests: requests);
-      });
+      await _runWithLoadingOverlay(() => _shiftWorkflowController.submit(requests));
       if (!mounted) {
         return;
       }
@@ -1774,13 +1747,11 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       await _ensureTeamAccessContextLoaded(teamId);
 
       final result = await _runWithLoadingOverlay(
-        () => _messageActionUseCase.buildDraft(
-          actionType: ChatMessageActionType.createEvent,
-          conversationId: conversation.id,
-          messageId: message.id,
+        () => _eventWorkflowController.prepareDraft(
+          conversation: conversation,
+          message: message,
           teamId: teamId,
           locale: Localizations.localeOf(context).languageCode,
-          selectedMessageText: message.contentText,
           memberUserId: _selectedMemberUserId,
           memberDisplayName: _conversationDisplayName,
         ),
@@ -1813,21 +1784,25 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       final effectiveTeamId = eventDraft.teamId?.trim().isNotEmpty == true
           ? eventDraft.teamId!.trim()
           : teamId;
-      final editorResult = await showEventEditorDialog(
-        context,
+      final editorResult = await _eventWorkflowController.openEventEditor(
+        context: context,
         initialTeamId: effectiveTeamId,
-        initialEvent: _buildEventDraftPreviewEntity(
+        initialEvent: _eventWorkflowController.buildPreviewEntity(
           eventDraft,
           fallbackTeamId: effectiveTeamId,
+          actorUserId: _currentUid,
+          actorDisplayName: _actorDisplayName,
         ),
-        teamMembers: _buildWorkflowEventTeamMembers(effectiveTeamId),
+        teamMembers: _eventWorkflowController.buildTeamMembersForView(
+          _teamMembersByTeamId[effectiveTeamId] ?? const <TeamMemberEntity>[],
+        ),
       );
       if (!mounted || editorResult == null) {
         return;
       }
 
       await _runWithLoadingOverlay(
-        () => _eventUseCase.createEvent(
+        () => _eventWorkflowController.createEvent(
           EventCreateRequestEntity(
             teamId: editorResult.teamId,
             title: editorResult.title,
@@ -2091,48 +2066,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     }
   }
 
-  List<TeamEntityForView> _buildWorkflowOwnerTeams({String? preferredTeamId}) {
-    return _teams
-        .where((team) => team.id != null)
-        .where((team) => preferredTeamId == null || team.id == preferredTeamId)
-        .map((team) => TeamEntityForView(team: team, members: const []))
-        .toList(growable: false);
-  }
-
-  List<TeamMemberforView> _buildWorkflowEventTeamMembers(String teamId) {
-    final members = _teamMembersByTeamId[teamId] ?? const <TeamMemberEntity>[];
-    return members
-        .map((member) => TeamMemberforView(teamMember: member))
-        .toList(growable: false);
-  }
-
-  EventEntity _buildEventDraftPreviewEntity(
-    ChatMessageActionEventDraft draft, {
-    required String fallbackTeamId,
-  }) {
-    final now = DateTime.now();
-    final normalizedTeamId = draft.teamId?.trim();
-    return EventEntity(
-      id: const Uuid().v4(),
-      teamId: normalizedTeamId != null && normalizedTeamId.isNotEmpty
-          ? normalizedTeamId
-          : fallbackTeamId,
-      title: draft.title,
-      description: draft.description,
-      startsAt: draft.startsAt,
-      endsAt: draft.endsAt,
-      allDay: draft.allDay,
-      location: draft.location,
-      participantUserIds: draft.participantUserIds,
-      participantDisplayNames: draft.participantDisplayNames,
-      createdByUserId: _currentUid,
-      createdByDisplayName: _actorDisplayName,
-      workflowMetadata: draft.workflowMetadata,
-      createdAt: now,
-      updatedAt: now,
-    );
-  }
-
   IconData _iconForWorkflowActionType(ChatMessageActionType? actionType) {
     return switch (actionType) {
       ChatMessageActionType.createSondage => Icons.poll_outlined,
@@ -2170,64 +2103,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       ),
       null => _chatActionText(locale, it: 'Suggerimento', en: 'Suggestion'),
     };
-  }
-
-  List<ShiftAssignmentCreateRequestEntity> _buildShiftRequestsFromDialog({
-    required DateTime fallbackDate,
-    required ShiftDayDialogResult result,
-  }) {
-    final scheduledDates = result.scheduledDates.isEmpty
-        ? <DateTime>[fallbackDate]
-        : result.scheduledDates;
-    final targetUserIds = result.targetUserIds.isEmpty
-        ? const <String?>[null]
-        : result.targetUserIds.cast<String?>();
-    final uuid = const Uuid();
-    final requests = <ShiftAssignmentCreateRequestEntity>[];
-
-    for (final scheduledDate in scheduledDates) {
-      if (result.memberAssignmentPlans.isNotEmpty) {
-        for (final plan in result.memberAssignmentPlans) {
-          requests.add(
-            ShiftAssignmentCreateRequestEntity(
-              shiftDate: scheduledDate,
-              profileId: plan.profileId ?? result.profileId,
-              startTime: plan.profileId == null ? result.startTime : null,
-              endTime: plan.profileId == null ? result.endTime : null,
-              overnight: plan.profileId == null ? result.overnight : null,
-              note: result.note,
-              alarmOffsets: plan.profileId == null ? result.alarmOffsets : null,
-              isPublic: result.isPublic,
-              teamId: result.isPublic ? result.teamId : null,
-              teamShiftGroupId: result.isPublic ? uuid.v4() : null,
-              targetUserId: plan.targetUserId,
-            ),
-          );
-        }
-        continue;
-      }
-
-      final sharedGroupId = result.isPublic ? uuid.v4() : null;
-      for (final targetUserId in targetUserIds) {
-        requests.add(
-          ShiftAssignmentCreateRequestEntity(
-            shiftDate: scheduledDate,
-            profileId: result.profileId,
-            startTime: result.startTime,
-            endTime: result.endTime,
-            overnight: result.overnight,
-            note: result.note,
-            alarmOffsets: result.alarmOffsets,
-            isPublic: result.isPublic,
-            teamId: result.isPublic ? result.teamId : null,
-            teamShiftGroupId: sharedGroupId,
-            targetUserId: targetUserId,
-          ),
-        );
-      }
-    }
-
-    return requests;
   }
 
   Future<T> _runWithLoadingOverlay<T>(Future<T> Function() action) async {

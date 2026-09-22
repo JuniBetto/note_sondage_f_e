@@ -33,6 +33,8 @@ import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_messag
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_message_action_repository_impl.dart';
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_event_workflow_controller.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_shift_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_sondage_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
@@ -217,6 +219,18 @@ void _registerDataSources() {
     () => ChatMessageTaskWorkflowController(
       draftService: getIt<ChatMessageActionUseCase>(),
       taskUseCase: getIt<TaskUseCase>(),
+    ),
+  );
+  getIt.registerLazySingleton<ChatMessageShiftWorkflowController>(
+    () => ChatMessageShiftWorkflowController(
+      draftService: getIt<ChatMessageActionUseCase>(),
+      shiftRepository: getIt<ShiftRepository>(),
+    ),
+  );
+  getIt.registerLazySingleton<ChatMessageEventWorkflowController>(
+    () => ChatMessageEventWorkflowController(
+      draftService: getIt<ChatMessageActionUseCase>(),
+      eventUseCase: getIt<EventUseCase>(),
     ),
   );
   getIt.registerLazySingleton<TaskRemoteDataSource>(
