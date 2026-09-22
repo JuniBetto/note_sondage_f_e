@@ -20,6 +20,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_en
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
+import 'package:note_sondage/feature/chat/ui/bloc/chat/chat_bloc.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_section.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_direct_action_dialog.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_image_viewer_dialog.dart';
@@ -38,9 +39,6 @@ import 'package:note_sondage/feature/notification/realtime/realtime_notification
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
-import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
-import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
-import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
@@ -88,11 +86,8 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   static const double _olderMessagesLoadThreshold = 180;
   static const double _readVisibilityThreshold = 72;
 
-  final TeamUseCase _teamUseCase = GetIt.instance<TeamUseCase>();
-  final TeamMemberUseCase _teamMemberUseCase =
-      GetIt.instance<TeamMemberUseCase>();
-  final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
   final ChatUseCase _chatUseCase = GetIt.instance<ChatUseCase>();
+  final ChatBloc _chatBloc = GetIt.instance<ChatBloc>();
   final ChatMessageSondageWorkflowController _sondageWorkflowController =
       GetIt.instance<ChatMessageSondageWorkflowController>();
   final ChatMessageSuggestionService _messageSuggestionService =
@@ -114,21 +109,18 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
   StreamSubscription<WorkflowAiPreferencesState>? _workflowAiSubscription;
+  StreamSubscription<ChatState>? _chatBlocSubscription;
+  ChatState? _previousChatBlocState;
+  bool _pendingTeamsRefreshFeedback = false;
 
-  List<TeamEntity> _teams = const <TeamEntity>[];
   List<ChatMessageEntity> _messages = const <ChatMessageEntity>[];
-  final Map<String, List<TeamMemberEntity>> _teamMembersByTeamId = {};
-  final Map<String, List<RoleEntity>> _rolesByTeamId = {};
   final Map<String, DetectWorkflowSuggestionResult>
   _workflowSuggestionsByMessageId = {};
-  final Set<String> _loadingTeamMemberIds = <String>{};
-  final Set<String> _loadingTeamRoleIds = <String>{};
   final Set<String> _loadingWorkflowSuggestionMessageIds = <String>{};
   ChatConversationEntity? _conversation;
   String? _selectedTeamId;
   String? _selectedMemberUserId;
   String? _conversationDisplayName;
-  bool _loadingTeams = true;
   bool _loadingMessages = false;
   bool _refreshingMessages = false;
   bool _skipNextTeamsConversationLoad = false;
@@ -143,6 +135,19 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   bool _didNotifyContentReady = false;
 
   bool get _sending => _pendingSendCount > 0;
+
+  // Sourced from ChatBloc — only ever written by _loadTeams (teams,
+  // loadingTeams) or _ensureTeamAccessContextLoaded (the two maps), so they
+  // can become plain getters without any local mutable copy. _selectedTeamId
+  // stays a local field (see _loadTeams and _loadConversation) since it's
+  // also written by the not-yet-migrated conversation-loading flow.
+  List<TeamEntity> get _teams => _chatBloc.state.teams;
+  bool get _loadingTeams => _chatBloc.state.loadingTeams;
+  Map<String, List<TeamMemberEntity>> get _teamMembersByTeamId =>
+      _chatBloc.state.teamMembersByTeamId;
+  Map<String, List<RoleEntity>> get _rolesByTeamId =>
+      _chatBloc.state.rolesByTeamId;
+
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid.trim();
   String get _currentEmail =>
       GetIt.instance<AuthBloc>().state.user.email.trim().toLowerCase();
@@ -236,6 +241,8 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     _realtimeSubscription = _realtimeService.stream.listen(
       _handleRealtimeNotification,
     );
+    _previousChatBlocState = _chatBloc.state;
+    _chatBlocSubscription = _chatBloc.stream.listen(_handleChatBlocState);
     _workflowAiSubscription = _workflowAiPreferencesCubit.stream.listen((
       state,
     ) {
@@ -264,13 +271,14 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         ),
       );
     }
-    unawaited(_loadTeams());
+    _loadTeams();
   }
 
   @override
   void dispose() {
     _realtimeSubscription?.cancel();
     _workflowAiSubscription?.cancel();
+    _chatBlocSubscription?.cancel();
     _scrollController.removeListener(_handleScroll);
     _messageController.dispose();
     _scrollController.dispose();
@@ -301,75 +309,88 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       unawaited(_loadConversation(nextTeamId, memberUserId: nextMemberUserId));
       return;
     }
-    unawaited(_loadTeams());
+    _loadTeams();
   }
 
-  Future<void> _loadTeams({bool showFeedback = false}) async {
-    try {
-      final teams = await _teamUseCase.getAllTeams();
-      if (!mounted) return;
+  void _loadTeams({bool showFeedback = false}) {
+    if (showFeedback) {
+      _pendingTeamsRefreshFeedback = true;
+    }
+    _chatBloc.add(ChatTeamsRequested(preferredTeamId: widget.initialTeamId));
+  }
 
-      final nextTeamId = _resolveNextTeamId(teams);
-      setState(() {
-        _teams = teams;
-        _selectedTeamId = nextTeamId;
-        _loadingTeams = false;
-      });
-      _notifyConversationTitleChanged();
+  /// Reacts to every [ChatBloc] emission. Most fields this screen reads are
+  /// now plain getters over `_chatBloc.state`, so a blanket `setState(() {})`
+  /// is enough to pick up teams/team-access-context changes — the only
+  /// extra work here is cascading into (still widget-local, not yet
+  /// migrated) conversation loading once a `ChatTeamsRequested` settles,
+  /// mirroring exactly what `_loadTeams` used to do inline.
+  void _handleChatBlocState(ChatState next) {
+    final previous = _previousChatBlocState;
+    _previousChatBlocState = next;
+    if (!mounted) {
+      return;
+    }
+    setState(() {});
 
-      if (nextTeamId != null) {
-        // Skip the redundant reload only once, right after the initState
-        // fast path already kicked off this exact conversation.
-        if (_skipNextTeamsConversationLoad &&
-            nextTeamId == widget.initialTeamId) {
-          _skipNextTeamsConversationLoad = false;
-        } else {
-          await _loadConversation(
-            nextTeamId,
-            memberUserId: widget.initialMemberUserId?.trim(),
-          );
-        }
-      } else if (mounted) {
-        setState(() {
-          _conversation = null;
-          _messages = const <ChatMessageEntity>[];
-          _selectedMemberUserId = null;
-          _conversationDisplayName = null;
-          _loadingMessages = false;
-          _loadingOlderMessages = false;
-          _hasMoreOlderMessages = true;
-        });
-        _notifyConversationTitleChanged();
-      }
+    final justFinishedLoadingTeams =
+        (previous?.loadingTeams ?? true) && !next.loadingTeams;
+    if (justFinishedLoadingTeams) {
+      _handleTeamsLoadCompleted(previous, next);
+    }
+  }
 
-      if (showFeedback && mounted) {
-        AppSnackBar.showSuccess(
-          context,
-          AppLocalizations.of(context)!.chatRefreshed,
-        );
-      }
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _loadingTeams = false;
-      });
+  void _handleTeamsLoadCompleted(ChatState? previous, ChatState next) {
+    final transientChanged = next.transient != previous?.transient;
+    if (transientChanged && next.transient is ChatErrorOccurred) {
+      _pendingTeamsRefreshFeedback = false;
       AppSnackBar.showError(
         context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatLoadTeamsError,
-        ),
+        (next.transient as ChatErrorOccurred).message,
+      );
+      return;
+    }
+
+    final nextTeamId = next.selectedTeamId;
+    setState(() {
+      _selectedTeamId = nextTeamId;
+    });
+    _notifyConversationTitleChanged();
+
+    if (nextTeamId != null) {
+      // Skip the redundant reload only once, right after the initState
+      // fast path already kicked off this exact conversation.
+      if (_skipNextTeamsConversationLoad &&
+          nextTeamId == widget.initialTeamId) {
+        _skipNextTeamsConversationLoad = false;
+      } else {
+        unawaited(
+          _loadConversation(
+            nextTeamId,
+            memberUserId: widget.initialMemberUserId?.trim(),
+          ),
+        );
+      }
+    } else {
+      setState(() {
+        _conversation = null;
+        _messages = const <ChatMessageEntity>[];
+        _selectedMemberUserId = null;
+        _conversationDisplayName = null;
+        _loadingMessages = false;
+        _loadingOlderMessages = false;
+        _hasMoreOlderMessages = true;
+      });
+      _notifyConversationTitleChanged();
+    }
+
+    if (_pendingTeamsRefreshFeedback) {
+      _pendingTeamsRefreshFeedback = false;
+      AppSnackBar.showSuccess(
+        context,
+        AppLocalizations.of(context)!.chatRefreshed,
       );
     }
-  }
-
-  String? _resolveNextTeamId(List<TeamEntity> teams) {
-    final preferredTeamId = widget.initialTeamId ?? _selectedTeamId;
-    if (preferredTeamId != null &&
-        teams.any((team) => team.id == preferredTeamId)) {
-      return preferredTeamId;
-    }
-    return teams.isNotEmpty ? teams.first.id : null;
   }
 
   Future<void> _loadConversation(String teamId, {String? memberUserId}) async {
@@ -473,59 +494,30 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     }
   }
 
+  /// Bridges to [ChatBloc]'s equivalent event for callers that need to
+  /// `await` completion (e.g. before reading permissions off
+  /// [_teamMembersByTeamId]/[_rolesByTeamId] to decide what to show).
+  /// [ChatTeamAccessContextReady] fires whether the underlying fetch
+  /// succeeded or not, so this never hangs on a failure — it just means the
+  /// caches may still be unpopulated afterwards, exactly as before.
   Future<void> _ensureTeamAccessContextLoaded(String teamId) async {
     final normalizedTeamId = teamId.trim();
     if (normalizedTeamId.isEmpty) {
       return;
     }
-
-    final futures = <Future<void>>[];
-
-    if (!_teamMembersByTeamId.containsKey(normalizedTeamId) &&
-        !_loadingTeamMemberIds.contains(normalizedTeamId)) {
-      _loadingTeamMemberIds.add(normalizedTeamId);
-      futures.add(
-        _teamMemberUseCase
-            .getAllMembersByTeamId(normalizedTeamId)
-            .then((members) {
-              if (!mounted) {
-                return;
-              }
-              setState(() {
-                _teamMembersByTeamId[normalizedTeamId] = members;
-              });
-            })
-            .catchError((_) {})
-            .whenComplete(() {
-              _loadingTeamMemberIds.remove(normalizedTeamId);
-            }),
-      );
+    if (_teamMembersByTeamId.containsKey(normalizedTeamId) &&
+        _rolesByTeamId.containsKey(normalizedTeamId)) {
+      return;
     }
 
-    if (!_rolesByTeamId.containsKey(normalizedTeamId) &&
-        !_loadingTeamRoleIds.contains(normalizedTeamId)) {
-      _loadingTeamRoleIds.add(normalizedTeamId);
-      futures.add(
-        _roleUseCase
-            .getAllRolesByTeamId(normalizedTeamId)
-            .then((roles) {
-              if (!mounted) {
-                return;
-              }
-              setState(() {
-                _rolesByTeamId[normalizedTeamId] = roles;
-              });
-            })
-            .catchError((_) {})
-            .whenComplete(() {
-              _loadingTeamRoleIds.remove(normalizedTeamId);
-            }),
-      );
-    }
-
-    if (futures.isNotEmpty) {
-      await Future.wait(futures);
-    }
+    final ready = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatTeamAccessContextReady &&
+          (state.transient as ChatTeamAccessContextReady).teamId ==
+              normalizedTeamId,
+    );
+    _chatBloc.add(ChatTeamAccessContextRequested(normalizedTeamId));
+    await ready;
   }
 
   bool _canManageTeam(TeamEntity team) {
@@ -1030,7 +1022,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   void _handleRefreshPressed() {
-    unawaited(_loadTeams(showFeedback: true));
+    _loadTeams(showFeedback: true);
   }
 
   void _handleTeamChanged(String teamId) {
@@ -2202,7 +2194,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     if (eventType.startsWith('TEAM_')) {
       if (teamId != null && teamId.isNotEmpty && teamId == selectedTeamId) {
-        unawaited(_loadTeams());
+        _loadTeams();
       }
       return;
     }

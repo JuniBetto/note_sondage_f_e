@@ -31,6 +31,20 @@ class ChatErrorOccurred extends ChatTransient {
   List<Object?> get props => [message];
 }
 
+/// Fired once a [ChatTeamAccessContextRequested] for [teamId] has settled —
+/// successfully or not (fetch failures are swallowed, matching the widget
+/// method this replaces). Lets a caller `await` completion via
+/// `bloc.stream.firstWhere(...)` without the risk of hanging forever on a
+/// failed fetch the way waiting on cache population directly would.
+class ChatTeamAccessContextReady extends ChatTransient {
+  const ChatTeamAccessContextReady(this.teamId);
+
+  final String teamId;
+
+  @override
+  List<Object?> get props => [teamId];
+}
+
 /// A fresh conversation (team or direct) finished loading — either from
 /// cache or from the server. The widget reacts by scrolling to the bottom
 /// / focusing the latest message, which needs a live `ScrollController`.

@@ -774,6 +774,7 @@ void main() {
 
         expect(bloc.state.teamMembersByTeamId['team-1'], hasLength(1));
         expect(bloc.state.rolesByTeamId['team-1'], hasLength(1));
+        expect(bloc.state.transient, const ChatTeamAccessContextReady('team-1'));
       },
     );
 
@@ -790,6 +791,9 @@ void main() {
 
         expect(teamMemberRepository.getAllByTeamIdCalls, ['team-1']);
         expect(roleRepository.getAllRolesByTeamIdCalls, ['team-1']);
+        // Ready fires even on the fully-cached second dispatch, so a caller
+        // awaiting it via bloc.stream.firstWhere never hangs.
+        expect(bloc.state.transient, const ChatTeamAccessContextReady('team-1'));
       },
     );
 
@@ -819,7 +823,9 @@ void main() {
 
         expect(bloc.state.teamMembersByTeamId.containsKey('team-1'), isFalse);
         expect(bloc.state.rolesByTeamId.containsKey('team-1'), isFalse);
-        expect(bloc.state.transient, isNull);
+        // Ready still fires on failure — a caller awaiting it must not hang
+        // forever just because the fetch didn't succeed.
+        expect(bloc.state.transient, const ChatTeamAccessContextReady('team-1'));
       },
     );
 
@@ -929,11 +935,23 @@ void main() {
       chatRepository.getOrCreateTeamConversationHandler =
           (_) => Future.error(Exception('down'));
 
+      // ChatConversationRequested also fires-and-forgets a
+      // ChatTeamAccessContextRequested, which races independently and may
+      // emit its own ChatTeamAccessContextReady transient afterwards — so
+      // assert the error was emitted at some point in the stream, the way a
+      // real BlocListener would observe it, rather than on the final
+      // settled state (which the other handler's later emit can reasonably
+      // move on from).
+      final emittedStates = <ChatState>[];
+      final subscription = bloc.stream.listen(emittedStates.add);
+
       bloc.add(const ChatConversationRequested('team-1'));
       await pumpEventQueue();
 
       expect(bloc.state.loadingMessages, isFalse);
-      expect(bloc.state.transient, isA<ChatErrorOccurred>());
+      expect(emittedStates.map((s) => s.transient), contains(isA<ChatErrorOccurred>()));
+
+      await subscription.cancel();
     });
   });
 

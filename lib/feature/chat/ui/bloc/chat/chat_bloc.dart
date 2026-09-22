@@ -193,6 +193,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (futures.isNotEmpty) {
       await Future.wait(futures);
     }
+    emit(state.copyWith(transient: ChatTeamAccessContextReady(teamId)));
   }
 
   Future<void> _onConversationRequested(
