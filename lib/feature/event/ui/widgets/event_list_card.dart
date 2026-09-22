@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
+import 'package:note_sondage/feature/event/ui/widgets/event_reminder_labels.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
@@ -14,6 +15,8 @@ class EventListCard extends StatelessWidget {
     required this.onEdit,
     required this.onArchiveToggle,
     required this.onDeleteArchived,
+    this.canSetMyReminder = false,
+    this.onSetMyReminder,
   });
 
   final EventEntity event;
@@ -32,6 +35,12 @@ class EventListCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onArchiveToggle;
   final VoidCallback onDeleteArchived;
+
+  /// Whether the current user (creator or a participant) can set their own
+  /// independent reminder on this event — independent from [canEdit], see
+  /// `_canSetMyReminder` in `EventWorkspace`.
+  final bool canSetMyReminder;
+  final VoidCallback? onSetMyReminder;
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +156,12 @@ class EventListCard extends StatelessWidget {
                   onPressed: onDeleteArchived,
                   icon: const Icon(Icons.delete_outline),
                   label: Text(loc.eventDeleteAction),
+                ),
+              if (canSetMyReminder)
+                OutlinedButton.icon(
+                  onPressed: isArchivedForMe ? null : onSetMyReminder,
+                  icon: const Icon(Icons.notifications_outlined),
+                  label: Text(eventMyReminderSetAction(context)),
                 ),
             ],
           ),

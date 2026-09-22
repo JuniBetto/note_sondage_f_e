@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_reminder_anchor.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_update_request_entity.dart';
 import 'package:note_sondage/feature/task/infrastructure/data/task_mapper.dart';
@@ -73,6 +74,24 @@ class TaskRemoteDataSource {
     final response = await _dio.patch(
       '/api/tasks/$taskId',
       data: TaskMapper.updateRequestToJson(request),
+    );
+    return TaskMapper.fromJson(Map<String, dynamic>.from(response.data));
+  }
+
+  /// Sets the CURRENT user's own reminder for this task — independent of
+  /// anyone else's, whether they're the creator or the assignee. See
+  /// `PATCH /api/tasks/{taskId}/reminders/mine` on note_sondage_task.
+  Future<TaskEntity> updateMyReminder(
+    String taskId,
+    List<int> reminderOffsets,
+    TaskReminderAnchor reminderAnchor,
+  ) async {
+    final response = await _dio.patch(
+      '/api/tasks/$taskId/reminders/mine',
+      data: {
+        'reminderOffsets': reminderOffsets,
+        'reminderAnchor': reminderAnchor.wireValue,
+      },
     );
     return TaskMapper.fromJson(Map<String, dynamic>.from(response.data));
   }

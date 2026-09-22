@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
+import 'package:note_sondage/feature/event/ui/widgets/event_reminder_labels.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
@@ -9,17 +10,26 @@ import 'event_list_card.dart';
 /// Read-only detail view opened by tapping an event in the calendar (day,
 /// week or month) — mirrors what [EventListCard] shows, plus who created
 /// it. Editing stays a deliberate, separate action: [onEdit] is only wired
-/// up (and its button only shown) when [canEdit] is true.
+/// up (and its button only shown) when [canEdit] is true. Same for
+/// [onSetMyReminder]/[canSetMyReminder] — independent of [canEdit], see
+/// `_canSetMyReminder` in `EventWorkspace`.
 Future<void> showEventDetailDialog(
   BuildContext context, {
   required EventEntity event,
   required bool canEdit,
   required VoidCallback onEdit,
+  bool canSetMyReminder = false,
+  VoidCallback? onSetMyReminder,
 }) {
   return showDialog<void>(
     context: context,
-    builder: (context) =>
-        _EventDetailDialog(event: event, canEdit: canEdit, onEdit: onEdit),
+    builder: (context) => _EventDetailDialog(
+      event: event,
+      canEdit: canEdit,
+      onEdit: onEdit,
+      canSetMyReminder: canSetMyReminder,
+      onSetMyReminder: onSetMyReminder,
+    ),
   );
 }
 
@@ -28,11 +38,15 @@ class _EventDetailDialog extends StatelessWidget {
     required this.event,
     required this.canEdit,
     required this.onEdit,
+    this.canSetMyReminder = false,
+    this.onSetMyReminder,
   });
 
   final EventEntity event;
   final bool canEdit;
   final VoidCallback onEdit;
+  final bool canSetMyReminder;
+  final VoidCallback? onSetMyReminder;
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +140,17 @@ class _EventDetailDialog extends StatelessWidget {
           type: ButtonType.text,
           child: Text(loc.close),
         ),
+        if (canSetMyReminder)
+          CustomAppButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onSetMyReminder?.call();
+            },
+            isActive: false,
+            type: ButtonType.outlined,
+            leadingIcon: const Icon(Icons.notifications_outlined, size: 18),
+            child: Text(eventMyReminderSetAction(context)),
+          ),
         if (canEdit)
           CustomAppButton(
             onPressed: () {

@@ -23,8 +23,7 @@ import 'package:note_sondage/ui/widgets/custom_dialog.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class SondageWeb extends StatefulWidget {
-  const SondageWeb({super.key, this.title = "Create Sondage"});
-  final String title;
+  const SondageWeb({super.key});
 
   @override
   State<SondageWeb> createState() => _SondageWebState();
@@ -130,8 +129,9 @@ class _SondageWebState extends State<SondageWeb> {
   }
 
   void _openCreateDialog() {
+    final localization = AppLocalizations.of(context)!;
     CustomDialog(
-      title: widget.title,
+      title: '${localization.create} ${localization.sondage}',
       width: 760,
       child: const CreateSondageWeb(),
     ).show(context);

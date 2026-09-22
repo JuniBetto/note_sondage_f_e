@@ -1841,6 +1841,8 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
             createdByUserId: _currentUid,
             createdByDisplayName: _actorDisplayName,
             workflowMetadata: eventDraft.workflowMetadata,
+            reminderOffsets: editorResult.reminderOffsets,
+            reminderAnchor: editorResult.reminderAnchor,
           ),
         ),
       );

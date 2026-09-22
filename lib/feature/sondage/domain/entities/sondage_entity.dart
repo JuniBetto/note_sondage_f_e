@@ -82,6 +82,11 @@ class SondageEntity {
   final String? currentUserOptionId;
   final List<String> currentUserOptionIds;
   final List<String> voterUserIds;
+
+  /// User IDs excluded from this specific sondage only — they remain full
+  /// team members, just can't see or vote on this one. Set by the creator
+  /// at create/edit time; never touches team membership itself.
+  final List<String> excludedUserIds;
   final bool canEdit;
   final bool canDelete;
   final bool canPublish;
@@ -114,6 +119,7 @@ class SondageEntity {
     this.currentUserOptionId,
     this.currentUserOptionIds = const [],
     this.voterUserIds = const [],
+    this.excludedUserIds = const [],
     this.canEdit = false,
     this.canDelete = false,
     this.canPublish = false,
@@ -147,6 +153,7 @@ class SondageEntity {
     String? currentUserOptionId,
     List<String>? currentUserOptionIds,
     List<String>? voterUserIds,
+    List<String>? excludedUserIds,
     bool? canEdit,
     bool? canDelete,
     bool? canPublish,
@@ -180,6 +187,7 @@ class SondageEntity {
       currentUserOptionId: currentUserOptionId ?? this.currentUserOptionId,
       currentUserOptionIds: currentUserOptionIds ?? this.currentUserOptionIds,
       voterUserIds: voterUserIds ?? this.voterUserIds,
+      excludedUserIds: excludedUserIds ?? this.excludedUserIds,
       canEdit: canEdit ?? this.canEdit,
       canDelete: canDelete ?? this.canDelete,
       canPublish: canPublish ?? this.canPublish,

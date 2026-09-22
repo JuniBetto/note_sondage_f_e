@@ -7,7 +7,11 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
 import 'package:note_sondage/feature/sondage/ui/bloc/sondage_bloc.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
+import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
+import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/infrastructure/data/team_mapper.dart';
+import 'package:get_it/get_it.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/anchored_dropdown_overlay.dart';
@@ -69,6 +73,10 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
   DateTime? _expiryAnchorDate;
   String? _selectedTeamId;
   late Future<List<TeamEntity>> _teamsFuture;
+  final TeamMemberUseCase _teamMemberUseCase = GetIt.instance<TeamMemberUseCase>();
+  final Set<String> _excludedUserIds = {};
+  String? _teamMembersLoadedForTeamId;
+  Future<List<TeamMemberEntity>>? _teamMembersFuture;
   bool get _isEditing => widget.initialSondage != null;
   bool get _isShiftGapWorkflowDraft {
     final initial = widget.initialSondage;
@@ -235,6 +243,9 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     _questionController.text = initial.name;
     _descriptionController.text = initial.description ?? initial.focus;
     _selectedTeamId = initial.teamId;
+    _excludedUserIds
+      ..clear()
+      ..addAll(initial.excludedUserIds);
     _allowMultipleResponses = initial.allowMultipleResponses;
     _hasExpiry = initial.expiryDate != null;
     if (initial.expiryDate != null) {
@@ -270,6 +281,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     _clearOptionControllers();
     setState(() {
       _selectedTeamId = null;
+      _excludedUserIds.clear();
       _allowMultipleResponses = false;
       _hasExpiry = false;
       _start = const TimeOfDay(hour: 9, minute: 0);
@@ -331,6 +343,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
     _resetOptionControllers();
     setState(() {
       _selectedTeamId = null;
+      _excludedUserIds.clear();
       _allowMultipleResponses = false;
       _hasExpiry = false;
       _start = const TimeOfDay(hour: 9, minute: 0);
@@ -370,9 +383,22 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         .toList();
   }
 
+  /// Lazily fetches the selected team's members so the "exclude members"
+  /// picker can show them — cached per team id so switching back and forth
+  /// doesn't re-fetch, and cleared members no longer valid for the new team
+  /// are dropped from [_excludedUserIds] only once the fresh list is in.
+  Future<List<TeamMemberEntity>> _ensureTeamMembersLoaded(String teamId) {
+    if (_teamMembersLoadedForTeamId != teamId || _teamMembersFuture == null) {
+      _teamMembersLoadedForTeamId = teamId;
+      _teamMembersFuture = _teamMemberUseCase.getAllMembersByTeamId(teamId);
+    }
+    return _teamMembersFuture!;
+  }
+
   void _reloadTeams() {
     setState(() {
       _selectedTeamId = null;
+      _excludedUserIds.clear();
       _teamSearchController.clear();
       _teamsFuture = _loadCreatableTeams();
     });
@@ -493,6 +519,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
       currentUserOptionId: initial?.currentUserOptionId,
       currentUserOptionIds: initial?.currentUserOptionIds ?? const [],
       voterUserIds: initial?.voterUserIds ?? const [],
+      excludedUserIds: _excludedUserIds.toList(),
       canEdit: initial?.canEdit ?? false,
       canDelete: initial?.canDelete ?? false,
       canPublish: initial?.canPublish ?? false,
@@ -776,6 +803,9 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                               isSelected: dropdownValue == team.id,
                               onTap: () {
                                 setState(() {
+                                  if (_selectedTeamId != team.id) {
+                                    _excludedUserIds.clear();
+                                  }
                                   _selectedTeamId = team.id;
                                   _teamSearchController.clear();
                                 });
@@ -794,6 +824,105 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
         );
       },
     );
+  }
+
+  /// Lets the creator exclude specific team members from *this* sondage
+  /// only — they stay full team members, they just won't see or vote on
+  /// this one. Shown once a team is selected; the current user (creator)
+  /// is never listed since excluding yourself would be a confusing no-op.
+  Widget _buildExcludeMembersSelector(BuildContext context) {
+    final teamId = _selectedTeamId;
+    if (teamId == null) {
+      return const SizedBox.shrink();
+    }
+    final currentUid = context.read<AuthBloc>().state.user.uid;
+
+    return FutureBuilder<List<TeamMemberEntity>>(
+      future: _ensureTeamMembersLoaded(teamId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: LinearProgressIndicator(minHeight: 2),
+          );
+        }
+        if (snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
+        final members = (snapshot.data ?? const <TeamMemberEntity>[])
+            .where(
+              (member) =>
+                  member.userId != null &&
+                  member.userId!.trim().isNotEmpty &&
+                  member.userId != currentUid &&
+                  member.status == UserStatus.active,
+            )
+            .toList(growable: false);
+        if (members.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _strings.excludeMembersTitle,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _strings.excludeMembersHint,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.descriptionColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: members.map((member) {
+                  final userId = member.userId!;
+                  final excluded = _excludedUserIds.contains(userId);
+                  return FilterChip(
+                    label: Text(_memberLabel(member)),
+                    selected: excluded,
+                    avatar: excluded
+                        ? const Icon(Icons.person_off_outlined, size: 16)
+                        : null,
+                    onSelected: (value) {
+                      setState(() {
+                        if (value) {
+                          _excludedUserIds.add(userId);
+                        } else {
+                          _excludedUserIds.remove(userId);
+                        }
+                      });
+                    },
+                  );
+                }).toList(growable: false),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _memberLabel(TeamMemberEntity member) {
+    final initialName = member.initialName?.trim();
+    if (initialName != null && initialName.isNotEmpty) {
+      return initialName;
+    }
+    final email = member.userEmail.trim();
+    if (email.isNotEmpty) {
+      return email;
+    }
+    return member.userId ?? '';
   }
 
   @override
@@ -1216,10 +1345,12 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                   context: context,
                   title: localization.selectTeam,
                   icon: Icons.groups_rounded,
-                  child: _buildTeamsSelector(
-                    context,
-                    localization,
-                    colorScheme,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTeamsSelector(context, localization, colorScheme),
+                      _buildExcludeMembersSelector(context),
+                    ],
                   ),
                 ),
               ),
@@ -1374,6 +1505,8 @@ class _SondageCreateStrings {
     required this.searchTeams,
     required this.noTeamFound,
     required this.teamAvailableForSurvey,
+    required this.excludeMembersTitle,
+    required this.excludeMembersHint,
     required this.editSurveyIntro,
     required this.createSurveyIntro,
     required this.shiftGapWorkflowTitle,
@@ -1414,6 +1547,8 @@ class _SondageCreateStrings {
   final String searchTeams;
   final String noTeamFound;
   final String teamAvailableForSurvey;
+  final String excludeMembersTitle;
+  final String excludeMembersHint;
   final String editSurveyIntro;
   final String createSurveyIntro;
   final String shiftGapWorkflowTitle;
@@ -1474,6 +1609,9 @@ class _SondageCreateStrings {
     searchTeams: 'Search team...',
     noTeamFound: 'No team found',
     teamAvailableForSurvey: 'Team available for this survey',
+    excludeMembersTitle: 'Exclude members',
+    excludeMembersHint:
+        "Selected members won't see or be able to vote on this survey — they stay full team members.",
     editSurveyIntro:
         'Update the question, description, options, and target team for this survey.',
     createSurveyIntro:
@@ -1531,6 +1669,9 @@ class _SondageCreateStrings {
     searchTeams: 'Cerca team...',
     noTeamFound: 'Nessun team trovato',
     teamAvailableForSurvey: 'Team disponibile per ricevere il sondaggio',
+    excludeMembersTitle: 'Escludi membri',
+    excludeMembersHint:
+        'I membri selezionati non vedranno né potranno votare questo sondaggio — restano comunque membri del team.',
     editSurveyIntro:
         'Aggiorna domanda, descrizione, opzioni e team del sondaggio.',
     createSurveyIntro:
@@ -1589,6 +1730,9 @@ class _SondageCreateStrings {
     searchTeams: 'Rechercher une équipe...',
     noTeamFound: 'Aucune équipe trouvée',
     teamAvailableForSurvey: 'Équipe disponible pour ce sondage',
+    excludeMembersTitle: 'Exclure des membres',
+    excludeMembersHint:
+        'Les membres sélectionnés ne verront pas ce sondage et ne pourront pas y voter — ils restent membres de l’équipe.',
     editSurveyIntro:
         'Mettez à jour la question, la description, les options et l’équipe cible du sondage.',
     createSurveyIntro:
@@ -1646,6 +1790,9 @@ class _SondageCreateStrings {
     searchTeams: 'Buscar equipo...',
     noTeamFound: 'No se encontró ningún equipo',
     teamAvailableForSurvey: 'Equipo disponible para esta encuesta',
+    excludeMembersTitle: 'Excluir miembros',
+    excludeMembersHint:
+        'Los miembros seleccionados no verán ni podrán votar esta encuesta — siguen siendo miembros del equipo.',
     editSurveyIntro:
         'Actualiza la pregunta, la descripción, las opciones y el equipo de destino de la encuesta.',
     createSurveyIntro:

@@ -115,6 +115,11 @@ class SondageMapper {
     final currentUserOptionId = _normalizeOptionalString(
       json['currentUserOptionId'],
     );
+    final excludedUserIds = ((json['excludedUserIds'] as List?) ?? [])
+        .map((value) => value?.toString() ?? '')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty && value.toLowerCase() != 'null')
+        .toList();
 
     return SondageEntity(
       id: json['id']?.toString() ?? '',
@@ -148,6 +153,7 @@ class SondageMapper {
       currentUserOptionId: currentUserOptionId,
       currentUserOptionIds: currentUserOptionIds,
       voterUserIds: voterUserIds,
+      excludedUserIds: excludedUserIds,
       canEdit: json['canEdit'] == true,
       canDelete: json['canDelete'] == true,
       canPublish: json['canPublish'] == true,
@@ -179,6 +185,7 @@ class SondageMapper {
       if (entity.expiryDate != null)
         'expiresAt': entity.expiryDate!.toIso8601String(),
       'options': entity.options.map((option) => option.label).toList(),
+      'excludedUserIds': entity.excludedUserIds,
     };
   }
 }

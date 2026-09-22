@@ -1,5 +1,6 @@
 import 'package:note_sondage/feature/task/domain/entities/task_create_request_entity.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_entity.dart';
+import 'package:note_sondage/feature/task/domain/entities/task_reminder_anchor.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_status.dart';
 import 'package:note_sondage/feature/task/domain/entities/task_update_request_entity.dart';
 
@@ -21,6 +22,14 @@ abstract class TaskRepository {
   Future<TaskEntity> createTask(TaskCreateRequestEntity request);
 
   Future<TaskEntity> updateTask(String taskId, TaskUpdateRequestEntity request);
+
+  /// Sets the current user's own reminder for this task, independent of
+  /// anyone else's (e.g. the creator's, when the caller is the assignee).
+  Future<TaskEntity> updateMyReminder(
+    String taskId,
+    List<int> reminderOffsets,
+    TaskReminderAnchor reminderAnchor,
+  );
 
   Future<TaskEntity> updateTaskStatus(String taskId, TaskStatus status);
 

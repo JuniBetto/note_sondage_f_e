@@ -12,8 +12,10 @@ import 'package:note_sondage/feature/event/domain/entities/event_create_request_
 import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_update_request_entity.dart';
 import 'package:note_sondage/feature/event/navigation/event_open_intent_controller.dart';
+import 'package:note_sondage/feature/event/domain/entities/event_reminder_anchor.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_text_size.dart';
 import 'package:note_sondage/feature/event/domain/use_case/event_use_case.dart';
+import 'package:note_sondage/feature/event/notification/event_alarm_scheduler.dart';
 import 'package:note_sondage/feature/event/ui/event_density_scope.dart';
 import 'package:note_sondage/feature/event/ui/event_text_size_cubit.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_calendar_view.dart';
@@ -21,10 +23,12 @@ import 'package:note_sondage/feature/event/ui/widgets/event_detail_dialog.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_editor_dialog.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_empty_state.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_list_card.dart';
+import 'package:note_sondage/feature/event/ui/widgets/event_reminder_labels.dart';
 import 'package:note_sondage/feature/event/ui/widgets/event_workspace_header.dart';
 import 'package:note_sondage/feature/notification/realtime/event_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
+import 'package:note_sondage/feature/task/ui/widgets/task_reminder_offset_editor.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
@@ -33,6 +37,7 @@ import 'package:note_sondage/feature/team/ui/bloc/team_member/team_member_bloc.d
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/scroll_overflow_hint.dart';
 
 enum EventViewMode { card, calendar }
@@ -73,6 +78,8 @@ class _EventWorkspaceState extends State<EventWorkspace> {
   final EventUseCase _eventUseCase = GetIt.instance<EventUseCase>();
   final TeamMemberBloc _teamMemberBloc = GetIt.instance<TeamMemberBloc>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
+  final EventAlarmScheduler _eventAlarmScheduler =
+      GetIt.instance<EventAlarmScheduler>();
   // Lets the user shrink/grow all text in the compact/mobile layout to fit
   // more content on screen (see EventTextSizeToggle in EventWorkspaceHeader).
   final EventTextSizeCubit _eventTextSizeCubit =
@@ -239,6 +246,13 @@ class _EventWorkspaceState extends State<EventWorkspace> {
     }
     return user.email.trim();
   }
+
+  /// Setting your own reminder doesn't need "manage team" rights — only
+  /// being the creator or one of the participants, the only people an event
+  /// reminder could plausibly belong to. Mirrors Task's `_canSetMyReminder`.
+  bool _canSetMyReminder(EventEntity event) =>
+      event.createdByUserId.trim() == _currentUid ||
+      event.participantUserIds.any((id) => id.trim() == _currentUid);
 
   String? _normalizeOptionalId(String? value) {
     final normalized = value?.trim();
@@ -433,6 +447,7 @@ class _EventWorkspaceState extends State<EventWorkspace> {
         _events = events;
         _locallyArchivedEventIds = archivedIds;
       });
+      unawaited(_eventAlarmScheduler.syncEvents(_events));
     } catch (e) {
       if (mounted) {
         _showMessage(AppLocalizations.of(context)!.eventLoadError(e));
@@ -480,6 +495,8 @@ class _EventWorkspaceState extends State<EventWorkspace> {
             participantDisplayNames: result.participantDisplayNames,
             createdByUserId: _actorUserId,
             createdByDisplayName: _actorDisplayName,
+            reminderOffsets: result.reminderOffsets,
+            reminderAnchor: result.reminderAnchor,
           ),
         );
         if (!mounted) return;
@@ -497,6 +514,8 @@ class _EventWorkspaceState extends State<EventWorkspace> {
             location: result.location,
             participantUserIds: result.participantUserIds,
             participantDisplayNames: result.participantDisplayNames,
+            reminderOffsets: result.reminderOffsets,
+            reminderAnchor: result.reminderAnchor,
           ),
         );
         if (!mounted) return;
@@ -507,6 +526,157 @@ class _EventWorkspaceState extends State<EventWorkspace> {
       if (!mounted) return;
       _showMessage(loc.eventSaveError(e));
     }
+  }
+
+  /// Lets the creator OR any participant set their own independent reminder
+  /// on [event] — unlike [_openEditor], this needs no "manage team"
+  /// permission, only being one of those people (see [_canSetMyReminder]).
+  /// There's no `EventBloc` (see [EventAlarmScheduler]'s doc comment), so
+  /// this calls [EventUseCase.updateMyReminder] directly and re-syncs the
+  /// scheduler itself instead of relying on a bloc event.
+  Future<void> _openMyReminderSheet(EventEntity event) async {
+    List<int> offsets = List<int>.from(event.reminderOffsets);
+    EventReminderAnchor anchor = event.reminderAnchor;
+    final hasAnchorDate = event.reminderAnchorTime != null;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        bool saving = false;
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+          ),
+          child: StatefulBuilder(
+            builder: (sheetContext, setModalState) {
+              final theme = Theme.of(sheetContext);
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.24),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      eventMyReminderSheetTitle(sheetContext),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      eventMyReminderSheetSubtitle(sheetContext),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (!hasAnchorDate)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          eventMyReminderNoAnchorHint(sheetContext),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    TaskReminderOffsetEditor(
+                      offsets: offsets,
+                      onChanged: (updated) =>
+                          setModalState(() => offsets = updated),
+                    ),
+                    if (offsets.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      SegmentedButton<EventReminderAnchor>(
+                        style: SegmentedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          textStyle: theme.textTheme.labelSmall,
+                        ),
+                        selected: {anchor},
+                        segments: [
+                          ButtonSegment(
+                            value: EventReminderAnchor.startsAt,
+                            label: Text(
+                              eventReminderAnchorStartsAtLabel(sheetContext),
+                            ),
+                          ),
+                          ButtonSegment(
+                            value: EventReminderAnchor.endsAt,
+                            label: Text(
+                              eventReminderAnchorEndsAtLabel(sheetContext),
+                            ),
+                          ),
+                        ],
+                        onSelectionChanged: (selection) =>
+                            setModalState(() => anchor = selection.first),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    CustomAppButton(
+                      isLoading: saving,
+                      isActive: true,
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              setModalState(() => saving = true);
+                              try {
+                                final updated = await _eventUseCase
+                                    .updateMyReminder(
+                                      event.id,
+                                      offsets,
+                                      anchor,
+                                    );
+                                unawaited(
+                                  _eventAlarmScheduler.syncEvents([
+                                    ..._events.where((e) => e.id != event.id),
+                                    updated,
+                                  ]),
+                                );
+                                if (!sheetContext.mounted) {
+                                  return;
+                                }
+                                Navigator.of(sheetContext).pop();
+                              } catch (_) {
+                                setModalState(() => saving = false);
+                                if (!sheetContext.mounted) {
+                                  return;
+                                }
+                                AppSnackBar.showError(
+                                  sheetContext,
+                                  eventMyReminderSaveError(sheetContext),
+                                );
+                              }
+                            },
+                      leadingIcon: const Icon(Icons.check_rounded, size: 18),
+                      child: Text(eventMyReminderSaveAction(sheetContext)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+    if (!mounted) {
+      return;
+    }
+    await _refresh();
   }
 
   /// Purely local and personal — like archiving a team, a survey or a shift
@@ -733,6 +903,8 @@ class _EventWorkspaceState extends State<EventWorkspace> {
                 event: event,
                 canEdit: _canEditEvent(event),
                 onEdit: () => _openEditor(event: event),
+                canSetMyReminder: _canSetMyReminder(event),
+                onSetMyReminder: () => _openMyReminderSheet(event),
               ),
               emptyStateTitle: emptyStateTitle,
               emptyStateSubtitle: emptyStateSubtitle,
@@ -776,6 +948,8 @@ class _EventWorkspaceState extends State<EventWorkspace> {
                           onEdit: () => _openEditor(event: event),
                           onArchiveToggle: () => _toggleArchive(event),
                           onDeleteArchived: () => _deleteArchived(event),
+                          canSetMyReminder: _canSetMyReminder(event),
+                          onSetMyReminder: () => _openMyReminderSheet(event),
                         ),
                       ),
                   ],

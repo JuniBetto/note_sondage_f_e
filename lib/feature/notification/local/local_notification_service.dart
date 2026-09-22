@@ -30,6 +30,8 @@ const String _shiftNotificationsEnabledKey = 'shift_notifications_enabled';
 const String _scheduledShiftAlarmIdsKey = 'scheduled_shift_alarm_ids';
 const String _taskNotificationsEnabledKey = 'task_notifications_enabled';
 const String _scheduledTaskAlarmIdsKey = 'scheduled_task_alarm_ids';
+const String _eventNotificationsEnabledKey = 'event_notifications_enabled';
+const String _scheduledEventAlarmIdsKey = 'scheduled_event_alarm_ids';
 const String _shiftAlarmTypeKey = 'shift_alarm_type';
 const String _shiftAlarmFeedbackKey = 'shift_alarm_feedback';
 const String _shiftAlarmDurationSecondsKey = 'shift_alarm_duration_seconds';
@@ -1221,6 +1223,246 @@ class LocalNotificationService {
     );
     ids.remove(notifId.toString());
     await prefs.setStringList(_scheduledTaskAlarmIdsKey, ids);
+  }
+
+  // ── Event reminders ────────────────────────────────────────────────────
+  // Stessa infrastruttura di allarme di Task/Shift, con toggle di
+  // attivazione e id schedulati separati cosi che disabilitare le notifiche
+  // evento non cancelli i promemoria task/turno (e viceversa).
+
+  Future<bool> areEventNotificationsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_eventNotificationsEnabledKey) ?? true;
+  }
+
+  Future<void> setEventNotificationsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_eventNotificationsEnabledKey, enabled);
+    if (!enabled) {
+      final scheduledIds =
+          prefs
+              .getStringList(_scheduledEventAlarmIdsKey)
+              ?.map(int.tryParse)
+              .whereType<int>()
+              .toList() ??
+          const <int>[];
+      for (final notifId in scheduledIds) {
+        await _cancelNotificationSafely(notifId);
+      }
+      await prefs.remove(_scheduledEventAlarmIdsKey);
+    }
+  }
+
+  /// Schedula le notifiche locali per un event in base agli [alarmOffsets],
+  /// ancorate a [anchorTime] (inizio o fine dell'event, a seconda di come e
+  /// configurato il promemoria). Cancella eventuali allarmi precedenti per
+  /// lo stesso [eventId].
+  Future<void> scheduleEventAlarms({
+    required String eventId,
+    required String eventTitle,
+    required DateTime anchorTime,
+    required List<int> alarmOffsets,
+  }) async {
+    if (!_initialized || !_available || !_supportsLocalNotifications) return;
+    if (!await areEventNotificationsEnabled()) {
+      debugPrint('[EventAlarm] Skipped $eventId: event notifications disabled.');
+      return;
+    }
+    if (alarmOffsets.isEmpty) {
+      debugPrint('[EventAlarm] Skipped $eventId: no alarm offsets.');
+      return;
+    }
+
+    final alarmType = await getShiftAlarmType();
+    final alarmFeedback = await getShiftAlarmFeedback();
+    final durationSeconds = await getShiftAlarmDurationSeconds();
+
+    if (_isWeb) {
+      await cancelEventAlarms(eventId: eventId, alarmOffsets: alarmOffsets);
+      final now = DateTime.now();
+
+      for (final offsetMinutes in alarmOffsets) {
+        final alarmAt = anchorTime.add(Duration(minutes: offsetMinutes));
+        if (alarmAt.isBefore(now)) {
+          debugPrint(
+            '[EventAlarm] Skip web offset $offsetMinutes for $eventId: $alarmAt already passed.',
+          );
+          continue;
+        }
+
+        final minutesBefore = offsetMinutes.abs();
+        final notifId = 'event_${eventId}_$offsetMinutes'.hashCode;
+        final title = '⏰ Evento tra $minutesBefore min';
+        final body = eventTitle.isNotEmpty
+            ? 'Evento "$eventTitle" alle ${_formatTime(anchorTime)}'
+            : 'Un tuo evento inizia tra $minutesBefore minuti';
+
+        await _scheduleWebNotification(
+          id: notifId,
+          title: title,
+          body: body,
+          scheduledAt: alarmAt,
+          payload: jsonEncode({
+            'notificationId': notifId.toString(),
+            'eventType': 'EVENT_ALARM',
+            'sourceService': 'event_web',
+            'title': title,
+            'body': body,
+            'occurredAt': alarmAt.toIso8601String(),
+            'metadata': {
+              'eventId': eventId,
+              'anchorAt': anchorTime.toIso8601String(),
+              'eventTitle': eventTitle,
+            },
+          }),
+          autoCloseAfter: _resolveWebNotificationAutoClose(
+            alarmType: alarmType,
+            durationSeconds: durationSeconds,
+          ),
+        );
+        debugPrint('[EventAlarm] Scheduled web alarm $notifId at $alarmAt');
+      }
+      return;
+    }
+
+    final config = _resolveShiftNotificationConfig(
+      alarmType: alarmType,
+      feedback: alarmFeedback,
+      durationSeconds: durationSeconds,
+    );
+    await _ensureShiftNotificationChannel(
+      alarmType: alarmType,
+      feedback: alarmFeedback,
+      durationSeconds: durationSeconds,
+    );
+
+    // Cancella prima i vecchi allarmi per questo event
+    await cancelEventAlarms(eventId: eventId, alarmOffsets: alarmOffsets);
+
+    final now = tz.TZDateTime.now(tz.local);
+
+    for (final offsetMinutes in alarmOffsets) {
+      // offsetMinutes e negativo (es. -30 = 30 min prima)
+      final alarmTime = tz.TZDateTime.from(
+        anchorTime.add(Duration(minutes: offsetMinutes)),
+        tz.local,
+      );
+
+      if (alarmTime.isBefore(now)) {
+        debugPrint(
+          '[EventAlarm] Skip offset $offsetMinutes for $eventId: $alarmTime already passed.',
+        );
+        continue;
+      }
+
+      final minutesBefore = offsetMinutes.abs();
+      final notifId = 'event_${eventId}_$offsetMinutes'.hashCode;
+      final title = '⏰ Evento tra $minutesBefore min';
+      final body = eventTitle.isNotEmpty
+          ? 'Evento "$eventTitle" alle ${_formatTime(anchorTime)}'
+          : 'Un tuo evento inizia tra $minutesBefore minuti';
+
+      final androidDetails = AndroidNotificationDetails(
+        config.channel.id,
+        config.channel.name,
+        channelDescription: config.channel.description,
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: config.playSound,
+        sound: config.sound,
+        enableVibration: config.enableVibration,
+        vibrationPattern: config.enableVibration
+            ? _buildAlarmVibrationPattern(durationSeconds)
+            : null,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: config.fullScreenIntent,
+        timeoutAfter: alarmType == ShiftAlarmType.alarm
+            ? durationSeconds * 1000
+            : null,
+        icon: 'ic_stat_notify',
+        ongoing: false,
+        autoCancel: true,
+        visibility: NotificationVisibility.public,
+      );
+
+      final darwinDetails = _buildDarwinShiftNotificationDetails(
+        alarmType: alarmType,
+        feedback: alarmFeedback,
+        durationSeconds: durationSeconds,
+      );
+
+      try {
+        await _plugin.zonedSchedule(
+          notifId,
+          title,
+          body,
+          alarmTime,
+          NotificationDetails(android: androidDetails, iOS: darwinDetails),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: jsonEncode({
+            'notificationId': notifId.toString(),
+            'eventType': 'EVENT_ALARM',
+            'sourceService': 'event',
+            'title': title,
+            'body': body,
+            'occurredAt': alarmTime.toIso8601String(),
+            'metadata': {
+              'eventId': eventId,
+              'anchorAt': anchorTime.toIso8601String(),
+              'eventTitle': eventTitle,
+            },
+          }),
+        );
+        await _rememberScheduledEventAlarmId(notifId);
+        debugPrint('[EventAlarm] Scheduled alarm $notifId at $alarmTime');
+      } catch (e) {
+        debugPrint('[EventAlarm] Failed to schedule $notifId: $e');
+      }
+    }
+  }
+
+  /// Cancella tutti gli allarmi schedulati per un event.
+  Future<void> cancelEventAlarms({
+    required String eventId,
+    required List<int> alarmOffsets,
+  }) async {
+    if (!_initialized || !_available || !_supportsLocalNotifications) return;
+    if (_isWeb) {
+      for (final offset in alarmOffsets) {
+        final notifId = 'event_${eventId}_$offset'.hashCode;
+        _cancelWebScheduledNotification(notifId);
+      }
+      return;
+    }
+    for (final offset in alarmOffsets) {
+      final notifId = 'event_${eventId}_$offset'.hashCode;
+      await _cancelNotificationSafely(notifId);
+      await _forgetScheduledEventAlarmId(notifId);
+    }
+  }
+
+  Future<void> _rememberScheduledEventAlarmId(int notifId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = List<String>.from(
+      prefs.getStringList(_scheduledEventAlarmIdsKey) ?? const <String>[],
+    );
+    final raw = notifId.toString();
+    if (!ids.contains(raw)) {
+      ids.add(raw);
+      await prefs.setStringList(_scheduledEventAlarmIdsKey, ids);
+    }
+  }
+
+  Future<void> _forgetScheduledEventAlarmId(int notifId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = List<String>.from(
+      prefs.getStringList(_scheduledEventAlarmIdsKey) ?? const <String>[],
+    );
+    ids.remove(notifId.toString());
+    await prefs.setStringList(_scheduledEventAlarmIdsKey, ids);
   }
 
   Future<void> setShiftNotificationsEnabled(bool enabled) async {
