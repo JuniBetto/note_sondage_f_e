@@ -33,6 +33,7 @@ import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_messag
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_message_action_repository_impl.dart';
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
+import 'package:note_sondage/feature/chat/ui/bloc/chat/chat_bloc.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_event_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_shift_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_sondage_workflow_controller.dart';
@@ -422,6 +423,15 @@ void _registerBlocs() {
     () => TeamBloc(
       teamUseCase: getIt<TeamUseCase>(),
       teamLocalDataSource: getIt<TeamLocalDataSource>(),
+    ),
+  );
+
+  // Chat - Singleton per condividere lo stato tra widget
+  getIt.registerLazySingleton<ChatBloc>(
+    () => ChatBloc(
+      teamUseCase: getIt<TeamUseCase>(),
+      teamMemberUseCase: getIt<TeamMemberUseCase>(),
+      roleUseCase: getIt<RoleUseCase>(),
     ),
   );
 
