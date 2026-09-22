@@ -7,48 +7,64 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation
 import 'package:note_sondage/feature/chat/infrastructure/data/chat_mapper.dart';
 
 class ChatRemoteDataSource {
-  ChatRemoteDataSource();
+  ChatRemoteDataSource({Dio? dio}) : _dio = dio ?? DioClient().dio;
 
-  final Dio _dio = DioClient().dio;
+  final Dio _dio;
 
   Future<ChatConversationEntity> getOrCreateTeamConversation(
     String teamId,
   ) async {
-    final response = await _dio.get('/api/chat/teams/$teamId/conversation');
-    return ChatMapper.conversationFromJson(
-      response.data as Map<String, dynamic>,
-    );
+    try {
+      final response = await _dio.get('/api/chat/teams/$teamId/conversation');
+      return ChatMapper.conversationFromJson(
+        response.data as Map<String, dynamic>,
+      );
+    } catch (e) {
+      throw Exception('Failed to fetch team conversation: $e');
+    }
   }
 
   Future<ChatTeamConversationSummaryEntity> getTeamConversationSummary(
     String teamId,
   ) async {
-    final response = await _dio.get('/api/chat/teams/$teamId/summary');
-    return ChatMapper.summaryFromJson(response.data as Map<String, dynamic>);
+    try {
+      final response = await _dio.get('/api/chat/teams/$teamId/summary');
+      return ChatMapper.summaryFromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception('Failed to fetch team conversation summary: $e');
+    }
   }
 
   Future<ChatConversationEntity> getOrCreateDirectConversation(
     String teamId,
     String memberUserId,
   ) async {
-    final response = await _dio.get(
-      '/api/chat/teams/$teamId/members/$memberUserId/conversation',
-    );
-    return ChatMapper.conversationFromJson(
-      response.data as Map<String, dynamic>,
-    );
+    try {
+      final response = await _dio.get(
+        '/api/chat/teams/$teamId/members/$memberUserId/conversation',
+      );
+      return ChatMapper.conversationFromJson(
+        response.data as Map<String, dynamic>,
+      );
+    } catch (e) {
+      throw Exception('Failed to fetch direct conversation: $e');
+    }
   }
 
   Future<ChatDirectConversationSummaryEntity> getDirectConversationSummary(
     String teamId,
     String memberUserId,
   ) async {
-    final response = await _dio.get(
-      '/api/chat/teams/$teamId/members/$memberUserId/summary',
-    );
-    return ChatMapper.directSummaryFromJson(
-      response.data as Map<String, dynamic>,
-    );
+    try {
+      final response = await _dio.get(
+        '/api/chat/teams/$teamId/members/$memberUserId/summary',
+      );
+      return ChatMapper.directSummaryFromJson(
+        response.data as Map<String, dynamic>,
+      );
+    } catch (e) {
+      throw Exception('Failed to fetch direct conversation summary: $e');
+    }
   }
 
   Future<List<ChatMessageEntity>> getMessages(
@@ -56,18 +72,22 @@ class ChatRemoteDataSource {
     DateTime? before,
     int limit = 50,
   }) async {
-    final response = await _dio.get(
-      '/api/chat/conversations/$conversationId/messages',
-      queryParameters: {
-        'limit': limit,
-        if (before != null) 'before': before.toIso8601String(),
-      },
-    );
-    final data = response.data as List<dynamic>? ?? const <dynamic>[];
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(ChatMapper.messageFromJson)
-        .toList();
+    try {
+      final response = await _dio.get(
+        '/api/chat/conversations/$conversationId/messages',
+        queryParameters: {
+          'limit': limit,
+          if (before != null) 'before': before.toIso8601String(),
+        },
+      );
+      final data = response.data as List<dynamic>? ?? const <dynamic>[];
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ChatMapper.messageFromJson)
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch messages: $e');
+    }
   }
 
   Future<ChatMessageEntity> sendMessage(
@@ -75,15 +95,19 @@ class ChatRemoteDataSource {
     String content, {
     String? replyToMessageId,
   }) async {
-    final response = await _dio.post(
-      '/api/chat/conversations/$conversationId/messages',
-      data: {
-        'content': content,
-        if (replyToMessageId != null && replyToMessageId.trim().isNotEmpty)
-          'replyToMessageId': replyToMessageId.trim(),
-      },
-    );
-    return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
+    try {
+      final response = await _dio.post(
+        '/api/chat/conversations/$conversationId/messages',
+        data: {
+          'content': content,
+          if (replyToMessageId != null && replyToMessageId.trim().isNotEmpty)
+            'replyToMessageId': replyToMessageId.trim(),
+        },
+      );
+      return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception('Failed to send message: $e');
+    }
   }
 
   Future<ChatMessageEntity> sendAttachmentMessage(
@@ -94,38 +118,54 @@ class ChatRemoteDataSource {
     required String contentType,
     String? replyToMessageId,
   }) async {
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(bytes, filename: fileName),
-      if (content != null && content.trim().isNotEmpty)
-        'content': content.trim(),
-      if (replyToMessageId != null && replyToMessageId.trim().isNotEmpty)
-        'replyToMessageId': replyToMessageId.trim(),
-    });
-    final response = await _dio.post(
-      '/api/chat/conversations/$conversationId/messages',
-      data: formData,
-      options: Options(contentType: 'multipart/form-data'),
-    );
-    return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
+    try {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: fileName),
+        if (content != null && content.trim().isNotEmpty)
+          'content': content.trim(),
+        if (replyToMessageId != null && replyToMessageId.trim().isNotEmpty)
+          'replyToMessageId': replyToMessageId.trim(),
+      });
+      final response = await _dio.post(
+        '/api/chat/conversations/$conversationId/messages',
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception('Failed to send attachment message: $e');
+    }
   }
 
   Future<void> markConversationRead(String conversationId) async {
-    await _dio.post('/api/chat/conversations/$conversationId/read');
+    try {
+      await _dio.post('/api/chat/conversations/$conversationId/read');
+    } catch (e) {
+      throw Exception('Failed to mark conversation as read: $e');
+    }
   }
 
   Future<ChatMessageEntity> toggleReaction(
     String messageId,
     String emoji,
   ) async {
-    final response = await _dio.post(
-      '/api/chat/messages/$messageId/reactions',
-      data: {'emoji': emoji},
-    );
-    return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
+    try {
+      final response = await _dio.post(
+        '/api/chat/messages/$messageId/reactions',
+        data: {'emoji': emoji},
+      );
+      return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception('Failed to toggle reaction: $e');
+    }
   }
 
   Future<ChatMessageEntity> deleteMessage(String messageId) async {
-    final response = await _dio.delete('/api/chat/messages/$messageId');
-    return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
+    try {
+      final response = await _dio.delete('/api/chat/messages/$messageId');
+      return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception('Failed to delete message: $e');
+    }
   }
 }
