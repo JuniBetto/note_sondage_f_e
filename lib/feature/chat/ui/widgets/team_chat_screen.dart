@@ -81,7 +81,6 @@ class TeamChatScreen extends StatefulWidget {
 }
 
 class _TeamChatScreenState extends State<TeamChatScreen> {
-  static const int _initialMessagesLimit = 100;
   static const int _olderMessagesBatchSize = 70;
   static const double _olderMessagesLoadThreshold = 180;
   static const double _readVisibilityThreshold = 72;
@@ -264,12 +263,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       // it immediately instead of waiting on the full team list round-trip.
       _selectedTeamId = initialTeamId;
       _skipNextTeamsConversationLoad = true;
-      unawaited(
-        _loadConversation(
-          initialTeamId,
-          memberUserId: widget.initialMemberUserId,
-        ),
-      );
+      _loadConversation(initialTeamId, memberUserId: widget.initialMemberUserId);
     }
     _loadTeams();
   }
@@ -306,7 +300,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       return;
     }
     if (_teams.any((team) => team.id == nextTeamId)) {
-      unawaited(_loadConversation(nextTeamId, memberUserId: nextMemberUserId));
+      _loadConversation(nextTeamId, memberUserId: nextMemberUserId);
       return;
     }
     _loadTeams();
@@ -320,37 +314,84 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   /// Reacts to every [ChatBloc] emission. Most fields this screen reads are
-  /// now plain getters over `_chatBloc.state`, so a blanket `setState(() {})`
-  /// is enough to pick up teams/team-access-context changes — the only
-  /// extra work here is cascading into (still widget-local, not yet
-  /// migrated) conversation loading once a `ChatTeamsRequested` settles,
-  /// mirroring exactly what `_loadTeams` used to do inline.
+  /// now plain getters over `_chatBloc.state`. `loadingMessages`/
+  /// `refreshingMessages` are blanket-mirrored on every emission below —
+  /// safe because nothing else still writes them locally. `_conversation`/
+  /// `_messages`/`_conversationDisplayName`/`_selectedMemberUserId`/
+  /// `_hasMoreOlderMessages` are NOT blanket-mirrored: pagination, send,
+  /// reactions, delete and mark-read (not yet migrated) still mutate them
+  /// directly, and syncing on every unrelated emission would clobber those
+  /// local-only mutations with the bloc's own, unaware, copy. They're only
+  /// synced in response to the specific transients that mean "the bloc's
+  /// copy is authoritative right now" (`ChatConversationOpened`,
+  /// `ChatMessagesRefreshed`).
   void _handleChatBlocState(ChatState next) {
     final previous = _previousChatBlocState;
     _previousChatBlocState = next;
     if (!mounted) {
       return;
     }
-    setState(() {});
+
+    setState(() {
+      _loadingMessages = next.loadingMessages;
+      _refreshingMessages = next.refreshingMessages;
+    });
 
     final justFinishedLoadingTeams =
         (previous?.loadingTeams ?? true) && !next.loadingTeams;
-    if (justFinishedLoadingTeams) {
-      _handleTeamsLoadCompleted(previous, next);
+    final transientChanged = next.transient != previous?.transient;
+    final freshTransient = transientChanged ? next.transient : null;
+
+    if (freshTransient is ChatErrorOccurred) {
+      _pendingTeamsRefreshFeedback = false;
+      AppSnackBar.showError(context, freshTransient.message);
+    }
+
+    if (justFinishedLoadingTeams && freshTransient is! ChatErrorOccurred) {
+      _handleTeamsLoadCompleted(next);
+    }
+
+    if (freshTransient is ChatConversationOpened) {
+      _syncConversationFromBloc(next);
+      _handleConversationOpened();
+    } else if (freshTransient is ChatMessagesRefreshed) {
+      _syncConversationFromBloc(next);
     }
   }
 
-  void _handleTeamsLoadCompleted(ChatState? previous, ChatState next) {
-    final transientChanged = next.transient != previous?.transient;
-    if (transientChanged && next.transient is ChatErrorOccurred) {
-      _pendingTeamsRefreshFeedback = false;
-      AppSnackBar.showError(
-        context,
-        (next.transient as ChatErrorOccurred).message,
-      );
-      return;
-    }
+  void _syncConversationFromBloc(ChatState state) {
+    setState(() {
+      _conversation = state.conversation;
+      _conversationDisplayName = state.conversationDisplayName;
+      _selectedMemberUserId = state.selectedMemberUserId;
+      _messages = state.messages;
+      _hasMoreOlderMessages = state.hasMoreOlderMessages;
+    });
+  }
 
+  /// Runs the scroll/focus/mark-read side effects that used to sit right
+  /// after `_loadConversation`'s cache-render and server-reconcile setState
+  /// calls. Both steps are unified here (see `ChatConversationOpened`'s
+  /// doc): a cache-render with nothing pending-focus now also runs the
+  /// mark-read check a little earlier than before, which is harmless — the
+  /// reconcile step's own firing would have triggered it moments later
+  /// anyway.
+  void _handleConversationOpened() {
+    _notifyConversationTitleChanged();
+    if (_pendingForceLatestFocus) {
+      _focusLatestMessage(animate: false);
+    } else {
+      _scrollToBottom(animate: false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(_markConversationReadIfVisible());
+      });
+    }
+  }
+
+  void _handleTeamsLoadCompleted(ChatState next) {
     final nextTeamId = next.selectedTeamId;
     setState(() {
       _selectedTeamId = nextTeamId;
@@ -364,11 +405,9 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
           nextTeamId == widget.initialTeamId) {
         _skipNextTeamsConversationLoad = false;
       } else {
-        unawaited(
-          _loadConversation(
-            nextTeamId,
-            memberUserId: widget.initialMemberUserId?.trim(),
-          ),
+        _loadConversation(
+          nextTeamId,
+          memberUserId: widget.initialMemberUserId?.trim(),
         );
       }
     } else {
@@ -393,105 +432,14 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     }
   }
 
-  Future<void> _loadConversation(String teamId, {String? memberUserId}) async {
+  /// Dispatches to [ChatBloc] and returns immediately — [_handleChatBlocState]
+  /// reacts to the resulting `ChatConversationOpened` transient(s) (cache
+  /// render, then server reconcile) by syncing `_conversation`/`_messages`/etc.
+  /// and running the scroll/focus/mark-read side effects that need a live
+  /// `BuildContext`/`ScrollController`, which the bloc can't own.
+  void _loadConversation(String teamId, {String? memberUserId}) {
     unawaited(_ensureTeamAccessContextLoaded(teamId));
-    final normalizedMemberUserId = memberUserId?.trim();
-    final isDirect =
-        normalizedMemberUserId != null && normalizedMemberUserId.isNotEmpty;
-    final cachedConversation = isDirect
-        ? _chatUseCase.getCachedDirectConversation(
-            teamId,
-            normalizedMemberUserId,
-          )
-        : _chatUseCase.getCachedTeamConversation(teamId);
-    final cachedMessages = cachedConversation == null
-        ? const <ChatMessageEntity>[]
-        : _chatUseCase.getCachedMessages(cachedConversation.id);
-    final hasReliableCachedEmptyState =
-        cachedConversation != null && cachedConversation.lastMessageAt == null;
-    final canRenderCache =
-        cachedMessages.isNotEmpty || hasReliableCachedEmptyState;
-
-    setState(() {
-      _selectedTeamId = teamId;
-      _selectedMemberUserId = normalizedMemberUserId;
-      if (cachedConversation != null) {
-        _conversation = cachedConversation;
-        _conversationDisplayName =
-            cachedConversation.participantDisplayName ?? _selectedTeam?.name;
-      } else {
-        _conversation = null;
-        _conversationDisplayName = null;
-      }
-      if (canRenderCache) {
-        _messages = cachedMessages;
-      } else {
-        _messages = const <ChatMessageEntity>[];
-      }
-      _loadingMessages = !canRenderCache;
-      _refreshingMessages = canRenderCache;
-      _loadingOlderMessages = false;
-      _hasMoreOlderMessages = cachedMessages.length >= _initialMessagesLimit;
-    });
-    _notifyConversationTitleChanged();
-    if (canRenderCache) {
-      // Land on the latest cached messages instantly: this is a fresh
-      // conversation open, not an incremental update worth animating.
-      _scrollToBottom(animate: false);
-      if (_pendingForceLatestFocus) {
-        _focusLatestMessage(animate: false);
-      }
-    }
-
-    try {
-      final conversation = isDirect
-          ? await _chatUseCase.getOrCreateDirectConversation(
-              teamId,
-              normalizedMemberUserId,
-            )
-          : await _chatUseCase.getOrCreateTeamConversation(teamId);
-      final messages = await _chatUseCase.getMessages(
-        conversation.id,
-        limit: _initialMessagesLimit,
-      );
-      if (!mounted) return;
-      setState(() {
-        _conversation = conversation;
-        _conversationDisplayName =
-            conversation.participantDisplayName ?? _selectedTeam?.name;
-        _messages = messages;
-        _loadingMessages = false;
-        _refreshingMessages = false;
-        _hasMoreOlderMessages = messages.length >= _initialMessagesLimit;
-      });
-      _notifyConversationTitleChanged();
-      if (_pendingForceLatestFocus) {
-        _focusLatestMessage(animate: false);
-      } else {
-        // Still opening this conversation for the first time: jump, don't
-        // animate, so the user never sees older messages before this.
-        _scrollToBottom(animate: false);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          unawaited(_markConversationReadIfVisible());
-        });
-      }
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _loadingMessages = false;
-        _refreshingMessages = false;
-      });
-      AppSnackBar.showError(
-        context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatLoadConversationError,
-        ),
-      );
-    }
+    _chatBloc.add(ChatConversationRequested(teamId, memberUserId: memberUserId));
   }
 
   /// Bridges to [ChatBloc]'s equivalent event for callers that need to
@@ -637,51 +585,37 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     return false;
   }
 
+  /// Bridges to [ChatBloc]'s equivalent event. Awaits [ChatMessagesRefreshed]
+  /// (fired on both success and failure — see its doc) rather than the
+  /// shared `refreshingMessages` flag, since that flag is also touched by
+  /// conversation-loading and would risk resolving on the wrong emission.
+  /// `_isNearBottom()` is captured *before* dispatching, exactly like the
+  /// widget method this replaces: whether to auto-scroll after a
+  /// realtime-triggered refresh depends on where the user already was.
   Future<void> _refreshMessages() async {
-    final conversation = _conversation;
-    if (conversation == null) {
+    if (_conversation == null) {
       return;
     }
 
     final shouldKeepBottomVisible = _isNearBottom();
-
-    if (mounted) {
-      setState(() {
-        _refreshingMessages = true;
-      });
+    final settled = _chatBloc.stream.firstWhere(
+      (state) => state.transient is ChatMessagesRefreshed,
+    );
+    _chatBloc.add(const ChatMessagesRefreshRequested());
+    await settled;
+    if (!mounted) {
+      return;
     }
 
-    try {
-      final messages = await _chatUseCase.getMessages(
-        conversation.id,
-        limit: _initialMessagesLimit,
-      );
-      final mergedMessages = _mergeRecentMessages(
-        currentMessages: _messages,
-        latestMessages: messages,
-      );
-      if (!mounted) return;
-      setState(() {
-        _messages = mergedMessages;
-        _refreshingMessages = false;
-        _hasMoreOlderMessages = messages.length >= _initialMessagesLimit;
-      });
-      if (_pendingForceLatestFocus) {
-        _focusLatestMessage();
-      } else if (shouldKeepBottomVisible) {
-        _scrollToBottom();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          unawaited(_markConversationReadIfVisible());
-        });
-      }
-    } catch (_) {
-      // Best effort refresh triggered by realtime notifications.
-      if (!mounted) return;
-      setState(() {
-        _refreshingMessages = false;
+    if (_pendingForceLatestFocus) {
+      _focusLatestMessage();
+    } else if (shouldKeepBottomVisible) {
+      _scrollToBottom();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(_markConversationReadIfVisible());
       });
     }
   }
@@ -1029,7 +963,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     if (teamId == _selectedTeamId) {
       return;
     }
-    unawaited(_loadConversation(teamId));
+    _loadConversation(teamId);
   }
 
   Future<void> _handleSenderPressed(ChatMessageEntity message) async {
@@ -2553,40 +2487,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         );
       },
     );
-  }
-
-  List<ChatMessageEntity> _mergeRecentMessages({
-    required List<ChatMessageEntity> currentMessages,
-    required List<ChatMessageEntity> latestMessages,
-  }) {
-    if (latestMessages.isEmpty) {
-      return currentMessages;
-    }
-
-    final latestIds = latestMessages.map((message) => message.id).toSet();
-    final firstLatestTimestamp = latestMessages.first.createdAt;
-    final preservedOlderMessages = currentMessages
-        .where(
-          (message) =>
-              !message.isPendingLocal &&
-              message.createdAt.isBefore(firstLatestTimestamp) &&
-              !latestIds.contains(message.id),
-        )
-        .toList();
-    final pendingLocalMessages = currentMessages
-        .where(
-          (message) =>
-              message.isPendingLocal && !latestIds.contains(message.id),
-        )
-        .toList();
-
-    final merged = <ChatMessageEntity>[
-      ...preservedOlderMessages,
-      ...latestMessages,
-      ...pendingLocalMessages,
-    ]..sort((left, right) => left.createdAt.compareTo(right.createdAt));
-
-    return merged;
   }
 
   ChatMessageEntity _buildOptimisticMessage({

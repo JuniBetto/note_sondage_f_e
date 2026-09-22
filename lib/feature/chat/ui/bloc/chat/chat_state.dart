@@ -15,20 +15,26 @@ const _unset = Object();
 /// `listenWhen: (prev, curr) => curr.transient != prev.transient`, which
 /// still fires exactly once per new signal even though the value now lingers
 /// in state afterwards.
+///
+/// Every instance carries a unique [_token] baked into [props], so equality
+/// is by occurrence, not by payload — two errors with the identical message
+/// (or two "ready" signals for the same id), fired back to back, must still
+/// count as two distinct changes to a `previous.transient != current.transient`
+/// check, not as "nothing changed". Subclasses only need to declare their
+/// own payload fields; they don't need to (and shouldn't) override [props].
 abstract class ChatTransient extends Equatable {
-  const ChatTransient();
+  ChatTransient();
+
+  final Object _token = Object();
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [_token];
 }
 
 class ChatErrorOccurred extends ChatTransient {
-  const ChatErrorOccurred(this.message);
+  ChatErrorOccurred(this.message);
 
   final String message;
-
-  @override
-  List<Object?> get props => [message];
 }
 
 /// Fired once a [ChatTeamAccessContextRequested] for [teamId] has settled —
@@ -37,19 +43,24 @@ class ChatErrorOccurred extends ChatTransient {
 /// `bloc.stream.firstWhere(...)` without the risk of hanging forever on a
 /// failed fetch the way waiting on cache population directly would.
 class ChatTeamAccessContextReady extends ChatTransient {
-  const ChatTeamAccessContextReady(this.teamId);
+  ChatTeamAccessContextReady(this.teamId);
 
   final String teamId;
-
-  @override
-  List<Object?> get props => [teamId];
 }
 
-/// A fresh conversation (team or direct) finished loading — either from
-/// cache or from the server. The widget reacts by scrolling to the bottom
-/// / focusing the latest message, which needs a live `ScrollController`.
+/// A conversation (team or direct) was just rendered — from cache, from the
+/// server, or empty while waiting on either. The widget reacts by clearing
+/// stale messages from view, scrolling to the bottom / focusing the latest
+/// message, which needs a live `ScrollController`.
 class ChatConversationOpened extends ChatTransient {
-  const ChatConversationOpened();
+  ChatConversationOpened();
+}
+
+/// A [ChatMessagesRefreshRequested] (or the realtime-triggered equivalent)
+/// settled — successfully or not (best-effort, matching the widget method
+/// this replaces).
+class ChatMessagesRefreshed extends ChatTransient {
+  ChatMessagesRefreshed();
 }
 
 /// A [ChatMessageSendRequested] failed. Carries everything the widget needs
@@ -57,7 +68,7 @@ class ChatConversationOpened extends ChatTransient {
 /// decision reads the *live* `TextEditingController` text, which only the
 /// widget has, so the bloc can't make it itself.
 class ChatMessageSendFailed extends ChatTransient {
-  const ChatMessageSendFailed({
+  ChatMessageSendFailed({
     required this.message,
     required this.content,
     required this.attachment,
@@ -68,54 +79,36 @@ class ChatMessageSendFailed extends ChatTransient {
   final String content;
   final ChatDraftAttachment? attachment;
   final ChatMessageEntity? replyTarget;
-
-  @override
-  List<Object?> get props => [message, content, attachment, replyTarget];
 }
 
 class ChatSondageDraftReady extends ChatTransient {
-  const ChatSondageDraftReady(this.result);
+  ChatSondageDraftReady(this.result);
 
   final ChatMessageActionDraftResult result;
-
-  @override
-  List<Object?> get props => [result];
 }
 
 class ChatTaskDraftReady extends ChatTransient {
-  const ChatTaskDraftReady(this.result);
+  ChatTaskDraftReady(this.result);
 
   final ChatMessageActionDraftResult result;
-
-  @override
-  List<Object?> get props => [result];
 }
 
 class ChatShiftDraftReady extends ChatTransient {
-  const ChatShiftDraftReady(this.result);
+  ChatShiftDraftReady(this.result);
 
   final ChatMessageActionDraftResult result;
-
-  @override
-  List<Object?> get props => [result];
 }
 
 class ChatEventDraftReady extends ChatTransient {
-  const ChatEventDraftReady(this.result);
+  ChatEventDraftReady(this.result);
 
   final ChatMessageActionDraftResult result;
-
-  @override
-  List<Object?> get props => [result];
 }
 
 class ChatWorkflowSuggestionsReady extends ChatTransient {
-  const ChatWorkflowSuggestionsReady(this.result);
+  ChatWorkflowSuggestionsReady(this.result);
 
   final DetectWorkflowSuggestionResult result;
-
-  @override
-  List<Object?> get props => [result];
 }
 
 class ChatState extends Equatable {

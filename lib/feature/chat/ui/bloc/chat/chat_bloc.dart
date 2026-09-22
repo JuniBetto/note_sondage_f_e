@@ -230,7 +230,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         refreshingMessages: canRenderCache,
         loadingOlderMessages: false,
         hasMoreOlderMessages: cachedMessages.length >= _initialMessagesLimit,
-        transient: canRenderCache ? const ChatConversationOpened() : _unset,
+        // Fires even with nothing cached: the widget uses this to clear a
+        // *previous* conversation's messages from view immediately on
+        // switch, not just once fresh data arrives.
+        transient: ChatConversationOpened(),
       ),
     );
 
@@ -254,7 +257,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           loadingMessages: false,
           refreshingMessages: false,
           hasMoreOlderMessages: messages.length >= _initialMessagesLimit,
-          transient: const ChatConversationOpened(),
+          transient: ChatConversationOpened(),
         ),
       );
     } catch (error) {
@@ -303,11 +306,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           messages: merged,
           refreshingMessages: false,
           hasMoreOlderMessages: messages.length >= _initialMessagesLimit,
+          transient: ChatMessagesRefreshed(),
         ),
       );
     } catch (_) {
       // Best-effort refresh, e.g. triggered by a realtime notification.
-      emit(state.copyWith(refreshingMessages: false));
+      emit(
+        state.copyWith(
+          refreshingMessages: false,
+          transient: ChatMessagesRefreshed(),
+        ),
+      );
     }
   }
 

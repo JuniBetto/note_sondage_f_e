@@ -774,7 +774,14 @@ void main() {
 
         expect(bloc.state.teamMembersByTeamId['team-1'], hasLength(1));
         expect(bloc.state.rolesByTeamId['team-1'], hasLength(1));
-        expect(bloc.state.transient, const ChatTeamAccessContextReady('team-1'));
+        expect(
+          bloc.state.transient,
+          isA<ChatTeamAccessContextReady>().having(
+            (t) => t.teamId,
+            'teamId',
+            'team-1',
+          ),
+        );
       },
     );
 
@@ -793,7 +800,14 @@ void main() {
         expect(roleRepository.getAllRolesByTeamIdCalls, ['team-1']);
         // Ready fires even on the fully-cached second dispatch, so a caller
         // awaiting it via bloc.stream.firstWhere never hangs.
-        expect(bloc.state.transient, const ChatTeamAccessContextReady('team-1'));
+        expect(
+          bloc.state.transient,
+          isA<ChatTeamAccessContextReady>().having(
+            (t) => t.teamId,
+            'teamId',
+            'team-1',
+          ),
+        );
       },
     );
 
@@ -825,7 +839,14 @@ void main() {
         expect(bloc.state.rolesByTeamId.containsKey('team-1'), isFalse);
         // Ready still fires on failure — a caller awaiting it must not hang
         // forever just because the fetch didn't succeed.
-        expect(bloc.state.transient, const ChatTeamAccessContextReady('team-1'));
+        expect(
+          bloc.state.transient,
+          isA<ChatTeamAccessContextReady>().having(
+            (t) => t.teamId,
+            'teamId',
+            'team-1',
+          ),
+        );
       },
     );
 
@@ -887,6 +908,9 @@ void main() {
 
         expect(emittedStates.first.loadingMessages, isTrue);
         expect(emittedStates.first.refreshingMessages, isFalse);
+        // Fires even on a cold, nothing-cached open: lets the widget clear a
+        // *previous* conversation's messages from view right away.
+        expect(emittedStates.first.transient, isA<ChatConversationOpened>());
         await subscription.cancel();
       },
     );
@@ -973,6 +997,10 @@ void main() {
 
       expect(bloc.state.messages.map((m) => m.id), ['initial', 'new']);
       expect(bloc.state.refreshingMessages, isFalse);
+      // Lets a caller (the widget's own _refreshMessages bridge) await
+      // completion via bloc.stream.firstWhere(...) without depending on the
+      // shared refreshingMessages flag, which conversation-loading also uses.
+      expect(bloc.state.transient, isA<ChatMessagesRefreshed>());
     });
 
     test('ChatMessagesRefreshRequested is a no-op without an open conversation', () async {
@@ -997,10 +1025,9 @@ void main() {
 
       expect(bloc.state.refreshingMessages, isFalse);
       // Best-effort: a failed background refresh must not surface an error
-      // transient (it doesn't touch `transient` at all, so whatever was
-      // last set — here, the initial load's ChatConversationOpened — just
-      // lingers, per ChatState's "preserve unless explicitly set" design).
-      expect(bloc.state.transient, isNot(isA<ChatErrorOccurred>()));
+      // transient — but it still fires ChatMessagesRefreshed (on both
+      // success and failure) so a caller awaiting completion never hangs.
+      expect(bloc.state.transient, isA<ChatMessagesRefreshed>());
     });
   });
 
