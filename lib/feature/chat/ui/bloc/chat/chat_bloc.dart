@@ -83,9 +83,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       _onWorkflowSuggestionPrefetchRequested,
     );
     on<ChatWorkflowSuggestionCleared>(_onWorkflowSuggestionCleared);
-    on<ChatRealtimeMessageEventReceived>(
-      (event, emit) => _refreshMessages(emit),
-    );
   }
 
   static const int _initialMessagesLimit = 100;

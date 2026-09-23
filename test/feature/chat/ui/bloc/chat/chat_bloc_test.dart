@@ -1772,22 +1772,4 @@ void main() {
       },
     );
   });
-
-  group('ChatBloc realtime', () {
-    test('ChatRealtimeMessageEventReceived refreshes the open conversation', () async {
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => const <ChatMessageEntity>[];
-      bloc.add(const ChatConversationRequested('team-1'));
-      await pumpEventQueue();
-
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => [_buildMessage(id: 'new-1')];
-      bloc.add(const ChatRealtimeMessageEventReceived());
-      await pumpEventQueue();
-
-      expect(bloc.state.messages.map((m) => m.id), ['new-1']);
-    });
-  });
 }

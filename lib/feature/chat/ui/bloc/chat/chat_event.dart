@@ -236,13 +236,6 @@ class ChatWorkflowSuggestionCleared extends ChatEvent {
   List<Object?> get props => [messageId];
 }
 
-/// The widget's realtime subscription already filtered the notification
-/// down to "this matters for the open conversation" — this event just
-/// triggers the same best-effort refresh as [ChatMessagesRefreshRequested].
-class ChatRealtimeMessageEventReceived extends ChatEvent {
-  const ChatRealtimeMessageEventReceived();
-}
-
 class _ChatTeamsLoadedEvent extends ChatEvent {
   const _ChatTeamsLoadedEvent({required this.teams, this.selectedTeamId});
 
