@@ -185,6 +185,23 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
       );
     });
 
+    // Most recently active team first, like the direct-chat list above —
+    // ties (no messages yet on either side) fall back to name so the order
+    // stays stable instead of flapping between refreshes.
+    nextTeams.sort((left, right) {
+      final rightTime =
+          nextSummaries[right.id]?.lastMessageAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final leftTime =
+          nextSummaries[left.id]?.lastMessageAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final dateComparison = rightTime.compareTo(leftTime);
+      if (dateComparison != 0) {
+        return dateComparison;
+      }
+      return left.name.toLowerCase().compareTo(right.name.toLowerCase());
+    });
+
     if (!mounted) {
       return;
     }
