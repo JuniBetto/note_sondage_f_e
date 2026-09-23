@@ -30,7 +30,6 @@ import 'package:note_sondage/feature/chat/workflow/chat_message_event_workflow_c
 import 'package:note_sondage/feature/chat/workflow/chat_message_shift_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_sondage_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_models.dart';
-import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
@@ -86,8 +85,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   final ChatBloc _chatBloc = GetIt.instance<ChatBloc>();
   final ChatMessageSondageWorkflowController _sondageWorkflowController =
       GetIt.instance<ChatMessageSondageWorkflowController>();
-  final ChatMessageSuggestionService _messageSuggestionService =
-      GetIt.instance<ChatMessageSuggestionService>();
   final ChatMessageTaskWorkflowController _taskWorkflowController =
       GetIt.instance<ChatMessageTaskWorkflowController>();
   final ChatMessageShiftWorkflowController _shiftWorkflowController =
@@ -110,9 +107,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   bool _pendingTeamsRefreshFeedback = false;
 
   List<ChatMessageEntity> _messages = const <ChatMessageEntity>[];
-  final Map<String, DetectWorkflowSuggestionResult>
-  _workflowSuggestionsByMessageId = {};
-  final Set<String> _loadingWorkflowSuggestionMessageIds = <String>{};
   ChatConversationEntity? _conversation;
   String? _selectedTeamId;
   String? _selectedMemberUserId;
@@ -123,17 +117,18 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   bool _loadingOlderMessages = false;
   bool _hasMoreOlderMessages = true;
   bool _pendingForceLatestFocus = false;
-  bool _workflowAiAppEnabled = false;
   bool _didNotifyContentReady = false;
 
   // Sourced from ChatBloc — only ever written by _loadTeams (teams,
   // loadingTeams), _ensureTeamAccessContextLoaded (the two maps), the
   // composer/send handlers below (selectedAttachment, replyTarget,
-  // pendingSendCount), or _markConversationRead (markingConversationRead) —
-  // none of which have any other, not-yet-migrated writer, so they can be
-  // plain getters with no local mutable copy. _selectedTeamId stays a local
-  // field (see _loadTeams and _loadConversation) since it's also written by
-  // the not-yet-migrated conversation-loading flow.
+  // pendingSendCount), _markConversationRead (markingConversationRead), the
+  // WorkflowAiPreferencesCubit subscription (workflowAiAppEnabled), or the
+  // AI suggestion prefetch/detect/clear handlers below (the two suggestion
+  // maps) — none of which have any other, not-yet-migrated writer, so they
+  // can be plain getters with no local mutable copy. _selectedTeamId stays a
+  // local field (see _loadTeams and _loadConversation) since it's also
+  // written by the not-yet-migrated conversation-loading flow.
   List<TeamEntity> get _teams => _chatBloc.state.teams;
   bool get _loadingTeams => _chatBloc.state.loadingTeams;
   Map<String, List<TeamMemberEntity>> get _teamMembersByTeamId =>
@@ -146,6 +141,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   int get _pendingSendCount => _chatBloc.state.pendingSendCount;
   bool get _sending => _pendingSendCount > 0;
   bool get _markingConversationRead => _chatBloc.state.markingConversationRead;
+  bool get _workflowAiAppEnabled => _chatBloc.state.workflowAiAppEnabled;
+  Map<String, DetectWorkflowSuggestionResult>
+  get _workflowSuggestionsByMessageId =>
+      _chatBloc.state.workflowSuggestionsByMessageId;
+  Set<String> get _loadingWorkflowSuggestionMessageIds =>
+      _chatBloc.state.loadingWorkflowSuggestionMessageIds;
 
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid.trim();
   String get _currentEmail =>
@@ -235,7 +236,11 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   void initState() {
     super.initState();
     _pendingForceLatestFocus = widget.focusLatestOnOpen;
-    _workflowAiAppEnabled = _workflowAiPreferencesCubit.state.appAiEnabled;
+    _chatBloc.add(
+      ChatWorkflowAiPreferenceChanged(
+        _workflowAiPreferencesCubit.state.appAiEnabled,
+      ),
+    );
     _scrollController.addListener(_handleScroll);
     _realtimeSubscription = _realtimeService.stream.listen(
       _handleRealtimeNotification,
@@ -245,16 +250,10 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     _workflowAiSubscription = _workflowAiPreferencesCubit.stream.listen((
       state,
     ) {
-      if (!mounted || _workflowAiAppEnabled == state.appAiEnabled) {
+      if (_workflowAiAppEnabled == state.appAiEnabled) {
         return;
       }
-      setState(() {
-        _workflowAiAppEnabled = state.appAiEnabled;
-        if (!_workflowAiAppEnabled) {
-          _workflowSuggestionsByMessageId.clear();
-          _loadingWorkflowSuggestionMessageIds.clear();
-        }
-      });
+      _chatBloc.add(ChatWorkflowAiPreferenceChanged(state.appAiEnabled));
     });
     unawaited(_workflowAiPreferencesCubit.loadPreferences());
     final initialTeamId = widget.initialTeamId;
@@ -1286,6 +1285,85 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     };
   }
 
+  /// Bridges to [ChatBloc] for the 4 smart-action "prepare draft" calls.
+  /// The bloc only ever runs the pure, side-effect-free `prepareDraft` step
+  /// (see [ChatBloc]'s handlers) — opening the resulting dialog/editor and
+  /// submitting it stays here, since those need [BuildContext]. A `null`
+  /// return means the bloc hit an error and already surfaced it as a
+  /// snackbar via the generic [ChatErrorOccurred] branch in
+  /// [_handleChatBlocState]; callers just bail out silently in that case.
+  Future<ChatMessageActionDraftResult?> _prepareSondageDraft(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatSondageDraftReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatSondageDraftRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatSondageDraftReady ? transient.result : null;
+  }
+
+  Future<ChatMessageActionDraftResult?> _prepareTaskDraft(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatTaskDraftReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatTaskDraftRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatTaskDraftReady ? transient.result : null;
+  }
+
+  Future<ChatMessageActionDraftResult?> _prepareShiftDraft(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatShiftDraftReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatShiftDraftRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatShiftDraftReady ? transient.result : null;
+  }
+
+  Future<ChatMessageActionDraftResult?> _prepareEventDraft(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatEventDraftReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatEventDraftRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatEventDraftReady ? transient.result : null;
+  }
+
   Future<void> _handleCreateSondageFromMessage(
     ChatMessageEntity message,
   ) async {
@@ -1300,16 +1378,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _sondageWorkflowController.prepareDraft(
-          conversation: conversation,
-          message: message,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _prepareSondageDraft(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
       if (result.isUnsupported || result.sondagePrefill == null) {
@@ -1359,16 +1433,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _shiftWorkflowController.prepareDraft(
-          conversation: conversation,
-          message: message,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _prepareShiftDraft(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
       final shiftDraft = result.shiftDraft;
@@ -1460,16 +1530,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _taskWorkflowController.prepareDraft(
-          conversation: conversation,
-          message: message,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _prepareTaskDraft(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
 
@@ -1556,16 +1622,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       await _ensureTeamAccessContextLoaded(teamId);
 
       final result = await _runWithLoadingOverlay(
-        () => _eventWorkflowController.prepareDraft(
-          conversation: conversation,
-          message: message,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _prepareEventDraft(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
 
@@ -1659,6 +1721,29 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     }
   }
 
+  /// Bridges to [ChatBloc]'s explicit "detect AI suggestions" call (the
+  /// action-sheet item and the footer's "no suggestion" chip) — as opposed
+  /// to [_prefetchWorkflowSuggestionsForMessage]'s automatic, deduped
+  /// per-message fetch. A `null` return means the bloc already surfaced the
+  /// error via [_handleChatBlocState]'s generic [ChatErrorOccurred] branch.
+  Future<DetectWorkflowSuggestionResult?> _detectWorkflowSuggestions(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatWorkflowSuggestionsReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatWorkflowSuggestionsRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatWorkflowSuggestionsReady ? transient.result : null;
+  }
+
   Future<void> _handleDetectWorkflowSuggestionsFromMessage(
     ChatMessageEntity message,
   ) async {
@@ -1673,23 +1758,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _messageSuggestionService.detectWorkflowSuggestionFromMessage(
-          conversationId: conversation.id,
-          messageId: message.id,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          allowedActionTypes: const <ChatMessageActionType>[
-            ChatMessageActionType.createTask,
-            ChatMessageActionType.createEvent,
-            ChatMessageActionType.createSondage,
-            ChatMessageActionType.createShift,
-          ],
-          selectedMessageText: message.contentText,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _detectWorkflowSuggestions(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
 
@@ -2089,68 +2163,29 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     return content.isNotEmpty;
   }
 
-  Future<void> _prefetchWorkflowSuggestionsForMessage(
-    ChatMessageEntity message,
-  ) async {
-    final conversation = _conversation;
+  /// Kicks off the automatic, per-message AI suggestion fetch backing the
+  /// footer chip. This pre-check just avoids a pointless dispatch — the
+  /// bloc's [ChatWorkflowSuggestionPrefetchRequested] handler re-verifies
+  /// the same conditions (conversation/team, AI enabled, per-message
+  /// dedupe) as the source of truth, and owns `workflowSuggestionsByMessageId`
+  /// / `loadingWorkflowSuggestionMessageIds` entirely — nothing here reads
+  /// the result back, the footer just rebuilds off the bloc's next emission.
+  void _prefetchWorkflowSuggestionsForMessage(ChatMessageEntity message) {
     final teamId = _selectedTeamId?.trim();
-    if (conversation == null || teamId == null || teamId.isEmpty) {
-      return;
-    }
-    if (!_isWorkflowAiEnabledForSelectedTeam()) {
-      return;
-    }
-    if (_loadingWorkflowSuggestionMessageIds.contains(message.id) ||
+    if (_conversation == null ||
+        teamId == null ||
+        teamId.isEmpty ||
+        !_isWorkflowAiEnabledForSelectedTeam() ||
+        _loadingWorkflowSuggestionMessageIds.contains(message.id) ||
         _workflowSuggestionsByMessageId.containsKey(message.id)) {
       return;
     }
-
-    setState(() {
-      _loadingWorkflowSuggestionMessageIds.add(message.id);
-    });
-
-    try {
-      final result = await _messageSuggestionService
-          .detectWorkflowSuggestionFromMessage(
-            conversationId: conversation.id,
-            messageId: message.id,
-            teamId: teamId,
-            locale: Localizations.localeOf(context).languageCode,
-            allowedActionTypes: const <ChatMessageActionType>[
-              ChatMessageActionType.createTask,
-              ChatMessageActionType.createEvent,
-              ChatMessageActionType.createSondage,
-              ChatMessageActionType.createShift,
-            ],
-            selectedMessageText: message.contentText,
-            memberUserId: _selectedMemberUserId,
-            memberDisplayName: _conversationDisplayName,
-          );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _workflowSuggestionsByMessageId[message.id] = result;
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _workflowSuggestionsByMessageId[message.id] =
-            const DetectWorkflowSuggestionResult(
-              resolutionStatus: 'unsupported',
-              suggestions: <WorkflowSuggestionItem>[],
-              warnings: <ChatMessageActionWarning>[],
-            );
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _loadingWorkflowSuggestionMessageIds.remove(message.id);
-        });
-      }
-    }
+    _chatBloc.add(
+      ChatWorkflowSuggestionPrefetchRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
   }
 
   Widget? _buildWorkflowSuggestionFooter(
@@ -2239,11 +2274,24 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
                 label: Text(
                   _chatActionText(locale, it: 'Aggiorna AI', en: 'Refresh AI'),
                 ),
-                onPressed: () {
-                  setState(() {
-                    _workflowSuggestionsByMessageId.remove(message.id);
-                  });
-                  unawaited(_prefetchWorkflowSuggestionsForMessage(message));
+                onPressed: () async {
+                  // Bridges the clear before re-prefetching: the bloc
+                  // processes events asynchronously, so dispatching both
+                  // back-to-back without awaiting the first could let
+                  // _prefetchWorkflowSuggestionsForMessage's dedupe guard
+                  // read the not-yet-cleared cache and bail out as a no-op.
+                  final cleared = _chatBloc.stream.firstWhere(
+                    (state) =>
+                        !state.workflowSuggestionsByMessageId.containsKey(
+                          message.id,
+                        ),
+                  );
+                  _chatBloc.add(ChatWorkflowSuggestionCleared(message.id));
+                  await cleared;
+                  if (!mounted) {
+                    return;
+                  }
+                  _prefetchWorkflowSuggestionsForMessage(message);
                 },
               ),
             ] else if (suggestionResult != null) ...[
@@ -2271,7 +2319,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
                   ),
                 ),
                 onPressed: () {
-                  unawaited(_prefetchWorkflowSuggestionsForMessage(message));
+                  _prefetchWorkflowSuggestionsForMessage(message);
                 },
               ),
           ],

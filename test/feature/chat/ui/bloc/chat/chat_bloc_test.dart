@@ -1514,6 +1514,12 @@ void main() {
 
   group('ChatBloc workflow AI preference', () {
     test('disabling the preference clears cached suggestions', () async {
+      // ChatWorkflowSuggestionPrefetchRequested's guard requires the
+      // selected team to have opted into workflow AI.
+      teamRepository.getAllHandler = () async => [
+        buildTeam(workflowAiEnabled: true),
+      ];
+      bloc.add(const ChatTeamsRequested());
       chatRepository.getOrCreateTeamConversationHandler =
           (_) async => _buildConversation();
       chatRepository.getMessagesHandler =
@@ -1635,6 +1641,13 @@ void main() {
 
   group('ChatBloc workflow suggestions', () {
     Future<void> openConversation() async {
+      // ChatWorkflowSuggestionPrefetchRequested's guard requires the
+      // selected team to have opted into workflow AI, so state.teams must
+      // be populated (ChatConversationRequested alone doesn't touch it).
+      teamRepository.getAllHandler = () async => [
+        buildTeam(workflowAiEnabled: true),
+      ];
+      bloc.add(const ChatTeamsRequested());
       chatRepository.getOrCreateTeamConversationHandler =
           (_) async => _buildConversation();
       chatRepository.getMessagesHandler =

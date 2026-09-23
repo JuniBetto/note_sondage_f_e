@@ -223,6 +223,19 @@ class ChatWorkflowSuggestionPrefetchRequested extends ChatEvent {
   List<Object?> get props => [message, locale];
 }
 
+/// Drops a message's cached AI suggestion result so the next
+/// [ChatWorkflowSuggestionPrefetchRequested] for it re-fetches instead of
+/// short-circuiting on the dedupe guard — backs the footer chip's "Refresh
+/// AI" action.
+class ChatWorkflowSuggestionCleared extends ChatEvent {
+  const ChatWorkflowSuggestionCleared(this.messageId);
+
+  final String messageId;
+
+  @override
+  List<Object?> get props => [messageId];
+}
+
 /// The widget's realtime subscription already filtered the notification
 /// down to "this matters for the open conversation" — this event just
 /// triggers the same best-effort refresh as [ChatMessagesRefreshRequested].

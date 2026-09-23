@@ -3,6 +3,7 @@ import 'dart:async';
 // chat_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
@@ -81,6 +82,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatWorkflowSuggestionPrefetchRequested>(
       _onWorkflowSuggestionPrefetchRequested,
     );
+    on<ChatWorkflowSuggestionCleared>(_onWorkflowSuggestionCleared);
     on<ChatRealtimeMessageEventReceived>(
       (event, emit) => _refreshMessages(emit),
     );
@@ -924,7 +926,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (conversation == null || teamId == null || teamId.isEmpty) {
       return;
     }
-    if (!state.workflowAiAppEnabled) {
+    // Mirrors the widget method this replaces: AI must be on both globally
+    // (feature flag) and app-wide (user preference), and the selected team
+    // must have opted in — unlike the explicit "detect suggestions" menu
+    // action, this fires automatically per rendered message with no prior
+    // gating, so the checks live here instead of only at menu-build time.
+    final selectedTeam = state.teams
+        .cast<TeamEntity?>()
+        .firstWhere((team) => team?.id == teamId, orElse: () => null);
+    if (!RuntimeConfig.enableWorkflowActions ||
+        !state.workflowAiAppEnabled ||
+        selectedTeam == null ||
+        !selectedTeam.workflowAiEnabled) {
       return;
     }
     if (state.loadingWorkflowSuggestionMessageIds.contains(messageId) ||
@@ -985,5 +998,21 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         ),
       );
     }
+  }
+
+  void _onWorkflowSuggestionCleared(
+    ChatWorkflowSuggestionCleared event,
+    Emitter<ChatState> emit,
+  ) {
+    if (!state.workflowSuggestionsByMessageId.containsKey(event.messageId)) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        workflowSuggestionsByMessageId: {
+          ...state.workflowSuggestionsByMessageId,
+        }..remove(event.messageId),
+      ),
+    );
   }
 }
