@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_local_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
@@ -89,10 +91,16 @@ class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
   ChatMessageEntity? sendAttachmentMessageResult;
   ChatMessageEntity? toggleReactionResult;
   ChatMessageEntity? deleteMessageResult;
+  BlockedUserEntity? blockSenderResult;
+  List<BlockedUserEntity> getBlockedUsersResult = const <BlockedUserEntity>[];
 
   final getMessagesCalls =
       <({String conversationId, DateTime? before, int limit})>[];
   final markConversationReadCalls = <String>[];
+  final blockSenderCalls = <String>[];
+  final unblockUserCalls = <String>[];
+  final reportMessageCalls =
+      <({String messageId, ChatMessageReportReason reason, String? comment})>[];
 
   @override
   Future<ChatConversationEntity> getOrCreateTeamConversation(
@@ -160,6 +168,30 @@ class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
   @override
   Future<void> markConversationRead(String conversationId) async {
     markConversationReadCalls.add(conversationId);
+  }
+
+  @override
+  Future<BlockedUserEntity> blockSender(String messageId) async {
+    blockSenderCalls.add(messageId);
+    return blockSenderResult!;
+  }
+
+  @override
+  Future<void> unblockUser(String blockedUserId) async {
+    unblockUserCalls.add(blockedUserId);
+  }
+
+  @override
+  Future<List<BlockedUserEntity>> getBlockedUsers() async =>
+      getBlockedUsersResult;
+
+  @override
+  Future<void> reportMessage(
+    String messageId, {
+    required ChatMessageReportReason reason,
+    String? comment,
+  }) async {
+    reportMessageCalls.add((messageId: messageId, reason: reason, comment: comment));
   }
 }
 
@@ -459,6 +491,59 @@ void main() {
       expect(remote.markConversationReadCalls, ['conversation-1']);
       expect(local.upsertMessageCalls, isEmpty);
       expect(local.savedMessagesCalls, isEmpty);
+    });
+  });
+
+  group('ChatRepositoryImpl moderation', () {
+    test('blockSender delegates to remote without touching cache', () async {
+      final blockedUser = BlockedUserEntity(
+        userId: 'user-2',
+        displayName: 'User Two',
+        blockedAt: DateTime(2026, 1, 1),
+      );
+      remote.blockSenderResult = blockedUser;
+
+      final result = await repository.blockSender('message-1');
+
+      expect(result, same(blockedUser));
+      expect(remote.blockSenderCalls, ['message-1']);
+    });
+
+    test('unblockUser delegates to remote', () async {
+      await repository.unblockUser('user-2');
+
+      expect(remote.unblockUserCalls, ['user-2']);
+    });
+
+    test('getBlockedUsers delegates to remote', () async {
+      final blockedUsers = [
+        BlockedUserEntity(
+          userId: 'user-2',
+          displayName: 'User Two',
+          blockedAt: DateTime(2026, 1, 1),
+        ),
+      ];
+      remote.getBlockedUsersResult = blockedUsers;
+
+      final result = await repository.getBlockedUsers();
+
+      expect(result, same(blockedUsers));
+    });
+
+    test('reportMessage delegates messageId, reason and comment', () async {
+      await repository.reportMessage(
+        'message-1',
+        reason: ChatMessageReportReason.spam,
+        comment: 'looks like spam',
+      );
+
+      expect(remote.reportMessageCalls, [
+        (
+          messageId: 'message-1',
+          reason: ChatMessageReportReason.spam,
+          comment: 'looks like spam',
+        ),
+      ]);
     });
   });
 

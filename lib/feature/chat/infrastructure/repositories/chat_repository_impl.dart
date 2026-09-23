@@ -1,6 +1,8 @@
+import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/repositories/chat_repository.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_local_data_source.dart';
@@ -160,6 +162,30 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<void> markConversationRead(String conversationId) {
     return remote.markConversationRead(conversationId);
+  }
+
+  @override
+  Future<BlockedUserEntity> blockSender(String messageId) {
+    return remote.blockSender(messageId);
+  }
+
+  @override
+  Future<void> unblockUser(String blockedUserId) {
+    return remote.unblockUser(blockedUserId);
+  }
+
+  @override
+  Future<List<BlockedUserEntity>> getBlockedUsers() {
+    return remote.getBlockedUsers();
+  }
+
+  @override
+  Future<void> reportMessage(
+    String messageId, {
+    required ChatMessageReportReason reason,
+    String? comment,
+  }) {
+    return remote.reportMessage(messageId, reason: reason, comment: comment);
   }
 
   ChatConversationEntity _requireMatchingDirectConversation(

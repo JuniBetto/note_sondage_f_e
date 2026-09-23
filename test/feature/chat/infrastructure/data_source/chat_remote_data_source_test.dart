@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
 
 class _FakeHttpClientAdapter implements HttpClientAdapter {
@@ -144,6 +145,70 @@ void main() {
 
       expect(result.deleted, isTrue);
     });
+
+    test('blockSender', () async {
+      adapter.responseBody = jsonEncode({
+        'userId': 'user-2',
+        'displayName': 'User Two',
+        'blockedAt': '2026-01-01T00:00:00.000',
+      });
+
+      final result = await dataSource.blockSender('message-1');
+
+      expect(result.userId, 'user-2');
+      expect(result.displayName, 'User Two');
+      expect(
+        adapter.lastRequest?.path,
+        contains('/api/chat/messages/message-1/block-sender'),
+      );
+    });
+
+    test('unblockUser', () async {
+      await dataSource.unblockUser('user-2');
+
+      expect(
+        adapter.lastRequest?.path,
+        contains('/api/chat/blocked-users/user-2'),
+      );
+      expect(adapter.lastRequest?.method, 'DELETE');
+    });
+
+    test('getBlockedUsers', () async {
+      adapter.responseBody = jsonEncode([
+        {'userId': 'user-2', 'displayName': 'User Two'},
+      ]);
+
+      final result = await dataSource.getBlockedUsers();
+
+      expect(result.single.userId, 'user-2');
+    });
+
+    test('reportMessage sends the reason wire value and trimmed comment', () async {
+      await dataSource.reportMessage(
+        'message-1',
+        reason: ChatMessageReportReason.hateSpeech,
+        comment: '  looks bad  ',
+      );
+
+      expect(
+        adapter.lastRequest?.path,
+        contains('/api/chat/messages/message-1/report'),
+      );
+      expect(adapter.lastRequest?.data, {
+        'reason': 'HATE_SPEECH',
+        'comment': 'looks bad',
+      });
+    });
+
+    test('reportMessage omits a blank comment', () async {
+      await dataSource.reportMessage(
+        'message-1',
+        reason: ChatMessageReportReason.spam,
+        comment: '   ',
+      );
+
+      expect(adapter.lastRequest?.data, {'reason': 'SPAM'});
+    });
   });
 
   group('transport failures are wrapped with a descriptive message', () {
@@ -239,6 +304,45 @@ void main() {
       await expectLater(
         dataSource.deleteMessage('message-1'),
         throwsA(wrapsWith('Failed to delete message:')),
+      );
+    });
+
+    test('blockSender', () async {
+      adapter.errorToThrow = Exception('boom');
+
+      await expectLater(
+        dataSource.blockSender('message-1'),
+        throwsA(wrapsWith('Failed to block sender:')),
+      );
+    });
+
+    test('unblockUser', () async {
+      adapter.errorToThrow = Exception('boom');
+
+      await expectLater(
+        dataSource.unblockUser('user-2'),
+        throwsA(wrapsWith('Failed to unblock user:')),
+      );
+    });
+
+    test('getBlockedUsers', () async {
+      adapter.errorToThrow = Exception('boom');
+
+      await expectLater(
+        dataSource.getBlockedUsers(),
+        throwsA(wrapsWith('Failed to fetch blocked users:')),
+      );
+    });
+
+    test('reportMessage', () async {
+      adapter.errorToThrow = Exception('boom');
+
+      await expectLater(
+        dataSource.reportMessage(
+          'message-1',
+          reason: ChatMessageReportReason.spam,
+        ),
+        throwsA(wrapsWith('Failed to report message:')),
       );
     });
   });

@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data/chat_mapper.dart';
 
@@ -166,6 +168,59 @@ class ChatRemoteDataSource {
       return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       throw Exception('Failed to delete message: $e');
+    }
+  }
+
+  Future<BlockedUserEntity> blockSender(String messageId) async {
+    try {
+      final response = await _dio.post(
+        '/api/chat/messages/$messageId/block-sender',
+      );
+      return ChatMapper.blockedUserFromJson(
+        response.data as Map<String, dynamic>,
+      );
+    } catch (e) {
+      throw Exception('Failed to block sender: $e');
+    }
+  }
+
+  Future<void> unblockUser(String blockedUserId) async {
+    try {
+      await _dio.delete('/api/chat/blocked-users/$blockedUserId');
+    } catch (e) {
+      throw Exception('Failed to unblock user: $e');
+    }
+  }
+
+  Future<List<BlockedUserEntity>> getBlockedUsers() async {
+    try {
+      final response = await _dio.get('/api/chat/blocked-users');
+      final data = response.data as List<dynamic>? ?? const <dynamic>[];
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ChatMapper.blockedUserFromJson)
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch blocked users: $e');
+    }
+  }
+
+  Future<void> reportMessage(
+    String messageId, {
+    required ChatMessageReportReason reason,
+    String? comment,
+  }) async {
+    try {
+      await _dio.post(
+        '/api/chat/messages/$messageId/report',
+        data: {
+          'reason': reason.wireValue,
+          if (comment != null && comment.trim().isNotEmpty)
+            'comment': comment.trim(),
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to report message: $e');
     }
   }
 }

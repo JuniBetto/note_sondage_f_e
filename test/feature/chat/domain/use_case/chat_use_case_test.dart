@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/repositories/chat_repository.dart';
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
@@ -49,6 +51,15 @@ class _FakeChatRepository implements ChatRepository {
   toggleReactionHandler;
   Future<ChatMessageEntity> Function(String messageId)? deleteMessageHandler;
   Future<void> Function(String conversationId)? markConversationReadHandler;
+  Future<BlockedUserEntity> Function(String messageId)? blockSenderHandler;
+  Future<void> Function(String blockedUserId)? unblockUserHandler;
+  Future<List<BlockedUserEntity>> Function()? getBlockedUsersHandler;
+  Future<void> Function(
+    String messageId, {
+    required ChatMessageReportReason reason,
+    String? comment,
+  })?
+  reportMessageHandler;
 
   final getCachedTeamConversationCalls = <String>[];
   final getCachedDirectConversationCalls = <(String, String)>[];
@@ -74,6 +85,11 @@ class _FakeChatRepository implements ChatRepository {
   final toggleReactionCalls = <(String, String)>[];
   final deleteMessageCalls = <String>[];
   final markConversationReadCalls = <String>[];
+  final blockSenderCalls = <String>[];
+  final unblockUserCalls = <String>[];
+  int getBlockedUsersCallCount = 0;
+  final reportMessageCalls =
+      <({String messageId, ChatMessageReportReason reason, String? comment})>[];
 
   @override
   ChatConversationEntity? getCachedTeamConversation(String teamId) {
@@ -218,6 +234,35 @@ class _FakeChatRepository implements ChatRepository {
   Future<void> markConversationRead(String conversationId) {
     markConversationReadCalls.add(conversationId);
     return markConversationReadHandler?.call(conversationId) ??
+        Future<void>.value();
+  }
+
+  @override
+  Future<BlockedUserEntity> blockSender(String messageId) {
+    blockSenderCalls.add(messageId);
+    return blockSenderHandler!(messageId);
+  }
+
+  @override
+  Future<void> unblockUser(String blockedUserId) {
+    unblockUserCalls.add(blockedUserId);
+    return unblockUserHandler?.call(blockedUserId) ?? Future<void>.value();
+  }
+
+  @override
+  Future<List<BlockedUserEntity>> getBlockedUsers() {
+    getBlockedUsersCallCount++;
+    return getBlockedUsersHandler!();
+  }
+
+  @override
+  Future<void> reportMessage(
+    String messageId, {
+    required ChatMessageReportReason reason,
+    String? comment,
+  }) {
+    reportMessageCalls.add((messageId: messageId, reason: reason, comment: comment));
+    return reportMessageHandler?.call(messageId, reason: reason, comment: comment) ??
         Future<void>.value();
   }
 }
@@ -439,6 +484,60 @@ void main() {
       await useCase.markConversationRead('conversation-1');
 
       expect(repository.markConversationReadCalls, ['conversation-1']);
+    });
+  });
+
+  group('ChatUseCase moderation', () {
+    test('blockSender delegates messageId', () async {
+      final blockedUser = BlockedUserEntity(
+        userId: 'user-2',
+        displayName: 'User Two',
+        blockedAt: DateTime(2026, 1, 1),
+      );
+      repository.blockSenderHandler = (_) async => blockedUser;
+
+      final result = await useCase.blockSender('message-1');
+
+      expect(result, same(blockedUser));
+      expect(repository.blockSenderCalls, ['message-1']);
+    });
+
+    test('unblockUser delegates blockedUserId', () async {
+      await useCase.unblockUser('user-2');
+
+      expect(repository.unblockUserCalls, ['user-2']);
+    });
+
+    test('getBlockedUsers delegates to repository', () async {
+      final blockedUsers = [
+        BlockedUserEntity(
+          userId: 'user-2',
+          displayName: 'User Two',
+          blockedAt: DateTime(2026, 1, 1),
+        ),
+      ];
+      repository.getBlockedUsersHandler = () async => blockedUsers;
+
+      final result = await useCase.getBlockedUsers();
+
+      expect(result, same(blockedUsers));
+      expect(repository.getBlockedUsersCallCount, 1);
+    });
+
+    test('reportMessage delegates messageId, reason and comment', () async {
+      await useCase.reportMessage(
+        'message-1',
+        reason: ChatMessageReportReason.spam,
+        comment: 'looks like spam',
+      );
+
+      expect(repository.reportMessageCalls, [
+        (
+          messageId: 'message-1',
+          reason: ChatMessageReportReason.spam,
+          comment: 'looks like spam',
+        ),
+      ]);
     });
   });
 }

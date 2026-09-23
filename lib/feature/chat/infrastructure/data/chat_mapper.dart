@@ -1,3 +1,4 @@
+import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
@@ -105,6 +106,16 @@ class ChatMapper {
       lastMessagePreview: json['lastMessagePreview']?.toString() ?? '',
       lastMessageType: json['lastMessageType']?.toString() ?? 'TEXT',
       lastMessageAt: DateTime.tryParse(json['lastMessageAt']?.toString() ?? ''),
+    );
+  }
+
+  static BlockedUserEntity blockedUserFromJson(Map<String, dynamic> json) {
+    return BlockedUserEntity(
+      userId: json['userId']?.toString() ?? '',
+      displayName: json['displayName']?.toString() ?? '',
+      blockedAt:
+          DateTime.tryParse(json['blockedAt']?.toString() ?? '') ??
+          DateTime.now(),
     );
   }
 

@@ -5,11 +5,13 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reaction_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/repositories/chat_message_action_repository.dart';
 import 'package:note_sondage/feature/chat/domain/repositories/chat_repository.dart';
@@ -222,10 +224,23 @@ class _FakeChatRepository implements ChatRepository {
   Future<ChatMessageEntity> Function(String messageId, String emoji)?
   toggleReactionHandler;
   Future<ChatMessageEntity> Function(String messageId)? deleteMessageHandler;
+  Future<BlockedUserEntity> Function(String messageId)? blockSenderHandler;
+  Future<void> Function(String blockedUserId)? unblockUserHandler;
+  Future<List<BlockedUserEntity>> Function()? getBlockedUsersHandler;
+  Future<void> Function(
+    String messageId, {
+    required ChatMessageReportReason reason,
+    String? comment,
+  })?
+  reportMessageHandler;
 
   final getMessagesCalls =
       <({String conversationId, DateTime? before, int limit})>[];
   final markConversationReadCalls = <String>[];
+  final blockSenderCalls = <String>[];
+  final unblockUserCalls = <String>[];
+  final reportMessageCalls =
+      <({String messageId, ChatMessageReportReason reason, String? comment})>[];
 
   @override
   ChatConversationEntity? getCachedTeamConversation(String teamId) =>
@@ -322,6 +337,33 @@ class _FakeChatRepository implements ChatRepository {
     String teamId,
     String memberUserId,
   ) => throw UnimplementedError();
+
+  @override
+  Future<BlockedUserEntity> blockSender(String messageId) {
+    blockSenderCalls.add(messageId);
+    return blockSenderHandler!(messageId);
+  }
+
+  @override
+  Future<void> unblockUser(String blockedUserId) {
+    unblockUserCalls.add(blockedUserId);
+    return unblockUserHandler?.call(blockedUserId) ?? Future<void>.value();
+  }
+
+  @override
+  Future<List<BlockedUserEntity>> getBlockedUsers() =>
+      getBlockedUsersHandler!();
+
+  @override
+  Future<void> reportMessage(
+    String messageId, {
+    required ChatMessageReportReason reason,
+    String? comment,
+  }) {
+    reportMessageCalls.add((messageId: messageId, reason: reason, comment: comment));
+    return reportMessageHandler?.call(messageId, reason: reason, comment: comment) ??
+        Future<void>.value();
+  }
 }
 
 class _FakeChatMessageActionRepository implements ChatMessageActionRepository {
