@@ -3838,6 +3838,18 @@ abstract class AppLocalizations {
   /// **'{days, plural, =1{1 day ago} other{{days} days ago}}'**
   String chatDaysAgo(int days);
 
+  /// No description provided for @blockedUsersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked users'**
+  String get blockedUsersTitle;
+
+  /// No description provided for @blockedUsersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage the people you\'ve blocked in chat'**
+  String get blockedUsersSubtitle;
+
   /// No description provided for @profileTitle.
   ///
   /// In en, this message translates to:

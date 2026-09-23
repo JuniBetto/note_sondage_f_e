@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/chat/ui/widgets/blocked_users_screen.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
@@ -190,6 +191,15 @@ class _SettingsWebState extends State<SettingsWeb> {
                         ),
                         SidebarItem(
                           isSettings: true,
+                          key: const ValueKey(7),
+                          icon: Icons.block_rounded,
+                          label: localizations.blockedUsersTitle,
+                          index: 7,
+                          isSmallScreen: isExpanded,
+                          lastIndexes: lastIndexes,
+                        ),
+                        SidebarItem(
+                          isSettings: true,
                           key: const ValueKey(4),
                           icon: Icons.logout_outlined,
                           label: localizations.logout,
@@ -216,6 +226,7 @@ class _SettingsWebState extends State<SettingsWeb> {
                           2 => const SettingsContactUsWeb(),
                           3 => const SettingsPrivacyWeb(),
                           6 => const SettingsAiWeb(),
+                          7 => const BlockedUsersScreen(),
                           int() => const SettingsLanguageWeb(),
                         },
                       ),

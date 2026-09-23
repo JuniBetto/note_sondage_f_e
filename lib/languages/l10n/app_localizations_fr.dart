@@ -2162,6 +2162,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get blockedUsersTitle => 'Utilisateurs bloqués';
+
+  @override
+  String get blockedUsersSubtitle =>
+      'Gérez les personnes que vous avez bloquées dans le chat';
+
+  @override
   String get profileTitle => 'Profil';
 
   @override

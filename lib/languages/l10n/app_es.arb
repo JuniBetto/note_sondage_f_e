@@ -898,6 +898,8 @@
             }
         }
     },
+    "blockedUsersTitle": "Usuarios bloqueados",
+    "blockedUsersSubtitle": "Gestiona las personas que has bloqueado en el chat",
     "profileTitle": "Perfil",
     "profileDescription": "Gestiona la información que se muestra para tu cuenta.",
     "profileProviderEmail": "Correo electrónico",
