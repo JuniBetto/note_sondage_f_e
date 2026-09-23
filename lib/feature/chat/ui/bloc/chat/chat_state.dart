@@ -99,6 +99,26 @@ class ChatMessageSent extends ChatTransient {
   ChatMessageSent();
 }
 
+/// A [ChatReactionToggled] succeeded — the widget syncs `messages` from
+/// this state. Failures only carry [ChatErrorOccurred], matching the widget
+/// method this replaces (no dedicated failure signal, just a snackbar).
+class ChatReactionUpdated extends ChatTransient {
+  ChatReactionUpdated();
+}
+
+/// A [ChatMessageDeleteConfirmed] succeeded — same shape as
+/// [ChatReactionUpdated].
+class ChatMessageDeleted extends ChatTransient {
+  ChatMessageDeleted();
+}
+
+/// A [ChatConversationMarkReadRequested] succeeded. Failures are silent
+/// (best-effort, matching the widget method this replaces), so this only
+/// fires on the success path.
+class ChatConversationMarkReadCompleted extends ChatTransient {
+  ChatConversationMarkReadCompleted();
+}
+
 class ChatSondageDraftReady extends ChatTransient {
   ChatSondageDraftReady(this.result);
 

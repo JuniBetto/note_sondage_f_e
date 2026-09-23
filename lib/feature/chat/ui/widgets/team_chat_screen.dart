@@ -19,7 +19,6 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_enti
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
-import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
 import 'package:note_sondage/feature/chat/ui/bloc/chat/chat_bloc.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_section.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_direct_action_dialog.dart';
@@ -84,7 +83,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   static const double _olderMessagesLoadThreshold = 180;
   static const double _readVisibilityThreshold = 72;
 
-  final ChatUseCase _chatUseCase = GetIt.instance<ChatUseCase>();
   final ChatBloc _chatBloc = GetIt.instance<ChatBloc>();
   final ChatMessageSondageWorkflowController _sondageWorkflowController =
       GetIt.instance<ChatMessageSondageWorkflowController>();
@@ -124,19 +122,18 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   bool _skipNextTeamsConversationLoad = false;
   bool _loadingOlderMessages = false;
   bool _hasMoreOlderMessages = true;
-  bool _markingConversationRead = false;
   bool _pendingForceLatestFocus = false;
   bool _workflowAiAppEnabled = false;
   bool _didNotifyContentReady = false;
 
   // Sourced from ChatBloc — only ever written by _loadTeams (teams,
-  // loadingTeams), _ensureTeamAccessContextLoaded (the two maps), or the
+  // loadingTeams), _ensureTeamAccessContextLoaded (the two maps), the
   // composer/send handlers below (selectedAttachment, replyTarget,
-  // pendingSendCount) — none of which have any other, not-yet-migrated
-  // writer, so they can be plain getters with no local mutable copy.
-  // _selectedTeamId stays a local field (see _loadTeams and
-  // _loadConversation) since it's also written by the not-yet-migrated
-  // conversation-loading flow.
+  // pendingSendCount), or _markConversationRead (markingConversationRead) —
+  // none of which have any other, not-yet-migrated writer, so they can be
+  // plain getters with no local mutable copy. _selectedTeamId stays a local
+  // field (see _loadTeams and _loadConversation) since it's also written by
+  // the not-yet-migrated conversation-loading flow.
   List<TeamEntity> get _teams => _chatBloc.state.teams;
   bool get _loadingTeams => _chatBloc.state.loadingTeams;
   Map<String, List<TeamMemberEntity>> get _teamMembersByTeamId =>
@@ -148,6 +145,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   ChatMessageEntity? get _replyTarget => _chatBloc.state.replyTarget;
   int get _pendingSendCount => _chatBloc.state.pendingSendCount;
   bool get _sending => _pendingSendCount > 0;
+  bool get _markingConversationRead => _chatBloc.state.markingConversationRead;
 
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid.trim();
   String get _currentEmail =>
@@ -359,7 +357,10 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       _syncConversationFromBloc(next);
       _handleConversationOpened();
     } else if (freshTransient is ChatMessagesRefreshed ||
-        freshTransient is ChatOlderMessagesLoaded) {
+        freshTransient is ChatOlderMessagesLoaded ||
+        freshTransient is ChatReactionUpdated ||
+        freshTransient is ChatMessageDeleted ||
+        freshTransient is ChatConversationMarkReadCompleted) {
       _syncConversationFromBloc(next);
     } else if (freshTransient is ChatMessageSent) {
       _syncConversationFromBloc(next);
@@ -844,8 +845,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   Future<void> _markConversationRead() async {
-    final conversation = _conversation;
-    if (conversation == null || _markingConversationRead) {
+    if (_conversation == null || _markingConversationRead) {
       return;
     }
     if (!_messages.any(
@@ -853,48 +853,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     )) {
       return;
     }
-
-    _markingConversationRead = true;
-    try {
-      await _chatUseCase.markConversationRead(conversation.id);
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _messages = _messages
-            .map(
-              (message) => message.mine
-                  ? message
-                  : ChatMessageEntity(
-                      id: message.id,
-                      conversationId: message.conversationId,
-                      senderUserId: message.senderUserId,
-                      senderName: message.senderName,
-                      senderAvatarUrl: message.senderAvatarUrl,
-                      contentText: message.contentText,
-                      messageType: message.messageType,
-                      attachmentPath: message.attachmentPath,
-                      attachmentOriginalName: message.attachmentOriginalName,
-                      attachmentContentType: message.attachmentContentType,
-                      attachmentSizeBytes: message.attachmentSizeBytes,
-                      replyTo: message.replyTo,
-                      reactions: message.reactions,
-                      deleted: message.deleted,
-                      deletedAt: message.deletedAt,
-                      createdAt: message.createdAt,
-                      readByCurrentUser: true,
-                      deliveredByOtherCount: message.deliveredByOtherCount,
-                      readByOtherCount: message.readByOtherCount,
-                      mine: message.mine,
-                    ),
-            )
-            .toList();
-      });
-    } catch (_) {
-      // Best effort.
-    } finally {
-      _markingConversationRead = false;
-    }
+    _chatBloc.add(const ChatConversationMarkReadRequested());
   }
 
   Future<void> _markConversationReadIfVisible() async {
@@ -973,28 +932,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     ChatMessageEntity message,
     String emoji,
   ) async {
-    try {
-      final updated = await _chatUseCase.toggleReaction(message.id, emoji);
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _messages = _messages
-            .map((item) => item.id == updated.id ? updated : item)
-            .toList();
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      AppSnackBar.showError(
-        context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatReactionUpdateError,
-        ),
-      );
-    }
+    _chatBloc.add(ChatReactionToggled(message.id, emoji));
   }
 
   Future<void> _handleMessagePressed(ChatMessageEntity message) async {
@@ -2017,28 +1955,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       return;
     }
 
-    try {
-      final updated = await _chatUseCase.deleteMessage(message.id);
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _messages = _messages
-            .map((item) => item.id == updated.id ? updated : item)
-            .toList();
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      AppSnackBar.showError(
-        context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatDeleteError,
-        ),
-      );
-    }
+    _chatBloc.add(ChatMessageDeleteConfirmed(message.id));
   }
 
   void _openDirectConversation({

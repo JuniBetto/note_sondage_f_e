@@ -623,6 +623,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           messages: state.messages
               .map((item) => item.id == updated.id ? updated : item)
               .toList(),
+          transient: ChatReactionUpdated(),
         ),
       );
     } catch (error) {
@@ -650,6 +651,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           messages: state.messages
               .map((item) => item.id == updated.id ? updated : item)
               .toList(),
+          transient: ChatMessageDeleted(),
         ),
       );
     } catch (error) {
@@ -714,6 +716,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
                       ),
               )
               .toList(),
+          transient: ChatConversationMarkReadCompleted(),
         ),
       );
     } catch (_) {
