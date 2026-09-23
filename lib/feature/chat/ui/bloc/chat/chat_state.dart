@@ -89,6 +89,16 @@ class ChatMessageSendFailed extends ChatTransient {
   final ChatMessageEntity? replyTarget;
 }
 
+/// A [ChatMessageSendRequested] made progress — the optimistic message was
+/// inserted, or it was reconciled with the server's response. Fires on both
+/// so the widget's "scroll to the new message" reaction runs at each step,
+/// matching the widget method this replaces (it scrolls after the
+/// optimistic insert AND after the reconcile, but not on failure — that
+/// path only fires [ChatMessageSendFailed]).
+class ChatMessageSent extends ChatTransient {
+  ChatMessageSent();
+}
+
 class ChatSondageDraftReady extends ChatTransient {
   ChatSondageDraftReady(this.result);
 

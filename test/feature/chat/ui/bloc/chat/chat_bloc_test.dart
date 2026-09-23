@@ -1277,10 +1277,14 @@ void main() {
         expect(optimisticState.messages.single.id, startsWith('local-'));
         expect(optimisticState.messages.single.senderName, 'You');
         expect(optimisticState.sending, isTrue);
+        // Fires on the optimistic insert too, not just the reconcile below —
+        // the widget scrolls to the new message at both points.
+        expect(optimisticState.transient, isA<ChatMessageSent>());
 
         final finalState = emittedStates.last;
         expect(finalState.messages, [serverMessage]);
         expect(finalState.sending, isFalse);
+        expect(finalState.transient, isA<ChatMessageSent>());
 
         await subscription.cancel();
       },

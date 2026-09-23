@@ -124,27 +124,30 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   bool _skipNextTeamsConversationLoad = false;
   bool _loadingOlderMessages = false;
   bool _hasMoreOlderMessages = true;
-  int _pendingSendCount = 0;
   bool _markingConversationRead = false;
   bool _pendingForceLatestFocus = false;
   bool _workflowAiAppEnabled = false;
-  ChatDraftAttachment? _selectedAttachment;
-  ChatMessageEntity? _replyTarget;
   bool _didNotifyContentReady = false;
 
-  bool get _sending => _pendingSendCount > 0;
-
   // Sourced from ChatBloc — only ever written by _loadTeams (teams,
-  // loadingTeams) or _ensureTeamAccessContextLoaded (the two maps), so they
-  // can become plain getters without any local mutable copy. _selectedTeamId
-  // stays a local field (see _loadTeams and _loadConversation) since it's
-  // also written by the not-yet-migrated conversation-loading flow.
+  // loadingTeams), _ensureTeamAccessContextLoaded (the two maps), or the
+  // composer/send handlers below (selectedAttachment, replyTarget,
+  // pendingSendCount) — none of which have any other, not-yet-migrated
+  // writer, so they can be plain getters with no local mutable copy.
+  // _selectedTeamId stays a local field (see _loadTeams and
+  // _loadConversation) since it's also written by the not-yet-migrated
+  // conversation-loading flow.
   List<TeamEntity> get _teams => _chatBloc.state.teams;
   bool get _loadingTeams => _chatBloc.state.loadingTeams;
   Map<String, List<TeamMemberEntity>> get _teamMembersByTeamId =>
       _chatBloc.state.teamMembersByTeamId;
   Map<String, List<RoleEntity>> get _rolesByTeamId =>
       _chatBloc.state.rolesByTeamId;
+  ChatDraftAttachment? get _selectedAttachment =>
+      _chatBloc.state.selectedAttachment;
+  ChatMessageEntity? get _replyTarget => _chatBloc.state.replyTarget;
+  int get _pendingSendCount => _chatBloc.state.pendingSendCount;
+  bool get _sending => _pendingSendCount > 0;
 
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid.trim();
   String get _currentEmail =>
@@ -358,7 +361,37 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     } else if (freshTransient is ChatMessagesRefreshed ||
         freshTransient is ChatOlderMessagesLoaded) {
       _syncConversationFromBloc(next);
+    } else if (freshTransient is ChatMessageSent) {
+      _syncConversationFromBloc(next);
+      _scrollToBottom();
+    } else if (freshTransient is ChatMessageSendFailed) {
+      _syncConversationFromBloc(next);
+      _handleMessageSendFailed(freshTransient);
     }
+  }
+
+  /// The "should I put the draft back?" decision reads the *live*
+  /// `TextEditingController`/current attachment/reply-target — only the
+  /// widget can make it, which is why the bloc hands back the original
+  /// payload in [ChatMessageSendFailed] instead of deciding itself.
+  void _handleMessageSendFailed(ChatMessageSendFailed transient) {
+    final shouldRestoreDraft =
+        _messageController.text.trim().isEmpty &&
+        _selectedAttachment == null &&
+        _replyTarget == null;
+    if (shouldRestoreDraft) {
+      _chatBloc.add(
+        ChatDraftRestored(
+          attachment: transient.attachment,
+          replyTarget: transient.replyTarget,
+        ),
+      );
+      _messageController.text = transient.content;
+      _messageController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _messageController.text.length),
+      );
+    }
+    AppSnackBar.showError(context, transient.message);
   }
 
   void _syncConversationFromBloc(ChatState state) {
@@ -674,107 +707,32 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     });
   }
 
-  Future<void> _sendMessage() async {
-    final conversation = _conversation;
+  /// Dispatches to [ChatBloc], which owns the optimistic-insert +
+  /// reconcile-by-id + failure-restore-payload logic in full (built and
+  /// tested well before this widget was wired to it). Clears the
+  /// controller immediately, matching the widget method this replaces —
+  /// the bloc's `ChatMessageSent` transient (fired on the optimistic
+  /// insert too) drives the scroll-to-bottom via [_handleChatBlocState].
+  void _sendMessage() {
+    if (_conversation == null) {
+      return;
+    }
     final content = _messageController.text.trim();
-    final selectedAttachment = _selectedAttachment;
-    if (conversation == null ||
-        (content.isEmpty && selectedAttachment == null)) {
+    final attachment = _selectedAttachment;
+    if (content.isEmpty && attachment == null) {
       return;
     }
 
-    final temporaryMessage = _buildOptimisticMessage(
-      conversationId: conversation.id,
-      content: content,
-      attachment: selectedAttachment,
-      replyTo: _replyTarget,
-    );
-
-    setState(() {
-      _pendingSendCount += 1;
-      _selectedAttachment = null;
-      _replyTarget = null;
-      _messages = <ChatMessageEntity>[..._messages, temporaryMessage];
-    });
+    final replyTarget = _replyTarget;
     _messageController.clear();
-    _scrollToBottom();
-
-    try {
-      final message = selectedAttachment == null
-          ? await _chatUseCase.sendMessage(
-              conversation.id,
-              content,
-              replyToMessageId: temporaryMessage.replyTo?.messageId,
-            )
-          : await _chatUseCase.sendAttachmentMessage(
-              conversation.id,
-              content: content,
-              bytes: selectedAttachment.bytes,
-              fileName: selectedAttachment.fileName,
-              contentType: selectedAttachment.contentType,
-              replyToMessageId: temporaryMessage.replyTo?.messageId,
-            );
-      if (!mounted) return;
-      setState(() {
-        _messages = _messages
-            .map((item) => item.id == temporaryMessage.id ? message : item)
-            .toList();
-        _pendingSendCount = _pendingSendCount > 0 ? _pendingSendCount - 1 : 0;
-      });
-      _scrollToBottom();
-    } catch (error) {
-      if (!mounted) return;
-      final shouldRestoreDraft =
-          _messageController.text.trim().isEmpty &&
-          _selectedAttachment == null &&
-          _replyTarget == null;
-      setState(() {
-        _messages = _messages
-            .where((item) => item.id != temporaryMessage.id)
-            .toList();
-        _pendingSendCount = _pendingSendCount > 0 ? _pendingSendCount - 1 : 0;
-        if (shouldRestoreDraft) {
-          _selectedAttachment = selectedAttachment;
-          _replyTarget = temporaryMessage.replyTo == null
-              ? null
-              : ChatMessageEntity(
-                  id: temporaryMessage.replyTo!.messageId,
-                  conversationId: conversation.id,
-                  senderUserId: '',
-                  senderName: temporaryMessage.replyTo!.senderName,
-                  senderAvatarUrl: null,
-                  contentText: temporaryMessage.replyTo!.contentPreview,
-                  messageType: temporaryMessage.replyTo!.messageType,
-                  attachmentPath: null,
-                  attachmentOriginalName: null,
-                  attachmentContentType: null,
-                  attachmentSizeBytes: null,
-                  replyTo: null,
-                  reactions: const [],
-                  deleted: temporaryMessage.replyTo!.deleted,
-                  deletedAt: null,
-                  createdAt: DateTime.now(),
-                  readByCurrentUser: true,
-                  deliveredByOtherCount: 0,
-                  readByOtherCount: 0,
-                  mine: false,
-                );
-        }
-      });
-      if (shouldRestoreDraft) {
-        _messageController.text = content;
-        _messageController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _messageController.text.length),
-        );
-      }
-      AppSnackBar.showError(
-        context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatSendMessageError,
-        ),
-      );
-    }
+    _chatBloc.add(
+      ChatMessageSendRequested(
+        content: content,
+        actorDisplayName: AppLocalizations.of(context)!.chatYouLabel,
+        attachment: attachment,
+        replyTarget: replyTarget,
+      ),
+    );
   }
 
   Future<void> _pickImageAttachment() async {
@@ -809,14 +767,16 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     if (file == null || bytes == null || bytes.isEmpty || fileName.isEmpty) {
       return;
     }
-    setState(() {
-      _selectedAttachment = ChatDraftAttachment(
-        bytes: bytes,
-        fileName: fileName,
-        contentType: _resolveDocumentContentType(file.extension),
-        sizeBytes: bytes.length,
-      );
-    });
+    _chatBloc.add(
+      ChatAttachmentSelected(
+        ChatDraftAttachment(
+          bytes: bytes,
+          fileName: fileName,
+          contentType: _resolveDocumentContentType(file.extension),
+          sizeBytes: bytes.length,
+        ),
+      ),
+    );
   }
 
   Future<void> _applyPickedImageAttachment(XFile pickedFile) async {
@@ -824,23 +784,23 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     if (bytes.isEmpty) {
       return;
     }
-    setState(() {
-      _selectedAttachment = ChatDraftAttachment(
-        bytes: bytes,
-        fileName: pickedFile.name,
-        contentType: _resolveImageContentType(pickedFile.name),
-        sizeBytes: bytes.length,
-      );
-    });
+    _chatBloc.add(
+      ChatAttachmentSelected(
+        ChatDraftAttachment(
+          bytes: bytes,
+          fileName: pickedFile.name,
+          contentType: _resolveImageContentType(pickedFile.name),
+          sizeBytes: bytes.length,
+        ),
+      ),
+    );
   }
 
   void _clearSelectedAttachment() {
     if (_selectedAttachment == null) {
       return;
     }
-    setState(() {
-      _selectedAttachment = null;
-    });
+    _chatBloc.add(const ChatAttachmentCleared());
   }
 
   String _resolveImageContentType(String fileName) {
@@ -999,18 +959,14 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   void _handleReplyRequested(ChatMessageEntity message) {
-    setState(() {
-      _replyTarget = message;
-    });
+    _chatBloc.add(ChatReplyTargetSet(message));
   }
 
   void _clearReplyTarget() {
     if (_replyTarget == null) {
       return;
     }
-    setState(() {
-      _replyTarget = null;
-    });
+    _chatBloc.add(const ChatReplyTargetCleared());
   }
 
   Future<void> _handleReactionRequested(
@@ -2475,46 +2431,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
           },
         );
       },
-    );
-  }
-
-  ChatMessageEntity _buildOptimisticMessage({
-    required String conversationId,
-    required String content,
-    required ChatDraftAttachment? attachment,
-    required ChatMessageEntity? replyTo,
-  }) {
-    return ChatMessageEntity(
-      id: 'local-${DateTime.now().microsecondsSinceEpoch}',
-      conversationId: conversationId,
-      senderUserId: 'local-user',
-      senderName: AppLocalizations.of(context)!.chatYouLabel,
-      senderAvatarUrl: null,
-      contentText: content,
-      messageType: attachment == null
-          ? 'TEXT'
-          : (attachment.isImage ? 'IMAGE' : 'FILE'),
-      attachmentPath: null,
-      attachmentOriginalName: attachment?.fileName,
-      attachmentContentType: attachment?.contentType,
-      attachmentSizeBytes: attachment?.sizeBytes,
-      replyTo: replyTo == null
-          ? null
-          : ChatMessageReplyEntity(
-              messageId: replyTo.id,
-              senderName: replyTo.senderName,
-              contentPreview: replyTo.contentText,
-              messageType: replyTo.messageType,
-              deleted: replyTo.deleted,
-            ),
-      reactions: const [],
-      deleted: false,
-      deletedAt: null,
-      createdAt: DateTime.now(),
-      readByCurrentUser: true,
-      deliveredByOtherCount: 0,
-      readByOtherCount: 0,
-      mine: true,
     );
   }
 

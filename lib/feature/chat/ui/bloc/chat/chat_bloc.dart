@@ -446,6 +446,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         selectedAttachment: null,
         replyTarget: null,
         messages: <ChatMessageEntity>[...state.messages, temporaryMessage],
+        transient: ChatMessageSent(),
       ),
     );
 
@@ -472,6 +473,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           pendingSendCount: state.pendingSendCount > 0
               ? state.pendingSendCount - 1
               : 0,
+          transient: ChatMessageSent(),
         ),
       );
     } catch (error) {
