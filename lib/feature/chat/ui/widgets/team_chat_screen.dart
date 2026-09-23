@@ -81,7 +81,6 @@ class TeamChatScreen extends StatefulWidget {
 }
 
 class _TeamChatScreenState extends State<TeamChatScreen> {
-  static const int _olderMessagesBatchSize = 70;
   static const double _olderMessagesLoadThreshold = 180;
   static const double _readVisibilityThreshold = 72;
 
@@ -315,16 +314,17 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
   /// Reacts to every [ChatBloc] emission. Most fields this screen reads are
   /// now plain getters over `_chatBloc.state`. `loadingMessages`/
-  /// `refreshingMessages` are blanket-mirrored on every emission below —
-  /// safe because nothing else still writes them locally. `_conversation`/
-  /// `_messages`/`_conversationDisplayName`/`_selectedMemberUserId`/
-  /// `_hasMoreOlderMessages` are NOT blanket-mirrored: pagination, send,
-  /// reactions, delete and mark-read (not yet migrated) still mutate them
-  /// directly, and syncing on every unrelated emission would clobber those
-  /// local-only mutations with the bloc's own, unaware, copy. They're only
-  /// synced in response to the specific transients that mean "the bloc's
-  /// copy is authoritative right now" (`ChatConversationOpened`,
-  /// `ChatMessagesRefreshed`).
+  /// `refreshingMessages`/`loadingOlderMessages` are blanket-mirrored on
+  /// every emission below — safe because nothing else still writes them
+  /// locally. `_conversation`/`_messages`/`_conversationDisplayName`/
+  /// `_selectedMemberUserId`/`_hasMoreOlderMessages` are NOT
+  /// blanket-mirrored: send, reactions, delete and mark-read (not yet
+  /// migrated) still mutate them directly, and syncing on every unrelated
+  /// emission would clobber those local-only mutations with the bloc's own,
+  /// unaware, copy. They're only synced in response to the specific
+  /// transients that mean "the bloc's copy is authoritative right now"
+  /// (`ChatConversationOpened`, `ChatMessagesRefreshed`,
+  /// `ChatOlderMessagesLoaded`).
   void _handleChatBlocState(ChatState next) {
     final previous = _previousChatBlocState;
     _previousChatBlocState = next;
@@ -335,6 +335,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     setState(() {
       _loadingMessages = next.loadingMessages;
       _refreshingMessages = next.refreshingMessages;
+      _loadingOlderMessages = next.loadingOlderMessages;
     });
 
     final justFinishedLoadingTeams =
@@ -354,7 +355,8 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     if (freshTransient is ChatConversationOpened) {
       _syncConversationFromBloc(next);
       _handleConversationOpened();
-    } else if (freshTransient is ChatMessagesRefreshed) {
+    } else if (freshTransient is ChatMessagesRefreshed ||
+        freshTransient is ChatOlderMessagesLoaded) {
       _syncConversationFromBloc(next);
     }
   }
@@ -620,9 +622,20 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     }
   }
 
+  /// Bridges to [ChatBloc]'s equivalent event. The guard below is a fast,
+  /// synchronous re-entrancy check (`_loadingOlderMessages` is set `true`
+  /// immediately, before any bloc round-trip) so rapid repeated calls from
+  /// `_handleScroll` during one scroll gesture can't all slip through
+  /// before the bloc's own `state.loadingOlderMessages` guard would catch
+  /// them — that one alone still needed `sequential` processing to be
+  /// race-free (see the bloc's own comment), so this local guard is a
+  /// cheap first line of defense, not a substitute for it.
+  ///
+  /// The scroll-position-preserving jump only runs when the message count
+  /// actually grew — mirrors the widget method this replaces skipping it
+  /// entirely on failure or on an empty "nothing new" page.
   Future<void> _loadOlderMessages() async {
-    final conversation = _conversation;
-    if (conversation == null ||
+    if (_conversation == null ||
         _loadingMessages ||
         _loadingOlderMessages ||
         !_hasMoreOlderMessages ||
@@ -630,7 +643,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       return;
     }
 
-    final before = _messages.first.createdAt;
+    final previousMessageCount = _messages.length;
     final previousMaxScrollExtent = _scrollController.hasClients
         ? _scrollController.position.maxScrollExtent
         : 0.0;
@@ -642,47 +655,23 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       _loadingOlderMessages = true;
     });
 
-    try {
-      final olderMessages = await _chatUseCase.getMessages(
-        conversation.id,
-        before: before,
-        limit: _olderMessagesBatchSize,
-      );
-      if (!mounted) return;
+    final settled = _chatBloc.stream.firstWhere(
+      (state) => state.transient is ChatOlderMessagesLoaded,
+    );
+    _chatBloc.add(const ChatOlderMessagesRequested());
+    await settled;
+    if (!mounted || _messages.length <= previousMessageCount) {
+      return;
+    }
 
-      final existingIds = _messages.map((message) => message.id).toSet();
-      final uniqueOlderMessages = olderMessages
-          .where((message) => !existingIds.contains(message.id))
-          .toList();
-
-      if (uniqueOlderMessages.isEmpty) {
-        setState(() {
-          _loadingOlderMessages = false;
-          _hasMoreOlderMessages = false;
-        });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) {
         return;
       }
-
-      setState(() {
-        _messages = <ChatMessageEntity>[...uniqueOlderMessages, ..._messages];
-        _loadingOlderMessages = false;
-        _hasMoreOlderMessages = olderMessages.length >= _olderMessagesBatchSize;
-      });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_scrollController.hasClients) {
-          return;
-        }
-        final newMaxScrollExtent = _scrollController.position.maxScrollExtent;
-        final delta = newMaxScrollExtent - previousMaxScrollExtent;
-        _scrollController.jumpTo(previousPixels + delta);
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _loadingOlderMessages = false;
-      });
-    }
+      final newMaxScrollExtent = _scrollController.position.maxScrollExtent;
+      final delta = newMaxScrollExtent - previousMaxScrollExtent;
+      _scrollController.jumpTo(previousPixels + delta);
+    });
   }
 
   Future<void> _sendMessage() async {

@@ -1081,7 +1081,49 @@ void main() {
       expect(bloc.state.messages.last.id, 'current-1');
       expect(chatRepository.getMessagesCalls.last.before, oldestLoadedTimestamp);
       expect(bloc.state.loadingOlderMessages, isFalse);
+      expect(bloc.state.transient, isA<ChatOlderMessagesLoaded>());
     });
+
+    test(
+      'ChatOlderMessagesRequested fired twice back-to-back fetches two '
+      'different pages rather than racing on the same one (sequential '
+      'processing — same fix as ChatTeamAccessContextRequested)',
+      () async {
+        await openConversationWith(fullInitialPage());
+        final firstCursor = bloc.state.messages.first.createdAt;
+        // A full batch (>= 70) for both pages so hasMoreOlderMessages stays
+        // true after the first fetch settles — otherwise the second
+        // dispatch would legitimately no-op on "nothing more to paginate"
+        // rather than exercising the race this test targets. Oldest-first
+        // within each batch, matching what the bloc expects to prepend
+        // as-is (it does not re-sort after merging older pages in).
+        chatRepository.getMessagesHandler = ({before, limit = 50}) async {
+          final isFirstPage = before == firstCursor;
+          final pageStart = isFirstPage
+              ? firstCursor.subtract(const Duration(minutes: 70))
+              : firstCursor.subtract(const Duration(minutes: 140));
+          return List<ChatMessageEntity>.generate(
+            70,
+            (i) => _buildMessage(
+              id: '${isFirstPage ? 'page1' : 'page2'}-$i',
+              createdAt: pageStart.add(Duration(minutes: i)),
+            ),
+          );
+        };
+
+        bloc
+          ..add(const ChatOlderMessagesRequested())
+          ..add(const ChatOlderMessagesRequested());
+        await pumpEventQueue();
+
+        // Had the two dispatches raced (both reading the stale `before`
+        // cursor before either completed), both would have fetched "page1"
+        // and "page2" messages would never appear. Sequential processing
+        // guarantees the second dispatch sees the first dispatch's
+        // already-updated cursor and fetches the next page instead.
+        expect(bloc.state.messages.first.id, 'page2-0');
+      },
+    );
 
     test(
       'ChatOlderMessagesRequested dedupes messages already present '

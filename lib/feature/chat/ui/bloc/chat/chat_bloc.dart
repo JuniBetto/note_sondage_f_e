@@ -55,7 +55,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatMessagesRefreshRequested>(
       (event, emit) => _refreshMessages(emit),
     );
-    on<ChatOlderMessagesRequested>(_onOlderMessagesRequested);
+    // `sequential`: the same in-flight-guard race explained above for
+    // ChatTeamAccessContextRequested applies here too — rapid duplicate
+    // dispatches (e.g. several scroll callbacks in one gesture) must not
+    // both pass the `state.loadingOlderMessages` guard at once.
+    on<ChatOlderMessagesRequested>(
+      _onOlderMessagesRequested,
+      transformer: (events, mapper) => events.asyncExpand(mapper),
+    );
     on<ChatMessageSendRequested>(_onMessageSendRequested);
     on<ChatAttachmentSelected>(_onAttachmentSelected);
     on<ChatAttachmentCleared>(_onAttachmentCleared);
@@ -384,7 +391,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       if (uniqueOlderMessages.isEmpty) {
         emit(
-          state.copyWith(loadingOlderMessages: false, hasMoreOlderMessages: false),
+          state.copyWith(
+            loadingOlderMessages: false,
+            hasMoreOlderMessages: false,
+            transient: ChatOlderMessagesLoaded(),
+          ),
         );
         return;
       }
@@ -398,10 +409,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           loadingOlderMessages: false,
           hasMoreOlderMessages:
               olderMessages.length >= _olderMessagesBatchSize,
+          transient: ChatOlderMessagesLoaded(),
         ),
       );
     } catch (_) {
-      emit(state.copyWith(loadingOlderMessages: false));
+      emit(
+        state.copyWith(
+          loadingOlderMessages: false,
+          transient: ChatOlderMessagesLoaded(),
+        ),
+      );
     }
   }
 

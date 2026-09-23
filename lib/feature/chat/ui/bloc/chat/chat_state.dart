@@ -63,6 +63,14 @@ class ChatMessagesRefreshed extends ChatTransient {
   ChatMessagesRefreshed();
 }
 
+/// A [ChatOlderMessagesRequested] settled — successfully, with nothing new,
+/// or on failure. The widget compares its message count before/after to
+/// decide whether to run its scroll-position-preserving jump, so this fires
+/// in every case rather than only on an actual prepend.
+class ChatOlderMessagesLoaded extends ChatTransient {
+  ChatOlderMessagesLoaded();
+}
+
 /// A [ChatMessageSendRequested] failed. Carries everything the widget needs
 /// to show the error and decide whether to restore the draft — that
 /// decision reads the *live* `TextEditingController` text, which only the
