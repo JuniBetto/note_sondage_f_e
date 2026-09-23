@@ -5,10 +5,12 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
+import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_draft_attachment.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_event_workflow_controller.dart';
@@ -72,6 +74,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatDraftRestored>(_onDraftRestored);
     on<ChatReactionToggled>(_onReactionToggled);
     on<ChatMessageDeleteConfirmed>(_onMessageDeleteConfirmed);
+    on<ChatMessageSenderBlocked>(_onMessageSenderBlocked);
+    on<ChatMessageReported>(_onMessageReported);
     on<ChatConversationMarkReadRequested>(_onConversationMarkReadRequested);
     on<ChatWorkflowAiPreferenceChanged>(_onWorkflowAiPreferenceChanged);
     on<ChatSondageDraftRequested>(_onSondageDraftRequested);
@@ -660,6 +664,65 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             AppErrorMessageResolver.resolve(
               error,
               fallback: 'We could not delete this message. Please try again.',
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Filters the blocked sender's messages out of `state.messages`
+  /// immediately (covering anything already loaded via pagination, which a
+  /// plain refresh wouldn't reach — the backend only excludes them from the
+  /// *next* fetched page), then runs the normal refresh on top so the
+  /// conversation is fully consistent with the server afterward.
+  Future<void> _onMessageSenderBlocked(
+    ChatMessageSenderBlocked event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      final blockedUser = await chatUseCase.blockSender(event.message.id);
+      emit(
+        state.copyWith(
+          messages: state.messages
+              .where((message) => message.senderUserId != blockedUser.userId)
+              .toList(),
+          transient: ChatSenderBlocked(blockedUser),
+        ),
+      );
+      await _refreshMessages(emit);
+    } catch (error) {
+      emit(
+        state.copyWith(
+          transient: ChatErrorOccurred(
+            AppErrorMessageResolver.resolve(
+              error,
+              fallback: 'We could not block this user. Please try again.',
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onMessageReported(
+    ChatMessageReported event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await chatUseCase.reportMessage(
+        event.message.id,
+        reason: event.reason,
+        comment: event.comment,
+      );
+      emit(state.copyWith(transient: ChatMessageReportSubmitted()));
+    } catch (error) {
+      emit(
+        state.copyWith(
+          transient: ChatErrorOccurred(
+            AppErrorMessageResolver.resolve(
+              error,
+              fallback: 'We could not submit this report. Please try again.',
             ),
           ),
         ),

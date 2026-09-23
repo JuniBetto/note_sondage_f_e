@@ -138,6 +138,35 @@ class ChatMessageDeleteConfirmed extends ChatEvent {
   List<Object?> get props => [messageId];
 }
 
+/// Dispatched after the widget's own confirmation dialog returns true —
+/// blocks the sender of [message] globally (see [ChatBloc]'s handler for
+/// what that means for TEAM vs DIRECT conversations).
+class ChatMessageSenderBlocked extends ChatEvent {
+  const ChatMessageSenderBlocked(this.message);
+
+  final ChatMessageEntity message;
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// Dispatched after the widget's own report sheet collects a reason (and
+/// optional comment) for [message].
+class ChatMessageReported extends ChatEvent {
+  const ChatMessageReported(
+    this.message, {
+    required this.reason,
+    this.comment,
+  });
+
+  final ChatMessageEntity message;
+  final ChatMessageReportReason reason;
+  final String? comment;
+
+  @override
+  List<Object?> get props => [message, reason, comment];
+}
+
 /// Marks the open conversation read, if it actually has unread messages.
 /// The "is the latest portion of the list visible" gate is a live-scroll
 /// concern and stays in the widget, which decides whether to dispatch this.

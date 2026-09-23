@@ -639,11 +639,12 @@ ChatMessageEntity _buildMessage({
   bool readByCurrentUser = true,
   DateTime? createdAt,
   String contentText = 'Ciao',
+  String senderUserId = 'user-1',
 }) {
   return ChatMessageEntity(
     id: id,
     conversationId: conversationId,
-    senderUserId: 'user-1',
+    senderUserId: senderUserId,
     senderName: 'Mario Rossi',
     senderAvatarUrl: null,
     contentText: contentText,
@@ -1552,6 +1553,126 @@ void main() {
         expect(chatRepository.markConversationReadCalls, isEmpty);
       },
     );
+  });
+
+  group('ChatBloc moderation', () {
+    Future<void> openConversationWithMessages(
+      List<ChatMessageEntity> messages,
+    ) async {
+      chatRepository.getOrCreateTeamConversationHandler =
+          (_) async => _buildConversation();
+      chatRepository.getMessagesHandler =
+          ({before, limit = 50}) async => messages;
+      bloc.add(const ChatConversationRequested('team-1'));
+      await pumpEventQueue();
+    }
+
+    test(
+      'ChatMessageSenderBlocked filters the blocked sender out immediately '
+      'and emits ChatSenderBlocked',
+      () async {
+        await openConversationWithMessages([
+          _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+          _buildMessage(id: 'msg-2', senderUserId: 'user-3'),
+        ]);
+        final blockedUser = BlockedUserEntity(
+          userId: 'user-2',
+          displayName: 'User Two',
+          blockedAt: DateTime(2026, 1, 1),
+        );
+        chatRepository.blockSenderHandler = (_) async => blockedUser;
+        // Simulates the backend now excluding the blocked sender's
+        // messages from subsequent fetches.
+        chatRepository.getMessagesHandler = ({before, limit = 50}) async => [
+          _buildMessage(id: 'msg-2', senderUserId: 'user-3'),
+        ];
+
+        final emittedStates = <ChatState>[];
+        final subscription = bloc.stream.listen(emittedStates.add);
+
+        bloc.add(
+          ChatMessageSenderBlocked(
+            _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+          ),
+        );
+        await pumpEventQueue();
+        await subscription.cancel();
+
+        final blockedState = emittedStates.firstWhere(
+          (state) => state.transient is ChatSenderBlocked,
+        );
+        expect(
+          (blockedState.transient as ChatSenderBlocked).blockedUser.userId,
+          'user-2',
+        );
+        // The filter applies immediately, before the follow-up refresh
+        // even resolves.
+        expect(blockedState.messages.map((m) => m.id), ['msg-2']);
+        expect(bloc.state.messages.map((m) => m.id), ['msg-2']);
+      },
+    );
+
+    test('ChatMessageSenderBlocked surfaces an error on failure', () async {
+      await openConversationWithMessages([
+        _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+      ]);
+      chatRepository.blockSenderHandler = (_) => Future.error(Exception('boom'));
+
+      bloc.add(
+        ChatMessageSenderBlocked(
+          _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(bloc.state.transient, isA<ChatErrorOccurred>());
+    });
+
+    test(
+      'ChatMessageReported submits the report and emits '
+      'ChatMessageReportSubmitted',
+      () async {
+        await openConversationWithMessages([
+          _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+        ]);
+
+        bloc.add(
+          ChatMessageReported(
+            _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+            reason: ChatMessageReportReason.spam,
+            comment: 'this is spam',
+          ),
+        );
+        await pumpEventQueue();
+
+        expect(bloc.state.transient, isA<ChatMessageReportSubmitted>());
+        expect(chatRepository.reportMessageCalls, [
+          (
+            messageId: 'msg-1',
+            reason: ChatMessageReportReason.spam,
+            comment: 'this is spam',
+          ),
+        ]);
+      },
+    );
+
+    test('ChatMessageReported surfaces an error on failure', () async {
+      await openConversationWithMessages([
+        _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+      ]);
+      chatRepository.reportMessageHandler =
+          (_, {required reason, comment}) => Future.error(Exception('boom'));
+
+      bloc.add(
+        ChatMessageReported(
+          _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+          reason: ChatMessageReportReason.spam,
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(bloc.state.transient, isA<ChatErrorOccurred>());
+    });
   });
 
   group('ChatBloc workflow AI preference', () {

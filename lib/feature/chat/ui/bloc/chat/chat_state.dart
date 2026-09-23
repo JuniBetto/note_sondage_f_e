@@ -119,6 +119,20 @@ class ChatConversationMarkReadCompleted extends ChatTransient {
   ChatConversationMarkReadCompleted();
 }
 
+/// A [ChatMessageSenderBlocked] succeeded — carries the blocked user so the
+/// widget can show a confirmation naming them. Failures only carry
+/// [ChatErrorOccurred].
+class ChatSenderBlocked extends ChatTransient {
+  ChatSenderBlocked(this.blockedUser);
+
+  final BlockedUserEntity blockedUser;
+}
+
+/// A [ChatMessageReported] succeeded. Failures only carry [ChatErrorOccurred].
+class ChatMessageReportSubmitted extends ChatTransient {
+  ChatMessageReportSubmitted();
+}
+
 class ChatSondageDraftReady extends ChatTransient {
   ChatSondageDraftReady(this.result);
 
