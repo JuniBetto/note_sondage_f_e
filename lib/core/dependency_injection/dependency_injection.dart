@@ -34,6 +34,7 @@ import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_message_action_repository_impl.dart';
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
 import 'package:note_sondage/feature/chat/ui/bloc/chat/chat_bloc.dart';
+import 'package:note_sondage/feature/chat/ui/cubit/blocked_users_cubit.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_event_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_shift_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_sondage_workflow_controller.dart';
@@ -439,6 +440,10 @@ void _registerBlocs() {
       eventWorkflowController: getIt<ChatMessageEventWorkflowController>(),
       suggestionService: getIt<ChatMessageSuggestionService>(),
     ),
+  );
+
+  getIt.registerLazySingleton<BlockedUsersCubit>(
+    () => BlockedUsersCubit(getIt<ChatUseCase>()),
   );
 
   // TeamMember - Singleton per condividere lo stato tra widget
