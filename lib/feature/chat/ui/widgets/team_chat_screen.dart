@@ -18,6 +18,7 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
 import 'package:note_sondage/feature/chat/ui/bloc/chat/chat_bloc.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_section.dart';
@@ -367,7 +368,39 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     } else if (freshTransient is ChatMessageSendFailed) {
       _syncConversationFromBloc(next);
       _handleMessageSendFailed(freshTransient);
+    } else if (freshTransient is ChatSenderBlocked) {
+      _syncConversationFromBloc(next);
+      _handleSenderBlocked(freshTransient);
+    } else if (freshTransient is ChatMessageReportSubmitted) {
+      _handleMessageReportSubmitted();
     }
+  }
+
+  void _handleSenderBlocked(ChatSenderBlocked transient) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final displayName = transient.blockedUser.displayName.trim();
+    AppSnackBar.showSuccess(
+      context,
+      displayName.isEmpty
+          ? _chatActionText(locale, it: 'Utente bloccato.', en: 'User blocked.')
+          : _chatActionText(
+              locale,
+              it: '$displayName e stato bloccato.',
+              en: '$displayName has been blocked.',
+            ),
+    );
+  }
+
+  void _handleMessageReportSubmitted() {
+    final locale = Localizations.localeOf(context).languageCode;
+    AppSnackBar.showSuccess(
+      context,
+      _chatActionText(
+        locale,
+        it: 'Segnalazione inviata, grazie.',
+        en: 'Report submitted, thank you.',
+      ),
+    );
   }
 
   /// The "should I put the draft back?" decision reads the *live*
@@ -1085,6 +1118,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       case 'delete':
         await _handleDeleteRequested(message);
         return;
+      case 'report':
+        await _handleReportMessage(message);
+        return;
+      case 'block_sender':
+        await _handleBlockSender(message);
+        return;
       default:
         return;
     }
@@ -1195,6 +1234,31 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
                       es: 'Descargar adjunto',
                     ),
             ),
+          if (!message.mine && !message.deleted)
+            _ChatMessageActionItem(
+              value: 'report',
+              icon: Icons.flag_outlined,
+              label: _chatActionText(
+                locale,
+                it: 'Segnala',
+                en: 'Report',
+                fr: 'Signaler',
+                es: 'Denunciar',
+              ),
+            ),
+          if (!message.mine)
+            _ChatMessageActionItem(
+              value: 'block_sender',
+              icon: Icons.block_rounded,
+              label: _chatActionText(
+                locale,
+                it: 'Blocca utente',
+                en: 'Block user',
+                fr: 'Bloquer l\'utilisateur',
+                es: 'Bloquear usuario',
+              ),
+              destructive: true,
+            ),
           if (message.mine && !message.deleted)
             _ChatMessageActionItem(
               value: 'delete',
@@ -1268,21 +1332,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         );
       },
     );
-  }
-
-  String _chatActionText(
-    String locale, {
-    required String it,
-    required String en,
-    String? fr,
-    String? es,
-  }) {
-    return switch (locale) {
-      'it' => it,
-      'fr' => fr ?? en,
-      'es' => es ?? en,
-      _ => en,
-    };
   }
 
   /// Bridges to [ChatBloc] for the 4 smart-action "prepare draft" calls.
@@ -2032,6 +2081,80 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     _chatBloc.add(ChatMessageDeleteConfirmed(message.id));
   }
 
+  Future<void> _handleBlockSender(ChatMessageEntity message) async {
+    final senderName = message.senderName.trim();
+    final shouldBlock = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final loc = AppLocalizations.of(dialogContext)!;
+        final locale = Localizations.localeOf(dialogContext).languageCode;
+        return AlertDialog(
+          title: Text(
+            _chatActionText(locale, it: 'Blocca utente', en: 'Block user'),
+          ),
+          content: Text(
+            senderName.isEmpty
+                ? _chatActionText(
+                    locale,
+                    it:
+                        'Bloccare questo utente? Non vedrai piu i suoi '
+                        'messaggi.',
+                    en:
+                        'Block this user? You will no longer see their '
+                        'messages.',
+                  )
+                : _chatActionText(
+                    locale,
+                    it:
+                        'Bloccare $senderName? Non vedrai piu i suoi '
+                        'messaggi.',
+                    en:
+                        'Block $senderName? You will no longer see their '
+                        'messages.',
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(loc.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(_chatActionText(locale, it: 'Blocca', en: 'Block')),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || shouldBlock != true) {
+      return;
+    }
+
+    _chatBloc.add(ChatMessageSenderBlocked(message));
+  }
+
+  Future<void> _handleReportMessage(ChatMessageEntity message) async {
+    final result = await showModalBottomSheet<_ChatReportSheetResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => const _ChatReportMessageSheet(),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    _chatBloc.add(
+      ChatMessageReported(
+        message,
+        reason: result.reason,
+        comment: result.comment,
+      ),
+    );
+  }
+
   void _openDirectConversation({
     required String teamId,
     required String memberUserId,
@@ -2520,6 +2643,25 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 }
 
+/// Top-level (not a `_TeamChatScreenState` method) so [_ChatReportMessageSheet]
+/// — a separate widget — can use it too, matching the lightweight
+/// inline-translation convention already used throughout this file for
+/// chat-only strings that don't warrant a full ARB entry.
+String _chatActionText(
+  String locale, {
+  required String it,
+  required String en,
+  String? fr,
+  String? es,
+}) {
+  return switch (locale) {
+    'it' => it,
+    'fr' => fr ?? en,
+    'es' => es ?? en,
+    _ => en,
+  };
+}
+
 class _ChatMessageActionItem {
   const _ChatMessageActionItem({
     required this.value,
@@ -2532,4 +2674,196 @@ class _ChatMessageActionItem {
   final IconData icon;
   final String label;
   final bool destructive;
+}
+
+class _ChatReportSheetResult {
+  const _ChatReportSheetResult({required this.reason, this.comment});
+
+  final ChatMessageReportReason reason;
+  final String? comment;
+}
+
+class _ChatReportMessageSheet extends StatefulWidget {
+  const _ChatReportMessageSheet();
+
+  @override
+  State<_ChatReportMessageSheet> createState() =>
+      _ChatReportMessageSheetState();
+}
+
+class _ChatReportMessageSheetState extends State<_ChatReportMessageSheet> {
+  ChatMessageReportReason? _selectedReason;
+  final TextEditingController _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  String _reasonLabel(String locale, ChatMessageReportReason reason) {
+    return switch (reason) {
+      ChatMessageReportReason.spam => _chatActionText(
+        locale,
+        it: 'Spam',
+        en: 'Spam',
+      ),
+      ChatMessageReportReason.harassment => _chatActionText(
+        locale,
+        it: 'Molestie o bullismo',
+        en: 'Harassment or bullying',
+      ),
+      ChatMessageReportReason.hateSpeech => _chatActionText(
+        locale,
+        it: 'Incitamento all\'odio',
+        en: 'Hate speech',
+      ),
+      ChatMessageReportReason.sexualContent => _chatActionText(
+        locale,
+        it: 'Contenuto sessuale',
+        en: 'Sexual content',
+      ),
+      ChatMessageReportReason.violence => _chatActionText(
+        locale,
+        it: 'Violenza',
+        en: 'Violence',
+      ),
+      ChatMessageReportReason.other => _chatActionText(
+        locale,
+        it: 'Altro',
+        en: 'Other',
+      ),
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.24),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _chatActionText(
+                        locale,
+                        it: 'Segnala messaggio',
+                        en: 'Report message',
+                      ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    RadioGroup<ChatMessageReportReason>(
+                      groupValue: _selectedReason,
+                      onChanged: (value) =>
+                          setState(() => _selectedReason = value),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final reason in ChatMessageReportReason.values)
+                            RadioListTile<ChatMessageReportReason>(
+                              contentPadding: EdgeInsets.zero,
+                              value: reason,
+                              title: Text(_reasonLabel(locale, reason)),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _commentController,
+                      minLines: 2,
+                      maxLines: 4,
+                      maxLength: 1000,
+                      decoration: InputDecoration(
+                        labelText: _chatActionText(
+                          locale,
+                          it: 'Commento (facoltativo)',
+                          en: 'Comment (optional)',
+                        ),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(loc.cancel),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: _selectedReason == null
+                              ? null
+                              : () {
+                                  final comment = _commentController.text
+                                      .trim();
+                                  Navigator.of(context).pop(
+                                    _ChatReportSheetResult(
+                                      reason: _selectedReason!,
+                                      comment: comment.isEmpty
+                                          ? null
+                                          : comment,
+                                    ),
+                                  );
+                                },
+                          child: Text(
+                            _chatActionText(
+                              locale,
+                              it: 'Invia',
+                              en: 'Submit',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
