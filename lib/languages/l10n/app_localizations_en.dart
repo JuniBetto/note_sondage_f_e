@@ -3208,4 +3208,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutorialHomeActivityDescription =>
       'This list helps you follow what happened recently across teams, shifts, clocking, and surveys.';
+
+  @override
+  String get contactAttachmentsTitle => 'Attachments (optional)';
+
+  @override
+  String get contactAttachmentsHint =>
+      'JPG, JPEG, PNG or PDF. Up to 5 files, 5 MB in total. PDFs without passwords, forms or interactive content (max 50 pages).';
+
+  @override
+  String get contactAttachmentsAdd => 'Attach files';
+
+  @override
+  String get contactAttachmentsRemove => 'Remove attachment';
+
+  @override
+  String get contactAttachmentsSizeError =>
+      'Attachments exceed 5 MB in total, including after validation. Reduce their size and try again.';
+
+  @override
+  String get contactAttachmentsCountError => 'You can attach up to 5 files.';
+
+  @override
+  String get contactAttachmentsDuplicateError =>
+      'This file has already been added.';
+
+  @override
+  String get contactAttachmentsInvalidError =>
+      'Invalid or unsupported file. Use intact JPG/PNG images (max 25 megapixels) or PDFs without passwords or interactive content. Also check the filename.';
+
+  @override
+  String get contactAttachmentsScanError =>
+      'Security checks are unavailable. Attachments were not sent: please try again later.';
+
+  @override
+  String get contactSupportRateError =>
+      'Too many requests. Wait a few minutes before trying again.';
 }

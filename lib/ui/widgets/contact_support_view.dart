@@ -1,4 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:note_sondage/ui/widgets/contact_attachment.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,6 +35,11 @@ class _ContactSupportViewState extends State<ContactSupportView> {
 
   bool _didPrefillUser = false;
   bool _isSubmitting = false;
+  bool _isPickingAttachments = false;
+  final List<ContactAttachment> _attachments = [];
+  String? _attachmentError;
+  int get _attachmentBytes =>
+      _attachments.fold(0, (sum, file) => sum + file.bytes.length);
   _ContactSupportSubmissionStatus? _submissionStatus;
   String? _submissionMessage;
 
@@ -64,6 +74,7 @@ class _ContactSupportViewState extends State<ContactSupportView> {
 
   bool get _canSubmit =>
       !_isSubmitting &&
+      !_isPickingAttachments &&
       _emailController.text.trim().isNotEmpty &&
       _messageController.text.trim().isNotEmpty;
 
@@ -88,6 +99,132 @@ class _ContactSupportViewState extends State<ContactSupportView> {
     });
   }
 
+  Future<void> _pickAttachments() async {
+    if (_isSubmitting || _isPickingAttachments) return;
+    final loc = AppLocalizations.of(context)!;
+    setState(() {
+      _isPickingAttachments = true;
+      _attachmentError = null;
+    });
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ContactAttachment.types.keys.toList(),
+        allowMultiple: true,
+        withData: false,
+        withReadStream: true,
+      );
+      if (result == null || !mounted) return;
+      if (_attachments.length + result.files.length >
+          ContactAttachment.maxFiles) {
+        throw const FormatException('count');
+      }
+      final added = <ContactAttachment>[];
+      var remaining = ContactAttachment.maxBytes - _attachmentBytes;
+      // Validate the whole selection before changing the current list.
+      for (final file in result.files) {
+        final attachment = await ContactAttachment.read(
+          file,
+          remainingBytes: remaining,
+        );
+        if ([
+          ..._attachments,
+          ...added,
+        ].any((other) => listEquals(other.bytes, attachment.bytes))) {
+          throw const FormatException('duplicate');
+        }
+        remaining -= attachment.bytes.length;
+        added.add(attachment);
+      }
+      if (!mounted) return;
+      setState(() => _attachments.addAll(added));
+      _clearSubmissionFeedback();
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _attachmentError = switch (error.message) {
+          'size' => loc.contactAttachmentsSizeError,
+          'count' => loc.contactAttachmentsCountError,
+          'duplicate' => loc.contactAttachmentsDuplicateError,
+          _ => loc.contactAttachmentsInvalidError,
+        },
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() => _attachmentError = loc.contactAttachmentsInvalidError);
+      }
+    } finally {
+      if (mounted) setState(() => _isPickingAttachments = false);
+    }
+  }
+
+  Widget _buildAttachments(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final busy = _isSubmitting || _isPickingAttachments;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          loc.contactAttachmentsTitle,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 6),
+        Text(loc.contactAttachmentsHint),
+        const SizedBox(height: 10),
+        Text('${(_attachmentBytes / 1000000).toStringAsFixed(2)} / 5 MB'),
+        for (final attachment in _attachments)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              attachment.contentType == 'application/pdf'
+                  ? Icons.picture_as_pdf_outlined
+                  : Icons.image_outlined,
+            ),
+            title: Text(
+              attachment.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text('${(attachment.bytes.length / 1000).ceil()} KB'),
+            trailing: IconButton(
+              tooltip: loc.contactAttachmentsRemove,
+              onPressed: busy
+                  ? null
+                  : () {
+                      setState(() {
+                        _attachments.remove(attachment);
+                        _attachmentError = null;
+                      });
+                      _clearSubmissionFeedback();
+                    },
+              icon: const Icon(Icons.close),
+            ),
+          ),
+        OutlinedButton.icon(
+          onPressed: busy || _attachments.length >= ContactAttachment.maxFiles
+              ? null
+              : _pickAttachments,
+          icon: _isPickingAttachments
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.attach_file),
+          label: Text(loc.contactAttachmentsAdd),
+        ),
+        if (_attachmentError != null)
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              _attachmentError!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+      ],
+    );
+  }
+
   Future<void> _sendEmail() async {
     final loc = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
@@ -99,33 +236,63 @@ class _ContactSupportViewState extends State<ContactSupportView> {
 
     setState(() => _isSubmitting = true);
     try {
+      final request = {
+        'name': name.isEmpty ? null : name,
+        'email': email,
+        'message': message,
+        'page': 'settings/contact_us',
+      };
+      final data = _attachments.isEmpty
+          ? request
+          : FormData.fromMap({
+              'request': MultipartFile.fromString(
+                jsonEncode(request),
+                contentType: DioMediaType('application', 'json'),
+              ),
+              'files': _attachments
+                  .map(
+                    (file) => MultipartFile.fromBytes(
+                      file.bytes,
+                      filename: file.name,
+                      contentType: DioMediaType.parse(file.contentType),
+                    ),
+                  )
+                  .toList(),
+            }, ListFormat.multi);
       await DioClient().dio.post(
         '/api/aggregate/notifications/contact-support',
-        data: {
-          'name': name.isEmpty ? null : name,
-          'email': email,
-          'message': message,
-          'page': 'settings/contact_us',
-        },
+        data: data,
+        options: Options(
+          contentType: data is FormData
+              ? 'multipart/form-data'
+              : 'application/json',
+        ),
       );
-      _messageController.clear();
       if (!mounted) {
         return;
       }
+      _messageController.clear();
+      setState(() {
+        _attachments.clear();
+        _attachmentError = null;
+      });
       _setSubmissionFeedback(
         _ContactSupportSubmissionStatus.success,
         loc.contactUsSentSuccess,
       );
       AppSnackBar.showSuccess(context, loc.contactUsSentSuccess);
-    } on DioException {
-      if (!mounted) {
-        return;
-      }
-      _setSubmissionFeedback(
-        _ContactSupportSubmissionStatus.error,
-        loc.contactUsSendFailed,
-      );
-      AppSnackBar.showWarning(context, loc.contactUsSendFailed);
+    } on DioException catch (error) {
+      if (!mounted) return;
+      final status = error.response?.statusCode;
+      final feedback = switch (status) {
+        413 => loc.contactAttachmentsSizeError,
+        400 when _attachments.isNotEmpty => loc.contactAttachmentsInvalidError,
+        429 => loc.contactSupportRateError,
+        503 => loc.contactAttachmentsScanError,
+        _ => loc.contactUsSendFailed,
+      };
+      _setSubmissionFeedback(_ContactSupportSubmissionStatus.error, feedback);
+      AppSnackBar.showWarning(context, feedback);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -252,6 +419,7 @@ class _ContactSupportViewState extends State<ContactSupportView> {
                           yourEmailLabel: loc.yourEmail,
                           messageLabel: loc.message,
                           formHint: loc.contactUsFormHint,
+                          attachments: _buildAttachments(context),
                         ),
                       ),
                     ],
@@ -289,6 +457,7 @@ class _ContactSupportViewState extends State<ContactSupportView> {
                         yourEmailLabel: loc.yourEmail,
                         messageLabel: loc.message,
                         formHint: loc.contactUsFormHint,
+                        attachments: _buildAttachments(context),
                       ),
                     ],
                   ),
@@ -599,6 +768,7 @@ class _SupportFormCard extends StatelessWidget {
     required this.yourEmailLabel,
     required this.messageLabel,
     required this.formHint,
+    required this.attachments,
   });
 
   final Color backgroundColor;
@@ -626,6 +796,7 @@ class _SupportFormCard extends StatelessWidget {
   final String yourEmailLabel;
   final String messageLabel;
   final String formHint;
+  final Widget attachments;
 
   @override
   Widget build(BuildContext context) {
@@ -702,11 +873,15 @@ class _SupportFormCard extends StatelessWidget {
           const SizedBox(height: 14),
           TextFormField(
             controller: messageController,
+            enabled: !isSubmitting,
+            maxLength: 5000,
             maxLines: 7,
             minLines: 5,
             onChanged: onMessageChanged,
             decoration: buildDecoration(context, messageLabel, maxLines: 7),
           ),
+          const SizedBox(height: 18),
+          attachments,
           const SizedBox(height: 18),
           Wrap(
             spacing: 12,

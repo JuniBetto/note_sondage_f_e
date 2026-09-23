@@ -3234,4 +3234,40 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get tutorialHomeActivityDescription =>
       'Questa lista ti aiuta a seguire cosa è successo di recente tra team, turni, timbrature e sondaggi.';
+
+  @override
+  String get contactAttachmentsTitle => 'Allegati (facoltativi)';
+
+  @override
+  String get contactAttachmentsHint =>
+      'JPG, JPEG, PNG o PDF. Massimo 5 file, 5 MB totali. PDF senza password, moduli o contenuti interattivi (max 50 pagine).';
+
+  @override
+  String get contactAttachmentsAdd => 'Allega file';
+
+  @override
+  String get contactAttachmentsRemove => 'Rimuovi allegato';
+
+  @override
+  String get contactAttachmentsSizeError =>
+      'Gli allegati superano 5 MB totali, anche dopo la verifica. Riduci le dimensioni e riprova.';
+
+  @override
+  String get contactAttachmentsCountError => 'Puoi allegare al massimo 5 file.';
+
+  @override
+  String get contactAttachmentsDuplicateError =>
+      'Questo file è già stato aggiunto.';
+
+  @override
+  String get contactAttachmentsInvalidError =>
+      'File non valido o non consentito. Usa immagini JPG/PNG integre (max 25 megapixel) o PDF senza password e contenuti interattivi. Verifica anche il nome del file.';
+
+  @override
+  String get contactAttachmentsScanError =>
+      'La verifica di sicurezza non è disponibile. Gli allegati non sono stati inviati: riprova più tardi.';
+
+  @override
+  String get contactSupportRateError =>
+      'Troppe richieste. Attendi qualche minuto prima di riprovare.';
 }

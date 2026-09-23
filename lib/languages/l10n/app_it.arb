@@ -1210,5 +1210,15 @@
     "tutorialHomeQuickActionsTitle": "Azioni rapide",
     "tutorialHomeQuickActionsDescription": "Usa questi collegamenti per entrare subito nelle aree principali e iniziare un'azione.",
     "tutorialHomeActivityTitle": "Attività recenti",
-    "tutorialHomeActivityDescription": "Questa lista ti aiuta a seguire cosa è successo di recente tra team, turni, timbrature e sondaggi."
+    "tutorialHomeActivityDescription": "Questa lista ti aiuta a seguire cosa è successo di recente tra team, turni, timbrature e sondaggi.",
+    "contactAttachmentsTitle": "Allegati (facoltativi)",
+    "contactAttachmentsHint": "JPG, JPEG, PNG o PDF. Massimo 5 file, 5 MB totali. PDF senza password, moduli o contenuti interattivi (max 50 pagine).",
+    "contactAttachmentsAdd": "Allega file",
+    "contactAttachmentsRemove": "Rimuovi allegato",
+    "contactAttachmentsSizeError": "Gli allegati superano 5 MB totali, anche dopo la verifica. Riduci le dimensioni e riprova.",
+    "contactAttachmentsCountError": "Puoi allegare al massimo 5 file.",
+    "contactAttachmentsDuplicateError": "Questo file è già stato aggiunto.",
+    "contactAttachmentsInvalidError": "File non valido o non consentito. Usa immagini JPG/PNG integre (max 25 megapixel) o PDF senza password e contenuti interattivi. Verifica anche il nome del file.",
+    "contactAttachmentsScanError": "La verifica di sicurezza non è disponibile. Gli allegati non sono stati inviati: riprova più tardi.",
+    "contactSupportRateError": "Troppe richieste. Attendi qualche minuto prima di riprovare."
 }

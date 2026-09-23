@@ -1210,5 +1210,15 @@
     "tutorialHomeQuickActionsTitle": "Acciones rápidas",
     "tutorialHomeQuickActionsDescription": "Usa estos accesos directos para ir a las áreas principales e iniciar una acción rápidamente.",
     "tutorialHomeActivityTitle": "Actividad reciente",
-    "tutorialHomeActivityDescription": "Esta lista te ayuda a seguir la actividad reciente de los equipos, turnos, fichajes y encuestas."
+    "tutorialHomeActivityDescription": "Esta lista te ayuda a seguir la actividad reciente de los equipos, turnos, fichajes y encuestas.",
+    "contactAttachmentsTitle": "Archivos adjuntos (opcional)",
+    "contactAttachmentsHint": "JPG, JPEG, PNG o PDF. Máximo 5 archivos, 5 MB en total. PDF sin contraseña, formularios ni contenido interactivo (máximo 50 páginas).",
+    "contactAttachmentsAdd": "Adjuntar archivos",
+    "contactAttachmentsRemove": "Eliminar archivo adjunto",
+    "contactAttachmentsSizeError": "Los archivos adjuntos superan 5 MB en total, incluso después de verificarlos. Reduce su tamaño e inténtalo de nuevo.",
+    "contactAttachmentsCountError": "Puedes adjuntar un máximo de 5 archivos.",
+    "contactAttachmentsDuplicateError": "Este archivo ya se ha añadido.",
+    "contactAttachmentsInvalidError": "Archivo no válido o no permitido. Usa imágenes JPG/PNG íntegras (máximo 25 megapíxeles) o PDF sin contraseña ni contenido interactivo. Comprueba también el nombre del archivo.",
+    "contactAttachmentsScanError": "La verificación de seguridad no está disponible. Los archivos no se han enviado: inténtalo más tarde.",
+    "contactSupportRateError": "Demasiadas solicitudes. Espera unos minutos antes de intentarlo de nuevo."
 }
