@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
@@ -10,6 +12,18 @@ import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
 
 class _FakeChatLocalDataSource extends ChatLocalDataSource {
+  String scope = 'user-a';
+  Future<void> Function()? writeHandler;
+
+  @override
+  String get cacheScope => scope;
+
+  int get writeCount =>
+      savedConversations.length +
+      savedTeamSummaries.length +
+      savedDirectSummaries.length +
+      savedMessagesCalls.length +
+      upsertMessageCalls.length;
   ChatConversationEntity? teamConversation;
   ChatConversationEntity? directConversation;
   List<ChatMessageEntity> messages = const <ChatMessageEntity>[];
@@ -50,11 +64,13 @@ class _FakeChatLocalDataSource extends ChatLocalDataSource {
   @override
   Future<void> saveConversation(ChatConversationEntity conversation) async {
     savedConversations.add(conversation);
+    await writeHandler?.call();
   }
 
   @override
   Future<void> saveSummary(ChatTeamConversationSummaryEntity summary) async {
     savedTeamSummaries.add(summary);
+    await writeHandler?.call();
   }
 
   @override
@@ -62,6 +78,7 @@ class _FakeChatLocalDataSource extends ChatLocalDataSource {
     ChatDirectConversationSummaryEntity summary,
   ) async {
     savedDirectSummaries.add(summary);
+    await writeHandler?.call();
   }
 
   @override
@@ -69,7 +86,11 @@ class _FakeChatLocalDataSource extends ChatLocalDataSource {
     String conversationId,
     List<ChatMessageEntity> messages,
   ) async {
-    savedMessagesCalls.add((conversationId: conversationId, messages: messages));
+    savedMessagesCalls.add((
+      conversationId: conversationId,
+      messages: messages,
+    ));
+    await writeHandler?.call();
   }
 
   @override
@@ -78,10 +99,22 @@ class _FakeChatLocalDataSource extends ChatLocalDataSource {
     ChatMessageEntity message,
   ) async {
     upsertMessageCalls.add((conversationId: conversationId, message: message));
+    await writeHandler?.call();
+  }
+}
+
+class _SynchronouslyFailingCache extends _FakeChatLocalDataSource {
+  @override
+  Future<void> saveMessages(
+    String conversationId,
+    List<ChatMessageEntity> messages,
+  ) {
+    throw StateError('synchronous cache failure');
   }
 }
 
 class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
+  Future<void> Function()? requestHandler;
   ChatConversationEntity? teamConversationResult;
   ChatConversationEntity? directConversationResult;
   ChatTeamConversationSummaryEntity? teamSummaryResult;
@@ -105,24 +138,36 @@ class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
   @override
   Future<ChatConversationEntity> getOrCreateTeamConversation(
     String teamId,
-  ) async => teamConversationResult!;
+  ) async {
+    await requestHandler?.call();
+    return teamConversationResult!;
+  }
 
   @override
   Future<ChatConversationEntity> getOrCreateDirectConversation(
     String teamId,
     String memberUserId,
-  ) async => directConversationResult!;
+  ) async {
+    await requestHandler?.call();
+    return directConversationResult!;
+  }
 
   @override
   Future<ChatTeamConversationSummaryEntity> getTeamConversationSummary(
     String teamId,
-  ) async => teamSummaryResult!;
+  ) async {
+    await requestHandler?.call();
+    return teamSummaryResult!;
+  }
 
   @override
   Future<ChatDirectConversationSummaryEntity> getDirectConversationSummary(
     String teamId,
     String memberUserId,
-  ) async => directSummaryResult!;
+  ) async {
+    await requestHandler?.call();
+    return directSummaryResult!;
+  }
 
   @override
   Future<List<ChatMessageEntity>> getMessages(
@@ -135,6 +180,7 @@ class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
       before: before,
       limit: limit,
     ));
+    await requestHandler?.call();
     return messagesResult;
   }
 
@@ -143,7 +189,10 @@ class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
     String conversationId,
     String content, {
     String? replyToMessageId,
-  }) async => sendMessageResult!;
+  }) async {
+    await requestHandler?.call();
+    return sendMessageResult!;
+  }
 
   @override
   Future<ChatMessageEntity> sendAttachmentMessage(
@@ -153,17 +202,25 @@ class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
     required String fileName,
     required String contentType,
     String? replyToMessageId,
-  }) async => sendAttachmentMessageResult!;
+  }) async {
+    await requestHandler?.call();
+    return sendAttachmentMessageResult!;
+  }
 
   @override
   Future<ChatMessageEntity> toggleReaction(
     String messageId,
     String emoji,
-  ) async => toggleReactionResult!;
+  ) async {
+    await requestHandler?.call();
+    return toggleReactionResult!;
+  }
 
   @override
-  Future<ChatMessageEntity> deleteMessage(String messageId) async =>
-      deleteMessageResult!;
+  Future<ChatMessageEntity> deleteMessage(String messageId) async {
+    await requestHandler?.call();
+    return deleteMessageResult!;
+  }
 
   @override
   Future<void> markConversationRead(String conversationId) async {
@@ -191,7 +248,11 @@ class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
     required ChatMessageReportReason reason,
     String? comment,
   }) async {
-    reportMessageCalls.add((messageId: messageId, reason: reason, comment: comment));
+    reportMessageCalls.add((
+      messageId: messageId,
+      reason: reason,
+      comment: comment,
+    ));
   }
 }
 
@@ -260,6 +321,134 @@ void main() {
     local = _FakeChatLocalDataSource();
     remote = _FakeChatRemoteDataSource();
     repository = ChatRepositoryImpl(local, remote);
+  });
+
+  group('background cache writes', () {
+    setUp(() {
+      remote.teamConversationResult = _buildConversation();
+      remote.directConversationResult = _buildConversation(
+        type: 'DIRECT',
+        participantUserId: 'member-1',
+      );
+      remote.teamSummaryResult = const ChatTeamConversationSummaryEntity(
+        teamId: 'team-1',
+        conversationId: 'conversation-1',
+        unreadCount: 1,
+        lastMessagePreview: 'Hello',
+        lastMessageType: 'TEXT',
+        lastMessageAt: null,
+      );
+      remote.directSummaryResult = _buildDirectSummary(
+        participantUserId: 'member-1',
+      );
+      remote.messagesResult = [_buildMessage()];
+      remote.sendMessageResult = _buildMessage();
+      remote.sendAttachmentMessageResult = _buildMessage();
+      remote.toggleReactionResult = _buildMessage();
+      remote.deleteMessageResult = _buildMessage();
+    });
+
+    test(
+      'a synchronous cache failure also preserves the server result',
+      () async {
+        repository = ChatRepositoryImpl(_SynchronouslyFailingCache(), remote);
+        expect(
+          await repository.getMessages('conversation-1'),
+          same(remote.messagesResult),
+        );
+      },
+    );
+
+    final operations = <String, Future<Object?> Function()>{
+      'team conversation': () =>
+          repository.getOrCreateTeamConversation('team-1'),
+      'direct conversation': () =>
+          repository.getOrCreateDirectConversation('team-1', 'member-1'),
+      'team summary': () => repository.getTeamConversationSummary('team-1'),
+      'direct summary': () =>
+          repository.getDirectConversationSummary('team-1', 'member-1'),
+      'messages': () => repository.getMessages('conversation-1'),
+      'send text': () => repository.sendMessage('conversation-1', 'Hello'),
+      'send attachment': () => repository.sendAttachmentMessage(
+        'conversation-1',
+        bytes: [1],
+        fileName: 'test.pdf',
+        contentType: 'application/pdf',
+      ),
+      'reaction': () => repository.toggleReaction('message-1', '👍'),
+      'delete': () => repository.deleteMessage('message-1'),
+    };
+    final expected = <String, Object? Function()>{
+      'team conversation': () => remote.teamConversationResult,
+      'direct conversation': () => remote.directConversationResult,
+      'team summary': () => remote.teamSummaryResult,
+      'direct summary': () => remote.directSummaryResult,
+      'messages': () => remote.messagesResult,
+      'send text': () => remote.sendMessageResult,
+      'send attachment': () => remote.sendAttachmentMessageResult,
+      'reaction': () => remote.toggleReactionResult,
+      'delete': () => remote.deleteMessageResult,
+    };
+
+    for (final entry in operations.entries) {
+      test(
+        '${entry.key} returns the server result while cache persistence is blocked',
+        () async {
+          final disk = Completer<void>();
+          addTearDown(() {
+            if (!disk.isCompleted) disk.complete();
+          });
+          local.writeHandler = () => disk.future;
+          var completed = false;
+          final request = entry.value().then((value) {
+            completed = true;
+            return value;
+          });
+          await pumpEventQueue();
+          expect(completed, isTrue);
+          expect(disk.isCompleted, isFalse);
+          expect(local.writeCount, 1);
+          expect(await request, same(expected[entry.key]!()));
+          disk.complete();
+        },
+      );
+
+      test('${entry.key} keeps server success when persistence fails', () async {
+        local.writeHandler = () =>
+            Future<void>.error(StateError('disk failure'));
+        expect(await entry.value(), same(expected[entry.key]!()));
+        await pumpEventQueue(); // Unhandled asynchronous errors fail the test.
+        expect(local.writeCount, 1);
+      });
+
+      for (final nextScope in ['user-b', 'anonymous']) {
+        test(
+          '${entry.key} skips cache for a late response after switching to $nextScope',
+          () async {
+            final network = Completer<void>();
+            addTearDown(() {
+              if (!network.isCompleted) network.complete();
+            });
+            remote.requestHandler = () => network.future;
+            final request = entry.value();
+            local.scope = nextScope;
+            network.complete();
+            expect(await request, same(expected[entry.key]!()));
+            expect(local.writeCount, 0);
+          },
+        );
+      }
+
+      test(
+        '${entry.key} still propagates network failures and does not write cache',
+        () async {
+          remote.requestHandler = () =>
+              Future<void>.error(StateError('network failure'));
+          await expectLater(entry.value(), throwsStateError);
+          expect(local.writeCount, 0);
+        },
+      );
+    }
   });
 
   group('ChatRepositoryImpl team conversation', () {
@@ -407,29 +596,39 @@ void main() {
       },
     );
 
-    test('getMessages forwards before and limit to the remote source', () async {
-      final before = DateTime(2026, 1, 1);
+    test(
+      'getMessages forwards before and limit to the remote source',
+      () async {
+        final before = DateTime(2026, 1, 1);
 
-      await repository.getMessages('conversation-1', before: before, limit: 20);
+        await repository.getMessages(
+          'conversation-1',
+          before: before,
+          limit: 20,
+        );
 
-      expect(remote.getMessagesCalls, [
-        (conversationId: 'conversation-1', before: before, limit: 20),
-      ]);
-    });
+        expect(remote.getMessagesCalls, [
+          (conversationId: 'conversation-1', before: before, limit: 20),
+        ]);
+      },
+    );
   });
 
   group('ChatRepositoryImpl message writes', () {
-    test('sendMessage upserts the returned message under its conversation', () async {
-      final message = _buildMessage();
-      remote.sendMessageResult = message;
+    test(
+      'sendMessage upserts the returned message under its conversation',
+      () async {
+        final message = _buildMessage();
+        remote.sendMessageResult = message;
 
-      final result = await repository.sendMessage('conversation-1', 'Ciao');
+        final result = await repository.sendMessage('conversation-1', 'Ciao');
 
-      expect(result, same(message));
-      expect(local.upsertMessageCalls, [
-        (conversationId: 'conversation-1', message: message),
-      ]);
-    });
+        expect(result, same(message));
+        expect(local.upsertMessageCalls, [
+          (conversationId: 'conversation-1', message: message),
+        ]);
+      },
+    );
 
     test(
       'sendAttachmentMessage upserts the returned message under its conversation',
@@ -485,13 +684,16 @@ void main() {
       },
     );
 
-    test('markConversationRead delegates to remote without touching cache', () async {
-      await repository.markConversationRead('conversation-1');
+    test(
+      'markConversationRead delegates to remote without touching cache',
+      () async {
+        await repository.markConversationRead('conversation-1');
 
-      expect(remote.markConversationReadCalls, ['conversation-1']);
-      expect(local.upsertMessageCalls, isEmpty);
-      expect(local.savedMessagesCalls, isEmpty);
-    });
+        expect(remote.markConversationReadCalls, ['conversation-1']);
+        expect(local.upsertMessageCalls, isEmpty);
+        expect(local.savedMessagesCalls, isEmpty);
+      },
+    );
   });
 
   group('ChatRepositoryImpl moderation', () {

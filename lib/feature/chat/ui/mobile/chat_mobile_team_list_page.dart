@@ -9,14 +9,13 @@ import 'package:note_sondage/core/config/routes.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/core/utils/app_error_message_resolver.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
-import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
+import 'package:note_sondage/feature/chat/ui/controllers/chat_list_controller.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_direct_list_card.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_team_list_card.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
-import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
@@ -53,16 +52,6 @@ class ChatMobileTeamListPage extends StatefulWidget {
 }
 
 class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
-  // In-memory cache shared across instances of this State within the app
-  // session. The page is torn down and rebuilt every time the user
-  // switches away from and back to the chat tab, so without this the list
-  // would show a loading spinner on every single visit. Caching lets us
-  // paint the previous data instantly and refresh it silently in the
-  // background instead.
-  static List<TeamEntity>? _cachedTeams;
-  static Map<String, ChatTeamConversationSummaryEntity>? _cachedSummaryByTeamId;
-  static List<_DirectChatEntry>? _cachedDirectEntries;
-
   final GlobalKey _introKey = GlobalKey();
   final GlobalKey _teamChannelsKey = GlobalKey();
   final GlobalKey _directChatsKey = GlobalKey();
@@ -71,20 +60,39 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
       GetIt.instance<TeamMemberUseCase>();
   final ChatUseCase _chatUseCase = GetIt.instance<ChatUseCase>();
 
-  List<TeamEntity> _teams = _cachedTeams ?? const <TeamEntity>[];
-  Map<String, ChatTeamConversationSummaryEntity> _summaryByTeamId =
-      _cachedSummaryByTeamId ??
-      const <String, ChatTeamConversationSummaryEntity>{};
-  List<_DirectChatEntry> _directEntries =
-      _cachedDirectEntries ?? const <_DirectChatEntry>[];
-  bool _loading = _cachedTeams == null;
+  static final _sessionCache = ChatListSessionCache();
+  late final ChatListController _list;
+  StreamSubscription<User?>? _authSubscription;
+  List<TeamEntity> get _teams => _list.teams;
+  Map<String, ChatTeamConversationSummaryEntity> get _summaryByTeamId =>
+      _list.summaries;
+  List<ChatDirectListEntry> get _directEntries => _list.directEntries;
+  bool get _loading => _list.loading;
   bool _didHandleInitialTeam = false;
   bool _tutorialScheduled = false;
 
   @override
   void initState() {
     super.initState();
+    _list = ChatListController(
+      teamUseCase: _teamUseCase,
+      memberUseCase: _teamMemberUseCase,
+      chatUseCase: _chatUseCase,
+      currentUserId: () => FirebaseAuth.instance.currentUser?.uid,
+      sessionCache: _sessionCache,
+    )..addListener(_onListChanged);
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (mounted && user?.uid != _list.userId) unawaited(_loadTeams());
+    });
     unawaited(_loadTeams());
+  }
+
+  @override
+  void dispose() {
+    unawaited(_authSubscription?.cancel());
+    _list.dispose();
+    AppTutorialController.unregisterTutorial('mobile-chat-list');
+    super.dispose();
   }
 
   @override
@@ -95,26 +103,20 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
     }
   }
 
+  void _onListChanged() {
+    if (!mounted) return;
+    setState(() {});
+    if (_teams.any((team) => team.id == widget.initialTeamId?.trim())) {
+      _handleInitialTeamIfNeeded();
+    }
+  }
+
   Future<void> _loadTeams() async {
     try {
-      final teams = await _teamUseCase.getAllTeams();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _teams = teams;
-        _loading = false;
-      });
-      _cachedTeams = teams;
-      await _loadConversationData();
-      _handleInitialTeamIfNeeded();
+      await _list.load();
+      if (mounted) _handleInitialTeamIfNeeded();
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _loading = false;
-      });
+      if (!mounted) return;
       AppSnackBar.showError(
         context,
         AppErrorMessageResolver.resolve(
@@ -147,127 +149,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
     });
   }
 
-  Future<void> _loadConversationData() async {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final nextSummaries = <String, ChatTeamConversationSummaryEntity>{};
-    final nextDirectEntries = <_DirectChatEntry>[];
-    final nextTeams = <TeamEntity>[];
-
-    for (final team in _teams) {
-      final teamId = team.id;
-      if (teamId == null || teamId.isEmpty) {
-        nextTeams.add(team);
-        continue;
-      }
-
-      try {
-        final summary = await _chatUseCase.getTeamConversationSummary(teamId);
-        nextSummaries[teamId] = summary;
-      } catch (_) {
-        final cached = _chatUseCase.getCachedTeamSummary(teamId);
-        if (cached != null) {
-          nextSummaries[teamId] = cached;
-        }
-      }
-
-      List<TeamMemberEntity> members = const <TeamMemberEntity>[];
-      try {
-        members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
-      } catch (_) {
-        members = const <TeamMemberEntity>[];
-      }
-      final resolvedMembers = members
-          .where((member) => (member.userId?.trim().isNotEmpty ?? false))
-          .toList();
-
-      nextTeams.add(
-        TeamEntity(
-          team.id,
-          team.color,
-          team.pendingInvitations,
-          name: team.name,
-          description: team.description,
-          createdByUserId: team.createdByUserId,
-          clockingRequired: team.clockingRequired,
-          clockingRequiredStartDate: team.clockingRequiredStartDate,
-          clockingRequiredEndDate: team.clockingRequiredEndDate,
-          clockingReminderTime: team.clockingReminderTime,
-          clockingMissingAlertTime: team.clockingMissingAlertTime,
-          clockingOpenAlertTime: team.clockingOpenAlertTime,
-          memberCount: resolvedMembers.length,
-          createdAt: team.createdAt,
-        ),
-      );
-
-      for (final member in resolvedMembers) {
-        final memberUserId = member.userId?.trim() ?? '';
-        if (memberUserId.isEmpty || memberUserId == currentUserId) {
-          continue;
-        }
-        ChatDirectConversationSummaryEntity? summary;
-        try {
-          summary = await _chatUseCase.getDirectConversationSummary(
-            teamId,
-            memberUserId,
-          );
-        } catch (_) {
-          summary = _chatUseCase.getCachedDirectSummary(teamId, memberUserId);
-        }
-        if (summary == null ||
-            !_matchesRequestedDirectParticipant(summary, memberUserId) ||
-            !_hasExistingDirectConversation(summary)) {
-          continue;
-        }
-        nextDirectEntries.add(
-          _DirectChatEntry(team: team, member: member, summary: summary),
-        );
-      }
-    }
-
-    nextDirectEntries.sort((left, right) {
-      final rightTime =
-          right.summary?.lastMessageAt ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-      final leftTime =
-          left.summary?.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final dateComparison = rightTime.compareTo(leftTime);
-      if (dateComparison != 0) {
-        return dateComparison;
-      }
-      return left.displayName.toLowerCase().compareTo(
-        right.displayName.toLowerCase(),
-      );
-    });
-
-    // Most recently active team first, like the direct-chat list above —
-    // ties (no messages yet on either side) fall back to name so the order
-    // stays stable instead of flapping between refreshes.
-    nextTeams.sort((left, right) {
-      final rightTime =
-          nextSummaries[right.id]?.lastMessageAt ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-      final leftTime =
-          nextSummaries[left.id]?.lastMessageAt ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-      final dateComparison = rightTime.compareTo(leftTime);
-      if (dateComparison != 0) {
-        return dateComparison;
-      }
-      return left.name.toLowerCase().compareTo(right.name.toLowerCase());
-    });
-
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _teams = nextTeams;
-      _summaryByTeamId = nextSummaries;
-      _directEntries = nextDirectEntries;
-    });
-    _cachedTeams = nextTeams;
-    _cachedSummaryByTeamId = nextSummaries;
-    _cachedDirectEntries = nextDirectEntries;
-  }
+  Future<void> _loadConversationData() => _list.refreshDetails();
 
   Future<void> _openTeamConversation(String teamId) async {
     final path = Uri(
@@ -281,7 +163,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
     await _loadConversationData();
   }
 
-  Future<void> _openDirectConversation(_DirectChatEntry entry) async {
+  Future<void> _openDirectConversation(ChatDirectListEntry entry) async {
     final teamId = entry.team.id;
     final memberUserId = entry.member.userId?.trim();
     if (teamId == null ||
@@ -306,33 +188,8 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
   }
 
   void _handleTeamDeleted(String teamId) {
-    final normalizedTeamId = teamId.trim();
-    if (normalizedTeamId.isEmpty) {
-      return;
-    }
-    final nextTeams = _teams
-        .where((team) => team.id?.trim() != normalizedTeamId)
-        .toList();
-    final nextDirectEntries = _directEntries
-        .where((entry) => entry.team.id?.trim() != normalizedTeamId)
-        .toList();
-    final hadSummary = _summaryByTeamId.containsKey(normalizedTeamId);
-    if (nextTeams.length == _teams.length &&
-        nextDirectEntries.length == _directEntries.length &&
-        !hadSummary) {
-      return;
-    }
-    final nextSummaries = Map<String, ChatTeamConversationSummaryEntity>.from(
-      _summaryByTeamId,
-    )..remove(normalizedTeamId);
-    setState(() {
-      _teams = nextTeams;
-      _summaryByTeamId = nextSummaries;
-      _directEntries = nextDirectEntries;
-    });
-    _cachedTeams = nextTeams;
-    _cachedSummaryByTeamId = nextSummaries;
-    _cachedDirectEntries = nextDirectEntries;
+    final id = teamId.trim();
+    if (id.isNotEmpty) _list.removeTeam(id);
   }
 
   @override
@@ -434,6 +291,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
                     for (final team in _teams) ...[
                       if (team.id != null)
                         Padding(
+                          key: ValueKey(team.id),
                           padding: const EdgeInsets.only(bottom: 12),
                           child: ChatTeamListCard(
                             team: team,
@@ -468,16 +326,20 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
                       ),
                     for (final entry in _directEntries)
                       Padding(
+                        key: ValueKey((
+                          entry.team.id,
+                          entry.member.userId?.trim(),
+                        )),
                         padding: const EdgeInsets.only(bottom: 12),
                         child: ChatDirectListCard(
                           compact: true,
                           title: entry.displayName,
                           teamName: entry.team.name,
-                          preview: entry.summary?.lastMessagePreview,
+                          preview: entry.summary.lastMessagePreview,
                           avatarUrl:
-                              entry.summary?.participantAvatarUrl ??
+                              entry.summary.participantAvatarUrl ??
                               entry.member.imageUrl,
-                          unreadCount: entry.summary?.unreadCount ?? 0,
+                          unreadCount: entry.summary.unreadCount,
                           accentColor: ChatThemeTokens.resolveTeamAccentColor(
                             entry.team.color,
                             theme.colorScheme.primary,
@@ -564,20 +426,6 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
   }
 }
 
-bool _hasExistingDirectConversation(
-  ChatDirectConversationSummaryEntity summary,
-) {
-  final conversationId = summary.conversationId?.trim() ?? '';
-  return conversationId.isNotEmpty;
-}
-
-bool _matchesRequestedDirectParticipant(
-  ChatDirectConversationSummaryEntity summary,
-  String memberUserId,
-) {
-  return summary.participantUserId.trim() == memberUserId.trim();
-}
-
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.title});
 
@@ -595,29 +443,5 @@ class _SectionLabel extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _DirectChatEntry {
-  const _DirectChatEntry({
-    required this.team,
-    required this.member,
-    required this.summary,
-  });
-
-  final TeamEntity team;
-  final TeamMemberEntity member;
-  final ChatDirectConversationSummaryEntity? summary;
-
-  String get displayName {
-    final name = summary?.participantDisplayName.trim() ?? '';
-    if (name.isNotEmpty) {
-      return name;
-    }
-    final initialName = member.initialName?.trim() ?? '';
-    if (initialName.isNotEmpty) {
-      return initialName;
-    }
-    return member.userEmail;
   }
 }

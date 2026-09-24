@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
@@ -49,8 +52,9 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<ChatConversationEntity> getOrCreateTeamConversation(
     String teamId,
   ) async {
+    final scope = local.cacheScope;
     final conversation = await remote.getOrCreateTeamConversation(teamId);
-    await local.saveConversation(conversation);
+    _cacheInBackground(scope, () => local.saveConversation(conversation));
     return conversation;
   }
 
@@ -59,11 +63,12 @@ class ChatRepositoryImpl implements ChatRepository {
     String teamId,
     String memberUserId,
   ) async {
+    final scope = local.cacheScope;
     final conversation = _requireMatchingDirectConversation(
       await remote.getOrCreateDirectConversation(teamId, memberUserId),
       memberUserId,
     );
-    await local.saveConversation(conversation);
+    _cacheInBackground(scope, () => local.saveConversation(conversation));
     return conversation;
   }
 
@@ -71,8 +76,9 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<ChatTeamConversationSummaryEntity> getTeamConversationSummary(
     String teamId,
   ) async {
+    final scope = local.cacheScope;
     final summary = await remote.getTeamConversationSummary(teamId);
-    await local.saveSummary(summary);
+    _cacheInBackground(scope, () => local.saveSummary(summary));
     return summary;
   }
 
@@ -81,11 +87,12 @@ class ChatRepositoryImpl implements ChatRepository {
     String teamId,
     String memberUserId,
   ) async {
+    final scope = local.cacheScope;
     final summary = _requireMatchingDirectSummary(
       await remote.getDirectConversationSummary(teamId, memberUserId),
       memberUserId,
     );
-    await local.saveDirectSummary(summary);
+    _cacheInBackground(scope, () => local.saveDirectSummary(summary));
     return summary;
   }
 
@@ -95,13 +102,17 @@ class ChatRepositoryImpl implements ChatRepository {
     DateTime? before,
     int limit = 50,
   }) async {
+    final scope = local.cacheScope;
     final messages = await remote.getMessages(
       conversationId,
       before: before,
       limit: limit,
     );
     if (before == null) {
-      await local.saveMessages(conversationId, messages);
+      _cacheInBackground(
+        scope,
+        () => local.saveMessages(conversationId, messages),
+      );
     }
     return messages;
   }
@@ -112,12 +123,16 @@ class ChatRepositoryImpl implements ChatRepository {
     String content, {
     String? replyToMessageId,
   }) async {
+    final scope = local.cacheScope;
     final message = await remote.sendMessage(
       conversationId,
       content,
       replyToMessageId: replyToMessageId,
     );
-    await local.upsertMessage(conversationId, message);
+    _cacheInBackground(
+      scope,
+      () => local.upsertMessage(conversationId, message),
+    );
     return message;
   }
 
@@ -130,6 +145,7 @@ class ChatRepositoryImpl implements ChatRepository {
     required String contentType,
     String? replyToMessageId,
   }) async {
+    final scope = local.cacheScope;
     final message = await remote.sendAttachmentMessage(
       conversationId,
       content: content,
@@ -138,7 +154,10 @@ class ChatRepositoryImpl implements ChatRepository {
       contentType: contentType,
       replyToMessageId: replyToMessageId,
     );
-    await local.upsertMessage(conversationId, message);
+    _cacheInBackground(
+      scope,
+      () => local.upsertMessage(conversationId, message),
+    );
     return message;
   }
 
@@ -147,15 +166,23 @@ class ChatRepositoryImpl implements ChatRepository {
     String messageId,
     String emoji,
   ) async {
+    final scope = local.cacheScope;
     final message = await remote.toggleReaction(messageId, emoji);
-    await local.upsertMessage(message.conversationId, message);
+    _cacheInBackground(
+      scope,
+      () => local.upsertMessage(message.conversationId, message),
+    );
     return message;
   }
 
   @override
   Future<ChatMessageEntity> deleteMessage(String messageId) async {
+    final scope = local.cacheScope;
     final message = await remote.deleteMessage(messageId);
-    await local.upsertMessage(message.conversationId, message);
+    _cacheInBackground(
+      scope,
+      () => local.upsertMessage(message.conversationId, message),
+    );
     return message;
   }
 
@@ -186,6 +213,27 @@ class ChatRepositoryImpl implements ChatRepository {
     String? comment,
   }) {
     return remote.reportMessage(messageId, reason: reason, comment: comment);
+  }
+
+  void _cacheInBackground(String scope, Future<void> Function() write) {
+    // A response started by another account must never enter the current cache.
+    if (local.cacheScope != scope) {
+      return;
+    }
+    try {
+      // The datasource updates memory synchronously before its first await.
+      unawaited(
+        write().then<void>(
+          (_) {},
+          onError: (Object error, StackTrace stackTrace) {
+            debugPrint('Chat cache write failed: ${error.runtimeType}');
+          },
+        ),
+      );
+    } catch (error) {
+      // Cache failure must not turn a successful server send into a retry/duplicate.
+      debugPrint('Chat cache write failed: ${error.runtimeType}');
+    }
   }
 
   ChatConversationEntity _requireMatchingDirectConversation(

@@ -55,9 +55,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       transformer: (events, mapper) => events.asyncExpand(mapper),
     );
     on<ChatConversationRequested>(_onConversationRequested);
-    on<ChatMessagesRefreshRequested>(
-      (event, emit) => _refreshMessages(emit),
-    );
+    on<ChatMessagesRefreshRequested>((event, emit) => _refreshMessages(emit));
     // `sequential`: the same in-flight-guard race explained above for
     // ChatTeamAccessContextRequested applies here too — rapid duplicate
     // dispatches (e.g. several scroll callbacks in one gesture) must not
@@ -91,6 +89,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   static const int _initialMessagesLimit = 100;
   static const int _olderMessagesBatchSize = 70;
+  int _conversationGeneration = 0;
 
   final TeamUseCase teamUseCase;
   final TeamMemberUseCase teamMemberUseCase;
@@ -210,6 +209,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ChatConversationRequested event,
     Emitter<ChatState> emit,
   ) async {
+    final generation = ++_conversationGeneration;
     // Fire-and-forget, exactly like the widget method this replaces.
     add(ChatTeamAccessContextRequested(event.teamId));
 
@@ -248,16 +248,31 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     );
 
     try {
+      // Capture failures immediately: the conversation request can fail or
+      // resolve to a different ID before this speculative request is awaited.
+      final cachedId = _cachedConversationId(
+        cachedConversation,
+        event.teamId,
+        memberUserId,
+      );
+      final prefetchedMessages = cachedId == null
+          ? null
+          : _loadInitialMessages(cachedId);
       final conversation = isDirect
           ? await chatUseCase.getOrCreateDirectConversation(
               event.teamId,
               memberUserId,
             )
           : await chatUseCase.getOrCreateTeamConversation(event.teamId);
-      final messages = await chatUseCase.getMessages(
-        conversation.id,
-        limit: _initialMessagesLimit,
-      );
+      if (emit.isDone || generation != _conversationGeneration) return;
+      final result = prefetchedMessages != null && conversation.id == cachedId
+          ? await prefetchedMessages
+          : await _loadInitialMessages(conversation.id);
+      if (emit.isDone || generation != _conversationGeneration) return;
+      if (result.error != null) {
+        Error.throwWithStackTrace(result.error!, result.stack!);
+      }
+      final messages = result.messages!;
       emit(
         state.copyWith(
           conversation: conversation,
@@ -271,6 +286,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         ),
       );
     } catch (error) {
+      if (emit.isDone || generation != _conversationGeneration) return;
       emit(
         state.copyWith(
           loadingMessages: false,
@@ -278,12 +294,54 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           transient: ChatErrorOccurred(
             AppErrorMessageResolver.resolve(
               error,
-              fallback: 'We could not load this conversation. Please try again.',
+              fallback:
+                  'We could not load this conversation. Please try again.',
             ),
           ),
         ),
       );
     }
+  }
+
+  Future<
+    ({List<ChatMessageEntity>? messages, Object? error, StackTrace? stack})
+  >
+  _loadInitialMessages(String conversationId) async {
+    try {
+      final messages = await chatUseCase.getMessages(
+        conversationId,
+        limit: _initialMessagesLimit,
+      );
+      return (messages: messages, error: null, stack: null);
+    } catch (error, stack) {
+      return (messages: null, error: error, stack: stack);
+    }
+  }
+
+  String? _cachedConversationId(
+    ChatConversationEntity? conversation,
+    String teamId,
+    String? memberUserId,
+  ) {
+    String? id = conversation?.id;
+    if (id == null || id.trim().isEmpty) {
+      // List summaries already contain an ID even for a chat never opened in
+      // this session. Avoid waiting for metadata before fetching its messages.
+      if (memberUserId != null && memberUserId.isNotEmpty) {
+        final summary = chatUseCase.getCachedDirectSummary(
+          teamId,
+          memberUserId,
+        );
+        if (summary?.teamId == teamId &&
+            summary?.participantUserId.trim() == memberUserId) {
+          id = summary?.conversationId;
+        }
+      } else {
+        final summary = chatUseCase.getCachedTeamSummary(teamId);
+        if (summary?.teamId == teamId) id = summary?.conversationId;
+      }
+    }
+    return id != null && id.trim().isNotEmpty ? id : null;
   }
 
   String? _teamName(String teamId) {
@@ -410,8 +468,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             ...state.messages,
           ],
           loadingOlderMessages: false,
-          hasMoreOlderMessages:
-              olderMessages.length >= _olderMessagesBatchSize,
+          hasMoreOlderMessages: olderMessages.length >= _olderMessagesBatchSize,
           transient: ChatOlderMessagesLoaded(),
         ),
       );
@@ -495,7 +552,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             ),
             content: event.content,
             attachment: event.attachment,
-            replyTarget: _restoredReplyTarget(temporaryMessage, conversation.id),
+            replyTarget: _restoredReplyTarget(
+              temporaryMessage,
+              conversation.id,
+            ),
           ),
         ),
       );
@@ -946,21 +1006,22 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       return;
     }
     try {
-      final result = await suggestionService.detectWorkflowSuggestionFromMessage(
-        conversationId: conversation.id,
-        messageId: event.message.id,
-        teamId: teamId,
-        locale: event.locale,
-        allowedActionTypes: const <ChatMessageActionType>[
-          ChatMessageActionType.createTask,
-          ChatMessageActionType.createEvent,
-          ChatMessageActionType.createSondage,
-          ChatMessageActionType.createShift,
-        ],
-        selectedMessageText: event.message.contentText,
-        memberUserId: state.selectedMemberUserId,
-        memberDisplayName: state.conversationDisplayName,
-      );
+      final result = await suggestionService
+          .detectWorkflowSuggestionFromMessage(
+            conversationId: conversation.id,
+            messageId: event.message.id,
+            teamId: teamId,
+            locale: event.locale,
+            allowedActionTypes: const <ChatMessageActionType>[
+              ChatMessageActionType.createTask,
+              ChatMessageActionType.createEvent,
+              ChatMessageActionType.createSondage,
+              ChatMessageActionType.createShift,
+            ],
+            selectedMessageText: event.message.contentText,
+            memberUserId: state.selectedMemberUserId,
+            memberDisplayName: state.conversationDisplayName,
+          );
       emit(state.copyWith(transient: ChatWorkflowSuggestionsReady(result)));
     } catch (error) {
       emit(
@@ -991,9 +1052,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // must have opted in — unlike the explicit "detect suggestions" menu
     // action, this fires automatically per rendered message with no prior
     // gating, so the checks live here instead of only at menu-build time.
-    final selectedTeam = state.teams
-        .cast<TeamEntity?>()
-        .firstWhere((team) => team?.id == teamId, orElse: () => null);
+    final selectedTeam = state.teams.cast<TeamEntity?>().firstWhere(
+      (team) => team?.id == teamId,
+      orElse: () => null,
+    );
     if (!RuntimeConfig.enableWorkflowActions ||
         !state.workflowAiAppEnabled ||
         selectedTeam == null ||
@@ -1015,21 +1077,22 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     );
 
     try {
-      final result = await suggestionService.detectWorkflowSuggestionFromMessage(
-        conversationId: conversation.id,
-        messageId: messageId,
-        teamId: teamId,
-        locale: event.locale,
-        allowedActionTypes: const <ChatMessageActionType>[
-          ChatMessageActionType.createTask,
-          ChatMessageActionType.createEvent,
-          ChatMessageActionType.createSondage,
-          ChatMessageActionType.createShift,
-        ],
-        selectedMessageText: event.message.contentText,
-        memberUserId: state.selectedMemberUserId,
-        memberDisplayName: state.conversationDisplayName,
-      );
+      final result = await suggestionService
+          .detectWorkflowSuggestionFromMessage(
+            conversationId: conversation.id,
+            messageId: messageId,
+            teamId: teamId,
+            locale: event.locale,
+            allowedActionTypes: const <ChatMessageActionType>[
+              ChatMessageActionType.createTask,
+              ChatMessageActionType.createEvent,
+              ChatMessageActionType.createSondage,
+              ChatMessageActionType.createShift,
+            ],
+            selectedMessageText: event.message.contentText,
+            memberUserId: state.selectedMemberUserId,
+            memberDisplayName: state.conversationDisplayName,
+          );
       emit(
         state.copyWith(
           workflowSuggestionsByMessageId: {

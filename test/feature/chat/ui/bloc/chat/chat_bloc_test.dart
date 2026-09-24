@@ -201,6 +201,8 @@ class _FakeRoleRepository implements RoleRepository {
 }
 
 class _FakeChatRepository implements ChatRepository {
+  ChatTeamConversationSummaryEntity? cachedTeamSummary;
+  ChatDirectConversationSummaryEntity? cachedDirectSummary;
   ChatConversationEntity? cachedTeamConversation;
   ChatConversationEntity? cachedDirectConversation;
   List<ChatMessageEntity> cachedMessages = const <ChatMessageEntity>[];
@@ -211,7 +213,10 @@ class _FakeChatRepository implements ChatRepository {
   getOrCreateDirectConversationHandler;
   Future<List<ChatMessageEntity>> Function({DateTime? before, int limit})?
   getMessagesHandler;
-  Future<ChatMessageEntity> Function(String content, {String? replyToMessageId})?
+  Future<ChatMessageEntity> Function(
+    String content, {
+    String? replyToMessageId,
+  })?
   sendMessageHandler;
   Future<ChatMessageEntity> Function({
     String? content,
@@ -257,9 +262,8 @@ class _FakeChatRepository implements ChatRepository {
       cachedMessages;
 
   @override
-  Future<ChatConversationEntity> getOrCreateTeamConversation(
-    String teamId,
-  ) => getOrCreateTeamConversationHandler!(teamId);
+  Future<ChatConversationEntity> getOrCreateTeamConversation(String teamId) =>
+      getOrCreateTeamConversationHandler!(teamId);
 
   @override
   Future<ChatConversationEntity> getOrCreateDirectConversation(
@@ -319,13 +323,13 @@ class _FakeChatRepository implements ChatRepository {
 
   @override
   ChatTeamConversationSummaryEntity? getCachedTeamSummary(String teamId) =>
-      throw UnimplementedError();
+      cachedTeamSummary;
 
   @override
   ChatDirectConversationSummaryEntity? getCachedDirectSummary(
     String teamId,
     String memberUserId,
-  ) => throw UnimplementedError();
+  ) => cachedDirectSummary;
 
   @override
   Future<ChatTeamConversationSummaryEntity> getTeamConversationSummary(
@@ -360,14 +364,23 @@ class _FakeChatRepository implements ChatRepository {
     required ChatMessageReportReason reason,
     String? comment,
   }) {
-    reportMessageCalls.add((messageId: messageId, reason: reason, comment: comment));
-    return reportMessageHandler?.call(messageId, reason: reason, comment: comment) ??
+    reportMessageCalls.add((
+      messageId: messageId,
+      reason: reason,
+      comment: comment,
+    ));
+    return reportMessageHandler?.call(
+          messageId,
+          reason: reason,
+          comment: comment,
+        ) ??
         Future<void>.value();
   }
 }
 
 class _FakeChatMessageActionRepository implements ChatMessageActionRepository {
-  final resultByActionType = <ChatMessageActionType, ChatMessageActionDraftResult>{};
+  final resultByActionType =
+      <ChatMessageActionType, ChatMessageActionDraftResult>{};
   final errorByActionType = <ChatMessageActionType, Object>{};
   final buildDraftCalls = <ChatMessageActionType>[];
 
@@ -731,68 +744,62 @@ void main() {
       },
     );
 
-    test(
-      'ChatTeamsRequested honors an explicit preferredTeamId over the '
-      'current selection',
-      () async {
-        final teams = [buildTeam(), buildTeam(id: 'team-2', name: 'Design')];
-        teamRepository.getAllHandler = () async => teams;
+    test('ChatTeamsRequested honors an explicit preferredTeamId over the '
+        'current selection', () async {
+      final teams = [buildTeam(), buildTeam(id: 'team-2', name: 'Design')];
+      teamRepository.getAllHandler = () async => teams;
 
-        final emittedStates = <ChatState>[];
-        final subscription = bloc.stream.listen(emittedStates.add);
+      final emittedStates = <ChatState>[];
+      final subscription = bloc.stream.listen(emittedStates.add);
 
-        bloc.add(const ChatTeamsRequested(preferredTeamId: 'team-2'));
-        await pumpEventQueue();
+      bloc.add(const ChatTeamsRequested(preferredTeamId: 'team-2'));
+      await pumpEventQueue();
 
-        expect(emittedStates.last.selectedTeamId, 'team-2');
+      expect(emittedStates.last.selectedTeamId, 'team-2');
 
-        await subscription.cancel();
-      },
-    );
+      await subscription.cancel();
+    });
 
-    test(
-      'ChatTeamsRequested keeps the current selection when it is still '
-      'valid and nothing is explicitly preferred',
-      () async {
-        teamRepository.getAllHandler = () async => [
-          buildTeam(),
-          buildTeam(id: 'team-2', name: 'Design'),
-        ];
-        bloc.add(const ChatTeamsRequested(preferredTeamId: 'team-2'));
-        await pumpEventQueue();
-        expect(bloc.state.selectedTeamId, 'team-2');
-
-        bloc.add(const ChatTeamsRequested());
-        await pumpEventQueue();
-
-        expect(bloc.state.selectedTeamId, 'team-2');
-      },
-    );
-
-    test('ChatTeamsRequested clears the selection when there are no teams', () async {
-      teamRepository.getAllHandler = () async => const <TeamEntity>[];
+    test('ChatTeamsRequested keeps the current selection when it is still '
+        'valid and nothing is explicitly preferred', () async {
+      teamRepository.getAllHandler = () async => [
+        buildTeam(),
+        buildTeam(id: 'team-2', name: 'Design'),
+      ];
+      bloc.add(const ChatTeamsRequested(preferredTeamId: 'team-2'));
+      await pumpEventQueue();
+      expect(bloc.state.selectedTeamId, 'team-2');
 
       bloc.add(const ChatTeamsRequested());
       await pumpEventQueue();
 
-      expect(bloc.state.teams, isEmpty);
-      expect(bloc.state.selectedTeamId, isNull);
+      expect(bloc.state.selectedTeamId, 'team-2');
     });
 
     test(
-      'ChatTeamsRequested surfaces a transient error and stops loading on '
-      'failure',
+      'ChatTeamsRequested clears the selection when there are no teams',
       () async {
-        teamRepository.getAllHandler = () =>
-            Future<List<TeamEntity>>.error(Exception('backend down'));
+        teamRepository.getAllHandler = () async => const <TeamEntity>[];
 
         bloc.add(const ChatTeamsRequested());
         await pumpEventQueue();
 
-        expect(bloc.state.loadingTeams, isFalse);
-        expect(bloc.state.transient, isA<ChatErrorOccurred>());
+        expect(bloc.state.teams, isEmpty);
+        expect(bloc.state.selectedTeamId, isNull);
       },
     );
+
+    test('ChatTeamsRequested surfaces a transient error and stops loading on '
+        'failure', () async {
+      teamRepository.getAllHandler = () =>
+          Future<List<TeamEntity>>.error(Exception('backend down'));
+
+      bloc.add(const ChatTeamsRequested());
+      await pumpEventQueue();
+
+      expect(bloc.state.loadingTeams, isFalse);
+      expect(bloc.state.transient, isA<ChatErrorOccurred>());
+    });
   });
 
   group('ChatBloc team access context', () {
@@ -809,7 +816,12 @@ void main() {
           ),
         ];
         roleRepository.rolesByTeamId['team-1'] = [
-          RoleEntity('role-1', teamId: 'team-1', name: 'Admin', permissions: const []),
+          RoleEntity(
+            'role-1',
+            teamId: 'team-1',
+            name: 'Admin',
+            permissions: const [],
+          ),
         ];
 
         bloc.add(const ChatTeamAccessContextRequested('team-1'));
@@ -868,30 +880,27 @@ void main() {
       },
     );
 
-    test(
-      'ChatTeamAccessContextRequested silently swallows errors without '
-      'crashing the bloc',
-      () async {
-        teamMemberRepository.errorForTeamId['team-1'] = Exception('boom');
-        roleRepository.errorForTeamId['team-1'] = Exception('boom');
+    test('ChatTeamAccessContextRequested silently swallows errors without '
+        'crashing the bloc', () async {
+      teamMemberRepository.errorForTeamId['team-1'] = Exception('boom');
+      roleRepository.errorForTeamId['team-1'] = Exception('boom');
 
-        bloc.add(const ChatTeamAccessContextRequested('team-1'));
-        await pumpEventQueue();
+      bloc.add(const ChatTeamAccessContextRequested('team-1'));
+      await pumpEventQueue();
 
-        expect(bloc.state.teamMembersByTeamId.containsKey('team-1'), isFalse);
-        expect(bloc.state.rolesByTeamId.containsKey('team-1'), isFalse);
-        // Ready still fires on failure — a caller awaiting it must not hang
-        // forever just because the fetch didn't succeed.
-        expect(
-          bloc.state.transient,
-          isA<ChatTeamAccessContextReady>().having(
-            (t) => t.teamId,
-            'teamId',
-            'team-1',
-          ),
-        );
-      },
-    );
+      expect(bloc.state.teamMembersByTeamId.containsKey('team-1'), isFalse);
+      expect(bloc.state.rolesByTeamId.containsKey('team-1'), isFalse);
+      // Ready still fires on failure — a caller awaiting it must not hang
+      // forever just because the fetch didn't succeed.
+      expect(
+        bloc.state.transient,
+        isA<ChatTeamAccessContextReady>().having(
+          (t) => t.teamId,
+          'teamId',
+          'team-1',
+        ),
+      );
+    });
 
     test('ChatTeamAccessContextRequested ignores a blank team id', () async {
       bloc.add(const ChatTeamAccessContextRequested('  '));
@@ -903,91 +912,404 @@ void main() {
   });
 
   group('ChatBloc conversation', () {
+    for (final direct in [false, true]) {
+      test(
+        'prefetches a first-open ${direct ? 'direct' : 'team'} chat using only its cached list summary',
+        () async {
+          chatRepository.cachedTeamSummary =
+              const ChatTeamConversationSummaryEntity(
+                teamId: 'team-1',
+                conversationId: 'conversation-1',
+                unreadCount: 0,
+                lastMessagePreview: 'Preview',
+                lastMessageType: 'TEXT',
+                lastMessageAt: null,
+              );
+          chatRepository.cachedDirectSummary =
+              const ChatDirectConversationSummaryEntity(
+                teamId: 'team-1',
+                participantUserId: 'member-1',
+                participantDisplayName: 'Anna',
+                participantAvatarUrl: null,
+                conversationId: 'conversation-1',
+                unreadCount: 0,
+                lastMessagePreview: 'Preview',
+                lastMessageType: 'TEXT',
+              );
+          final conversation = Completer<ChatConversationEntity>();
+          chatRepository.getOrCreateTeamConversationHandler = (_) =>
+              conversation.future;
+          chatRepository.getOrCreateDirectConversationHandler = (_, _) =>
+              conversation.future;
+          chatRepository.getMessagesHandler = ({before, limit = 50}) async => [
+            _buildMessage(id: 'fresh'),
+          ];
+          bloc.add(
+            ChatConversationRequested(
+              'team-1',
+              memberUserId: direct ? 'member-1' : null,
+            ),
+          );
+          await pumpEventQueue();
+          expect(chatRepository.getMessagesCalls, hasLength(1));
+          expect(bloc.state.conversation, isNull);
+          expect(bloc.state.loadingMessages, isTrue);
+          conversation.complete(
+            _buildConversation(
+              type: direct ? 'DIRECT' : 'TEAM',
+              participantUserId: direct ? 'member-1' : null,
+            ),
+          );
+          await pumpEventQueue();
+          expect(chatRepository.getMessagesCalls, hasLength(1));
+          expect(bloc.state.messages.single.id, 'fresh');
+        },
+      );
+    }
+
     test(
-      'ChatConversationRequested renders the cache first, then reconciles '
-      'with the server',
+      'does not prefetch a direct summary belonging to another participant',
       () async {
-        final cached = _buildConversation(lastMessageAt: DateTime(2026, 1, 1));
-        final cachedMessages = [_buildMessage(id: 'cached-1')];
-        chatRepository.cachedTeamConversation = cached;
-        chatRepository.cachedMessages = cachedMessages;
-        final fresh = _buildConversation();
-        final freshMessages = [_buildMessage(id: 'fresh-1')];
-        chatRepository.getOrCreateTeamConversationHandler =
-            (_) async => fresh;
-        chatRepository.getMessagesHandler =
-            ({before, limit = 50}) async => freshMessages;
-
-        final emittedStates = <ChatState>[];
-        final subscription = bloc.stream.listen(emittedStates.add);
-
-        bloc.add(const ChatConversationRequested('team-1'));
-        await pumpEventQueue();
-
-        expect(emittedStates.first.messages, cachedMessages);
-        expect(emittedStates.first.transient, isA<ChatConversationOpened>());
-        expect(emittedStates.last.messages, freshMessages);
-        expect(emittedStates.last.loadingMessages, isFalse);
-        expect(emittedStates.last.transient, isA<ChatConversationOpened>());
-
-        await subscription.cancel();
-      },
-    );
-
-    test(
-      'ChatConversationRequested shows a loading state when nothing is '
-      'cached',
-      () async {
-        chatRepository.getOrCreateTeamConversationHandler =
-            (_) async => _buildConversation();
-        chatRepository.getMessagesHandler =
-            ({before, limit = 50}) async => const <ChatMessageEntity>[];
-
-        final emittedStates = <ChatState>[];
-        final subscription = bloc.stream.listen(emittedStates.add);
-
-        bloc.add(const ChatConversationRequested('team-1'));
-        await pumpEventQueue();
-
-        expect(emittedStates.first.loadingMessages, isTrue);
-        expect(emittedStates.first.refreshingMessages, isFalse);
-        // Fires even on a cold, nothing-cached open: lets the widget clear a
-        // *previous* conversation's messages from view right away.
-        expect(emittedStates.first.transient, isA<ChatConversationOpened>());
-        await subscription.cancel();
-      },
-    );
-
-    test(
-      'ChatConversationRequested with a memberUserId opens the direct '
-      'conversation',
-      () async {
-        chatRepository.getOrCreateDirectConversationHandler =
-            (_, _) async => _buildConversation(
-              type: 'DIRECT',
-              participantUserId: 'member-1',
-              participantDisplayName: 'Anna',
+        chatRepository.cachedDirectSummary =
+            const ChatDirectConversationSummaryEntity(
+              teamId: 'team-1',
+              participantUserId: 'wrong-user',
+              participantDisplayName: 'Wrong',
+              participantAvatarUrl: null,
+              conversationId: 'wrong-chat',
+              unreadCount: 0,
+              lastMessagePreview: '',
+              lastMessageType: 'TEXT',
             );
-        chatRepository.getMessagesHandler =
-            ({before, limit = 50}) async => const <ChatMessageEntity>[];
-
+        final conversation = Completer<ChatConversationEntity>();
+        chatRepository.getOrCreateDirectConversationHandler = (_, _) =>
+            conversation.future;
+        chatRepository.getMessagesHandler = ({before, limit = 50}) async => [];
         bloc.add(
           const ChatConversationRequested('team-1', memberUserId: 'member-1'),
         );
         await pumpEventQueue();
+        expect(chatRepository.getMessagesCalls, isEmpty);
+        conversation.complete(
+          _buildConversation(type: 'DIRECT', participantUserId: 'member-1'),
+        );
+        await pumpEventQueue();
+        expect(
+          chatRepository.getMessagesCalls.single.conversationId,
+          'conversation-1',
+        );
+      },
+    );
 
-        expect(bloc.state.selectedMemberUserId, 'member-1');
-        expect(bloc.state.conversationDisplayName, 'Anna');
+    for (final direct in [false, true]) {
+      test(
+        'cached ${direct ? 'direct' : 'team'} chat is usable while both server calls are pending',
+        () async {
+          final cached = _buildConversation(
+            type: direct ? 'DIRECT' : 'TEAM',
+            participantUserId: direct ? 'member-1' : null,
+            lastMessageAt: DateTime(2026, 1, 1),
+          );
+          if (direct) {
+            chatRepository.cachedDirectConversation = cached;
+          } else {
+            chatRepository.cachedTeamConversation = cached;
+          }
+          final cachedMessages = [_buildMessage(id: 'cached')];
+          chatRepository.cachedMessages = cachedMessages;
+          final conversationResponse = Completer<ChatConversationEntity>();
+          final messagesResponse = Completer<List<ChatMessageEntity>>();
+          addTearDown(() {
+            if (!conversationResponse.isCompleted) {
+              conversationResponse.complete(cached);
+            }
+            if (!messagesResponse.isCompleted) {
+              messagesResponse.complete([]);
+            }
+          });
+          chatRepository.getOrCreateTeamConversationHandler = (_) =>
+              conversationResponse.future;
+          chatRepository.getOrCreateDirectConversationHandler = (_, _) =>
+              conversationResponse.future;
+          chatRepository.getMessagesHandler = ({before, limit = 50}) =>
+              messagesResponse.future;
+
+          bloc.add(
+            ChatConversationRequested(
+              'team-1',
+              memberUserId: direct ? 'member-1' : null,
+            ),
+          );
+          await pumpEventQueue();
+          expect(conversationResponse.isCompleted, isFalse);
+          expect(chatRepository.getMessagesCalls, hasLength(1));
+          expect(
+            chatRepository.getMessagesCalls.single.conversationId,
+            cached.id,
+          );
+          expect(chatRepository.getMessagesCalls.single.limit, 100);
+          expect(bloc.state.messages, cachedMessages);
+          expect(bloc.state.loadingMessages, isFalse);
+          expect(bloc.state.refreshingMessages, isTrue);
+
+          conversationResponse.complete(cached);
+          await pumpEventQueue();
+          expect(messagesResponse.isCompleted, isFalse);
+          expect(bloc.state.messages, cachedMessages);
+          expect(bloc.state.refreshingMessages, isTrue);
+
+          final fresh = [_buildMessage(id: 'fresh')];
+          messagesResponse.complete(fresh);
+          await pumpEventQueue();
+          expect(bloc.state.messages, fresh);
+          expect(bloc.state.loadingMessages, isFalse);
+          expect(bloc.state.refreshingMessages, isFalse);
+        },
+      );
+    }
+
+    test(
+      'without a cached ID messages still wait for the conversation',
+      () async {
+        final response = Completer<ChatConversationEntity>();
+        chatRepository.getOrCreateTeamConversationHandler = (_) =>
+            response.future;
+        chatRepository.getMessagesHandler = ({before, limit = 50}) async => [];
+        bloc.add(const ChatConversationRequested('team-1'));
+        await pumpEventQueue();
+        expect(chatRepository.getMessagesCalls, isEmpty);
+        response.complete(_buildConversation());
+        await pumpEventQueue();
+        expect(chatRepository.getMessagesCalls, hasLength(1));
       },
     );
 
     test(
+      'a changed server ID ignores the old prefetch and fetches the new conversation',
+      () async {
+        chatRepository.cachedTeamConversation = _buildConversation(id: 'old');
+        final oldMessages = Completer<List<ChatMessageEntity>>();
+        final fresh = _buildMessage(id: 'fresh', conversationId: 'new');
+        chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+            _buildConversation(id: 'new');
+        chatRepository.getMessagesHandler = ({before, limit = 50}) =>
+            chatRepository.getMessagesCalls.last.conversationId == 'old'
+            ? oldMessages.future
+            : Future.value([fresh]);
+        bloc.add(const ChatConversationRequested('team-1'));
+        await pumpEventQueue();
+        expect(
+          chatRepository.getMessagesCalls.map((call) => call.conversationId),
+          ['old', 'new'],
+        );
+        expect(bloc.state.conversation?.id, 'new');
+        expect(bloc.state.messages, [fresh]);
+        oldMessages.completeError(StateError('old request failed later'));
+        await pumpEventQueue();
+        expect(bloc.state.messages, [fresh]);
+      },
+    );
+
+    test(
+      'prefetch failure is handled while conversation validation is still pending',
+      () async {
+        chatRepository.cachedTeamConversation = _buildConversation();
+        chatRepository.cachedMessages = [_buildMessage(id: 'cached')];
+        final response = Completer<ChatConversationEntity>();
+        chatRepository.getOrCreateTeamConversationHandler = (_) =>
+            response.future;
+        chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+            throw StateError('offline');
+        bloc.add(const ChatConversationRequested('team-1'));
+        await pumpEventQueue();
+        expect(bloc.state.messages.single.id, 'cached');
+        response.completeError(StateError('conversation failed too'));
+        await pumpEventQueue();
+        expect(bloc.state.refreshingMessages, isFalse);
+        expect(bloc.state.messages.single.id, 'cached');
+      },
+    );
+
+    test(
+      'a late conversation response cannot overwrite a newer selection',
+      () async {
+        final old = Completer<ChatConversationEntity>();
+        chatRepository.getOrCreateTeamConversationHandler = (teamId) =>
+            teamId == 'team-1'
+            ? old.future
+            : Future.value(_buildConversation(id: 'new', teamId: 'team-2'));
+        chatRepository.getMessagesHandler = ({before, limit = 50}) async => [
+          _buildMessage(id: 'new-message'),
+        ];
+        bloc.add(const ChatConversationRequested('team-1'));
+        await pumpEventQueue();
+        bloc.add(const ChatConversationRequested('team-2'));
+        await pumpEventQueue();
+        old.complete(_buildConversation());
+        await pumpEventQueue();
+        expect(bloc.state.selectedTeamId, 'team-2');
+        expect(bloc.state.conversation?.id, 'new');
+        expect(
+          chatRepository.getMessagesCalls.map((call) => call.conversationId),
+          ['new'],
+        );
+      },
+    );
+
+    test('late prefetched messages cannot overwrite a newer chat', () async {
+      final old = Completer<List<ChatMessageEntity>>();
+      chatRepository.cachedTeamConversation = _buildConversation(id: 'old');
+      chatRepository.getOrCreateTeamConversationHandler = (teamId) async =>
+          _buildConversation(
+            id: teamId == 'team-1' ? 'old' : 'new',
+            teamId: teamId,
+          );
+      chatRepository.getMessagesHandler = ({before, limit = 50}) =>
+          chatRepository.getMessagesCalls.last.conversationId == 'old'
+          ? old.future
+          : Future.value([_buildMessage(id: 'new-message')]);
+      bloc.add(const ChatConversationRequested('team-1'));
+      await pumpEventQueue();
+      chatRepository.cachedTeamConversation = _buildConversation(
+        id: 'new',
+        teamId: 'team-2',
+      );
+      bloc.add(const ChatConversationRequested('team-2'));
+      await pumpEventQueue();
+      old.complete([_buildMessage(id: 'old-message')]);
+      await pumpEventQueue();
+      expect(bloc.state.selectedTeamId, 'team-2');
+      expect(bloc.state.messages.single.id, 'new-message');
+    });
+
+    test(
+      'cached messages remain visible when server reconciliation fails offline',
+      () async {
+        final cached = _buildConversation(lastMessageAt: DateTime(2026, 1, 1));
+        final messages = [_buildMessage(id: 'offline-cache')];
+        chatRepository.cachedTeamConversation = cached;
+        chatRepository.cachedMessages = messages;
+        chatRepository.getOrCreateTeamConversationHandler = (_) async => cached;
+        chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+            throw const SocketException('offline');
+        final states = <ChatState>[];
+        final subscription = bloc.stream.listen(states.add);
+        addTearDown(subscription.cancel);
+        bloc.add(const ChatConversationRequested('team-1'));
+        await pumpEventQueue();
+        expect(bloc.state.messages, messages);
+        expect(bloc.state.conversation?.id, cached.id);
+        expect(bloc.state.loadingMessages, isFalse);
+        expect(bloc.state.refreshingMessages, isFalse);
+        expect(
+          states.map((state) => state.transient),
+          contains(isA<ChatErrorOccurred>()),
+        );
+      },
+    );
+
+    for (final knownEmpty in [true, false]) {
+      test(
+        'empty cache ${knownEmpty ? 'with' : 'without'} a reliable empty conversation sets the expected loader',
+        () async {
+          final cached = _buildConversation(
+            lastMessageAt: knownEmpty ? null : DateTime(2026, 1, 1),
+          );
+          chatRepository.cachedTeamConversation = cached;
+          final response = Completer<ChatConversationEntity>();
+          addTearDown(() {
+            if (!response.isCompleted) response.complete(cached);
+          });
+          chatRepository.getOrCreateTeamConversationHandler = (_) =>
+              response.future;
+          chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+              [];
+          bloc.add(const ChatConversationRequested('team-1'));
+          await pumpEventQueue();
+          expect(bloc.state.messages, isEmpty);
+          expect(bloc.state.loadingMessages, !knownEmpty);
+          expect(bloc.state.refreshingMessages, knownEmpty);
+          response.complete(cached);
+          await pumpEventQueue();
+        },
+      );
+    }
+
+    test('ChatConversationRequested renders the cache first, then reconciles '
+        'with the server', () async {
+      final cached = _buildConversation(lastMessageAt: DateTime(2026, 1, 1));
+      final cachedMessages = [_buildMessage(id: 'cached-1')];
+      chatRepository.cachedTeamConversation = cached;
+      chatRepository.cachedMessages = cachedMessages;
+      final fresh = _buildConversation();
+      final freshMessages = [_buildMessage(id: 'fresh-1')];
+      chatRepository.getOrCreateTeamConversationHandler = (_) async => fresh;
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          freshMessages;
+
+      final emittedStates = <ChatState>[];
+      final subscription = bloc.stream.listen(emittedStates.add);
+
+      bloc.add(const ChatConversationRequested('team-1'));
+      await pumpEventQueue();
+
+      expect(emittedStates.first.messages, cachedMessages);
+      expect(emittedStates.first.transient, isA<ChatConversationOpened>());
+      expect(emittedStates.last.messages, freshMessages);
+      expect(emittedStates.last.loadingMessages, isFalse);
+      expect(emittedStates.last.transient, isA<ChatConversationOpened>());
+
+      await subscription.cancel();
+    });
+
+    test('ChatConversationRequested shows a loading state when nothing is '
+        'cached', () async {
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          const <ChatMessageEntity>[];
+
+      final emittedStates = <ChatState>[];
+      final subscription = bloc.stream.listen(emittedStates.add);
+
+      bloc.add(const ChatConversationRequested('team-1'));
+      await pumpEventQueue();
+
+      expect(emittedStates.first.loadingMessages, isTrue);
+      expect(emittedStates.first.refreshingMessages, isFalse);
+      // Fires even on a cold, nothing-cached open: lets the widget clear a
+      // *previous* conversation's messages from view right away.
+      expect(emittedStates.first.transient, isA<ChatConversationOpened>());
+      await subscription.cancel();
+    });
+
+    test('ChatConversationRequested with a memberUserId opens the direct '
+        'conversation', () async {
+      chatRepository.getOrCreateDirectConversationHandler = (_, _) async =>
+          _buildConversation(
+            type: 'DIRECT',
+            participantUserId: 'member-1',
+            participantDisplayName: 'Anna',
+          );
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          const <ChatMessageEntity>[];
+
+      bloc.add(
+        const ChatConversationRequested('team-1', memberUserId: 'member-1'),
+      );
+      await pumpEventQueue();
+
+      expect(bloc.state.selectedMemberUserId, 'member-1');
+      expect(bloc.state.conversationDisplayName, 'Anna');
+    });
+
+    test(
       'ChatConversationRequested also dispatches ChatTeamAccessContextRequested',
       () async {
-        chatRepository.getOrCreateTeamConversationHandler =
-            (_) async => _buildConversation();
-        chatRepository.getMessagesHandler =
-            ({before, limit = 50}) async => const <ChatMessageEntity>[];
+        chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+            _buildConversation();
+        chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+            const <ChatMessageEntity>[];
         teamMemberRepository.membersByTeamId['team-1'] = const [];
         roleRepository.rolesByTeamId['team-1'] = const [];
 
@@ -998,36 +1320,43 @@ void main() {
       },
     );
 
-    test('ChatConversationRequested surfaces a transient error on failure', () async {
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) => Future.error(Exception('down'));
+    test(
+      'ChatConversationRequested surfaces a transient error on failure',
+      () async {
+        chatRepository.getOrCreateTeamConversationHandler = (_) =>
+            Future.error(Exception('down'));
 
-      // ChatConversationRequested also fires-and-forgets a
-      // ChatTeamAccessContextRequested, which races independently and may
-      // emit its own ChatTeamAccessContextReady transient afterwards — so
-      // assert the error was emitted at some point in the stream, the way a
-      // real BlocListener would observe it, rather than on the final
-      // settled state (which the other handler's later emit can reasonably
-      // move on from).
-      final emittedStates = <ChatState>[];
-      final subscription = bloc.stream.listen(emittedStates.add);
+        // ChatConversationRequested also fires-and-forgets a
+        // ChatTeamAccessContextRequested, which races independently and may
+        // emit its own ChatTeamAccessContextReady transient afterwards — so
+        // assert the error was emitted at some point in the stream, the way a
+        // real BlocListener would observe it, rather than on the final
+        // settled state (which the other handler's later emit can reasonably
+        // move on from).
+        final emittedStates = <ChatState>[];
+        final subscription = bloc.stream.listen(emittedStates.add);
 
-      bloc.add(const ChatConversationRequested('team-1'));
-      await pumpEventQueue();
+        bloc.add(const ChatConversationRequested('team-1'));
+        await pumpEventQueue();
 
-      expect(bloc.state.loadingMessages, isFalse);
-      expect(emittedStates.map((s) => s.transient), contains(isA<ChatErrorOccurred>()));
+        expect(bloc.state.loadingMessages, isFalse);
+        expect(
+          emittedStates.map((s) => s.transient),
+          contains(isA<ChatErrorOccurred>()),
+        );
 
-      await subscription.cancel();
-    });
+        await subscription.cancel();
+      },
+    );
   });
 
   group('ChatBloc messages refresh', () {
     test('ChatMessagesRefreshRequested merges the latest page in', () async {
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => [_buildMessage(id: 'initial')];
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async => [
+        _buildMessage(id: 'initial'),
+      ];
       bloc.add(const ChatConversationRequested('team-1'));
       await pumpEventQueue();
 
@@ -1046,23 +1375,26 @@ void main() {
       expect(bloc.state.transient, isA<ChatMessagesRefreshed>());
     });
 
-    test('ChatMessagesRefreshRequested is a no-op without an open conversation', () async {
-      bloc.add(const ChatMessagesRefreshRequested());
-      await pumpEventQueue();
+    test(
+      'ChatMessagesRefreshRequested is a no-op without an open conversation',
+      () async {
+        bloc.add(const ChatMessagesRefreshRequested());
+        await pumpEventQueue();
 
-      expect(bloc.state.messages, isEmpty);
-    });
+        expect(bloc.state.messages, isEmpty);
+      },
+    );
 
     test('ChatMessagesRefreshRequested fails silently (best effort)', () async {
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => const <ChatMessageEntity>[];
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          const <ChatMessageEntity>[];
       bloc.add(const ChatConversationRequested('team-1'));
       await pumpEventQueue();
 
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) => Future.error(Exception('down'));
+      chatRepository.getMessagesHandler = ({before, limit = 50}) =>
+          Future.error(Exception('down'));
       bloc.add(const ChatMessagesRefreshRequested());
       await pumpEventQueue();
 
@@ -1076,10 +1408,10 @@ void main() {
 
   group('ChatBloc older messages pagination', () {
     Future<void> openConversationWith(List<ChatMessageEntity> messages) async {
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => messages;
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          messages;
       bloc.add(const ChatConversationRequested('team-1'));
       await pumpEventQueue();
     }
@@ -1116,328 +1448,329 @@ void main() {
       bloc.add(const ChatOlderMessagesRequested());
       await pumpEventQueue();
 
-      expect(
-        bloc.state.messages.take(2).map((m) => m.id),
-        ['older-1', 'older-2'],
-      );
+      expect(bloc.state.messages.take(2).map((m) => m.id), [
+        'older-1',
+        'older-2',
+      ]);
       expect(bloc.state.messages, hasLength(102));
       expect(bloc.state.messages.last.id, 'current-1');
-      expect(chatRepository.getMessagesCalls.last.before, oldestLoadedTimestamp);
+      expect(
+        chatRepository.getMessagesCalls.last.before,
+        oldestLoadedTimestamp,
+      );
       expect(bloc.state.loadingOlderMessages, isFalse);
       expect(bloc.state.transient, isA<ChatOlderMessagesLoaded>());
     });
 
-    test(
-      'ChatOlderMessagesRequested fired twice back-to-back fetches two '
-      'different pages rather than racing on the same one (sequential '
-      'processing — same fix as ChatTeamAccessContextRequested)',
-      () async {
-        await openConversationWith(fullInitialPage());
-        final firstCursor = bloc.state.messages.first.createdAt;
-        // A full batch (>= 70) for both pages so hasMoreOlderMessages stays
-        // true after the first fetch settles — otherwise the second
-        // dispatch would legitimately no-op on "nothing more to paginate"
-        // rather than exercising the race this test targets. Oldest-first
-        // within each batch, matching what the bloc expects to prepend
-        // as-is (it does not re-sort after merging older pages in).
-        chatRepository.getMessagesHandler = ({before, limit = 50}) async {
-          final isFirstPage = before == firstCursor;
-          final pageStart = isFirstPage
-              ? firstCursor.subtract(const Duration(minutes: 70))
-              : firstCursor.subtract(const Duration(minutes: 140));
-          return List<ChatMessageEntity>.generate(
-            70,
-            (i) => _buildMessage(
-              id: '${isFirstPage ? 'page1' : 'page2'}-$i',
-              createdAt: pageStart.add(Duration(minutes: i)),
-            ),
-          );
-        };
-
-        bloc
-          ..add(const ChatOlderMessagesRequested())
-          ..add(const ChatOlderMessagesRequested());
-        await pumpEventQueue();
-
-        // Had the two dispatches raced (both reading the stale `before`
-        // cursor before either completed), both would have fetched "page1"
-        // and "page2" messages would never appear. Sequential processing
-        // guarantees the second dispatch sees the first dispatch's
-        // already-updated cursor and fetches the next page instead.
-        expect(bloc.state.messages.first.id, 'page2-0');
-      },
-    );
-
-    test(
-      'ChatOlderMessagesRequested dedupes messages already present '
-      '(e.g. raced with a refresh)',
-      () async {
-        await openConversationWith(fullInitialPage());
-        final oldestId = bloc.state.messages.first.id;
-        chatRepository.getMessagesHandler = ({before, limit = 50}) async => [
-          _buildMessage(id: 'older-1', createdAt: DateTime(2025, 12, 30)),
-          bloc.state.messages.first, // already present, must not duplicate
-        ];
-
-        bloc.add(const ChatOlderMessagesRequested());
-        await pumpEventQueue();
-
-        expect(bloc.state.messages.first.id, 'older-1');
-        expect(bloc.state.messages.where((m) => m.id == oldestId), hasLength(1));
-        expect(bloc.state.messages, hasLength(101));
-      },
-    );
-
-    test(
-      'ChatOlderMessagesRequested stops pagination once nothing new comes '
-      'back',
-      () async {
-        await openConversationWith(fullInitialPage());
-        final messagesBeforePagination = bloc.state.messages;
-        chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
-            // The server has nothing older than what's already loaded.
-            <ChatMessageEntity>[bloc.state.messages.first];
-
-        bloc.add(const ChatOlderMessagesRequested());
-        await pumpEventQueue();
-
-        expect(bloc.state.hasMoreOlderMessages, isFalse);
-        expect(
-          bloc.state.messages.map((m) => m.id),
-          messagesBeforePagination.map((m) => m.id),
+    test('ChatOlderMessagesRequested fired twice back-to-back fetches two '
+        'different pages rather than racing on the same one (sequential '
+        'processing — same fix as ChatTeamAccessContextRequested)', () async {
+      await openConversationWith(fullInitialPage());
+      final firstCursor = bloc.state.messages.first.createdAt;
+      // A full batch (>= 70) for both pages so hasMoreOlderMessages stays
+      // true after the first fetch settles — otherwise the second
+      // dispatch would legitimately no-op on "nothing more to paginate"
+      // rather than exercising the race this test targets. Oldest-first
+      // within each batch, matching what the bloc expects to prepend
+      // as-is (it does not re-sort after merging older pages in).
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async {
+        final isFirstPage = before == firstCursor;
+        final pageStart = isFirstPage
+            ? firstCursor.subtract(const Duration(minutes: 70))
+            : firstCursor.subtract(const Duration(minutes: 140));
+        return List<ChatMessageEntity>.generate(
+          70,
+          (i) => _buildMessage(
+            id: '${isFirstPage ? 'page1' : 'page2'}-$i',
+            createdAt: pageStart.add(Duration(minutes: i)),
+          ),
         );
-      },
-    );
+      };
 
-    test('ChatOlderMessagesRequested is a no-op with an empty message list', () async {
-      await openConversationWith(const <ChatMessageEntity>[]);
+      bloc
+        ..add(const ChatOlderMessagesRequested())
+        ..add(const ChatOlderMessagesRequested());
+      await pumpEventQueue();
+
+      // Had the two dispatches raced (both reading the stale `before`
+      // cursor before either completed), both would have fetched "page1"
+      // and "page2" messages would never appear. Sequential processing
+      // guarantees the second dispatch sees the first dispatch's
+      // already-updated cursor and fetches the next page instead.
+      expect(bloc.state.messages.first.id, 'page2-0');
+    });
+
+    test('ChatOlderMessagesRequested dedupes messages already present '
+        '(e.g. raced with a refresh)', () async {
+      await openConversationWith(fullInitialPage());
+      final oldestId = bloc.state.messages.first.id;
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async => [
+        _buildMessage(id: 'older-1', createdAt: DateTime(2025, 12, 30)),
+        bloc.state.messages.first, // already present, must not duplicate
+      ];
 
       bloc.add(const ChatOlderMessagesRequested());
       await pumpEventQueue();
 
-      expect(chatRepository.getMessagesCalls, hasLength(1)); // only the initial load
+      expect(bloc.state.messages.first.id, 'older-1');
+      expect(bloc.state.messages.where((m) => m.id == oldestId), hasLength(1));
+      expect(bloc.state.messages, hasLength(101));
+    });
+
+    test('ChatOlderMessagesRequested stops pagination once nothing new comes '
+        'back', () async {
+      await openConversationWith(fullInitialPage());
+      final messagesBeforePagination = bloc.state.messages;
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          // The server has nothing older than what's already loaded.
+          <ChatMessageEntity>[bloc.state.messages.first];
+
+      bloc.add(const ChatOlderMessagesRequested());
+      await pumpEventQueue();
+
+      expect(bloc.state.hasMoreOlderMessages, isFalse);
+      expect(
+        bloc.state.messages.map((m) => m.id),
+        messagesBeforePagination.map((m) => m.id),
+      );
     });
 
     test(
-      'ChatOlderMessagesRequested is a no-op once hasMoreOlderMessages is '
-      'false',
+      'ChatOlderMessagesRequested is a no-op with an empty message list',
       () async {
-        // A short first page (below the initial-load limit) already means
-        // there's nothing more to paginate.
-        await openConversationWith([
-          _buildMessage(id: 'current-1', createdAt: DateTime(2026, 1, 5)),
-        ]);
-        expect(bloc.state.hasMoreOlderMessages, isFalse);
-        final callsSoFar = chatRepository.getMessagesCalls.length;
+        await openConversationWith(const <ChatMessageEntity>[]);
 
         bloc.add(const ChatOlderMessagesRequested());
         await pumpEventQueue();
 
-        expect(chatRepository.getMessagesCalls, hasLength(callsSoFar));
+        expect(
+          chatRepository.getMessagesCalls,
+          hasLength(1),
+        ); // only the initial load
       },
     );
+
+    test('ChatOlderMessagesRequested is a no-op once hasMoreOlderMessages is '
+        'false', () async {
+      // A short first page (below the initial-load limit) already means
+      // there's nothing more to paginate.
+      await openConversationWith([
+        _buildMessage(id: 'current-1', createdAt: DateTime(2026, 1, 5)),
+      ]);
+      expect(bloc.state.hasMoreOlderMessages, isFalse);
+      final callsSoFar = chatRepository.getMessagesCalls.length;
+
+      bloc.add(const ChatOlderMessagesRequested());
+      await pumpEventQueue();
+
+      expect(chatRepository.getMessagesCalls, hasLength(callsSoFar));
+    });
   });
 
   group('ChatBloc composer', () {
-    test('ChatAttachmentSelected and ChatAttachmentCleared update state', () async {
-      const attachment = ChatDraftAttachment(
-        bytes: [1, 2, 3],
-        fileName: 'photo.png',
-        contentType: 'image/png',
-        sizeBytes: 3,
-      );
-      bloc.add(const ChatAttachmentSelected(attachment));
-      await pumpEventQueue();
-      expect(bloc.state.selectedAttachment, same(attachment));
-
-      bloc.add(const ChatAttachmentCleared());
-      await pumpEventQueue();
-      expect(bloc.state.selectedAttachment, isNull);
-    });
-
-    test('ChatReplyTargetSet and ChatReplyTargetCleared update state', () async {
-      final message = _buildMessage();
-      bloc.add(ChatReplyTargetSet(message));
-      await pumpEventQueue();
-      expect(bloc.state.replyTarget, same(message));
-
-      bloc.add(const ChatReplyTargetCleared());
-      await pumpEventQueue();
-      expect(bloc.state.replyTarget, isNull);
-    });
-
-    test('ChatDraftRestored puts the attachment and reply target back', () async {
-      const attachment = ChatDraftAttachment(
-        bytes: [1],
-        fileName: 'a.png',
-        contentType: 'image/png',
-        sizeBytes: 1,
-      );
-      final replyTarget = _buildMessage();
-
-      bloc.add(
-        ChatDraftRestored(attachment: attachment, replyTarget: replyTarget),
-      );
-      await pumpEventQueue();
-
-      expect(bloc.state.selectedAttachment, same(attachment));
-      expect(bloc.state.replyTarget, same(replyTarget));
-    });
-  });
-
-  group('ChatBloc send message', () {
-    Future<void> openConversation() async {
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => const <ChatMessageEntity>[];
-      bloc.add(const ChatConversationRequested('team-1'));
-      await pumpEventQueue();
-    }
-
     test(
-      'ChatMessageSendRequested inserts an optimistic message, then '
-      'reconciles it with the server response by id',
+      'ChatAttachmentSelected and ChatAttachmentCleared update state',
       () async {
-        await openConversation();
-        final serverMessage = _buildMessage(id: 'server-1');
-        chatRepository.sendMessageHandler =
-            (content, {replyToMessageId}) async => serverMessage;
-
-        final emittedStates = <ChatState>[];
-        final subscription = bloc.stream.listen(emittedStates.add);
-
-        bloc.add(
-          const ChatMessageSendRequested(
-            content: 'Ciao',
-            actorDisplayName: 'You',
-          ),
+        const attachment = ChatDraftAttachment(
+          bytes: [1, 2, 3],
+          fileName: 'photo.png',
+          contentType: 'image/png',
+          sizeBytes: 3,
         );
+        bloc.add(const ChatAttachmentSelected(attachment));
         await pumpEventQueue();
+        expect(bloc.state.selectedAttachment, same(attachment));
 
-        final optimisticState = emittedStates.first;
-        expect(optimisticState.messages, hasLength(1));
-        expect(optimisticState.messages.single.id, startsWith('local-'));
-        expect(optimisticState.messages.single.senderName, 'You');
-        expect(optimisticState.sending, isTrue);
-        // Fires on the optimistic insert too, not just the reconcile below —
-        // the widget scrolls to the new message at both points.
-        expect(optimisticState.transient, isA<ChatMessageSent>());
-
-        final finalState = emittedStates.last;
-        expect(finalState.messages, [serverMessage]);
-        expect(finalState.sending, isFalse);
-        expect(finalState.transient, isA<ChatMessageSent>());
-
-        await subscription.cancel();
+        bloc.add(const ChatAttachmentCleared());
+        await pumpEventQueue();
+        expect(bloc.state.selectedAttachment, isNull);
       },
     );
 
     test(
-      'ChatMessageSendRequested clears the selected attachment and reply '
-      'target optimistically',
+      'ChatReplyTargetSet and ChatReplyTargetCleared update state',
       () async {
-        await openConversation();
-        chatRepository.sendMessageHandler =
-            (content, {replyToMessageId}) async => _buildMessage();
-        bloc.add(ChatAttachmentSelected(
-          const ChatDraftAttachment(
-            bytes: [1],
-            fileName: 'a.png',
-            contentType: 'image/png',
-            sizeBytes: 1,
-          ),
-        ));
-        bloc.add(ChatReplyTargetSet(_buildMessage(id: 'reply-target')));
+        final message = _buildMessage();
+        bloc.add(ChatReplyTargetSet(message));
         await pumpEventQueue();
+        expect(bloc.state.replyTarget, same(message));
 
-        bloc.add(
-          const ChatMessageSendRequested(
-            content: 'Ciao',
-            actorDisplayName: 'You',
-          ),
-        );
+        bloc.add(const ChatReplyTargetCleared());
         await pumpEventQueue();
-
-        expect(bloc.state.selectedAttachment, isNull);
         expect(bloc.state.replyTarget, isNull);
       },
     );
 
     test(
-      'ChatMessageSendRequested removes the optimistic message and surfaces '
-      'a restore payload on failure',
+      'ChatDraftRestored puts the attachment and reply target back',
       () async {
-        await openConversation();
-        chatRepository.sendMessageHandler =
-            (content, {replyToMessageId}) =>
-                Future.error(Exception('network down'));
         const attachment = ChatDraftAttachment(
           bytes: [1],
           fileName: 'a.png',
           contentType: 'image/png',
           sizeBytes: 1,
         );
-        final replyTarget = _buildMessage(id: 'reply-target');
+        final replyTarget = _buildMessage();
 
         bloc.add(
-          ChatMessageSendRequested(
-            content: 'Ciao',
-            actorDisplayName: 'You',
-            attachment: attachment,
-            replyTarget: replyTarget,
-          ),
+          ChatDraftRestored(attachment: attachment, replyTarget: replyTarget),
         );
         await pumpEventQueue();
 
-        expect(bloc.state.messages, isEmpty);
-        expect(bloc.state.sending, isFalse);
-        final transient = bloc.state.transient;
-        expect(transient, isA<ChatMessageSendFailed>());
-        final failed = transient as ChatMessageSendFailed;
-        expect(failed.content, 'Ciao');
-        expect(failed.attachment, same(attachment));
-        expect(failed.replyTarget?.id, 'reply-target');
-        expect(failed.replyTarget?.contentText, replyTarget.contentText);
+        expect(bloc.state.selectedAttachment, same(attachment));
+        expect(bloc.state.replyTarget, same(replyTarget));
       },
     );
+  });
 
-    test(
-      'ChatMessageSendRequested sends the attachment variant when an '
-      'attachment is present',
-      () async {
-        await openConversation();
-        const attachment = ChatDraftAttachment(
-          bytes: [1, 2],
-          fileName: 'a.png',
-          contentType: 'image/png',
-          sizeBytes: 2,
-        );
-        ChatDraftAttachment? capturedAttachment;
-        chatRepository.sendAttachmentMessageHandler =
-            ({content, required bytes, required fileName, required contentType, replyToMessageId}) async {
-          capturedAttachment = ChatDraftAttachment(
-            bytes: bytes,
-            fileName: fileName,
-            contentType: contentType,
-            sizeBytes: bytes.length,
-          );
-          return _buildMessage();
-        };
+  group('ChatBloc send message', () {
+    Future<void> openConversation() async {
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          const <ChatMessageEntity>[];
+      bloc.add(const ChatConversationRequested('team-1'));
+      await pumpEventQueue();
+    }
 
-        bloc.add(
-          ChatMessageSendRequested(
-            content: 'Guarda',
-            actorDisplayName: 'You',
-            attachment: attachment,
+    test('ChatMessageSendRequested inserts an optimistic message, then '
+        'reconciles it with the server response by id', () async {
+      await openConversation();
+      final serverMessage = _buildMessage(id: 'server-1');
+      chatRepository.sendMessageHandler = (content, {replyToMessageId}) async =>
+          serverMessage;
+
+      final emittedStates = <ChatState>[];
+      final subscription = bloc.stream.listen(emittedStates.add);
+
+      bloc.add(
+        const ChatMessageSendRequested(
+          content: 'Ciao',
+          actorDisplayName: 'You',
+        ),
+      );
+      await pumpEventQueue();
+
+      final optimisticState = emittedStates.first;
+      expect(optimisticState.messages, hasLength(1));
+      expect(optimisticState.messages.single.id, startsWith('local-'));
+      expect(optimisticState.messages.single.senderName, 'You');
+      expect(optimisticState.sending, isTrue);
+      // Fires on the optimistic insert too, not just the reconcile below —
+      // the widget scrolls to the new message at both points.
+      expect(optimisticState.transient, isA<ChatMessageSent>());
+
+      final finalState = emittedStates.last;
+      expect(finalState.messages, [serverMessage]);
+      expect(finalState.sending, isFalse);
+      expect(finalState.transient, isA<ChatMessageSent>());
+
+      await subscription.cancel();
+    });
+
+    test('ChatMessageSendRequested clears the selected attachment and reply '
+        'target optimistically', () async {
+      await openConversation();
+      chatRepository.sendMessageHandler = (content, {replyToMessageId}) async =>
+          _buildMessage();
+      bloc.add(
+        ChatAttachmentSelected(
+          const ChatDraftAttachment(
+            bytes: [1],
+            fileName: 'a.png',
+            contentType: 'image/png',
+            sizeBytes: 1,
           ),
-        );
-        await pumpEventQueue();
+        ),
+      );
+      bloc.add(ChatReplyTargetSet(_buildMessage(id: 'reply-target')));
+      await pumpEventQueue();
 
-        expect(capturedAttachment?.fileName, 'a.png');
-        expect(chatRepository.sendMessageHandler, isNull);
-      },
-    );
+      bloc.add(
+        const ChatMessageSendRequested(
+          content: 'Ciao',
+          actorDisplayName: 'You',
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(bloc.state.selectedAttachment, isNull);
+      expect(bloc.state.replyTarget, isNull);
+    });
+
+    test('ChatMessageSendRequested removes the optimistic message and surfaces '
+        'a restore payload on failure', () async {
+      await openConversation();
+      chatRepository.sendMessageHandler = (content, {replyToMessageId}) =>
+          Future.error(Exception('network down'));
+      const attachment = ChatDraftAttachment(
+        bytes: [1],
+        fileName: 'a.png',
+        contentType: 'image/png',
+        sizeBytes: 1,
+      );
+      final replyTarget = _buildMessage(id: 'reply-target');
+
+      bloc.add(
+        ChatMessageSendRequested(
+          content: 'Ciao',
+          actorDisplayName: 'You',
+          attachment: attachment,
+          replyTarget: replyTarget,
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(bloc.state.messages, isEmpty);
+      expect(bloc.state.sending, isFalse);
+      final transient = bloc.state.transient;
+      expect(transient, isA<ChatMessageSendFailed>());
+      final failed = transient as ChatMessageSendFailed;
+      expect(failed.content, 'Ciao');
+      expect(failed.attachment, same(attachment));
+      expect(failed.replyTarget?.id, 'reply-target');
+      expect(failed.replyTarget?.contentText, replyTarget.contentText);
+    });
+
+    test('ChatMessageSendRequested sends the attachment variant when an '
+        'attachment is present', () async {
+      await openConversation();
+      const attachment = ChatDraftAttachment(
+        bytes: [1, 2],
+        fileName: 'a.png',
+        contentType: 'image/png',
+        sizeBytes: 2,
+      );
+      ChatDraftAttachment? capturedAttachment;
+      chatRepository.sendAttachmentMessageHandler =
+          ({
+            content,
+            required bytes,
+            required fileName,
+            required contentType,
+            replyToMessageId,
+          }) async {
+            capturedAttachment = ChatDraftAttachment(
+              bytes: bytes,
+              fileName: fileName,
+              contentType: contentType,
+              sizeBytes: bytes.length,
+            );
+            return _buildMessage();
+          };
+
+      bloc.add(
+        ChatMessageSendRequested(
+          content: 'Guarda',
+          actorDisplayName: 'You',
+          attachment: attachment,
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(capturedAttachment?.fileName, 'a.png');
+      expect(chatRepository.sendMessageHandler, isNull);
+    });
 
     test(
       'ChatMessageSendRequested is a no-op without an open conversation',
@@ -1459,29 +1792,32 @@ void main() {
     Future<void> openConversationWithMessages(
       List<ChatMessageEntity> messages,
     ) async {
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => messages;
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          messages;
       bloc.add(const ChatConversationRequested('team-1'));
       await pumpEventQueue();
     }
 
-    test('ChatReactionToggled replaces the message with the server response', () async {
-      await openConversationWithMessages([_buildMessage(id: 'msg-1')]);
-      final updated = _buildMessage(id: 'msg-1', contentText: 'Ciao 👍');
-      chatRepository.toggleReactionHandler = (_, _) async => updated;
+    test(
+      'ChatReactionToggled replaces the message with the server response',
+      () async {
+        await openConversationWithMessages([_buildMessage(id: 'msg-1')]);
+        final updated = _buildMessage(id: 'msg-1', contentText: 'Ciao 👍');
+        chatRepository.toggleReactionHandler = (_, _) async => updated;
 
-      bloc.add(const ChatReactionToggled('msg-1', '👍'));
-      await pumpEventQueue();
+        bloc.add(const ChatReactionToggled('msg-1', '👍'));
+        await pumpEventQueue();
 
-      expect(bloc.state.messages.single.contentText, 'Ciao 👍');
-    });
+        expect(bloc.state.messages.single.contentText, 'Ciao 👍');
+      },
+    );
 
     test('ChatReactionToggled surfaces an error on failure', () async {
       await openConversationWithMessages([_buildMessage(id: 'msg-1')]);
-      chatRepository.toggleReactionHandler =
-          (_, _) => Future.error(Exception('boom'));
+      chatRepository.toggleReactionHandler = (_, _) =>
+          Future.error(Exception('boom'));
 
       bloc.add(const ChatReactionToggled('msg-1', '👍'));
       await pumpEventQueue();
@@ -1489,35 +1825,38 @@ void main() {
       expect(bloc.state.transient, isA<ChatErrorOccurred>());
     });
 
-    test('ChatMessageDeleteConfirmed replaces the message with the tombstone', () async {
-      await openConversationWithMessages([_buildMessage(id: 'msg-1')]);
-      final deleted = ChatMessageEntity(
-        id: 'msg-1',
-        conversationId: 'conversation-1',
-        senderUserId: 'user-1',
-        senderName: 'Mario Rossi',
-        senderAvatarUrl: null,
-        contentText: '',
-        messageType: 'TEXT',
-        attachmentPath: null,
-        attachmentOriginalName: null,
-        attachmentContentType: null,
-        attachmentSizeBytes: null,
-        replyTo: null,
-        reactions: const [],
-        deleted: true,
-        deletedAt: DateTime(2026, 1, 2),
-        createdAt: DateTime(2026, 1, 1),
-        readByCurrentUser: true,
-        mine: false,
-      );
-      chatRepository.deleteMessageHandler = (_) async => deleted;
+    test(
+      'ChatMessageDeleteConfirmed replaces the message with the tombstone',
+      () async {
+        await openConversationWithMessages([_buildMessage(id: 'msg-1')]);
+        final deleted = ChatMessageEntity(
+          id: 'msg-1',
+          conversationId: 'conversation-1',
+          senderUserId: 'user-1',
+          senderName: 'Mario Rossi',
+          senderAvatarUrl: null,
+          contentText: '',
+          messageType: 'TEXT',
+          attachmentPath: null,
+          attachmentOriginalName: null,
+          attachmentContentType: null,
+          attachmentSizeBytes: null,
+          replyTo: null,
+          reactions: const [],
+          deleted: true,
+          deletedAt: DateTime(2026, 1, 2),
+          createdAt: DateTime(2026, 1, 1),
+          readByCurrentUser: true,
+          mine: false,
+        );
+        chatRepository.deleteMessageHandler = (_) async => deleted;
 
-      bloc.add(const ChatMessageDeleteConfirmed('msg-1'));
-      await pumpEventQueue();
+        bloc.add(const ChatMessageDeleteConfirmed('msg-1'));
+        await pumpEventQueue();
 
-      expect(bloc.state.messages.single.deleted, isTrue);
-    });
+        expect(bloc.state.messages.single.deleted, isTrue);
+      },
+    );
 
     test(
       'ChatConversationMarkReadRequested marks non-mine unread messages read',
@@ -1534,7 +1873,10 @@ void main() {
         final theirs = bloc.state.messages.firstWhere((m) => m.id == 'theirs');
         expect(theirs.readByCurrentUser, isTrue);
         final mine = bloc.state.messages.firstWhere((m) => m.id == 'mine');
-        expect(mine.readByCurrentUser, isFalse); // untouched, mirrors the widget
+        expect(
+          mine.readByCurrentUser,
+          isFalse,
+        ); // untouched, mirrors the widget
         expect(bloc.state.markingConversationRead, isFalse);
       },
     );
@@ -1559,64 +1901,62 @@ void main() {
     Future<void> openConversationWithMessages(
       List<ChatMessageEntity> messages,
     ) async {
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => messages;
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          messages;
       bloc.add(const ChatConversationRequested('team-1'));
       await pumpEventQueue();
     }
 
-    test(
-      'ChatMessageSenderBlocked filters the blocked sender out immediately '
-      'and emits ChatSenderBlocked',
-      () async {
-        await openConversationWithMessages([
+    test('ChatMessageSenderBlocked filters the blocked sender out immediately '
+        'and emits ChatSenderBlocked', () async {
+      await openConversationWithMessages([
+        _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+        _buildMessage(id: 'msg-2', senderUserId: 'user-3'),
+      ]);
+      final blockedUser = BlockedUserEntity(
+        userId: 'user-2',
+        displayName: 'User Two',
+        blockedAt: DateTime(2026, 1, 1),
+      );
+      chatRepository.blockSenderHandler = (_) async => blockedUser;
+      // Simulates the backend now excluding the blocked sender's
+      // messages from subsequent fetches.
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async => [
+        _buildMessage(id: 'msg-2', senderUserId: 'user-3'),
+      ];
+
+      final emittedStates = <ChatState>[];
+      final subscription = bloc.stream.listen(emittedStates.add);
+
+      bloc.add(
+        ChatMessageSenderBlocked(
           _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
-          _buildMessage(id: 'msg-2', senderUserId: 'user-3'),
-        ]);
-        final blockedUser = BlockedUserEntity(
-          userId: 'user-2',
-          displayName: 'User Two',
-          blockedAt: DateTime(2026, 1, 1),
-        );
-        chatRepository.blockSenderHandler = (_) async => blockedUser;
-        // Simulates the backend now excluding the blocked sender's
-        // messages from subsequent fetches.
-        chatRepository.getMessagesHandler = ({before, limit = 50}) async => [
-          _buildMessage(id: 'msg-2', senderUserId: 'user-3'),
-        ];
+        ),
+      );
+      await pumpEventQueue();
+      await subscription.cancel();
 
-        final emittedStates = <ChatState>[];
-        final subscription = bloc.stream.listen(emittedStates.add);
-
-        bloc.add(
-          ChatMessageSenderBlocked(
-            _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
-          ),
-        );
-        await pumpEventQueue();
-        await subscription.cancel();
-
-        final blockedState = emittedStates.firstWhere(
-          (state) => state.transient is ChatSenderBlocked,
-        );
-        expect(
-          (blockedState.transient as ChatSenderBlocked).blockedUser.userId,
-          'user-2',
-        );
-        // The filter applies immediately, before the follow-up refresh
-        // even resolves.
-        expect(blockedState.messages.map((m) => m.id), ['msg-2']);
-        expect(bloc.state.messages.map((m) => m.id), ['msg-2']);
-      },
-    );
+      final blockedState = emittedStates.firstWhere(
+        (state) => state.transient is ChatSenderBlocked,
+      );
+      expect(
+        (blockedState.transient as ChatSenderBlocked).blockedUser.userId,
+        'user-2',
+      );
+      // The filter applies immediately, before the follow-up refresh
+      // even resolves.
+      expect(blockedState.messages.map((m) => m.id), ['msg-2']);
+      expect(bloc.state.messages.map((m) => m.id), ['msg-2']);
+    });
 
     test('ChatMessageSenderBlocked surfaces an error on failure', () async {
       await openConversationWithMessages([
         _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
       ]);
-      chatRepository.blockSenderHandler = (_) => Future.error(Exception('boom'));
+      chatRepository.blockSenderHandler = (_) =>
+          Future.error(Exception('boom'));
 
       bloc.add(
         ChatMessageSenderBlocked(
@@ -1628,40 +1968,37 @@ void main() {
       expect(bloc.state.transient, isA<ChatErrorOccurred>());
     });
 
-    test(
-      'ChatMessageReported submits the report and emits '
-      'ChatMessageReportSubmitted',
-      () async {
-        await openConversationWithMessages([
+    test('ChatMessageReported submits the report and emits '
+        'ChatMessageReportSubmitted', () async {
+      await openConversationWithMessages([
+        _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
+      ]);
+
+      bloc.add(
+        ChatMessageReported(
           _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
-        ]);
+          reason: ChatMessageReportReason.spam,
+          comment: 'this is spam',
+        ),
+      );
+      await pumpEventQueue();
 
-        bloc.add(
-          ChatMessageReported(
-            _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
-            reason: ChatMessageReportReason.spam,
-            comment: 'this is spam',
-          ),
-        );
-        await pumpEventQueue();
-
-        expect(bloc.state.transient, isA<ChatMessageReportSubmitted>());
-        expect(chatRepository.reportMessageCalls, [
-          (
-            messageId: 'msg-1',
-            reason: ChatMessageReportReason.spam,
-            comment: 'this is spam',
-          ),
-        ]);
-      },
-    );
+      expect(bloc.state.transient, isA<ChatMessageReportSubmitted>());
+      expect(chatRepository.reportMessageCalls, [
+        (
+          messageId: 'msg-1',
+          reason: ChatMessageReportReason.spam,
+          comment: 'this is spam',
+        ),
+      ]);
+    });
 
     test('ChatMessageReported surfaces an error on failure', () async {
       await openConversationWithMessages([
         _buildMessage(id: 'msg-1', senderUserId: 'user-2'),
       ]);
-      chatRepository.reportMessageHandler =
-          (_, {required reason, comment}) => Future.error(Exception('boom'));
+      chatRepository.reportMessageHandler = (_, {required reason, comment}) =>
+          Future.error(Exception('boom'));
 
       bloc.add(
         ChatMessageReported(
@@ -1683,10 +2020,10 @@ void main() {
         buildTeam(workflowAiEnabled: true),
       ];
       bloc.add(const ChatTeamsRequested());
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => const <ChatMessageEntity>[];
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          const <ChatMessageEntity>[];
       bloc.add(const ChatConversationRequested('team-1'));
       bloc.add(const ChatWorkflowAiPreferenceChanged(true));
       await pumpEventQueue();
@@ -1718,10 +2055,10 @@ void main() {
 
   group('ChatBloc draft-prepare handlers', () {
     Future<void> openConversation() async {
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => const <ChatMessageEntity>[];
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          const <ChatMessageEntity>[];
       bloc.add(const ChatConversationRequested('team-1'));
       await pumpEventQueue();
     }
@@ -1738,7 +2075,9 @@ void main() {
       actionRepository.resultByActionType[ChatMessageActionType.createSondage] =
           readyResult;
 
-      bloc.add(ChatSondageDraftRequested(message: _buildMessage(), locale: 'it'));
+      bloc.add(
+        ChatSondageDraftRequested(message: _buildMessage(), locale: 'it'),
+      );
       await pumpEventQueue();
 
       expect(bloc.state.transient, isA<ChatSondageDraftReady>());
@@ -1794,7 +2133,9 @@ void main() {
     test(
       'draft-prepare handlers are a no-op without an open conversation',
       () async {
-        bloc.add(ChatTaskDraftRequested(message: _buildMessage(), locale: 'it'));
+        bloc.add(
+          ChatTaskDraftRequested(message: _buildMessage(), locale: 'it'),
+        );
         await pumpEventQueue();
 
         expect(actionRepository.buildDraftCalls, isEmpty);
@@ -1811,10 +2152,10 @@ void main() {
         buildTeam(workflowAiEnabled: true),
       ];
       bloc.add(const ChatTeamsRequested());
-      chatRepository.getOrCreateTeamConversationHandler =
-          (_) async => _buildConversation();
-      chatRepository.getMessagesHandler =
-          ({before, limit = 50}) async => const <ChatMessageEntity>[];
+      chatRepository.getOrCreateTeamConversationHandler = (_) async =>
+          _buildConversation();
+      chatRepository.getMessagesHandler = ({before, limit = 50}) async =>
+          const <ChatMessageEntity>[];
       bloc.add(const ChatConversationRequested('team-1'));
       await pumpEventQueue();
     }
@@ -1825,24 +2166,33 @@ void main() {
           '{"resolutionStatus": "ok", "suggestions": [], "warnings": []}';
 
       bloc.add(
-        ChatWorkflowSuggestionsRequested(message: _buildMessage(), locale: 'it'),
+        ChatWorkflowSuggestionsRequested(
+          message: _buildMessage(),
+          locale: 'it',
+        ),
       );
       await pumpEventQueue();
 
       expect(bloc.state.transient, isA<ChatWorkflowSuggestionsReady>());
     });
 
-    test('ChatWorkflowSuggestionsRequested surfaces an error on failure', () async {
-      await openConversation();
-      suggestionAdapter.responseBody = '[1,2,3]'; // not a JSON object
+    test(
+      'ChatWorkflowSuggestionsRequested surfaces an error on failure',
+      () async {
+        await openConversation();
+        suggestionAdapter.responseBody = '[1,2,3]'; // not a JSON object
 
-      bloc.add(
-        ChatWorkflowSuggestionsRequested(message: _buildMessage(), locale: 'it'),
-      );
-      await pumpEventQueue();
+        bloc.add(
+          ChatWorkflowSuggestionsRequested(
+            message: _buildMessage(),
+            locale: 'it',
+          ),
+        );
+        await pumpEventQueue();
 
-      expect(bloc.state.transient, isA<ChatErrorOccurred>());
-    });
+        expect(bloc.state.transient, isA<ChatErrorOccurred>());
+      },
+    );
 
     test(
       'ChatWorkflowSuggestionPrefetchRequested caches the result per message '
@@ -1861,34 +2211,34 @@ void main() {
         );
         await pumpEventQueue();
 
-        expect(bloc.state.workflowSuggestionsByMessageId.containsKey('msg-1'), isTrue);
-        expect(bloc.state.loadingWorkflowSuggestionMessageIds, isEmpty);
-      },
-    );
-
-    test(
-      'ChatWorkflowSuggestionPrefetchRequested falls back to an unsupported '
-      'result on failure',
-      () async {
-        await openConversation();
-        bloc.add(const ChatWorkflowAiPreferenceChanged(true));
-        suggestionAdapter.responseBody = '[1,2,3]';
-
-        bloc.add(
-          ChatWorkflowSuggestionPrefetchRequested(
-            message: _buildMessage(id: 'msg-1'),
-            locale: 'it',
-          ),
-        );
-        await pumpEventQueue();
-
         expect(
-          bloc.state.workflowSuggestionsByMessageId['msg-1']?.isUnsupported,
+          bloc.state.workflowSuggestionsByMessageId.containsKey('msg-1'),
           isTrue,
         );
         expect(bloc.state.loadingWorkflowSuggestionMessageIds, isEmpty);
       },
     );
+
+    test('ChatWorkflowSuggestionPrefetchRequested falls back to an unsupported '
+        'result on failure', () async {
+      await openConversation();
+      bloc.add(const ChatWorkflowAiPreferenceChanged(true));
+      suggestionAdapter.responseBody = '[1,2,3]';
+
+      bloc.add(
+        ChatWorkflowSuggestionPrefetchRequested(
+          message: _buildMessage(id: 'msg-1'),
+          locale: 'it',
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(
+        bloc.state.workflowSuggestionsByMessageId['msg-1']?.isUnsupported,
+        isTrue,
+      );
+      expect(bloc.state.loadingWorkflowSuggestionMessageIds, isEmpty);
+    });
 
     test(
       'ChatWorkflowSuggestionPrefetchRequested skips when AI is disabled',
@@ -1907,32 +2257,29 @@ void main() {
       },
     );
 
-    test(
-      'ChatWorkflowSuggestionPrefetchRequested skips an already-cached '
-      'message',
-      () async {
-        await openConversation();
-        bloc.add(const ChatWorkflowAiPreferenceChanged(true));
-        suggestionAdapter.responseBody =
-            '{"resolutionStatus": "ok", "suggestions": [], "warnings": []}';
-        bloc.add(
-          ChatWorkflowSuggestionPrefetchRequested(
-            message: _buildMessage(id: 'msg-1'),
-            locale: 'it',
-          ),
-        );
-        await pumpEventQueue();
+    test('ChatWorkflowSuggestionPrefetchRequested skips an already-cached '
+        'message', () async {
+      await openConversation();
+      bloc.add(const ChatWorkflowAiPreferenceChanged(true));
+      suggestionAdapter.responseBody =
+          '{"resolutionStatus": "ok", "suggestions": [], "warnings": []}';
+      bloc.add(
+        ChatWorkflowSuggestionPrefetchRequested(
+          message: _buildMessage(id: 'msg-1'),
+          locale: 'it',
+        ),
+      );
+      await pumpEventQueue();
 
-        bloc.add(
-          ChatWorkflowSuggestionPrefetchRequested(
-            message: _buildMessage(id: 'msg-1'),
-            locale: 'it',
-          ),
-        );
-        await pumpEventQueue();
+      bloc.add(
+        ChatWorkflowSuggestionPrefetchRequested(
+          message: _buildMessage(id: 'msg-1'),
+          locale: 'it',
+        ),
+      );
+      await pumpEventQueue();
 
-        expect(suggestionAdapter.lastRequest, isNotNull);
-      },
-    );
+      expect(suggestionAdapter.lastRequest, isNotNull);
+    });
   });
 }
