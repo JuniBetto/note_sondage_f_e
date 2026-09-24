@@ -898,6 +898,8 @@
             }
         }
     },
+    "blockedUsersTitle": "Blocked users",
+    "blockedUsersSubtitle": "Manage the people you've blocked in chat",
     "profileTitle": "Profile",
     "profileDescription": "Manage the information shown for your account.",
     "profileProviderEmail": "Email",
@@ -1210,5 +1212,15 @@
     "tutorialHomeQuickActionsTitle": "Quick actions",
     "tutorialHomeQuickActionsDescription": "Use these shortcuts to jump directly into the main areas and start an action quickly.",
     "tutorialHomeActivityTitle": "Recent activity",
-    "tutorialHomeActivityDescription": "This list helps you follow what happened recently across teams, shifts, clocking, and surveys."
+    "tutorialHomeActivityDescription": "This list helps you follow what happened recently across teams, shifts, clocking, and surveys.",
+    "contactAttachmentsTitle": "Attachments (optional)",
+    "contactAttachmentsHint": "JPG, JPEG, PNG or PDF. Up to 5 files, 5 MB in total. PDFs without passwords, forms or interactive content (max 50 pages).",
+    "contactAttachmentsAdd": "Attach files",
+    "contactAttachmentsRemove": "Remove attachment",
+    "contactAttachmentsSizeError": "Attachments exceed 5 MB in total, including after validation. Reduce their size and try again.",
+    "contactAttachmentsCountError": "You can attach up to 5 files.",
+    "contactAttachmentsDuplicateError": "This file has already been added.",
+    "contactAttachmentsInvalidError": "Invalid or unsupported file. Use intact JPG/PNG images (max 25 megapixels) or PDFs without passwords or interactive content. Also check the filename.",
+    "contactAttachmentsScanError": "Security checks are unavailable. Attachments were not sent: please try again later.",
+    "contactSupportRateError": "Too many requests. Wait a few minutes before trying again."
 }

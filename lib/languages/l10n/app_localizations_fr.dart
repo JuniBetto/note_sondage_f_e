@@ -2162,6 +2162,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get blockedUsersTitle => 'Utilisateurs bloqués';
+
+  @override
+  String get blockedUsersSubtitle =>
+      'Gérez les personnes que vous avez bloquées dans le chat';
+
+  @override
   String get profileTitle => 'Profil';
 
   @override
@@ -3250,4 +3257,41 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tutorialHomeActivityDescription =>
       'Cette liste permet de suivre l\'activité récente des équipes, des quarts, des pointages et des sondages.';
+
+  @override
+  String get contactAttachmentsTitle => 'Pièces jointes (facultatif)';
+
+  @override
+  String get contactAttachmentsHint =>
+      'JPG, JPEG, PNG ou PDF. Maximum 5 fichiers, 5 Mo au total. PDF sans mot de passe, formulaires ou contenu interactif (50 pages maximum).';
+
+  @override
+  String get contactAttachmentsAdd => 'Joindre des fichiers';
+
+  @override
+  String get contactAttachmentsRemove => 'Retirer la pièce jointe';
+
+  @override
+  String get contactAttachmentsSizeError =>
+      'Les pièces jointes dépassent 5 Mo au total, y compris après vérification. Réduisez leur taille et réessayez.';
+
+  @override
+  String get contactAttachmentsCountError =>
+      'Vous pouvez joindre au maximum 5 fichiers.';
+
+  @override
+  String get contactAttachmentsDuplicateError =>
+      'Ce fichier a déjà été ajouté.';
+
+  @override
+  String get contactAttachmentsInvalidError =>
+      'Fichier invalide ou non autorisé. Utilisez des images JPG/PNG intactes (25 mégapixels maximum) ou des PDF sans mot de passe ni contenu interactif. Vérifiez aussi le nom du fichier.';
+
+  @override
+  String get contactAttachmentsScanError =>
+      'La vérification de sécurité est indisponible. Les pièces jointes n’ont pas été envoyées : réessayez plus tard.';
+
+  @override
+  String get contactSupportRateError =>
+      'Trop de demandes. Attendez quelques minutes avant de réessayer.';
 }

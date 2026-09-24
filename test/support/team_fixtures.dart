@@ -10,6 +10,7 @@ TeamEntity buildTeam({
   String color = '#4A90E2',
   int memberCount = 2,
   DateTime? createdAt,
+  bool workflowAiEnabled = false,
 }) {
   return TeamEntity(
     id,
@@ -20,6 +21,7 @@ TeamEntity buildTeam({
     createdByUserId: createdByUserId,
     memberCount: memberCount,
     createdAt: createdAt ?? DateTime.utc(2024, 1, 1),
+    workflowAiEnabled: workflowAiEnabled,
   );
 }
 

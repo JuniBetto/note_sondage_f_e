@@ -4,6 +4,7 @@ import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
+import 'package:note_sondage/feature/chat/ui/widgets/blocked_users_screen.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
@@ -305,6 +306,17 @@ class _SettingsMobileState extends State<SettingsMobile> {
                         onTap: () => _showSettingModal(
                           context,
                           const SettingsPrivacyWeb(),
+                        ),
+                        showDivider: true,
+                      ),
+                      _SettingTile(
+                        icon: Icons.block_rounded,
+                        iconColor: const Color(0xFFF44336),
+                        title: localization.blockedUsersTitle,
+                        subtitle: localization.blockedUsersSubtitle,
+                        onTap: () => _showSettingModal(
+                          context,
+                          const BlockedUsersScreen(),
                         ),
                         showDivider: true,
                       ),

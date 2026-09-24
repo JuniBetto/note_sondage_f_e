@@ -18,37 +18,28 @@ import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_action_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
-import 'package:note_sondage/feature/chat/domain/use_case/chat_message_action_use_case.dart';
-import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
+import 'package:note_sondage/feature/chat/ui/bloc/chat/chat_bloc.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_section.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_direct_action_dialog.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_image_viewer_dialog.dart';
 import 'package:note_sondage/feature/chat/ui/web/chat_web_layout.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_draft_attachment.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_event_workflow_controller.dart';
+import 'package:note_sondage/feature/chat/workflow/chat_message_shift_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_sondage_workflow_controller.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_models.dart';
-import 'package:note_sondage/feature/chat/workflow/chat_message_suggestion_service.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_task_workflow_controller.dart';
 import 'package:note_sondage/feature/event/domain/entities/event_create_request_entity.dart';
-import 'package:note_sondage/feature/event/domain/entities/event_entity.dart';
-import 'package:note_sondage/feature/event/domain/use_case/event_use_case.dart';
-import 'package:note_sondage/feature/event/ui/widgets/event_editor_dialog.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
-import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_create_request_entity.dart';
-import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
-import 'package:note_sondage/feature/shift/ui/widgets/shift_day_dialog.dart';
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
-import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
-import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
-import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
-import 'package:uuid/uuid.dart';
 
 enum ChatScreenLayout { mobile, web }
 
@@ -89,26 +80,18 @@ class TeamChatScreen extends StatefulWidget {
 }
 
 class _TeamChatScreenState extends State<TeamChatScreen> {
-  static const int _initialMessagesLimit = 100;
-  static const int _olderMessagesBatchSize = 70;
   static const double _olderMessagesLoadThreshold = 180;
   static const double _readVisibilityThreshold = 72;
 
-  final TeamUseCase _teamUseCase = GetIt.instance<TeamUseCase>();
-  final TeamMemberUseCase _teamMemberUseCase =
-      GetIt.instance<TeamMemberUseCase>();
-  final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
-  final ChatUseCase _chatUseCase = GetIt.instance<ChatUseCase>();
-  final ChatMessageActionUseCase _messageActionUseCase =
-      GetIt.instance<ChatMessageActionUseCase>();
+  final ChatBloc _chatBloc = GetIt.instance<ChatBloc>();
   final ChatMessageSondageWorkflowController _sondageWorkflowController =
       GetIt.instance<ChatMessageSondageWorkflowController>();
-  final ChatMessageSuggestionService _messageSuggestionService =
-      GetIt.instance<ChatMessageSuggestionService>();
   final ChatMessageTaskWorkflowController _taskWorkflowController =
       GetIt.instance<ChatMessageTaskWorkflowController>();
-  final EventUseCase _eventUseCase = GetIt.instance<EventUseCase>();
-  final ShiftRepository _shiftRepository = GetIt.instance<ShiftRepository>();
+  final ChatMessageShiftWorkflowController _shiftWorkflowController =
+      GetIt.instance<ChatMessageShiftWorkflowController>();
+  final ChatMessageEventWorkflowController _eventWorkflowController =
+      GetIt.instance<ChatMessageEventWorkflowController>();
   final RealtimeNotificationService _realtimeService =
       GetIt.instance<RealtimeNotificationService>();
   final WorkflowAiPreferencesCubit _workflowAiPreferencesCubit =
@@ -120,35 +103,52 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
   StreamSubscription<RealtimeNotification>? _realtimeSubscription;
   StreamSubscription<WorkflowAiPreferencesState>? _workflowAiSubscription;
+  StreamSubscription<ChatState>? _chatBlocSubscription;
+  ChatState? _previousChatBlocState;
+  bool _pendingTeamsRefreshFeedback = false;
 
-  List<TeamEntity> _teams = const <TeamEntity>[];
   List<ChatMessageEntity> _messages = const <ChatMessageEntity>[];
-  final Map<String, List<TeamMemberEntity>> _teamMembersByTeamId = {};
-  final Map<String, List<RoleEntity>> _rolesByTeamId = {};
-  final Map<String, DetectWorkflowSuggestionResult>
-  _workflowSuggestionsByMessageId = {};
-  final Set<String> _loadingTeamMemberIds = <String>{};
-  final Set<String> _loadingTeamRoleIds = <String>{};
-  final Set<String> _loadingWorkflowSuggestionMessageIds = <String>{};
   ChatConversationEntity? _conversation;
   String? _selectedTeamId;
   String? _selectedMemberUserId;
   String? _conversationDisplayName;
-  bool _loadingTeams = true;
   bool _loadingMessages = false;
   bool _refreshingMessages = false;
   bool _skipNextTeamsConversationLoad = false;
   bool _loadingOlderMessages = false;
   bool _hasMoreOlderMessages = true;
-  int _pendingSendCount = 0;
-  bool _markingConversationRead = false;
   bool _pendingForceLatestFocus = false;
-  bool _workflowAiAppEnabled = false;
-  ChatDraftAttachment? _selectedAttachment;
-  ChatMessageEntity? _replyTarget;
   bool _didNotifyContentReady = false;
 
+  // Sourced from ChatBloc — only ever written by _loadTeams (teams,
+  // loadingTeams), _ensureTeamAccessContextLoaded (the two maps), the
+  // composer/send handlers below (selectedAttachment, replyTarget,
+  // pendingSendCount), _markConversationRead (markingConversationRead), the
+  // WorkflowAiPreferencesCubit subscription (workflowAiAppEnabled), or the
+  // AI suggestion prefetch/detect/clear handlers below (the two suggestion
+  // maps) — none of which have any other, not-yet-migrated writer, so they
+  // can be plain getters with no local mutable copy. _selectedTeamId stays a
+  // local field (see _loadTeams and _loadConversation) since it's also
+  // written by the not-yet-migrated conversation-loading flow.
+  List<TeamEntity> get _teams => _chatBloc.state.teams;
+  bool get _loadingTeams => _chatBloc.state.loadingTeams;
+  Map<String, List<TeamMemberEntity>> get _teamMembersByTeamId =>
+      _chatBloc.state.teamMembersByTeamId;
+  Map<String, List<RoleEntity>> get _rolesByTeamId =>
+      _chatBloc.state.rolesByTeamId;
+  ChatDraftAttachment? get _selectedAttachment =>
+      _chatBloc.state.selectedAttachment;
+  ChatMessageEntity? get _replyTarget => _chatBloc.state.replyTarget;
+  int get _pendingSendCount => _chatBloc.state.pendingSendCount;
   bool get _sending => _pendingSendCount > 0;
+  bool get _markingConversationRead => _chatBloc.state.markingConversationRead;
+  bool get _workflowAiAppEnabled => _chatBloc.state.workflowAiAppEnabled;
+  Map<String, DetectWorkflowSuggestionResult>
+  get _workflowSuggestionsByMessageId =>
+      _chatBloc.state.workflowSuggestionsByMessageId;
+  Set<String> get _loadingWorkflowSuggestionMessageIds =>
+      _chatBloc.state.loadingWorkflowSuggestionMessageIds;
+
   String get _currentUid => GetIt.instance<AuthBloc>().state.user.uid.trim();
   String get _currentEmail =>
       GetIt.instance<AuthBloc>().state.user.email.trim().toLowerCase();
@@ -237,24 +237,24 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   void initState() {
     super.initState();
     _pendingForceLatestFocus = widget.focusLatestOnOpen;
-    _workflowAiAppEnabled = _workflowAiPreferencesCubit.state.appAiEnabled;
+    _chatBloc.add(
+      ChatWorkflowAiPreferenceChanged(
+        _workflowAiPreferencesCubit.state.appAiEnabled,
+      ),
+    );
     _scrollController.addListener(_handleScroll);
     _realtimeSubscription = _realtimeService.stream.listen(
       _handleRealtimeNotification,
     );
+    _previousChatBlocState = _chatBloc.state;
+    _chatBlocSubscription = _chatBloc.stream.listen(_handleChatBlocState);
     _workflowAiSubscription = _workflowAiPreferencesCubit.stream.listen((
       state,
     ) {
-      if (!mounted || _workflowAiAppEnabled == state.appAiEnabled) {
+      if (_workflowAiAppEnabled == state.appAiEnabled) {
         return;
       }
-      setState(() {
-        _workflowAiAppEnabled = state.appAiEnabled;
-        if (!_workflowAiAppEnabled) {
-          _workflowSuggestionsByMessageId.clear();
-          _loadingWorkflowSuggestionMessageIds.clear();
-        }
-      });
+      _chatBloc.add(ChatWorkflowAiPreferenceChanged(state.appAiEnabled));
     });
     unawaited(_workflowAiPreferencesCubit.loadPreferences());
     final initialTeamId = widget.initialTeamId;
@@ -263,20 +263,16 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       // it immediately instead of waiting on the full team list round-trip.
       _selectedTeamId = initialTeamId;
       _skipNextTeamsConversationLoad = true;
-      unawaited(
-        _loadConversation(
-          initialTeamId,
-          memberUserId: widget.initialMemberUserId,
-        ),
-      );
+      _loadConversation(initialTeamId, memberUserId: widget.initialMemberUserId);
     }
-    unawaited(_loadTeams());
+    _loadTeams();
   }
 
   @override
   void dispose() {
     _realtimeSubscription?.cancel();
     _workflowAiSubscription?.cancel();
+    _chatBlocSubscription?.cancel();
     _scrollController.removeListener(_handleScroll);
     _messageController.dispose();
     _scrollController.dispose();
@@ -304,234 +300,240 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       return;
     }
     if (_teams.any((team) => team.id == nextTeamId)) {
-      unawaited(_loadConversation(nextTeamId, memberUserId: nextMemberUserId));
+      _loadConversation(nextTeamId, memberUserId: nextMemberUserId);
       return;
     }
-    unawaited(_loadTeams());
+    _loadTeams();
   }
 
-  Future<void> _loadTeams({bool showFeedback = false}) async {
-    try {
-      final teams = await _teamUseCase.getAllTeams();
-      if (!mounted) return;
-
-      final nextTeamId = _resolveNextTeamId(teams);
-      setState(() {
-        _teams = teams;
-        _selectedTeamId = nextTeamId;
-        _loadingTeams = false;
-      });
-      _notifyConversationTitleChanged();
-
-      if (nextTeamId != null) {
-        // Skip the redundant reload only once, right after the initState
-        // fast path already kicked off this exact conversation.
-        if (_skipNextTeamsConversationLoad &&
-            nextTeamId == widget.initialTeamId) {
-          _skipNextTeamsConversationLoad = false;
-        } else {
-          await _loadConversation(
-            nextTeamId,
-            memberUserId: widget.initialMemberUserId?.trim(),
-          );
-        }
-      } else if (mounted) {
-        setState(() {
-          _conversation = null;
-          _messages = const <ChatMessageEntity>[];
-          _selectedMemberUserId = null;
-          _conversationDisplayName = null;
-          _loadingMessages = false;
-          _loadingOlderMessages = false;
-          _hasMoreOlderMessages = true;
-        });
-        _notifyConversationTitleChanged();
-      }
-
-      if (showFeedback && mounted) {
-        AppSnackBar.showSuccess(
-          context,
-          AppLocalizations.of(context)!.chatRefreshed,
-        );
-      }
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _loadingTeams = false;
-      });
-      AppSnackBar.showError(
-        context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatLoadTeamsError,
-        ),
-      );
+  void _loadTeams({bool showFeedback = false}) {
+    if (showFeedback) {
+      _pendingTeamsRefreshFeedback = true;
     }
+    _chatBloc.add(ChatTeamsRequested(preferredTeamId: widget.initialTeamId));
   }
 
-  String? _resolveNextTeamId(List<TeamEntity> teams) {
-    final preferredTeamId = widget.initialTeamId ?? _selectedTeamId;
-    if (preferredTeamId != null &&
-        teams.any((team) => team.id == preferredTeamId)) {
-      return preferredTeamId;
+  /// Reacts to every [ChatBloc] emission. Most fields this screen reads are
+  /// now plain getters over `_chatBloc.state`. `loadingMessages`/
+  /// `refreshingMessages`/`loadingOlderMessages` are blanket-mirrored on
+  /// every emission below — safe because nothing else still writes them
+  /// locally. `_conversation`/`_messages`/`_conversationDisplayName`/
+  /// `_selectedMemberUserId`/`_hasMoreOlderMessages` are NOT
+  /// blanket-mirrored: send, reactions, delete and mark-read (not yet
+  /// migrated) still mutate them directly, and syncing on every unrelated
+  /// emission would clobber those local-only mutations with the bloc's own,
+  /// unaware, copy. They're only synced in response to the specific
+  /// transients that mean "the bloc's copy is authoritative right now"
+  /// (`ChatConversationOpened`, `ChatMessagesRefreshed`,
+  /// `ChatOlderMessagesLoaded`).
+  void _handleChatBlocState(ChatState next) {
+    final previous = _previousChatBlocState;
+    _previousChatBlocState = next;
+    if (!mounted) {
+      return;
     }
-    return teams.isNotEmpty ? teams.first.id : null;
-  }
-
-  Future<void> _loadConversation(String teamId, {String? memberUserId}) async {
-    unawaited(_ensureTeamAccessContextLoaded(teamId));
-    final normalizedMemberUserId = memberUserId?.trim();
-    final isDirect =
-        normalizedMemberUserId != null && normalizedMemberUserId.isNotEmpty;
-    final cachedConversation = isDirect
-        ? _chatUseCase.getCachedDirectConversation(
-            teamId,
-            normalizedMemberUserId,
-          )
-        : _chatUseCase.getCachedTeamConversation(teamId);
-    final cachedMessages = cachedConversation == null
-        ? const <ChatMessageEntity>[]
-        : _chatUseCase.getCachedMessages(cachedConversation.id);
-    final hasReliableCachedEmptyState =
-        cachedConversation != null && cachedConversation.lastMessageAt == null;
-    final canRenderCache =
-        cachedMessages.isNotEmpty || hasReliableCachedEmptyState;
 
     setState(() {
-      _selectedTeamId = teamId;
-      _selectedMemberUserId = normalizedMemberUserId;
-      if (cachedConversation != null) {
-        _conversation = cachedConversation;
-        _conversationDisplayName =
-            cachedConversation.participantDisplayName ?? _selectedTeam?.name;
-      } else {
-        _conversation = null;
-        _conversationDisplayName = null;
-      }
-      if (canRenderCache) {
-        _messages = cachedMessages;
-      } else {
-        _messages = const <ChatMessageEntity>[];
-      }
-      _loadingMessages = !canRenderCache;
-      _refreshingMessages = canRenderCache;
-      _loadingOlderMessages = false;
-      _hasMoreOlderMessages = cachedMessages.length >= _initialMessagesLimit;
+      _loadingMessages = next.loadingMessages;
+      _refreshingMessages = next.refreshingMessages;
+      _loadingOlderMessages = next.loadingOlderMessages;
     });
-    _notifyConversationTitleChanged();
-    if (canRenderCache) {
-      // Land on the latest cached messages instantly: this is a fresh
-      // conversation open, not an incremental update worth animating.
-      _scrollToBottom(animate: false);
-      if (_pendingForceLatestFocus) {
-        _focusLatestMessage(animate: false);
-      }
+
+    final justFinishedLoadingTeams =
+        (previous?.loadingTeams ?? true) && !next.loadingTeams;
+    final transientChanged = next.transient != previous?.transient;
+    final freshTransient = transientChanged ? next.transient : null;
+
+    if (freshTransient is ChatErrorOccurred) {
+      _pendingTeamsRefreshFeedback = false;
+      AppSnackBar.showError(context, freshTransient.message);
     }
 
-    try {
-      final conversation = isDirect
-          ? await _chatUseCase.getOrCreateDirectConversation(
-              teamId,
-              normalizedMemberUserId,
-            )
-          : await _chatUseCase.getOrCreateTeamConversation(teamId);
-      final messages = await _chatUseCase.getMessages(
-        conversation.id,
-        limit: _initialMessagesLimit,
+    if (justFinishedLoadingTeams && freshTransient is! ChatErrorOccurred) {
+      _handleTeamsLoadCompleted(next);
+    }
+
+    if (freshTransient is ChatConversationOpened) {
+      _syncConversationFromBloc(next);
+      _handleConversationOpened();
+    } else if (freshTransient is ChatMessagesRefreshed ||
+        freshTransient is ChatOlderMessagesLoaded ||
+        freshTransient is ChatReactionUpdated ||
+        freshTransient is ChatMessageDeleted ||
+        freshTransient is ChatConversationMarkReadCompleted) {
+      _syncConversationFromBloc(next);
+    } else if (freshTransient is ChatMessageSent) {
+      _syncConversationFromBloc(next);
+      _scrollToBottom();
+    } else if (freshTransient is ChatMessageSendFailed) {
+      _syncConversationFromBloc(next);
+      _handleMessageSendFailed(freshTransient);
+    } else if (freshTransient is ChatSenderBlocked) {
+      _syncConversationFromBloc(next);
+      _handleSenderBlocked(freshTransient);
+    } else if (freshTransient is ChatMessageReportSubmitted) {
+      _handleMessageReportSubmitted();
+    }
+  }
+
+  void _handleSenderBlocked(ChatSenderBlocked transient) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final displayName = transient.blockedUser.displayName.trim();
+    AppSnackBar.showSuccess(
+      context,
+      displayName.isEmpty
+          ? _chatActionText(locale, it: 'Utente bloccato.', en: 'User blocked.')
+          : _chatActionText(
+              locale,
+              it: '$displayName e stato bloccato.',
+              en: '$displayName has been blocked.',
+            ),
+    );
+  }
+
+  void _handleMessageReportSubmitted() {
+    final locale = Localizations.localeOf(context).languageCode;
+    AppSnackBar.showSuccess(
+      context,
+      _chatActionText(
+        locale,
+        it: 'Segnalazione inviata, grazie.',
+        en: 'Report submitted, thank you.',
+      ),
+    );
+  }
+
+  /// The "should I put the draft back?" decision reads the *live*
+  /// `TextEditingController`/current attachment/reply-target — only the
+  /// widget can make it, which is why the bloc hands back the original
+  /// payload in [ChatMessageSendFailed] instead of deciding itself.
+  void _handleMessageSendFailed(ChatMessageSendFailed transient) {
+    final shouldRestoreDraft =
+        _messageController.text.trim().isEmpty &&
+        _selectedAttachment == null &&
+        _replyTarget == null;
+    if (shouldRestoreDraft) {
+      _chatBloc.add(
+        ChatDraftRestored(
+          attachment: transient.attachment,
+          replyTarget: transient.replyTarget,
+        ),
       );
-      if (!mounted) return;
+      _messageController.text = transient.content;
+      _messageController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _messageController.text.length),
+      );
+    }
+    AppSnackBar.showError(context, transient.message);
+  }
+
+  void _syncConversationFromBloc(ChatState state) {
+    setState(() {
+      _conversation = state.conversation;
+      _conversationDisplayName = state.conversationDisplayName;
+      _selectedMemberUserId = state.selectedMemberUserId;
+      _messages = state.messages;
+      _hasMoreOlderMessages = state.hasMoreOlderMessages;
+    });
+  }
+
+  /// Runs the scroll/focus/mark-read side effects that used to sit right
+  /// after `_loadConversation`'s cache-render and server-reconcile setState
+  /// calls. Both steps are unified here (see `ChatConversationOpened`'s
+  /// doc): a cache-render with nothing pending-focus now also runs the
+  /// mark-read check a little earlier than before, which is harmless — the
+  /// reconcile step's own firing would have triggered it moments later
+  /// anyway.
+  void _handleConversationOpened() {
+    _notifyConversationTitleChanged();
+    if (_pendingForceLatestFocus) {
+      _focusLatestMessage(animate: false);
+    } else {
+      _scrollToBottom(animate: false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(_markConversationReadIfVisible());
+      });
+    }
+  }
+
+  void _handleTeamsLoadCompleted(ChatState next) {
+    final nextTeamId = next.selectedTeamId;
+    setState(() {
+      _selectedTeamId = nextTeamId;
+    });
+    _notifyConversationTitleChanged();
+
+    if (nextTeamId != null) {
+      // Skip the redundant reload only once, right after the initState
+      // fast path already kicked off this exact conversation.
+      if (_skipNextTeamsConversationLoad &&
+          nextTeamId == widget.initialTeamId) {
+        _skipNextTeamsConversationLoad = false;
+      } else {
+        _loadConversation(
+          nextTeamId,
+          memberUserId: widget.initialMemberUserId?.trim(),
+        );
+      }
+    } else {
       setState(() {
-        _conversation = conversation;
-        _conversationDisplayName =
-            conversation.participantDisplayName ?? _selectedTeam?.name;
-        _messages = messages;
+        _conversation = null;
+        _messages = const <ChatMessageEntity>[];
+        _selectedMemberUserId = null;
+        _conversationDisplayName = null;
         _loadingMessages = false;
-        _refreshingMessages = false;
-        _hasMoreOlderMessages = messages.length >= _initialMessagesLimit;
+        _loadingOlderMessages = false;
+        _hasMoreOlderMessages = true;
       });
       _notifyConversationTitleChanged();
-      if (_pendingForceLatestFocus) {
-        _focusLatestMessage(animate: false);
-      } else {
-        // Still opening this conversation for the first time: jump, don't
-        // animate, so the user never sees older messages before this.
-        _scrollToBottom(animate: false);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          unawaited(_markConversationReadIfVisible());
-        });
-      }
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _loadingMessages = false;
-        _refreshingMessages = false;
-      });
-      AppSnackBar.showError(
+    }
+
+    if (_pendingTeamsRefreshFeedback) {
+      _pendingTeamsRefreshFeedback = false;
+      AppSnackBar.showSuccess(
         context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatLoadConversationError,
-        ),
+        AppLocalizations.of(context)!.chatRefreshed,
       );
     }
   }
 
+  /// Dispatches to [ChatBloc] and returns immediately — [_handleChatBlocState]
+  /// reacts to the resulting `ChatConversationOpened` transient(s) (cache
+  /// render, then server reconcile) by syncing `_conversation`/`_messages`/etc.
+  /// and running the scroll/focus/mark-read side effects that need a live
+  /// `BuildContext`/`ScrollController`, which the bloc can't own.
+  void _loadConversation(String teamId, {String? memberUserId}) {
+    unawaited(_ensureTeamAccessContextLoaded(teamId));
+    _chatBloc.add(ChatConversationRequested(teamId, memberUserId: memberUserId));
+  }
+
+  /// Bridges to [ChatBloc]'s equivalent event for callers that need to
+  /// `await` completion (e.g. before reading permissions off
+  /// [_teamMembersByTeamId]/[_rolesByTeamId] to decide what to show).
+  /// [ChatTeamAccessContextReady] fires whether the underlying fetch
+  /// succeeded or not, so this never hangs on a failure — it just means the
+  /// caches may still be unpopulated afterwards, exactly as before.
   Future<void> _ensureTeamAccessContextLoaded(String teamId) async {
     final normalizedTeamId = teamId.trim();
     if (normalizedTeamId.isEmpty) {
       return;
     }
-
-    final futures = <Future<void>>[];
-
-    if (!_teamMembersByTeamId.containsKey(normalizedTeamId) &&
-        !_loadingTeamMemberIds.contains(normalizedTeamId)) {
-      _loadingTeamMemberIds.add(normalizedTeamId);
-      futures.add(
-        _teamMemberUseCase
-            .getAllMembersByTeamId(normalizedTeamId)
-            .then((members) {
-              if (!mounted) {
-                return;
-              }
-              setState(() {
-                _teamMembersByTeamId[normalizedTeamId] = members;
-              });
-            })
-            .catchError((_) {})
-            .whenComplete(() {
-              _loadingTeamMemberIds.remove(normalizedTeamId);
-            }),
-      );
+    if (_teamMembersByTeamId.containsKey(normalizedTeamId) &&
+        _rolesByTeamId.containsKey(normalizedTeamId)) {
+      return;
     }
 
-    if (!_rolesByTeamId.containsKey(normalizedTeamId) &&
-        !_loadingTeamRoleIds.contains(normalizedTeamId)) {
-      _loadingTeamRoleIds.add(normalizedTeamId);
-      futures.add(
-        _roleUseCase
-            .getAllRolesByTeamId(normalizedTeamId)
-            .then((roles) {
-              if (!mounted) {
-                return;
-              }
-              setState(() {
-                _rolesByTeamId[normalizedTeamId] = roles;
-              });
-            })
-            .catchError((_) {})
-            .whenComplete(() {
-              _loadingTeamRoleIds.remove(normalizedTeamId);
-            }),
-      );
-    }
-
-    if (futures.isNotEmpty) {
-      await Future.wait(futures);
-    }
+    final ready = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatTeamAccessContextReady &&
+          (state.transient as ChatTeamAccessContextReady).teamId ==
+              normalizedTeamId,
+    );
+    _chatBloc.add(ChatTeamAccessContextRequested(normalizedTeamId));
+    await ready;
   }
 
   bool _canManageTeam(TeamEntity team) {
@@ -651,58 +653,55 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     return false;
   }
 
+  /// Bridges to [ChatBloc]'s equivalent event. Awaits [ChatMessagesRefreshed]
+  /// (fired on both success and failure — see its doc) rather than the
+  /// shared `refreshingMessages` flag, since that flag is also touched by
+  /// conversation-loading and would risk resolving on the wrong emission.
+  /// `_isNearBottom()` is captured *before* dispatching, exactly like the
+  /// widget method this replaces: whether to auto-scroll after a
+  /// realtime-triggered refresh depends on where the user already was.
   Future<void> _refreshMessages() async {
-    final conversation = _conversation;
-    if (conversation == null) {
+    if (_conversation == null) {
       return;
     }
 
     final shouldKeepBottomVisible = _isNearBottom();
-
-    if (mounted) {
-      setState(() {
-        _refreshingMessages = true;
-      });
+    final settled = _chatBloc.stream.firstWhere(
+      (state) => state.transient is ChatMessagesRefreshed,
+    );
+    _chatBloc.add(const ChatMessagesRefreshRequested());
+    await settled;
+    if (!mounted) {
+      return;
     }
 
-    try {
-      final messages = await _chatUseCase.getMessages(
-        conversation.id,
-        limit: _initialMessagesLimit,
-      );
-      final mergedMessages = _mergeRecentMessages(
-        currentMessages: _messages,
-        latestMessages: messages,
-      );
-      if (!mounted) return;
-      setState(() {
-        _messages = mergedMessages;
-        _refreshingMessages = false;
-        _hasMoreOlderMessages = messages.length >= _initialMessagesLimit;
-      });
-      if (_pendingForceLatestFocus) {
-        _focusLatestMessage();
-      } else if (shouldKeepBottomVisible) {
-        _scrollToBottom();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          unawaited(_markConversationReadIfVisible());
-        });
-      }
-    } catch (_) {
-      // Best effort refresh triggered by realtime notifications.
-      if (!mounted) return;
-      setState(() {
-        _refreshingMessages = false;
+    if (_pendingForceLatestFocus) {
+      _focusLatestMessage();
+    } else if (shouldKeepBottomVisible) {
+      _scrollToBottom();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(_markConversationReadIfVisible());
       });
     }
   }
 
+  /// Bridges to [ChatBloc]'s equivalent event. The guard below is a fast,
+  /// synchronous re-entrancy check (`_loadingOlderMessages` is set `true`
+  /// immediately, before any bloc round-trip) so rapid repeated calls from
+  /// `_handleScroll` during one scroll gesture can't all slip through
+  /// before the bloc's own `state.loadingOlderMessages` guard would catch
+  /// them — that one alone still needed `sequential` processing to be
+  /// race-free (see the bloc's own comment), so this local guard is a
+  /// cheap first line of defense, not a substitute for it.
+  ///
+  /// The scroll-position-preserving jump only runs when the message count
+  /// actually grew — mirrors the widget method this replaces skipping it
+  /// entirely on failure or on an empty "nothing new" page.
   Future<void> _loadOlderMessages() async {
-    final conversation = _conversation;
-    if (conversation == null ||
+    if (_conversation == null ||
         _loadingMessages ||
         _loadingOlderMessages ||
         !_hasMoreOlderMessages ||
@@ -710,7 +709,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       return;
     }
 
-    final before = _messages.first.createdAt;
+    final previousMessageCount = _messages.length;
     final previousMaxScrollExtent = _scrollController.hasClients
         ? _scrollController.position.maxScrollExtent
         : 0.0;
@@ -722,150 +721,51 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       _loadingOlderMessages = true;
     });
 
-    try {
-      final olderMessages = await _chatUseCase.getMessages(
-        conversation.id,
-        before: before,
-        limit: _olderMessagesBatchSize,
-      );
-      if (!mounted) return;
-
-      final existingIds = _messages.map((message) => message.id).toSet();
-      final uniqueOlderMessages = olderMessages
-          .where((message) => !existingIds.contains(message.id))
-          .toList();
-
-      if (uniqueOlderMessages.isEmpty) {
-        setState(() {
-          _loadingOlderMessages = false;
-          _hasMoreOlderMessages = false;
-        });
-        return;
-      }
-
-      setState(() {
-        _messages = <ChatMessageEntity>[...uniqueOlderMessages, ..._messages];
-        _loadingOlderMessages = false;
-        _hasMoreOlderMessages = olderMessages.length >= _olderMessagesBatchSize;
-      });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_scrollController.hasClients) {
-          return;
-        }
-        final newMaxScrollExtent = _scrollController.position.maxScrollExtent;
-        final delta = newMaxScrollExtent - previousMaxScrollExtent;
-        _scrollController.jumpTo(previousPixels + delta);
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _loadingOlderMessages = false;
-      });
-    }
-  }
-
-  Future<void> _sendMessage() async {
-    final conversation = _conversation;
-    final content = _messageController.text.trim();
-    final selectedAttachment = _selectedAttachment;
-    if (conversation == null ||
-        (content.isEmpty && selectedAttachment == null)) {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) => state.transient is ChatOlderMessagesLoaded,
+    );
+    _chatBloc.add(const ChatOlderMessagesRequested());
+    await settled;
+    if (!mounted || _messages.length <= previousMessageCount) {
       return;
     }
 
-    final temporaryMessage = _buildOptimisticMessage(
-      conversationId: conversation.id,
-      content: content,
-      attachment: selectedAttachment,
-      replyTo: _replyTarget,
-    );
-
-    setState(() {
-      _pendingSendCount += 1;
-      _selectedAttachment = null;
-      _replyTarget = null;
-      _messages = <ChatMessageEntity>[..._messages, temporaryMessage];
-    });
-    _messageController.clear();
-    _scrollToBottom();
-
-    try {
-      final message = selectedAttachment == null
-          ? await _chatUseCase.sendMessage(
-              conversation.id,
-              content,
-              replyToMessageId: temporaryMessage.replyTo?.messageId,
-            )
-          : await _chatUseCase.sendAttachmentMessage(
-              conversation.id,
-              content: content,
-              bytes: selectedAttachment.bytes,
-              fileName: selectedAttachment.fileName,
-              contentType: selectedAttachment.contentType,
-              replyToMessageId: temporaryMessage.replyTo?.messageId,
-            );
-      if (!mounted) return;
-      setState(() {
-        _messages = _messages
-            .map((item) => item.id == temporaryMessage.id ? message : item)
-            .toList();
-        _pendingSendCount = _pendingSendCount > 0 ? _pendingSendCount - 1 : 0;
-      });
-      _scrollToBottom();
-    } catch (error) {
-      if (!mounted) return;
-      final shouldRestoreDraft =
-          _messageController.text.trim().isEmpty &&
-          _selectedAttachment == null &&
-          _replyTarget == null;
-      setState(() {
-        _messages = _messages
-            .where((item) => item.id != temporaryMessage.id)
-            .toList();
-        _pendingSendCount = _pendingSendCount > 0 ? _pendingSendCount - 1 : 0;
-        if (shouldRestoreDraft) {
-          _selectedAttachment = selectedAttachment;
-          _replyTarget = temporaryMessage.replyTo == null
-              ? null
-              : ChatMessageEntity(
-                  id: temporaryMessage.replyTo!.messageId,
-                  conversationId: conversation.id,
-                  senderUserId: '',
-                  senderName: temporaryMessage.replyTo!.senderName,
-                  senderAvatarUrl: null,
-                  contentText: temporaryMessage.replyTo!.contentPreview,
-                  messageType: temporaryMessage.replyTo!.messageType,
-                  attachmentPath: null,
-                  attachmentOriginalName: null,
-                  attachmentContentType: null,
-                  attachmentSizeBytes: null,
-                  replyTo: null,
-                  reactions: const [],
-                  deleted: temporaryMessage.replyTo!.deleted,
-                  deletedAt: null,
-                  createdAt: DateTime.now(),
-                  readByCurrentUser: true,
-                  deliveredByOtherCount: 0,
-                  readByOtherCount: 0,
-                  mine: false,
-                );
-        }
-      });
-      if (shouldRestoreDraft) {
-        _messageController.text = content;
-        _messageController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _messageController.text.length),
-        );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) {
+        return;
       }
-      AppSnackBar.showError(
-        context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatSendMessageError,
-        ),
-      );
+      final newMaxScrollExtent = _scrollController.position.maxScrollExtent;
+      final delta = newMaxScrollExtent - previousMaxScrollExtent;
+      _scrollController.jumpTo(previousPixels + delta);
+    });
+  }
+
+  /// Dispatches to [ChatBloc], which owns the optimistic-insert +
+  /// reconcile-by-id + failure-restore-payload logic in full (built and
+  /// tested well before this widget was wired to it). Clears the
+  /// controller immediately, matching the widget method this replaces —
+  /// the bloc's `ChatMessageSent` transient (fired on the optimistic
+  /// insert too) drives the scroll-to-bottom via [_handleChatBlocState].
+  void _sendMessage() {
+    if (_conversation == null) {
+      return;
     }
+    final content = _messageController.text.trim();
+    final attachment = _selectedAttachment;
+    if (content.isEmpty && attachment == null) {
+      return;
+    }
+
+    final replyTarget = _replyTarget;
+    _messageController.clear();
+    _chatBloc.add(
+      ChatMessageSendRequested(
+        content: content,
+        actorDisplayName: AppLocalizations.of(context)!.chatYouLabel,
+        attachment: attachment,
+        replyTarget: replyTarget,
+      ),
+    );
   }
 
   Future<void> _pickImageAttachment() async {
@@ -900,14 +800,16 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     if (file == null || bytes == null || bytes.isEmpty || fileName.isEmpty) {
       return;
     }
-    setState(() {
-      _selectedAttachment = ChatDraftAttachment(
-        bytes: bytes,
-        fileName: fileName,
-        contentType: _resolveDocumentContentType(file.extension),
-        sizeBytes: bytes.length,
-      );
-    });
+    _chatBloc.add(
+      ChatAttachmentSelected(
+        ChatDraftAttachment(
+          bytes: bytes,
+          fileName: fileName,
+          contentType: _resolveDocumentContentType(file.extension),
+          sizeBytes: bytes.length,
+        ),
+      ),
+    );
   }
 
   Future<void> _applyPickedImageAttachment(XFile pickedFile) async {
@@ -915,23 +817,23 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     if (bytes.isEmpty) {
       return;
     }
-    setState(() {
-      _selectedAttachment = ChatDraftAttachment(
-        bytes: bytes,
-        fileName: pickedFile.name,
-        contentType: _resolveImageContentType(pickedFile.name),
-        sizeBytes: bytes.length,
-      );
-    });
+    _chatBloc.add(
+      ChatAttachmentSelected(
+        ChatDraftAttachment(
+          bytes: bytes,
+          fileName: pickedFile.name,
+          contentType: _resolveImageContentType(pickedFile.name),
+          sizeBytes: bytes.length,
+        ),
+      ),
+    );
   }
 
   void _clearSelectedAttachment() {
     if (_selectedAttachment == null) {
       return;
     }
-    setState(() {
-      _selectedAttachment = null;
-    });
+    _chatBloc.add(const ChatAttachmentCleared());
   }
 
   String _resolveImageContentType(String fileName) {
@@ -975,8 +877,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   Future<void> _markConversationRead() async {
-    final conversation = _conversation;
-    if (conversation == null || _markingConversationRead) {
+    if (_conversation == null || _markingConversationRead) {
       return;
     }
     if (!_messages.any(
@@ -984,48 +885,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     )) {
       return;
     }
-
-    _markingConversationRead = true;
-    try {
-      await _chatUseCase.markConversationRead(conversation.id);
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _messages = _messages
-            .map(
-              (message) => message.mine
-                  ? message
-                  : ChatMessageEntity(
-                      id: message.id,
-                      conversationId: message.conversationId,
-                      senderUserId: message.senderUserId,
-                      senderName: message.senderName,
-                      senderAvatarUrl: message.senderAvatarUrl,
-                      contentText: message.contentText,
-                      messageType: message.messageType,
-                      attachmentPath: message.attachmentPath,
-                      attachmentOriginalName: message.attachmentOriginalName,
-                      attachmentContentType: message.attachmentContentType,
-                      attachmentSizeBytes: message.attachmentSizeBytes,
-                      replyTo: message.replyTo,
-                      reactions: message.reactions,
-                      deleted: message.deleted,
-                      deletedAt: message.deletedAt,
-                      createdAt: message.createdAt,
-                      readByCurrentUser: true,
-                      deliveredByOtherCount: message.deliveredByOtherCount,
-                      readByOtherCount: message.readByOtherCount,
-                      mine: message.mine,
-                    ),
-            )
-            .toList();
-      });
-    } catch (_) {
-      // Best effort.
-    } finally {
-      _markingConversationRead = false;
-    }
+    _chatBloc.add(const ChatConversationMarkReadRequested());
   }
 
   Future<void> _markConversationReadIfVisible() async {
@@ -1036,14 +896,14 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   void _handleRefreshPressed() {
-    unawaited(_loadTeams(showFeedback: true));
+    _loadTeams(showFeedback: true);
   }
 
   void _handleTeamChanged(String teamId) {
     if (teamId == _selectedTeamId) {
       return;
     }
-    unawaited(_loadConversation(teamId));
+    _loadConversation(teamId);
   }
 
   Future<void> _handleSenderPressed(ChatMessageEntity message) async {
@@ -1090,46 +950,21 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 
   void _handleReplyRequested(ChatMessageEntity message) {
-    setState(() {
-      _replyTarget = message;
-    });
+    _chatBloc.add(ChatReplyTargetSet(message));
   }
 
   void _clearReplyTarget() {
     if (_replyTarget == null) {
       return;
     }
-    setState(() {
-      _replyTarget = null;
-    });
+    _chatBloc.add(const ChatReplyTargetCleared());
   }
 
   Future<void> _handleReactionRequested(
     ChatMessageEntity message,
     String emoji,
   ) async {
-    try {
-      final updated = await _chatUseCase.toggleReaction(message.id, emoji);
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _messages = _messages
-            .map((item) => item.id == updated.id ? updated : item)
-            .toList();
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      AppSnackBar.showError(
-        context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatReactionUpdateError,
-        ),
-      );
-    }
+    _chatBloc.add(ChatReactionToggled(message.id, emoji));
   }
 
   Future<void> _handleMessagePressed(ChatMessageEntity message) async {
@@ -1283,6 +1118,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       case 'delete':
         await _handleDeleteRequested(message);
         return;
+      case 'report':
+        await _handleReportMessage(message);
+        return;
+      case 'block_sender':
+        await _handleBlockSender(message);
+        return;
       default:
         return;
     }
@@ -1393,6 +1234,31 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
                       es: 'Descargar adjunto',
                     ),
             ),
+          if (!message.mine && !message.deleted)
+            _ChatMessageActionItem(
+              value: 'report',
+              icon: Icons.flag_outlined,
+              label: _chatActionText(
+                locale,
+                it: 'Segnala',
+                en: 'Report',
+                fr: 'Signaler',
+                es: 'Denunciar',
+              ),
+            ),
+          if (!message.mine)
+            _ChatMessageActionItem(
+              value: 'block_sender',
+              icon: Icons.block_rounded,
+              label: _chatActionText(
+                locale,
+                it: 'Blocca utente',
+                en: 'Block user',
+                fr: 'Bloquer l\'utilisateur',
+                es: 'Bloquear usuario',
+              ),
+              destructive: true,
+            ),
           if (message.mine && !message.deleted)
             _ChatMessageActionItem(
               value: 'delete',
@@ -1468,19 +1334,83 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     );
   }
 
-  String _chatActionText(
-    String locale, {
-    required String it,
-    required String en,
-    String? fr,
-    String? es,
-  }) {
-    return switch (locale) {
-      'it' => it,
-      'fr' => fr ?? en,
-      'es' => es ?? en,
-      _ => en,
-    };
+  /// Bridges to [ChatBloc] for the 4 smart-action "prepare draft" calls.
+  /// The bloc only ever runs the pure, side-effect-free `prepareDraft` step
+  /// (see [ChatBloc]'s handlers) — opening the resulting dialog/editor and
+  /// submitting it stays here, since those need [BuildContext]. A `null`
+  /// return means the bloc hit an error and already surfaced it as a
+  /// snackbar via the generic [ChatErrorOccurred] branch in
+  /// [_handleChatBlocState]; callers just bail out silently in that case.
+  Future<ChatMessageActionDraftResult?> _prepareSondageDraft(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatSondageDraftReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatSondageDraftRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatSondageDraftReady ? transient.result : null;
+  }
+
+  Future<ChatMessageActionDraftResult?> _prepareTaskDraft(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatTaskDraftReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatTaskDraftRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatTaskDraftReady ? transient.result : null;
+  }
+
+  Future<ChatMessageActionDraftResult?> _prepareShiftDraft(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatShiftDraftReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatShiftDraftRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatShiftDraftReady ? transient.result : null;
+  }
+
+  Future<ChatMessageActionDraftResult?> _prepareEventDraft(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatEventDraftReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatEventDraftRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatEventDraftReady ? transient.result : null;
   }
 
   Future<void> _handleCreateSondageFromMessage(
@@ -1497,16 +1427,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _sondageWorkflowController.prepareDraft(
-          conversation: conversation,
-          message: message,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _prepareSondageDraft(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
       if (result.isUnsupported || result.sondagePrefill == null) {
@@ -1556,18 +1482,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _messageActionUseCase.buildDraft(
-          actionType: ChatMessageActionType.createShift,
-          conversationId: conversation.id,
-          messageId: message.id,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          selectedMessageText: message.contentText,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _prepareShiftDraft(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
       final shiftDraft = result.shiftDraft;
@@ -1585,19 +1505,19 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         );
       }
 
-      final profiles = await _shiftRepository.getProfiles();
+      final profiles = await _shiftWorkflowController.loadProfiles();
       if (!mounted) {
         return;
       }
-      final shiftResult = await showShiftDayDialog(
+      final shiftResult = await _shiftWorkflowController.openShiftDayDialog(
         context: context,
         date: shiftDraft.shiftDate,
         profiles: profiles,
         allTeams: _teams,
         initialDraft: shiftDraft,
         initialTeamId: shiftDraft.teamId ?? teamId,
-        canManagePublicShifts: true,
-        ownerTeams: _buildWorkflowOwnerTeams(
+        ownerTeams: _shiftWorkflowController.resolveOwnerTeams(
+          teams: _teams,
           preferredTeamId: shiftDraft.teamId ?? teamId,
         ),
       );
@@ -1605,7 +1525,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         return;
       }
 
-      final requests = _buildShiftRequestsFromDialog(
+      final requests = _shiftWorkflowController.buildRequestsFromDialog(
         fallbackDate: shiftDraft.shiftDate,
         result: shiftResult,
       );
@@ -1613,26 +1533,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         return;
       }
 
-      await _runWithLoadingOverlay(() async {
-        if (requests.length == 1) {
-          final request = requests.single;
-          await _shiftRepository.assign(
-            shiftDate: request.shiftDate,
-            profileId: request.profileId,
-            startTime: request.startTime,
-            endTime: request.endTime,
-            overnight: request.overnight,
-            note: request.note,
-            alarmOffsets: request.alarmOffsets,
-            isPublic: request.isPublic,
-            teamId: request.teamId,
-            teamShiftGroupId: request.teamShiftGroupId,
-            targetUserId: request.targetUserId,
-          );
-          return;
-        }
-        await _shiftRepository.assignBatch(requests: requests);
-      });
+      await _runWithLoadingOverlay(() => _shiftWorkflowController.submit(requests));
       if (!mounted) {
         return;
       }
@@ -1678,16 +1579,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _taskWorkflowController.prepareDraft(
-          conversation: conversation,
-          message: message,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _prepareTaskDraft(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
 
@@ -1774,18 +1671,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       await _ensureTeamAccessContextLoaded(teamId);
 
       final result = await _runWithLoadingOverlay(
-        () => _messageActionUseCase.buildDraft(
-          actionType: ChatMessageActionType.createEvent,
-          conversationId: conversation.id,
-          messageId: message.id,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          selectedMessageText: message.contentText,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _prepareEventDraft(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
 
@@ -1813,21 +1704,25 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       final effectiveTeamId = eventDraft.teamId?.trim().isNotEmpty == true
           ? eventDraft.teamId!.trim()
           : teamId;
-      final editorResult = await showEventEditorDialog(
-        context,
+      final editorResult = await _eventWorkflowController.openEventEditor(
+        context: context,
         initialTeamId: effectiveTeamId,
-        initialEvent: _buildEventDraftPreviewEntity(
+        initialEvent: _eventWorkflowController.buildPreviewEntity(
           eventDraft,
           fallbackTeamId: effectiveTeamId,
+          actorUserId: _currentUid,
+          actorDisplayName: _actorDisplayName,
         ),
-        teamMembers: _buildWorkflowEventTeamMembers(effectiveTeamId),
+        teamMembers: _eventWorkflowController.buildTeamMembersForView(
+          _teamMembersByTeamId[effectiveTeamId] ?? const <TeamMemberEntity>[],
+        ),
       );
       if (!mounted || editorResult == null) {
         return;
       }
 
       await _runWithLoadingOverlay(
-        () => _eventUseCase.createEvent(
+        () => _eventWorkflowController.createEvent(
           EventCreateRequestEntity(
             teamId: editorResult.teamId,
             title: editorResult.title,
@@ -1875,6 +1770,29 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     }
   }
 
+  /// Bridges to [ChatBloc]'s explicit "detect AI suggestions" call (the
+  /// action-sheet item and the footer's "no suggestion" chip) — as opposed
+  /// to [_prefetchWorkflowSuggestionsForMessage]'s automatic, deduped
+  /// per-message fetch. A `null` return means the bloc already surfaced the
+  /// error via [_handleChatBlocState]'s generic [ChatErrorOccurred] branch.
+  Future<DetectWorkflowSuggestionResult?> _detectWorkflowSuggestions(
+    ChatMessageEntity message,
+  ) async {
+    final settled = _chatBloc.stream.firstWhere(
+      (state) =>
+          state.transient is ChatWorkflowSuggestionsReady ||
+          state.transient is ChatErrorOccurred,
+    );
+    _chatBloc.add(
+      ChatWorkflowSuggestionsRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
+    final transient = (await settled).transient;
+    return transient is ChatWorkflowSuggestionsReady ? transient.result : null;
+  }
+
   Future<void> _handleDetectWorkflowSuggestionsFromMessage(
     ChatMessageEntity message,
   ) async {
@@ -1889,23 +1807,12 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     try {
       final result = await _runWithLoadingOverlay(
-        () => _messageSuggestionService.detectWorkflowSuggestionFromMessage(
-          conversationId: conversation.id,
-          messageId: message.id,
-          teamId: teamId,
-          locale: Localizations.localeOf(context).languageCode,
-          allowedActionTypes: const <ChatMessageActionType>[
-            ChatMessageActionType.createTask,
-            ChatMessageActionType.createEvent,
-            ChatMessageActionType.createSondage,
-            ChatMessageActionType.createShift,
-          ],
-          selectedMessageText: message.contentText,
-          memberUserId: _selectedMemberUserId,
-          memberDisplayName: _conversationDisplayName,
-        ),
+        () => _detectWorkflowSuggestions(message),
       );
       if (!mounted) {
+        return;
+      }
+      if (result == null) {
         return;
       }
 
@@ -2091,48 +1998,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     }
   }
 
-  List<TeamEntityForView> _buildWorkflowOwnerTeams({String? preferredTeamId}) {
-    return _teams
-        .where((team) => team.id != null)
-        .where((team) => preferredTeamId == null || team.id == preferredTeamId)
-        .map((team) => TeamEntityForView(team: team, members: const []))
-        .toList(growable: false);
-  }
-
-  List<TeamMemberforView> _buildWorkflowEventTeamMembers(String teamId) {
-    final members = _teamMembersByTeamId[teamId] ?? const <TeamMemberEntity>[];
-    return members
-        .map((member) => TeamMemberforView(teamMember: member))
-        .toList(growable: false);
-  }
-
-  EventEntity _buildEventDraftPreviewEntity(
-    ChatMessageActionEventDraft draft, {
-    required String fallbackTeamId,
-  }) {
-    final now = DateTime.now();
-    final normalizedTeamId = draft.teamId?.trim();
-    return EventEntity(
-      id: const Uuid().v4(),
-      teamId: normalizedTeamId != null && normalizedTeamId.isNotEmpty
-          ? normalizedTeamId
-          : fallbackTeamId,
-      title: draft.title,
-      description: draft.description,
-      startsAt: draft.startsAt,
-      endsAt: draft.endsAt,
-      allDay: draft.allDay,
-      location: draft.location,
-      participantUserIds: draft.participantUserIds,
-      participantDisplayNames: draft.participantDisplayNames,
-      createdByUserId: _currentUid,
-      createdByDisplayName: _actorDisplayName,
-      workflowMetadata: draft.workflowMetadata,
-      createdAt: now,
-      updatedAt: now,
-    );
-  }
-
   IconData _iconForWorkflowActionType(ChatMessageActionType? actionType) {
     return switch (actionType) {
       ChatMessageActionType.createSondage => Icons.poll_outlined,
@@ -2170,64 +2035,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       ),
       null => _chatActionText(locale, it: 'Suggerimento', en: 'Suggestion'),
     };
-  }
-
-  List<ShiftAssignmentCreateRequestEntity> _buildShiftRequestsFromDialog({
-    required DateTime fallbackDate,
-    required ShiftDayDialogResult result,
-  }) {
-    final scheduledDates = result.scheduledDates.isEmpty
-        ? <DateTime>[fallbackDate]
-        : result.scheduledDates;
-    final targetUserIds = result.targetUserIds.isEmpty
-        ? const <String?>[null]
-        : result.targetUserIds.cast<String?>();
-    final uuid = const Uuid();
-    final requests = <ShiftAssignmentCreateRequestEntity>[];
-
-    for (final scheduledDate in scheduledDates) {
-      if (result.memberAssignmentPlans.isNotEmpty) {
-        for (final plan in result.memberAssignmentPlans) {
-          requests.add(
-            ShiftAssignmentCreateRequestEntity(
-              shiftDate: scheduledDate,
-              profileId: plan.profileId ?? result.profileId,
-              startTime: plan.profileId == null ? result.startTime : null,
-              endTime: plan.profileId == null ? result.endTime : null,
-              overnight: plan.profileId == null ? result.overnight : null,
-              note: result.note,
-              alarmOffsets: plan.profileId == null ? result.alarmOffsets : null,
-              isPublic: result.isPublic,
-              teamId: result.isPublic ? result.teamId : null,
-              teamShiftGroupId: result.isPublic ? uuid.v4() : null,
-              targetUserId: plan.targetUserId,
-            ),
-          );
-        }
-        continue;
-      }
-
-      final sharedGroupId = result.isPublic ? uuid.v4() : null;
-      for (final targetUserId in targetUserIds) {
-        requests.add(
-          ShiftAssignmentCreateRequestEntity(
-            shiftDate: scheduledDate,
-            profileId: result.profileId,
-            startTime: result.startTime,
-            endTime: result.endTime,
-            overnight: result.overnight,
-            note: result.note,
-            alarmOffsets: result.alarmOffsets,
-            isPublic: result.isPublic,
-            teamId: result.isPublic ? result.teamId : null,
-            teamShiftGroupId: sharedGroupId,
-            targetUserId: targetUserId,
-          ),
-        );
-      }
-    }
-
-    return requests;
   }
 
   Future<T> _runWithLoadingOverlay<T>(Future<T> Function() action) async {
@@ -2271,28 +2078,81 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       return;
     }
 
-    try {
-      final updated = await _chatUseCase.deleteMessage(message.id);
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _messages = _messages
-            .map((item) => item.id == updated.id ? updated : item)
-            .toList();
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      AppSnackBar.showError(
-        context,
-        AppErrorMessageResolver.resolve(
-          error,
-          fallback: AppLocalizations.of(context)!.chatDeleteError,
-        ),
-      );
+    _chatBloc.add(ChatMessageDeleteConfirmed(message.id));
+  }
+
+  Future<void> _handleBlockSender(ChatMessageEntity message) async {
+    final senderName = message.senderName.trim();
+    final shouldBlock = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final loc = AppLocalizations.of(dialogContext)!;
+        final locale = Localizations.localeOf(dialogContext).languageCode;
+        return AlertDialog(
+          title: Text(
+            _chatActionText(locale, it: 'Blocca utente', en: 'Block user'),
+          ),
+          content: Text(
+            senderName.isEmpty
+                ? _chatActionText(
+                    locale,
+                    it:
+                        'Bloccare questo utente? Non vedrai piu i suoi '
+                        'messaggi.',
+                    en:
+                        'Block this user? You will no longer see their '
+                        'messages.',
+                  )
+                : _chatActionText(
+                    locale,
+                    it:
+                        'Bloccare $senderName? Non vedrai piu i suoi '
+                        'messaggi.',
+                    en:
+                        'Block $senderName? You will no longer see their '
+                        'messages.',
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(loc.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(_chatActionText(locale, it: 'Blocca', en: 'Block')),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || shouldBlock != true) {
+      return;
     }
+
+    _chatBloc.add(ChatMessageSenderBlocked(message));
+  }
+
+  Future<void> _handleReportMessage(ChatMessageEntity message) async {
+    final result = await showModalBottomSheet<_ChatReportSheetResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => const _ChatReportMessageSheet(),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    _chatBloc.add(
+      ChatMessageReported(
+        message,
+        reason: result.reason,
+        comment: result.comment,
+      ),
+    );
   }
 
   void _openDirectConversation({
@@ -2327,7 +2187,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     if (eventType.startsWith('TEAM_')) {
       if (teamId != null && teamId.isNotEmpty && teamId == selectedTeamId) {
-        unawaited(_loadTeams());
+        _loadTeams();
       }
       return;
     }
@@ -2426,68 +2286,29 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     return content.isNotEmpty;
   }
 
-  Future<void> _prefetchWorkflowSuggestionsForMessage(
-    ChatMessageEntity message,
-  ) async {
-    final conversation = _conversation;
+  /// Kicks off the automatic, per-message AI suggestion fetch backing the
+  /// footer chip. This pre-check just avoids a pointless dispatch — the
+  /// bloc's [ChatWorkflowSuggestionPrefetchRequested] handler re-verifies
+  /// the same conditions (conversation/team, AI enabled, per-message
+  /// dedupe) as the source of truth, and owns `workflowSuggestionsByMessageId`
+  /// / `loadingWorkflowSuggestionMessageIds` entirely — nothing here reads
+  /// the result back, the footer just rebuilds off the bloc's next emission.
+  void _prefetchWorkflowSuggestionsForMessage(ChatMessageEntity message) {
     final teamId = _selectedTeamId?.trim();
-    if (conversation == null || teamId == null || teamId.isEmpty) {
-      return;
-    }
-    if (!_isWorkflowAiEnabledForSelectedTeam()) {
-      return;
-    }
-    if (_loadingWorkflowSuggestionMessageIds.contains(message.id) ||
+    if (_conversation == null ||
+        teamId == null ||
+        teamId.isEmpty ||
+        !_isWorkflowAiEnabledForSelectedTeam() ||
+        _loadingWorkflowSuggestionMessageIds.contains(message.id) ||
         _workflowSuggestionsByMessageId.containsKey(message.id)) {
       return;
     }
-
-    setState(() {
-      _loadingWorkflowSuggestionMessageIds.add(message.id);
-    });
-
-    try {
-      final result = await _messageSuggestionService
-          .detectWorkflowSuggestionFromMessage(
-            conversationId: conversation.id,
-            messageId: message.id,
-            teamId: teamId,
-            locale: Localizations.localeOf(context).languageCode,
-            allowedActionTypes: const <ChatMessageActionType>[
-              ChatMessageActionType.createTask,
-              ChatMessageActionType.createEvent,
-              ChatMessageActionType.createSondage,
-              ChatMessageActionType.createShift,
-            ],
-            selectedMessageText: message.contentText,
-            memberUserId: _selectedMemberUserId,
-            memberDisplayName: _conversationDisplayName,
-          );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _workflowSuggestionsByMessageId[message.id] = result;
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _workflowSuggestionsByMessageId[message.id] =
-            const DetectWorkflowSuggestionResult(
-              resolutionStatus: 'unsupported',
-              suggestions: <WorkflowSuggestionItem>[],
-              warnings: <ChatMessageActionWarning>[],
-            );
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _loadingWorkflowSuggestionMessageIds.remove(message.id);
-        });
-      }
-    }
+    _chatBloc.add(
+      ChatWorkflowSuggestionPrefetchRequested(
+        message: message,
+        locale: Localizations.localeOf(context).languageCode,
+      ),
+    );
   }
 
   Widget? _buildWorkflowSuggestionFooter(
@@ -2576,11 +2397,24 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
                 label: Text(
                   _chatActionText(locale, it: 'Aggiorna AI', en: 'Refresh AI'),
                 ),
-                onPressed: () {
-                  setState(() {
-                    _workflowSuggestionsByMessageId.remove(message.id);
-                  });
-                  unawaited(_prefetchWorkflowSuggestionsForMessage(message));
+                onPressed: () async {
+                  // Bridges the clear before re-prefetching: the bloc
+                  // processes events asynchronously, so dispatching both
+                  // back-to-back without awaiting the first could let
+                  // _prefetchWorkflowSuggestionsForMessage's dedupe guard
+                  // read the not-yet-cleared cache and bail out as a no-op.
+                  final cleared = _chatBloc.stream.firstWhere(
+                    (state) =>
+                        !state.workflowSuggestionsByMessageId.containsKey(
+                          message.id,
+                        ),
+                  );
+                  _chatBloc.add(ChatWorkflowSuggestionCleared(message.id));
+                  await cleared;
+                  if (!mounted) {
+                    return;
+                  }
+                  _prefetchWorkflowSuggestionsForMessage(message);
                 },
               ),
             ] else if (suggestionResult != null) ...[
@@ -2608,7 +2442,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
                   ),
                 ),
                 onPressed: () {
-                  unawaited(_prefetchWorkflowSuggestionsForMessage(message));
+                  _prefetchWorkflowSuggestionsForMessage(message);
                 },
               ),
           ],
@@ -2685,80 +2519,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
           },
         );
       },
-    );
-  }
-
-  List<ChatMessageEntity> _mergeRecentMessages({
-    required List<ChatMessageEntity> currentMessages,
-    required List<ChatMessageEntity> latestMessages,
-  }) {
-    if (latestMessages.isEmpty) {
-      return currentMessages;
-    }
-
-    final latestIds = latestMessages.map((message) => message.id).toSet();
-    final firstLatestTimestamp = latestMessages.first.createdAt;
-    final preservedOlderMessages = currentMessages
-        .where(
-          (message) =>
-              !message.isPendingLocal &&
-              message.createdAt.isBefore(firstLatestTimestamp) &&
-              !latestIds.contains(message.id),
-        )
-        .toList();
-    final pendingLocalMessages = currentMessages
-        .where(
-          (message) =>
-              message.isPendingLocal && !latestIds.contains(message.id),
-        )
-        .toList();
-
-    final merged = <ChatMessageEntity>[
-      ...preservedOlderMessages,
-      ...latestMessages,
-      ...pendingLocalMessages,
-    ]..sort((left, right) => left.createdAt.compareTo(right.createdAt));
-
-    return merged;
-  }
-
-  ChatMessageEntity _buildOptimisticMessage({
-    required String conversationId,
-    required String content,
-    required ChatDraftAttachment? attachment,
-    required ChatMessageEntity? replyTo,
-  }) {
-    return ChatMessageEntity(
-      id: 'local-${DateTime.now().microsecondsSinceEpoch}',
-      conversationId: conversationId,
-      senderUserId: 'local-user',
-      senderName: AppLocalizations.of(context)!.chatYouLabel,
-      senderAvatarUrl: null,
-      contentText: content,
-      messageType: attachment == null
-          ? 'TEXT'
-          : (attachment.isImage ? 'IMAGE' : 'FILE'),
-      attachmentPath: null,
-      attachmentOriginalName: attachment?.fileName,
-      attachmentContentType: attachment?.contentType,
-      attachmentSizeBytes: attachment?.sizeBytes,
-      replyTo: replyTo == null
-          ? null
-          : ChatMessageReplyEntity(
-              messageId: replyTo.id,
-              senderName: replyTo.senderName,
-              contentPreview: replyTo.contentText,
-              messageType: replyTo.messageType,
-              deleted: replyTo.deleted,
-            ),
-      reactions: const [],
-      deleted: false,
-      deletedAt: null,
-      createdAt: DateTime.now(),
-      readByCurrentUser: true,
-      deliveredByOtherCount: 0,
-      readByOtherCount: 0,
-      mine: true,
     );
   }
 
@@ -2883,6 +2643,25 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }
 }
 
+/// Top-level (not a `_TeamChatScreenState` method) so [_ChatReportMessageSheet]
+/// — a separate widget — can use it too, matching the lightweight
+/// inline-translation convention already used throughout this file for
+/// chat-only strings that don't warrant a full ARB entry.
+String _chatActionText(
+  String locale, {
+  required String it,
+  required String en,
+  String? fr,
+  String? es,
+}) {
+  return switch (locale) {
+    'it' => it,
+    'fr' => fr ?? en,
+    'es' => es ?? en,
+    _ => en,
+  };
+}
+
 class _ChatMessageActionItem {
   const _ChatMessageActionItem({
     required this.value,
@@ -2895,4 +2674,196 @@ class _ChatMessageActionItem {
   final IconData icon;
   final String label;
   final bool destructive;
+}
+
+class _ChatReportSheetResult {
+  const _ChatReportSheetResult({required this.reason, this.comment});
+
+  final ChatMessageReportReason reason;
+  final String? comment;
+}
+
+class _ChatReportMessageSheet extends StatefulWidget {
+  const _ChatReportMessageSheet();
+
+  @override
+  State<_ChatReportMessageSheet> createState() =>
+      _ChatReportMessageSheetState();
+}
+
+class _ChatReportMessageSheetState extends State<_ChatReportMessageSheet> {
+  ChatMessageReportReason? _selectedReason;
+  final TextEditingController _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  String _reasonLabel(String locale, ChatMessageReportReason reason) {
+    return switch (reason) {
+      ChatMessageReportReason.spam => _chatActionText(
+        locale,
+        it: 'Spam',
+        en: 'Spam',
+      ),
+      ChatMessageReportReason.harassment => _chatActionText(
+        locale,
+        it: 'Molestie o bullismo',
+        en: 'Harassment or bullying',
+      ),
+      ChatMessageReportReason.hateSpeech => _chatActionText(
+        locale,
+        it: 'Incitamento all\'odio',
+        en: 'Hate speech',
+      ),
+      ChatMessageReportReason.sexualContent => _chatActionText(
+        locale,
+        it: 'Contenuto sessuale',
+        en: 'Sexual content',
+      ),
+      ChatMessageReportReason.violence => _chatActionText(
+        locale,
+        it: 'Violenza',
+        en: 'Violence',
+      ),
+      ChatMessageReportReason.other => _chatActionText(
+        locale,
+        it: 'Altro',
+        en: 'Other',
+      ),
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.24),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _chatActionText(
+                        locale,
+                        it: 'Segnala messaggio',
+                        en: 'Report message',
+                      ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    RadioGroup<ChatMessageReportReason>(
+                      groupValue: _selectedReason,
+                      onChanged: (value) =>
+                          setState(() => _selectedReason = value),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final reason in ChatMessageReportReason.values)
+                            RadioListTile<ChatMessageReportReason>(
+                              contentPadding: EdgeInsets.zero,
+                              value: reason,
+                              title: Text(_reasonLabel(locale, reason)),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _commentController,
+                      minLines: 2,
+                      maxLines: 4,
+                      maxLength: 1000,
+                      decoration: InputDecoration(
+                        labelText: _chatActionText(
+                          locale,
+                          it: 'Commento (facoltativo)',
+                          en: 'Comment (optional)',
+                        ),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(loc.cancel),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: _selectedReason == null
+                              ? null
+                              : () {
+                                  final comment = _commentController.text
+                                      .trim();
+                                  Navigator.of(context).pop(
+                                    _ChatReportSheetResult(
+                                      reason: _selectedReason!,
+                                      comment: comment.isEmpty
+                                          ? null
+                                          : comment,
+                                    ),
+                                  );
+                                },
+                          child: Text(
+                            _chatActionText(
+                              locale,
+                              it: 'Invia',
+                              en: 'Submit',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

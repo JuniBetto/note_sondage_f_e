@@ -2160,6 +2160,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get blockedUsersTitle => 'Usuarios bloqueados';
+
+  @override
+  String get blockedUsersSubtitle =>
+      'Gestiona las personas que has bloqueado en el chat';
+
+  @override
   String get profileTitle => 'Perfil';
 
   @override
@@ -3245,4 +3252,41 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tutorialHomeActivityDescription =>
       'Esta lista te ayuda a seguir la actividad reciente de los equipos, turnos, fichajes y encuestas.';
+
+  @override
+  String get contactAttachmentsTitle => 'Archivos adjuntos (opcional)';
+
+  @override
+  String get contactAttachmentsHint =>
+      'JPG, JPEG, PNG o PDF. Máximo 5 archivos, 5 MB en total. PDF sin contraseña, formularios ni contenido interactivo (máximo 50 páginas).';
+
+  @override
+  String get contactAttachmentsAdd => 'Adjuntar archivos';
+
+  @override
+  String get contactAttachmentsRemove => 'Eliminar archivo adjunto';
+
+  @override
+  String get contactAttachmentsSizeError =>
+      'Los archivos adjuntos superan 5 MB en total, incluso después de verificarlos. Reduce su tamaño e inténtalo de nuevo.';
+
+  @override
+  String get contactAttachmentsCountError =>
+      'Puedes adjuntar un máximo de 5 archivos.';
+
+  @override
+  String get contactAttachmentsDuplicateError =>
+      'Este archivo ya se ha añadido.';
+
+  @override
+  String get contactAttachmentsInvalidError =>
+      'Archivo no válido o no permitido. Usa imágenes JPG/PNG íntegras (máximo 25 megapíxeles) o PDF sin contraseña ni contenido interactivo. Comprueba también el nombre del archivo.';
+
+  @override
+  String get contactAttachmentsScanError =>
+      'La verificación de seguridad no está disponible. Los archivos no se han enviado: inténtalo más tarde.';
+
+  @override
+  String get contactSupportRateError =>
+      'Demasiadas solicitudes. Espera unos minutos antes de intentarlo de nuevo.';
 }

@@ -12,6 +12,7 @@ import 'package:note_sondage/feature/auth/ui/bloc/app_lifecycle_bloc.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/auth/infrastructure/data/backend_auth_data_source.dart';
 import 'package:note_sondage/feature/auth/infrastructure/timezone/user_timezone_sync.dart';
+import 'package:note_sondage/feature/chat/ui/bloc/chat/chat_bloc.dart';
 import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
 import 'package:note_sondage/feature/home/ui/bloc/dashboard_bloc.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_cubit.dart';
@@ -613,6 +614,7 @@ class _MainAppState extends State<MainApp> {
           create: (context) => SettingNavigationBloc(),
         ),
         BlocProvider<TeamBloc>.value(value: getIt<TeamBloc>()),
+        BlocProvider<ChatBloc>.value(value: getIt<ChatBloc>()),
         BlocProvider<RoleBloc>(create: (context) => getIt<RoleBloc>()),
         BlocProvider<SondageBloc>(create: (context) => getIt<SondageBloc>()),
         BlocProvider<ClockingBloc>(create: (context) => getIt<ClockingBloc>()),

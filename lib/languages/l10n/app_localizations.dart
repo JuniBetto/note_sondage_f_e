@@ -3838,6 +3838,18 @@ abstract class AppLocalizations {
   /// **'{days, plural, =1{1 day ago} other{{days} days ago}}'**
   String chatDaysAgo(int days);
 
+  /// No description provided for @blockedUsersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked users'**
+  String get blockedUsersTitle;
+
+  /// No description provided for @blockedUsersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage the people you\'ve blocked in chat'**
+  String get blockedUsersSubtitle;
+
   /// No description provided for @profileTitle.
   ///
   /// In en, this message translates to:
@@ -5715,6 +5727,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This list helps you follow what happened recently across teams, shifts, clocking, and surveys.'**
   String get tutorialHomeActivityDescription;
+
+  /// No description provided for @contactAttachmentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments (optional)'**
+  String get contactAttachmentsTitle;
+
+  /// No description provided for @contactAttachmentsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'JPG, JPEG, PNG or PDF. Up to 5 files, 5 MB in total. PDFs without passwords, forms or interactive content (max 50 pages).'**
+  String get contactAttachmentsHint;
+
+  /// No description provided for @contactAttachmentsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach files'**
+  String get contactAttachmentsAdd;
+
+  /// No description provided for @contactAttachmentsRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove attachment'**
+  String get contactAttachmentsRemove;
+
+  /// No description provided for @contactAttachmentsSizeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments exceed 5 MB in total, including after validation. Reduce their size and try again.'**
+  String get contactAttachmentsSizeError;
+
+  /// No description provided for @contactAttachmentsCountError.
+  ///
+  /// In en, this message translates to:
+  /// **'You can attach up to 5 files.'**
+  String get contactAttachmentsCountError;
+
+  /// No description provided for @contactAttachmentsDuplicateError.
+  ///
+  /// In en, this message translates to:
+  /// **'This file has already been added.'**
+  String get contactAttachmentsDuplicateError;
+
+  /// No description provided for @contactAttachmentsInvalidError.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid or unsupported file. Use intact JPG/PNG images (max 25 megapixels) or PDFs without passwords or interactive content. Also check the filename.'**
+  String get contactAttachmentsInvalidError;
+
+  /// No description provided for @contactAttachmentsScanError.
+  ///
+  /// In en, this message translates to:
+  /// **'Security checks are unavailable. Attachments were not sent: please try again later.'**
+  String get contactAttachmentsScanError;
+
+  /// No description provided for @contactSupportRateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests. Wait a few minutes before trying again.'**
+  String get contactSupportRateError;
 }
 
 class _AppLocalizationsDelegate

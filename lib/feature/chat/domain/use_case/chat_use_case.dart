@@ -1,6 +1,8 @@
+import 'package:note_sondage/feature/chat/domain/entities/blocked_user_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_conversation_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
+import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/repositories/chat_repository.dart';
 
@@ -107,5 +109,25 @@ class ChatUseCase {
 
   Future<void> markConversationRead(String conversationId) {
     return repository.markConversationRead(conversationId);
+  }
+
+  Future<BlockedUserEntity> blockSender(String messageId) {
+    return repository.blockSender(messageId);
+  }
+
+  Future<void> unblockUser(String blockedUserId) {
+    return repository.unblockUser(blockedUserId);
+  }
+
+  Future<List<BlockedUserEntity>> getBlockedUsers() {
+    return repository.getBlockedUsers();
+  }
+
+  Future<void> reportMessage(
+    String messageId, {
+    required ChatMessageReportReason reason,
+    String? comment,
+  }) {
+    return repository.reportMessage(messageId, reason: reason, comment: comment);
   }
 }
