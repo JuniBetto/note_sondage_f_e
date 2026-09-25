@@ -96,7 +96,7 @@ class TaskWorkspaceHeader extends StatelessWidget {
         isInspectorSelectionActive) {
       return button;
     }
-    return Showcase(
+    return appShowcase(
       key: key,
       title: title,
       description: description,

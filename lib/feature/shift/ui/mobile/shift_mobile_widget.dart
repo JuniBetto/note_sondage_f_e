@@ -1669,7 +1669,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                Showcase(
+                appShowcase(
                   key: _archiveToggleKey,
                   title: AppLocalizations.of(
                     context,
@@ -1690,7 +1690,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                 ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: Showcase(
+                  child: appShowcase(
                     key: _calendarKey,
                     title: _showArchivedOnly
                         ? (AppLocalizations.of(

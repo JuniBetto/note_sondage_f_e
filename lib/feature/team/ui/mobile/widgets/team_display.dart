@@ -70,7 +70,7 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
             orientation == Orientation.landscape && constraints.maxHeight < 560;
         final sectionSpacing = useLandscapeCompactLayout ? 8.0 : 16.0;
         final toggleIconSize = useLandscapeCompactLayout ? 22.0 : 28.0;
-        final teamList = Showcase(
+        final teamList = appShowcase(
           key: _teamListKey,
           title: AppLocalizations.of(context)!.tutorialTeamListTitle,
           description: AppLocalizations.of(
@@ -103,7 +103,7 @@ class _TeamsDisplaySectionState extends State<TeamsDisplay> {
 
         final header = Align(
           alignment: Alignment.centerRight,
-          child: Showcase(
+          child: appShowcase(
             key: _viewToggleKey,
             title: AppLocalizations.of(context)!.tutorialTeamLayoutTitle,
             description: AppLocalizations.of(

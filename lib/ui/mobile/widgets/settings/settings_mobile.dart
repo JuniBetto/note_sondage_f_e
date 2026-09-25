@@ -113,7 +113,7 @@ class _SettingsMobileState extends State<SettingsMobile> {
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Showcase(
+                  child: appShowcase(
                     key: _profileCardKey,
                     title: _profileTitle(context),
                     description: _profileDescription(context),
@@ -211,7 +211,7 @@ class _SettingsMobileState extends State<SettingsMobile> {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Showcase(
+              child: appShowcase(
                 key: _preferencesKey,
                 title: _preferencesTitle(context, localization),
                 description: _preferencesDescription(context),
@@ -284,7 +284,7 @@ class _SettingsMobileState extends State<SettingsMobile> {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Showcase(
+              child: appShowcase(
                 key: _supportKey,
                 title: _supportTitle(context),
                 description: _supportDescription(context),

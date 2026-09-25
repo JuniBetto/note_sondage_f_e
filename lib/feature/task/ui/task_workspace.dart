@@ -1252,7 +1252,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     if (isInspectorSelectionActive) {
       return child;
     }
-    return Showcase(
+    return appShowcase(
       key: showcaseKey,
       title: title,
       description: description,

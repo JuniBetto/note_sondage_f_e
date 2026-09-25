@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_sondage/feature/chat/ui/widgets/chat_slide_transition.dart';
 import 'package:note_sondage/feature/chat/ui/web/chat_web_conversation_page.dart';
 import 'package:note_sondage/feature/chat/ui/web/chat_web_team_list_page.dart';
 
@@ -20,14 +21,16 @@ class ChatWebPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final teamId = initialTeamId?.trim();
     final memberUserId = initialMemberUserId?.trim();
-    if (teamId == null || teamId.isEmpty) {
-      return const ChatWebTeamListPage();
-    }
-    return ChatWebConversationPage(
-      teamId: teamId,
-      memberUserId: memberUserId,
-      memberName: initialMemberName,
-      focusLatestOnOpen: focusLatestOnOpen,
+    return ChatSlideSwitcher(
+      child: teamId == null || teamId.isEmpty
+          ? const ChatWebTeamListPage(key: ValueKey<String>('chat-list-slide'))
+          : ChatWebConversationPage(
+              key: chatConversationSlideKey,
+              teamId: teamId,
+              memberUserId: memberUserId,
+              memberName: initialMemberName,
+              focusLatestOnOpen: focusLatestOnOpen,
+            ),
     );
   }
 }

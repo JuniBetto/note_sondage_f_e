@@ -156,7 +156,7 @@ class _MainMobileState extends State<MainMobile> {
       return child;
     }
 
-    return Showcase(
+    return appShowcase(
       key: showcaseKey,
       title: title,
       description: description,

@@ -573,16 +573,29 @@ Widget viewScrollWebMobile(
     }).toList(),
   );
 
+  // A Wrap only spans its widest run, so on narrow screens where the last
+  // column doesn't fit the cards hug the left edge and leave a blank strip on
+  // the right. Filling the width lets `spaceAround` distribute that space.
+  final fillingContent = LayoutBuilder(
+    builder: (context, constraints) {
+      final fillsWidth =
+          constraints.maxWidth.isFinite && constraints.maxWidth < 600;
+      return fillsWidth
+          ? SizedBox(width: constraints.maxWidth, child: content)
+          : content;
+    },
+  );
+
   return Padding(
     padding: const EdgeInsets.all(0.0),
     child: wrapInScrollView
         ? ScrollOverflowHint(
             child: SingleChildScrollView(
               scrollDirection: Axis.vertical,
-              child: content,
+              child: fillingContent,
             ),
           )
-        : content,
+        : fillingContent,
   );
 }
 

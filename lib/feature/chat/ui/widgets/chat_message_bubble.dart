@@ -9,11 +9,31 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/aspect_ratio.dart' as app_ratio;
 import 'package:url_launcher/url_launcher.dart';
 
+/// Consecutive messages from one sender less than this apart read as one
+/// burst: they share a single name/time header and stack tightly.
+const Duration chatMessageGroupWindow = Duration(seconds: 20);
+
+/// Whether [current] continues the burst that [previous] belongs to.
+bool chatMessagesAreGrouped(
+  ChatMessageEntity previous,
+  ChatMessageEntity current,
+) {
+  if (previous.senderUserId != current.senderUserId) {
+    return false;
+  }
+  final gap = current.createdAt.difference(previous.createdAt);
+  return !gap.isNegative && gap < chatMessageGroupWindow;
+}
+
+/// Where a bubble sits inside a burst of messages from the same sender.
+enum ChatBubbleGroupPosition { single, first, middle, last }
+
 class ChatMessageBubble extends StatelessWidget {
   const ChatMessageBubble({
     super.key,
     required this.message,
     required this.accentColor,
+    this.groupPosition = ChatBubbleGroupPosition.single,
     this.onPressed,
     this.onLongPressed,
     this.onSenderPressed,
@@ -21,6 +41,7 @@ class ChatMessageBubble extends StatelessWidget {
 
   final ChatMessageEntity message;
   final Color accentColor;
+  final ChatBubbleGroupPosition groupPosition;
   final VoidCallback? onPressed;
   final VoidCallback? onLongPressed;
   final VoidCallback? onSenderPressed;
@@ -44,8 +65,10 @@ class ChatMessageBubble extends StatelessWidget {
         ? accentColor.withValues(alpha: 0.96)
         : /*accentColor.withValues(
             alpha: theme.brightness == Brightness.dark ? 0.14 : 0.38,
-          );*/ Colors.grey.withValues(alpha: theme.brightness == Brightness.dark ? 0.14 : 0.99);
-    final textColor = Colors.white;/* message.mine
+          );*/ Colors.grey.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.14 : 0.99,
+          );
+    final textColor = Colors.white; /* message.mine
         ? Colors.white
         : Colors.white.withValues(blue: theme.brightness == Brightness.dark ? null: 100,
       red: theme.brightness == Brightness.dark ? null: 100,
@@ -53,29 +76,69 @@ class ChatMessageBubble extends StatelessWidget {
     final metaColor = theme.colorScheme.calendarTextBg;
     final maxBubbleWidth = MediaQuery.sizeOf(context).width * 0.68;
     final nameUser = message.senderName.split('@')[0];
-    final borderRadius = BorderRadius.only(
-      topLeft: const Radius.circular(18),
-      topRight: const Radius.circular(18),
-      bottomLeft: Radius.circular(message.mine ? 18 : 6),
-      bottomRight: Radius.circular(message.mine ? 6 : 18),
+    // Corners facing the neighbouring bubbles of a burst tighten so the
+    // stack reads as one. The last bubble of a burst closes it with the same
+    // full curve the first one opens with; a lone bubble keeps the usual
+    // tail corner.
+    final joinsAbove =
+        groupPosition == ChatBubbleGroupPosition.middle ||
+        groupPosition == ChatBubbleGroupPosition.last;
+    final joinsBelow =
+        groupPosition == ChatBubbleGroupPosition.first ||
+        groupPosition == ChatBubbleGroupPosition.middle;
+    final sideTop = Radius.circular(joinsAbove ? 4 : 18);
+    final sideBottom = Radius.circular(
+      joinsBelow
+          ? 4
+          : groupPosition == ChatBubbleGroupPosition.last
+          ? 18
+          : 6,
     );
+    const round = Radius.circular(18);
+    final borderRadius = message.mine
+        ? BorderRadius.only(
+            topLeft: round,
+            bottomLeft: round,
+            topRight: sideTop,
+            bottomRight: sideBottom,
+          )
+        : BorderRadius.only(
+            topRight: round,
+            bottomRight: round,
+            topLeft: sideTop,
+            bottomLeft: sideBottom,
+          );
+    final startsGroup =
+        groupPosition == ChatBubbleGroupPosition.single ||
+        groupPosition == ChatBubbleGroupPosition.first;
+    final isGrouped = groupPosition != ChatBubbleGroupPosition.single;
+    // Inside a burst the delivery state moves under the last bubble (it is
+    // the newest state); an earlier bubble only shows it while still pending.
+    final showStatusBelow =
+        message.mine &&
+        isGrouped &&
+        (groupPosition == ChatBubbleGroupPosition.last ||
+            message.isPendingLocal);
 
     return Column(
       crossAxisAlignment: bubbleAlignment,
       children: [
-        _MessageHeaderRow(
-          senderName: nameUser,
-          timestamp: message.createdAt,
-          localeName: loc.localeName,
-          mine: message.mine,
-          isPending: message.isPendingLocal,
-          isDelivered: message.isDeliveredToOthers,
-          isSeen: message.isReadByOthers,
-          accentColor: accentColor,
-          metaColor: metaColor!,
-          onSenderPressed: onSenderPressed,
-        ),
-        const SizedBox(height: 3),
+        if (startsGroup) ...[
+          _MessageHeaderRow(
+            showReadState: !isGrouped,
+            senderName: nameUser,
+            timestamp: message.createdAt,
+            localeName: loc.localeName,
+            mine: message.mine,
+            isPending: message.isPendingLocal,
+            isDelivered: message.isDeliveredToOthers,
+            isSeen: message.isReadByOthers,
+            accentColor: accentColor,
+            metaColor: metaColor!,
+            onSenderPressed: onSenderPressed,
+          ),
+          const SizedBox(height: 3),
+        ],
         Row(
           mainAxisAlignment: rowAlignment,
           children: [
@@ -127,6 +190,17 @@ class ChatMessageBubble extends StatelessWidget {
             ),
           ],
         ),
+        if (showStatusBelow) ...[
+          const SizedBox(height: 2),
+          _ReadStateIndicator(
+            isPending: message.isPendingLocal,
+            isDelivered: message.isDeliveredToOthers,
+            isSeen: message.isReadByOthers,
+            accentColor: accentColor,
+            metaColor: metaColor!,
+            seenLabel: loc.chatSeen,
+          ),
+        ],
       ],
     );
   }
@@ -134,6 +208,7 @@ class ChatMessageBubble extends StatelessWidget {
 
 class _MessageHeaderRow extends StatelessWidget {
   const _MessageHeaderRow({
+    required this.showReadState,
     required this.senderName,
     required this.timestamp,
     required this.localeName,
@@ -146,6 +221,7 @@ class _MessageHeaderRow extends StatelessWidget {
     this.onSenderPressed,
   });
 
+  final bool showReadState;
   final String senderName;
   final DateTime timestamp;
   final String localeName;
@@ -202,7 +278,7 @@ class _MessageHeaderRow extends StatelessWidget {
                 ChatRelativeTimeFormatter.formatHeader(timestamp, localeName),
                 style: metaStyle,
               ),
-              if (mine)
+              if (mine && showReadState)
                 _ReadStateIndicator(
                   isPending: isPending,
                   isDelivered: isDelivered,

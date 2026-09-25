@@ -112,7 +112,7 @@ class _ClockingWebState extends State<ClockingWeb> {
                   // ═══════════════════════════════
                   // Header
                   // ═══════════════════════════════
-                  Showcase(
+                  appShowcase(
                     key: _headerKey,
                     title: AppLocalizations.of(
                       context,

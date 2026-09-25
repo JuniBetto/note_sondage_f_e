@@ -345,7 +345,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                         Icons.info_outline_rounded,
                       ),
                       const SizedBox(height: 10),
-                      Showcase(
+                      appShowcase(
                         key: _teamInfoKey,
                         title: AppLocalizations.of(
                           context,
@@ -391,7 +391,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                         Icons.palette_rounded,
                       ),
                       const SizedBox(height: 10),
-                      Showcase(
+                      appShowcase(
                         key: _teamColorKey,
                         title: AppLocalizations.of(
                           context,
@@ -519,7 +519,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                         Icons.people_rounded,
                       ),
                       const SizedBox(height: 10),
-                      Showcase(
+                      appShowcase(
                         key: _teamMembersKey,
                         title: AppLocalizations.of(
                           context,
@@ -573,7 +573,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                           ),
                         )
                       else
-                        Showcase(
+                        appShowcase(
                           key: _teamActionKey,
                           title: AppLocalizations.of(
                             context,

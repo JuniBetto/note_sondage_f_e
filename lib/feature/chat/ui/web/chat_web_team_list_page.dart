@@ -381,7 +381,7 @@ class _ChatWebTeamListPageState extends State<ChatWebTeamListPage> {
       return child;
     }
 
-    return Showcase(
+    return appShowcase(
       key: showcaseKey,
       title: title,
       description: description,

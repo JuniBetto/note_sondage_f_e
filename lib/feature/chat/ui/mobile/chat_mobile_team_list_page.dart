@@ -13,6 +13,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
 import 'package:note_sondage/feature/chat/ui/controllers/chat_list_controller.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_direct_list_card.dart';
+import 'package:note_sondage/feature/chat/ui/widgets/chat_slide_transition.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_team_list_card.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
@@ -156,7 +157,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
       path: RouterPaths.sondageChatConversation,
       queryParameters: <String, String>{'teamId': teamId},
     ).toString();
-    await context.push(path);
+    await context.push(path, extra: chatSlideRouteExtra);
     if (!mounted) {
       return;
     }
@@ -180,7 +181,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
         'memberName': entry.displayName,
       },
     ).toString();
-    await context.push(path);
+    await context.push(path, extra: chatSlideRouteExtra);
     if (!mounted) {
       return;
     }
@@ -389,7 +390,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
       return child;
     }
 
-    return Showcase(
+    return appShowcase(
       key: showcaseKey,
       title: title,
       description: description,

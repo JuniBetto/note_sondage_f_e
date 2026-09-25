@@ -1148,7 +1148,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                 ),
                 const SizedBox(height: 16),
               ],
-              Showcase(
+              appShowcase(
                 key: _questionSectionKey,
                 title: strings.surveyQuestionTitle,
                 description: strings.surveyQuestionDescription,
@@ -1174,7 +1174,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                 ),
               ),
               const SizedBox(height: 16),
-              Showcase(
+              appShowcase(
                 key: _optionsSectionKey,
                 title: strings.answerOptionsTitle,
                 description: strings.answerOptionsDescription,
@@ -1250,7 +1250,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                 ),
               ),
               const SizedBox(height: 16),
-              Showcase(
+              appShowcase(
                 key: _settingsSectionKey,
                 title: strings.surveySettingsTitle,
                 description: strings.surveySettingsDescription,
@@ -1337,7 +1337,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                 ),
               ),
               const SizedBox(height: 16),
-              Showcase(
+              appShowcase(
                 key: _teamSectionKey,
                 title: strings.targetTeamTitle,
                 description: strings.targetTeamDescription,
@@ -1377,7 +1377,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                 ),
               ],
               const SizedBox(height: 24),
-              Showcase(
+              appShowcase(
                 key: _submitSectionKey,
                 title: strings.createSurveyTitle,
                 description: strings.createSurveyDescription,
