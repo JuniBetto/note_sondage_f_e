@@ -237,7 +237,7 @@ class _ChatWebConversationPageState extends State<ChatWebConversationPage> {
       return child;
     }
 
-    return Showcase(
+    return appShowcase(
       key: showcaseKey,
       title: title,
       description: description,

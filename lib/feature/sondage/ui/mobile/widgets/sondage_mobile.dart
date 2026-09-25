@@ -398,7 +398,7 @@ class _SondageMobileState extends State<SondageMobile>
                               availableTeamIds,
                             );
 
-                            final summaryHeader = Showcase(
+                            final summaryHeader = appShowcase(
                               key: _summaryKey,
                               title: AppLocalizations.of(
                                 context,
@@ -444,7 +444,7 @@ class _SondageMobileState extends State<SondageMobile>
                                 ],
                               ),
                             );
-                            final statsSection = Showcase(
+                            final statsSection = appShowcase(
                               key: _statsKey,
                               title: AppLocalizations.of(
                                 context,
@@ -480,7 +480,7 @@ class _SondageMobileState extends State<SondageMobile>
                                 ),
                               ),
                             );
-                            final listSection = Showcase(
+                            final listSection = appShowcase(
                               key: _listKey,
                               title: AppLocalizations.of(
                                 context,

@@ -32,6 +32,11 @@ class _ContactSupportViewState extends State<ContactSupportView> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
+  final FocusNode _focusScopeNode = FocusNode(
+    debugLabel: 'ContactSupportView',
+    canRequestFocus: false,
+    skipTraversal: true,
+  );
 
   bool _didPrefillUser = false;
   bool _isSubmitting = false;
@@ -66,6 +71,12 @@ class _ContactSupportViewState extends State<ContactSupportView> {
 
   @override
   void dispose() {
+    // Chiude la tastiera se un campo di questa pagina ha ancora il focus
+    // quando si cambia pagina.
+    if (_focusScopeNode.hasFocus) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    }
+    _focusScopeNode.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _messageController.dispose();
@@ -317,15 +328,17 @@ class _ContactSupportViewState extends State<ContactSupportView> {
     Color? fillColor,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final borderColor =
-        colorScheme.borderColor?.withValues(alpha: 0.7) ??
-        colorScheme.outlineVariant;
+    final borderColor = colorScheme.bottomOutline ?? colorScheme.outlineVariant;
 
     return InputDecoration(
       labelText: label,
       filled: true,
       fillColor: fillColor ?? colorScheme.surface,
       suffixIcon: suffixIcon,
+      labelStyle: TextStyle(
+        color: colorScheme.descriptionColor,
+        fontWeight: FontWeight.w600,
+      ),
       alignLabelWithHint: maxLines != null && maxLines > 1,
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       border: OutlineInputBorder(
@@ -339,8 +352,8 @@ class _ContactSupportViewState extends State<ContactSupportView> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide(
-          color: colorScheme.selectItem ?? colorScheme.primary,
-          width: 1.5,
+          color: colorScheme.selectionColor ?? colorScheme.primary,
+          width: 2,
         ),
       ),
     );
@@ -357,113 +370,121 @@ class _ContactSupportViewState extends State<ContactSupportView> {
         colorScheme.homeSecondary ??
         colorScheme.surfaceContainerHighest.withValues(alpha: 0.45);
 
-    return Align(
-      alignment: Alignment.topLeft,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          horizontalPadding,
-          topPadding,
-          horizontalPadding,
-          24,
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 920 && !widget.compact;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _SupportHeroCard(
-                  title: loc.contactUs,
-                  description: loc.contactUsDescription,
-                  supportEmail: _supportEmail,
-                  replyTime: loc.contactUsReplyTime,
-                  compact: widget.compact,
-                ),
-                const SizedBox(height: 20),
-                if (isWide)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 10,
-                        child: _SupportInfoPanel(
-                          backgroundColor: cardBackground,
-                          supportEmailLabel: loc.supportEmail,
-                          supportEmail: _supportEmail,
-                          topicsTitle: loc.contactUsTopicsTitle,
-                          topicsBody: loc.contactUsTopicsBody,
-                        ),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Focus(
+        focusNode: _focusScopeNode,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              topPadding,
+              horizontalPadding,
+              24,
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 920 && !widget.compact;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SupportHeroCard(
+                      title: loc.contactUs,
+                      description: loc.contactUsDescription,
+                      supportEmail: _supportEmail,
+                      replyTime: loc.contactUsReplyTime,
+                      compact: widget.compact,
+                    ),
+                    const SizedBox(height: 20),
+                    if (isWide)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 10,
+                            child: _SupportInfoPanel(
+                              backgroundColor: cardBackground,
+                              supportEmailLabel: loc.supportEmail,
+                              supportEmail: _supportEmail,
+                              topicsTitle: loc.contactUsTopicsTitle,
+                              topicsBody: loc.contactUsTopicsBody,
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            flex: 14,
+                            child: _SupportFormCard(
+                              backgroundColor: cardBackground,
+                              nameController: _nameController,
+                              emailController: _emailController,
+                              messageController: _messageController,
+                              buildDecoration: _buildDecoration,
+                              onSendEmail: _sendEmail,
+                              onCopyEmail: _copyEmail,
+                              onMessageChanged: (_) {
+                                _clearSubmissionFeedback();
+                                setState(() {});
+                              },
+                              canSend: _canSubmit,
+                              isSubmitting: _isSubmitting,
+                              submissionStatus: _submissionStatus,
+                              submissionMessage: _submissionMessage,
+                              sendLabel: loc.sendEmail,
+                              copyLabel: loc.copyEmail,
+                              yourNameLabel: loc.yourName,
+                              yourEmailLabel: loc.yourEmail,
+                              messageLabel: loc.message,
+                              formHint: loc.contactUsFormHint,
+                              attachments: _buildAttachments(context),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Column(
+                        children: [
+                          _SupportInfoPanel(
+                            backgroundColor: cardBackground,
+                            supportEmailLabel: loc.supportEmail,
+                            supportEmail: _supportEmail,
+                            topicsTitle: loc.contactUsTopicsTitle,
+                            topicsBody: loc.contactUsTopicsBody,
+                          ),
+                          const SizedBox(height: 20),
+                          _SupportFormCard(
+                            backgroundColor: cardBackground,
+                            nameController: _nameController,
+                            emailController: _emailController,
+                            messageController: _messageController,
+                            buildDecoration: _buildDecoration,
+                            onSendEmail: _sendEmail,
+                            onCopyEmail: _copyEmail,
+                            onMessageChanged: (_) {
+                              _clearSubmissionFeedback();
+                              setState(() {});
+                            },
+                            canSend: _canSubmit,
+                            isSubmitting: _isSubmitting,
+                            submissionStatus: _submissionStatus,
+                            submissionMessage: _submissionMessage,
+                            sendLabel: loc.sendEmail,
+                            copyLabel: loc.copyEmail,
+                            yourNameLabel: loc.yourName,
+                            yourEmailLabel: loc.yourEmail,
+                            messageLabel: loc.message,
+                            formHint: loc.contactUsFormHint,
+                            attachments: _buildAttachments(context),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        flex: 14,
-                        child: _SupportFormCard(
-                          backgroundColor: cardBackground,
-                          nameController: _nameController,
-                          emailController: _emailController,
-                          messageController: _messageController,
-                          buildDecoration: _buildDecoration,
-                          onSendEmail: _sendEmail,
-                          onCopyEmail: _copyEmail,
-                          onMessageChanged: (_) {
-                            _clearSubmissionFeedback();
-                            setState(() {});
-                          },
-                          canSend: _canSubmit,
-                          isSubmitting: _isSubmitting,
-                          submissionStatus: _submissionStatus,
-                          submissionMessage: _submissionMessage,
-                          sendLabel: loc.sendEmail,
-                          copyLabel: loc.copyEmail,
-                          yourNameLabel: loc.yourName,
-                          yourEmailLabel: loc.yourEmail,
-                          messageLabel: loc.message,
-                          formHint: loc.contactUsFormHint,
-                          attachments: _buildAttachments(context),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  Column(
-                    children: [
-                      _SupportInfoPanel(
-                        backgroundColor: cardBackground,
-                        supportEmailLabel: loc.supportEmail,
-                        supportEmail: _supportEmail,
-                        topicsTitle: loc.contactUsTopicsTitle,
-                        topicsBody: loc.contactUsTopicsBody,
-                      ),
-                      const SizedBox(height: 20),
-                      _SupportFormCard(
-                        backgroundColor: cardBackground,
-                        nameController: _nameController,
-                        emailController: _emailController,
-                        messageController: _messageController,
-                        buildDecoration: _buildDecoration,
-                        onSendEmail: _sendEmail,
-                        onCopyEmail: _copyEmail,
-                        onMessageChanged: (_) {
-                          _clearSubmissionFeedback();
-                          setState(() {});
-                        },
-                        canSend: _canSubmit,
-                        isSubmitting: _isSubmitting,
-                        submissionStatus: _submissionStatus,
-                        submissionMessage: _submissionMessage,
-                        sendLabel: loc.sendEmail,
-                        copyLabel: loc.copyEmail,
-                        yourNameLabel: loc.yourName,
-                        yourEmailLabel: loc.yourEmail,
-                        messageLabel: loc.message,
-                        formHint: loc.contactUsFormHint,
-                        attachments: _buildAttachments(context),
-                      ),
-                    ],
-                  ),
-              ],
-            );
-          },
+                  ],
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -841,6 +862,7 @@ class _SupportFormCard extends StatelessWidget {
           ],
           const SizedBox(height: 18),
           TextFormField(
+
             controller: nameController,
             readOnly: true,
             decoration: buildDecoration(
@@ -852,6 +874,7 @@ class _SupportFormCard extends StatelessWidget {
                 color: colorScheme.descriptionColor,
                 size: 18,
               ),
+
             ),
           ),
           const SizedBox(height: 14),

@@ -108,7 +108,7 @@ class _TeamsWebState extends State<TeamsWeb> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          Showcase(
+                          appShowcase(
                             key: _createButtonKey,
                             title: AppLocalizations.of(
                               context,
@@ -176,7 +176,7 @@ class _TeamsWebState extends State<TeamsWeb> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Showcase(
+                      appShowcase(
                         key: _viewToggleKey,
                         title: AppLocalizations.of(
                           context,
@@ -207,7 +207,7 @@ class _TeamsWebState extends State<TeamsWeb> {
                 ),
                 SizedBox(height: 16),
                 Expanded(
-                  child: Showcase(
+                  child: appShowcase(
                     key: _teamListKey,
                     title: AppLocalizations.of(context)!.tutorialTeamAreaTitle,
                     description: AppLocalizations.of(

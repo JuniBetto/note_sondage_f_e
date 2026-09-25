@@ -347,7 +347,7 @@ class _MainWebState extends State<MainWeb> {
       return child;
     }
 
-    return Showcase(
+    return appShowcase(
       key: showcaseKey,
       title: title,
       description: description,

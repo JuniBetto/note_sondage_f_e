@@ -284,7 +284,7 @@ class _ClockingMobileState extends State<ClockingMobile> {
     if (!enabled) {
       return child;
     }
-    return Showcase(
+    return appShowcase(
       key: key,
       title: title,
       description: description,

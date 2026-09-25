@@ -282,7 +282,7 @@ class _SondageWebState extends State<SondageWeb> {
             ),
             child: Column(
               children: [
-                Showcase(
+                appShowcase(
                   key: _headerKey,
                   title: AppLocalizations.of(context)!.tutorialSurveyFeedTitle,
                   description: AppLocalizations.of(
@@ -365,7 +365,7 @@ class _SondageWebState extends State<SondageWeb> {
                   ),
                 ),
                 if (isRefreshing) const LinearProgressIndicator(minHeight: 2),
-                Showcase(
+                appShowcase(
                   key: _statsKey,
                   title: AppLocalizations.of(
                     context,
@@ -438,7 +438,7 @@ class _SondageWebState extends State<SondageWeb> {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: Showcase(
+                  child: appShowcase(
                     key: _listKey,
                     title: AppLocalizations.of(
                       context,

@@ -63,7 +63,7 @@ class EventWorkspaceHeader extends StatelessWidget {
         isInspectorSelectionActive) {
       return child;
     }
-    return Showcase(
+    return appShowcase(
       key: showcaseKey,
       title: title,
       description: description,

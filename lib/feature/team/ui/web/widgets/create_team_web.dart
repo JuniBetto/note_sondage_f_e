@@ -206,7 +206,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                   // ── Team Info Section ──
                   _buildSectionTitle(context, localization.teamName),
                   const SizedBox(height: 12),
-                  Showcase(
+                  appShowcase(
                     key: _teamInfoKey,
                     title: AppLocalizations.of(
                       context,
@@ -262,7 +262,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                   // ── Team Color Section ──
                   _buildSectionTitle(context, localization.selectedTeamcolor),
                   const SizedBox(height: 12),
-                  Showcase(
+                  appShowcase(
                     key: _teamColorKey,
                     title: AppLocalizations.of(
                       context,
@@ -356,7 +356,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                   // ── Members Section ──
                   _buildSectionTitle(context, localization.userList),
                   const SizedBox(height: 12),
-                  Showcase(
+                  appShowcase(
                     key: _teamMembersKey,
                     title: AppLocalizations.of(
                       context,
@@ -382,7 +382,7 @@ class _CreateTeamWebState extends State<CreateTeamWeb> {
                   const SizedBox(height: 32),
 
                   // ── Create Button ──
-                  Showcase(
+                  appShowcase(
                     key: _teamActionKey,
                     title: AppLocalizations.of(
                       context,

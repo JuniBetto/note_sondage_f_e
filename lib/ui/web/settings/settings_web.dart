@@ -71,7 +71,7 @@ class _SettingsWebState extends State<SettingsWeb> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Showcase(
+            appShowcase(
               key: _profileCardKey,
               title: _profileTitle(context),
               description: _profileDescription(context),
@@ -113,7 +113,7 @@ class _SettingsWebState extends State<SettingsWeb> {
             Expanded(
               child: FullSidebar(
                 leftSectionBuilder: (isExpanded, onToggle, lastIndexes) {
-                  return Showcase(
+                  return appShowcase(
                     key: _menuKey,
                     title: _menuTitle(context),
                     description: _menuDescription(context),
@@ -211,7 +211,7 @@ class _SettingsWebState extends State<SettingsWeb> {
                     ),
                   );
                 },
-                rightSection: Showcase(
+                rightSection: appShowcase(
                   key: _contentKey,
                   title: _contentTitle(context, localizations, navBarItem),
                   description: _contentDescription(context, navBarItem),

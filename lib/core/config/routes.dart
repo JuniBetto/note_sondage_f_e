@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get_it/get_it.dart';
 import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_conversation_page.dart';
+import 'package:note_sondage/feature/chat/ui/widgets/chat_slide_transition.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_mobile.dart';
 import 'package:note_sondage/feature/event/ui/web/event_web_page.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
@@ -340,15 +341,18 @@ GoRouter createRouter(BuildContext context) {
                 child: SondageMobile(initialTabIndex: 2),
               );
             }
-            return NoTransitionPage<void>(
-              child: ChatMobileConversationPage(
-                teamId: teamId,
-                memberUserId: state.uri.queryParameters['memberUserId'],
-                memberName: state.uri.queryParameters['memberName'],
-                focusLatestOnOpen:
-                    state.uri.queryParameters['focus'] == 'latest',
-              ),
+            final page = ChatMobileConversationPage(
+              teamId: teamId,
+              memberUserId: state.uri.queryParameters['memberUserId'],
+              memberName: state.uri.queryParameters['memberName'],
+              focusLatestOnOpen: state.uri.queryParameters['focus'] == 'latest',
             );
+            // Only the chat list pushes with the slide; other entry points
+            // (dashboard, notifications, deep links) open without animation.
+            if (state.extra == chatSlideRouteExtra) {
+              return chatSlideRoutePage(state: state, child: page);
+            }
+            return NoTransitionPage<void>(child: page);
           },
         ),
         GoRoute(

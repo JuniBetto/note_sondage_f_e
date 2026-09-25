@@ -1618,7 +1618,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  Showcase(
+                  appShowcase(
                     key: _archiveToggleKey,
                     title: AppLocalizations.of(
                       context,
@@ -1644,7 +1644,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                       children: [
                         Expanded(
                           flex: 3,
-                          child: Showcase(
+                          child: appShowcase(
                             key: _calendarKey,
                             title: _showArchivedOnly
                                 ? (AppLocalizations.of(
@@ -1707,7 +1707,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                           ),
                         ),
                         const SizedBox(width: 24),
-                        Showcase(
+                        appShowcase(
                           key: _profilesKey,
                           title: AppLocalizations.of(
                             context,

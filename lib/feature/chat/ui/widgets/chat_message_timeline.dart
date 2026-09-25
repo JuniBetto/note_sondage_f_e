@@ -80,7 +80,20 @@ class ChatMessageTimeline extends StatelessWidget {
     }
 
     DateTime? previousTimestamp;
-    for (final message in messages) {
+    for (var index = 0; index < messages.length; index++) {
+      final message = messages[index];
+      final joinsPrevious =
+          index > 0 && chatMessagesAreGrouped(messages[index - 1], message);
+      final joinsNext =
+          index + 1 < messages.length &&
+          chatMessagesAreGrouped(message, messages[index + 1]);
+      final groupPosition = joinsPrevious
+          ? (joinsNext
+                ? ChatBubbleGroupPosition.middle
+                : ChatBubbleGroupPosition.last)
+          : (joinsNext
+                ? ChatBubbleGroupPosition.first
+                : ChatBubbleGroupPosition.single);
       if (previousTimestamp != null) {
         final gap = message.createdAt.difference(previousTimestamp).inMinutes;
         if (gap >= 30) {
@@ -91,7 +104,7 @@ class ChatMessageTimeline extends StatelessWidget {
           );
           widgets.add(const SizedBox(height: 12));
         } else {
-          widgets.add(const SizedBox(height: 8));
+          widgets.add(SizedBox(height: joinsPrevious ? 2 : 8));
         }
       }
 
@@ -108,6 +121,7 @@ class ChatMessageTimeline extends StatelessWidget {
               child: ChatMessageBubble(
                 message: message,
                 accentColor: accentColor,
+                groupPosition: groupPosition,
                 onPressed: onMessagePressed == null
                     ? null
                     : () => onMessagePressed!(message),

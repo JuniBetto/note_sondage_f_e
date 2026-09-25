@@ -120,7 +120,7 @@ class _HomeWebState extends State<HomeWeb> {
                   // ═══════════════════════════════
                   // Welcome banner
                   // ═══════════════════════════════
-                  Showcase(
+                  appShowcase(
                     key: _bannerKey,
                     title: AppLocalizations.of(
                       context,
@@ -135,7 +135,7 @@ class _HomeWebState extends State<HomeWeb> {
                   // ═══════════════════════════════
                   // Stats row
                   // ═══════════════════════════════
-                  Showcase(
+                  appShowcase(
                     key: _statsKey,
                     title: AppLocalizations.of(context)!.tutorialHomeStatsTitle,
                     description: AppLocalizations.of(
@@ -354,7 +354,7 @@ class _HomeWebState extends State<HomeWeb> {
                   // ═══════════════════════════════
                   // Pending notifications
                   // ═══════════════════════════════
-                  Showcase(
+                  appShowcase(
                     key: _notificationsKey,
                     title: AppLocalizations.of(
                       context,
@@ -372,7 +372,7 @@ class _HomeWebState extends State<HomeWeb> {
                   isNarrow
                       ? Column(
                           children: [
-                            Showcase(
+                            appShowcase(
                               key: _quickActionsKey,
                               title: AppLocalizations.of(
                                 context,
@@ -383,7 +383,7 @@ class _HomeWebState extends State<HomeWeb> {
                               child: _QuickActionsCard(),
                             ),
                             const SizedBox(height: 16),
-                            Showcase(
+                            appShowcase(
                               key: _activityKey,
                               title: AppLocalizations.of(
                                 context,
@@ -403,7 +403,7 @@ class _HomeWebState extends State<HomeWeb> {
                           children: [
                             Expanded(
                               flex: 2,
-                              child: Showcase(
+                              child: appShowcase(
                                 key: _quickActionsKey,
                                 title: AppLocalizations.of(
                                   context,
@@ -417,7 +417,7 @@ class _HomeWebState extends State<HomeWeb> {
                             const SizedBox(width: 20),
                             Expanded(
                               flex: 3,
-                              child: Showcase(
+                              child: appShowcase(
                                 key: _activityKey,
                                 title: AppLocalizations.of(
                                   context,

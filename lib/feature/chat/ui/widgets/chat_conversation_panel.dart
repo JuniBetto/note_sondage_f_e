@@ -174,7 +174,7 @@ class ChatConversationPanel extends StatelessWidget {
       return child;
     }
 
-    return Showcase(
+    return appShowcase(
       key: showcaseKey,
       title: title,
       description: description,
