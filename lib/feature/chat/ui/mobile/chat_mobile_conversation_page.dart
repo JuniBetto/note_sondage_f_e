@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/ui/mobile/navigation/mobile_shell_navigation.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/widgets/app_back_button.dart';
@@ -43,7 +43,9 @@ class _ChatMobileConversationPageState
       context.pop();
       return;
     }
-    context.go(RouterPaths.sondageChat);
+    // Opened standalone (e.g. from a notification): nothing to pop, and
+    // RouterPaths.sondageChat is a bare page, so return through the shell.
+    openSondageInMobileShell(context, tab: 2);
   }
 
   void _handleConversationTitleChanged(String? title) {

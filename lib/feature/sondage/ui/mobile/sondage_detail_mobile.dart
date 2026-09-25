@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/config/routes.dart';
+import 'package:note_sondage/ui/mobile/navigation/mobile_shell_navigation.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/feature/notification/navigation/notification_navigation.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
@@ -564,7 +565,9 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go(RouterPaths.sondage);
+              // Opened standalone (notification): RouterPaths.sondage is a
+              // bare page, so go back to the list through the shell.
+              openSondageInMobileShell(context);
             }
             return;
           }
