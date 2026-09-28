@@ -9,7 +9,8 @@
           "/reset-password",
           "/confirm-account-deletion",
           "/confirm-account-erasure",
-          "/confirm-account-reactivation"
+          "/confirm-account-reactivation",
+          "/login"
         ]
       }
     ]
