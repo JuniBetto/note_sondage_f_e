@@ -836,6 +836,8 @@
     "chatSeen": "Seen",
     "chatDeletedMessage": "Message deleted",
     "chatAttachmentFallback": "Attachment",
+    "chatAttachmentCaptionHint": "Add a caption",
+    "chatAttachmentAddMore": "Add more",
     "chatOpenDocument": "Open document",
     "chatOpenSharedConversation": "Open the shared team conversation.",
     "chatOpenConversation": "Open conversation",

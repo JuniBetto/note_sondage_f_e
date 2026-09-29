@@ -52,8 +52,8 @@ class ChatConversationPanel extends StatelessWidget {
   final bool sending;
   final bool compact;
   final Color accentColor;
-  final VoidCallback onPickImagePressed;
-  final VoidCallback onPickDocumentPressed;
+  final Future<bool> Function() onPickImagePressed;
+  final Future<bool> Function() onPickDocumentPressed;
   final VoidCallback onClearAttachmentPressed;
   final VoidCallback onSendPressed;
   final ChatDraftAttachment? selectedAttachment;

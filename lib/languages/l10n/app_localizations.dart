@@ -3706,6 +3706,18 @@ abstract class AppLocalizations {
   /// **'Attachment'**
   String get chatAttachmentFallback;
 
+  /// No description provided for @chatAttachmentCaptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a caption'**
+  String get chatAttachmentCaptionHint;
+
+  /// No description provided for @chatAttachmentAddMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Add more'**
+  String get chatAttachmentAddMore;
+
   /// No description provided for @chatOpenDocument.
   ///
   /// In en, this message translates to:

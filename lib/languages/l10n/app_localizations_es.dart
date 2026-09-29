@@ -2064,6 +2064,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get chatAttachmentFallback => 'Adjunto';
 
   @override
+  String get chatAttachmentCaptionHint => 'Añade un comentario';
+
+  @override
+  String get chatAttachmentAddMore => 'Añadir más';
+
+  @override
   String get chatOpenDocument => 'Abrir documento';
 
   @override

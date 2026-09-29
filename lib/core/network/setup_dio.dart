@@ -120,6 +120,14 @@ class DioClient {
     return '$baseUrl/api/storage/file?path=$encodedPath';
   }
 
+  /// Allegati chat: vanno scaricati dal servizio chat, che verifica che
+  /// l'utente abbia accesso alla conversazione (lo storage non li espone).
+  static String chatAttachmentPath(String messageId) =>
+      '/api/chat/messages/${Uri.encodeComponent(messageId)}/attachment';
+
+  static String chatAttachmentUrl(String messageId) =>
+      '$baseUrl${chatAttachmentPath(messageId)}';
+
   DioClient._(this.dio) {
     debugWarnIfMisconfiguredForPlatform();
 

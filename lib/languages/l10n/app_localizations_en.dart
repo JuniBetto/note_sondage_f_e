@@ -2039,6 +2039,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatAttachmentFallback => 'Attachment';
 
   @override
+  String get chatAttachmentCaptionHint => 'Add a caption';
+
+  @override
+  String get chatAttachmentAddMore => 'Add more';
+
+  @override
   String get chatOpenDocument => 'Open document';
 
   @override

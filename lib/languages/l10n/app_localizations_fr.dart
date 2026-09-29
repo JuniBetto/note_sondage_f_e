@@ -2066,6 +2066,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chatAttachmentFallback => 'Pièce jointe';
 
   @override
+  String get chatAttachmentCaptionHint => 'Ajouter une légende';
+
+  @override
+  String get chatAttachmentAddMore => 'Ajouter d\'autres';
+
+  @override
   String get chatOpenDocument => 'Ouvrir le document';
 
   @override

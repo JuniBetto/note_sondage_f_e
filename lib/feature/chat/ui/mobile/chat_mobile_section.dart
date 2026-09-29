@@ -57,8 +57,8 @@ class ChatMobileSection extends StatelessWidget {
   final bool hasMoreOlderMessages;
   final bool sending;
   final Color accentColor;
-  final VoidCallback onPickImagePressed;
-  final VoidCallback onPickDocumentPressed;
+  final Future<bool> Function() onPickImagePressed;
+  final Future<bool> Function() onPickDocumentPressed;
   final VoidCallback onClearAttachmentPressed;
   final VoidCallback onRefreshPressed;
   final VoidCallback onSendPressed;

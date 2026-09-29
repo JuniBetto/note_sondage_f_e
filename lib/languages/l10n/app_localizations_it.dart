@@ -2058,6 +2058,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get chatAttachmentFallback => 'Allegato';
 
   @override
+  String get chatAttachmentCaptionHint => 'Aggiungi una didascalia';
+
+  @override
+  String get chatAttachmentAddMore => 'Aggiungi altri';
+
+  @override
   String get chatOpenDocument => 'Apri documento';
 
   @override

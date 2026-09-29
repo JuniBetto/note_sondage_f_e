@@ -25,8 +25,10 @@ class ChatComposer extends StatefulWidget {
   final bool compact;
   final bool sending;
   final Color accentColor;
-  final VoidCallback onPickImagePressed;
-  final VoidCallback onPickDocumentPressed;
+
+  /// Restituiscono `true` se gli allegati scelti sono stati inviati.
+  final Future<bool> Function() onPickImagePressed;
+  final Future<bool> Function() onPickDocumentPressed;
   final VoidCallback onClearAttachmentPressed;
   final VoidCallback onSendPressed;
   final ChatDraftAttachment? selectedAttachment;
@@ -81,6 +83,13 @@ class _ChatComposerState extends State<ChatComposer> {
 
   void _handlePrimaryPressed() {
     if (_canSend) {
+      // Dopo l'invio (testo, foto o file) il pannello strumenti si chiude.
+      if (_showTools || _showEmojiPicker) {
+        setState(() {
+          _showTools = false;
+          _showEmojiPicker = false;
+        });
+      }
       widget.onSendPressed();
       return;
     }
@@ -90,6 +99,17 @@ class _ChatComposerState extends State<ChatComposer> {
         _showEmojiPicker = false;
       }
     });
+  }
+
+  Future<void> _pickAttachment(Future<bool> Function() pick) async {
+    final sent = await pick();
+    // Dopo l'invio di foto/file il pannello strumenti si chiude.
+    if (sent && mounted) {
+      setState(() {
+        _showTools = false;
+        _showEmojiPicker = false;
+      });
+    }
   }
 
   void _toggleEmojiPicker() {
@@ -183,8 +203,10 @@ class _ChatComposerState extends State<ChatComposer> {
                         compact: widget.compact,
                         palette: palette,
                         loc: loc,
-                        onPickImagePressed: widget.onPickImagePressed,
-                        onPickDocumentPressed: widget.onPickDocumentPressed,
+                        onPickImagePressed: () =>
+                            _pickAttachment(widget.onPickImagePressed),
+                        onPickDocumentPressed: () =>
+                            _pickAttachment(widget.onPickDocumentPressed),
                         onEmojiPressed: _toggleEmojiPicker,
                         emojiActive: _showEmojiPicker,
                       ),
@@ -262,8 +284,6 @@ class _ChatComposerState extends State<ChatComposer> {
                           isCollapsed: true,
                           focusColor: Colors.white,
                           hoverColor: Colors.white,
-
-
                         ),
                       ),
                     ),

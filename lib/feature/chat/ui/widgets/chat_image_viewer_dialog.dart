@@ -6,11 +6,13 @@ import 'package:note_sondage/core/network/setup_dio.dart';
 class ChatImageViewerDialog extends StatelessWidget {
   const ChatImageViewerDialog({
     super.key,
+    required this.messageId,
     required this.attachmentPath,
     this.attachmentName,
     this.onDownloadPressed,
   });
 
+  final String messageId;
   final String attachmentPath;
   final String? attachmentName;
   final FutureOr<void> Function()? onDownloadPressed;
@@ -18,8 +20,10 @@ class ChatImageViewerDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final imageUrl = DioClient.resolveImageUrl(attachmentPath);
     final requiresAuth = DioClient.usesAuthenticatedImageProxy(attachmentPath);
+    final imageUrl = requiresAuth
+        ? DioClient.chatAttachmentUrl(messageId)
+        : DioClient.resolveImageUrl(attachmentPath);
     final headersFuture = requiresAuth
         ? DioClient.resolveImageHeaders(attachmentPath)
         : Future<Map<String, String>?>.value(null);
