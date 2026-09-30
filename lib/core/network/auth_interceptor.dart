@@ -14,6 +14,22 @@ import 'package:note_sondage/core/network/token_service.dart';
 /// 2. Ri-scambiarlo con il backend per un nuovo JWT.
 /// 3. Ripetere la richiesta originale con il nuovo token.
 class AuthInterceptor extends Interceptor {
+  /// Chiamato quando il backend indica che l'account è stato disattivato o
+  /// eliminato (es. dall'utente stesso da un altro dispositivo): l'app deve
+  /// fare logout. Registrato nel DI, così `core` non dipende dall'AuthBloc.
+  static void Function()? onAccountRevoked;
+
+  /// Messaggio del gateway/filtro JWT per un account non più attivo.
+  static const _accountRevokedMessage = 'Account disabled or deactivated';
+
+  /// Codici Firebase del rinnovo token per un account non più utilizzabile.
+  static const _accountRevokedFirebaseCodes = {
+    'user-disabled',
+    'user-not-found',
+    'user-token-expired',
+    'invalid-user-token',
+  };
+
   static const _exchangeConnectTimeout = Duration(seconds: 15);
   static const _exchangeSendTimeout = Duration(seconds: 15);
   static const _exchangeReceiveTimeout = Duration(seconds: 45);
@@ -80,6 +96,12 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // Account disattivato/eliminato: un nuovo token non servirebbe, logout.
+    if (err.response?.statusCode == 401 && _isAccountRevokedResponse(err)) {
+      onAccountRevoked?.call();
+      return handler.next(err);
+    }
+
     // Spring Security puo' restituire 403 quando il JWT backend manca o non e'
     // piu' valido. Gestiamo sia 401 che 403 per riallineare il token backend.
     if ((err.response?.statusCode == 401 || err.response?.statusCode == 403) &&
@@ -110,6 +132,17 @@ class AuthInterceptor extends Interceptor {
             return handler.resolve(retryResponse);
           }
         }
+      } on FirebaseAuthException catch (e) {
+        // Il rinnovo del token Firebase fallisce se l'account è stato
+        // disattivato o eliminato: logout invece di restare bloccati.
+        if (_accountRevokedFirebaseCodes.contains(e.code)) {
+          onAccountRevoked?.call();
+        }
+        _logExchangeFailure(
+          phase: 'onError',
+          error: e,
+          requestOptions: err.requestOptions,
+        );
       } catch (e) {
         _logExchangeFailure(
           phase: 'onError',
@@ -202,6 +235,12 @@ class AuthInterceptor extends Interceptor {
         _exchangeUid = null;
       }
     }
+  }
+
+  bool _isAccountRevokedResponse(DioException err) {
+    final data = err.response?.data;
+    final text = data is Map ? data['error']?.toString() : data?.toString();
+    return text != null && text.contains(_accountRevokedMessage);
   }
 
   void _logExchangeFailure({

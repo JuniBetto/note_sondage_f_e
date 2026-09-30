@@ -1152,9 +1152,15 @@ class FirebaseAuthRepositoryImpl implements AuthRepository {
   Future<void> reloadUser() async {
     try {
       await _firebaseAuth.currentUser?.reload();
-    } catch (e) {
-      // Se il reload fallisce (es. token scaduto), non propagare
-      // l'errore — il listener authStateChanges gestirà il logout
+    } on firebase.FirebaseAuthException catch (e) {
+      // Account disattivato o eliminato lato server: va segnalato, così
+      // l'app fa logout invece di restare in una sessione non più valida.
+      if (AuthException.accountRevokedCodes.contains(e.code)) {
+        throw _mapFirebaseAuthException(e);
+      }
+      // Altri errori (es. rete): non propagare, l'utente resta connesso.
+    } catch (_) {
+      // Errori non Firebase (es. rete): non propagare.
     }
   }
 
@@ -1480,6 +1486,15 @@ class AuthException implements Exception {
   final String message;
 
   const AuthException({required this.code, required this.message});
+
+  /// Codici Firebase che indicano che l'account non è più utilizzabile
+  /// (disattivato, eliminato o con sessione revocata lato server).
+  static const accountRevokedCodes = {
+    'user-disabled',
+    'user-not-found',
+    'user-token-expired',
+    'invalid-user-token',
+  };
 
   @override
   String toString() => message;

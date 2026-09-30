@@ -348,6 +348,18 @@ abstract class AppLocalizations {
   /// **'Reactivate account'**
   String get reactivateAccount;
 
+  /// No description provided for @accountActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account management'**
+  String get accountActionsTitle;
+
+  /// No description provided for @accountActionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate your account temporarily or delete it permanently. We will email you a confirmation link first.'**
+  String get accountActionsDescription;
+
   /// No description provided for @accountReactivationDialogMessage.
   ///
   /// In en, this message translates to:
@@ -3705,6 +3717,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Attachment'**
   String get chatAttachmentFallback;
+
+  /// No description provided for @chatAttachmentCaptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a caption'**
+  String get chatAttachmentCaptionHint;
+
+  /// No description provided for @chatAttachmentAddMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Add more'**
+  String get chatAttachmentAddMore;
 
   /// No description provided for @chatOpenDocument.
   ///

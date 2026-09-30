@@ -151,6 +151,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reactivateAccount => 'Réactiver le compte';
 
   @override
+  String get accountActionsTitle => 'Gestion du compte';
+
+  @override
+  String get accountActionsDescription =>
+      'Désactivez temporairement votre compte ou supprimez-le définitivement. Nous vous enverrons d\'abord un lien de confirmation par e-mail.';
+
+  @override
   String get accountReactivationDialogMessage =>
       'Saisissez l\'adresse e-mail du compte à réactiver. Nous enverrons un lien de confirmation avant de rétablir l\'accès.';
 
@@ -2064,6 +2071,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get chatAttachmentFallback => 'Pièce jointe';
+
+  @override
+  String get chatAttachmentCaptionHint => 'Ajouter une légende';
+
+  @override
+  String get chatAttachmentAddMore => 'Ajouter d\'autres';
 
   @override
   String get chatOpenDocument => 'Ouvrir le document';

@@ -4,7 +4,6 @@ import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/auth_tab_login.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/forget_password.dart';
 import 'package:note_sondage/ui/web/widgets/web_navbar.dart';
-import 'package:note_sondage/ui/widgets/legal/public_legal_links_panel.dart';
 
 class LoginWeb extends StatelessWidget {
   final bool? isForgetPassword;
@@ -22,7 +21,6 @@ class LoginWeb extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final localization = AppLocalizations.of(context)!;
-    final isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -77,25 +75,8 @@ class LoginWeb extends StatelessWidget {
                 ],
               ),
             ),
-            // Nascosto mentre la tastiera è aperta: da spazio al form
-            // (già scrollabile al suo interno) invece di restare fisso
-            // e "rubare" altezza utile sopra la tastiera. Stesso pattern
-            // usato in login_mobile.dart per lo stesso problema.
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              child: isKeyboardVisible
-                  ? const SizedBox.shrink()
-                  : Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 680),
-                          child: const PublicLegalLinksPanel(centered: true),
-                        ),
-                      ),
-                    ),
-            ),
+            // I link legali non sono più fissi in basso: stanno in fondo ai
+            // form (dentro lo scroll), vedi PublicLegalInlineLinks.
           ],
         ),
       ),

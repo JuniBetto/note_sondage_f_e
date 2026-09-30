@@ -12,6 +12,7 @@ import 'package:note_sondage/feature/team/domain/use_case/user/user_use_case.dar
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/auth/account_actions_card.dart';
 import 'package:note_sondage/ui/widgets/auth/two_factor_setup_card.dart';
 import 'package:note_sondage/ui/widgets/avatar_input.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
@@ -357,13 +358,6 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Text(
-                            localization.fullName,
-                            style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
                           CustomInputField(
                             hintText: localization.fullName,
                             controller: _displayNameController,
@@ -371,13 +365,6 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
                             validator: _displayNameValidator,
                           ),
                           const SizedBox(height: 20),
-                          Text(
-                            localization.email,
-                            style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
                           CustomInputField(
                             hintText: localization.email,
                             controller: _emailController,
@@ -437,6 +424,8 @@ class _SettingsProfileWebState extends State<SettingsProfileWeb> {
                   ),
                   const SizedBox(height: 20),
                   const TwoFactorSetupCard(),
+                  const SizedBox(height: 20),
+                  AccountActionsCard(email: authUser.email.trim()),
                 ],
               ),
             ),

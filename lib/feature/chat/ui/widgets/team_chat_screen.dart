@@ -25,6 +25,7 @@ import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_section.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_direct_action_dialog.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_image_viewer_dialog.dart';
 import 'package:note_sondage/feature/chat/ui/web/chat_web_layout.dart';
+import 'package:note_sondage/feature/chat/ui/widgets/chat_attachment_preview_page.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_draft_attachment.dart';
 import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
 import 'package:note_sondage/feature/chat/workflow/chat_message_event_workflow_controller.dart';
@@ -263,7 +264,10 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       // it immediately instead of waiting on the full team list round-trip.
       _selectedTeamId = initialTeamId;
       _skipNextTeamsConversationLoad = true;
-      _loadConversation(initialTeamId, memberUserId: widget.initialMemberUserId);
+      _loadConversation(
+        initialTeamId,
+        memberUserId: widget.initialMemberUserId,
+      );
     }
     _loadTeams();
   }
@@ -507,7 +511,9 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   /// `BuildContext`/`ScrollController`, which the bloc can't own.
   void _loadConversation(String teamId, {String? memberUserId}) {
     unawaited(_ensureTeamAccessContextLoaded(teamId));
-    _chatBloc.add(ChatConversationRequested(teamId, memberUserId: memberUserId));
+    _chatBloc.add(
+      ChatConversationRequested(teamId, memberUserId: memberUserId),
+    );
   }
 
   /// Bridges to [ChatBloc]'s equivalent event for callers that need to
@@ -768,19 +774,42 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     );
   }
 
-  Future<void> _pickImageAttachment() async {
-    final pickedFile = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-    );
-    if (pickedFile == null) {
-      return;
-    }
-    await _applyPickedImageAttachment(pickedFile);
+  Future<bool> _pickImageAttachment() async {
+    final attachments = await _pickImages();
+    return _openAttachmentPreview(attachments, onAddMorePressed: _pickImages);
   }
 
-  Future<void> _pickDocumentAttachment() async {
+  Future<bool> _pickDocumentAttachment() async {
+    final attachments = await _pickDocuments();
+    return _openAttachmentPreview(
+      attachments,
+      onAddMorePressed: _pickDocuments,
+    );
+  }
+
+  Future<List<ChatDraftAttachment>> _pickImages() async {
+    final pickedFiles = await _imagePicker.pickMultiImage();
+    final attachments = <ChatDraftAttachment>[];
+    for (final pickedFile in pickedFiles) {
+      final bytes = await pickedFile.readAsBytes();
+      if (bytes.isEmpty) {
+        continue;
+      }
+      attachments.add(
+        ChatDraftAttachment(
+          bytes: bytes,
+          fileName: pickedFile.name,
+          contentType: _resolveImageContentType(pickedFile.name),
+          sizeBytes: bytes.length,
+        ),
+      );
+    }
+    return attachments;
+  }
+
+  Future<List<ChatDraftAttachment>> _pickDocuments() async {
     final result = await FilePicker.platform.pickFiles(
-      allowMultiple: false,
+      allowMultiple: true,
       withData: true,
       type: FileType.custom,
       allowedExtensions: const [
@@ -794,39 +823,65 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         'txt',
       ],
     );
-    final file = result?.files.singleOrNull;
-    final bytes = file?.bytes;
-    final fileName = file?.name.trim() ?? '';
-    if (file == null || bytes == null || bytes.isEmpty || fileName.isEmpty) {
-      return;
-    }
-    _chatBloc.add(
-      ChatAttachmentSelected(
+    final attachments = <ChatDraftAttachment>[];
+    for (final file in result?.files ?? const <PlatformFile>[]) {
+      final bytes = file.bytes;
+      final fileName = file.name.trim();
+      if (bytes == null || bytes.isEmpty || fileName.isEmpty) {
+        continue;
+      }
+      attachments.add(
         ChatDraftAttachment(
           bytes: bytes,
           fileName: fileName,
           contentType: _resolveDocumentContentType(file.extension),
           sizeBytes: bytes.length,
         ),
-      ),
-    );
+      );
+    }
+    return attachments;
   }
 
-  Future<void> _applyPickedImageAttachment(XFile pickedFile) async {
-    final bytes = await pickedFile.readAsBytes();
-    if (bytes.isEmpty) {
-      return;
+  /// Mostra l'anteprima a tutto schermo (foto/file + didascalia) e, se
+  /// l'utente conferma, invia gli allegati in ordine. Il testo già scritto
+  /// nel composer diventa la didascalia del primo allegato.
+  /// Restituisce `true` se gli allegati sono stati inviati.
+  Future<bool> _openAttachmentPreview(
+    List<ChatDraftAttachment> attachments, {
+    required Future<List<ChatDraftAttachment>> Function() onAddMorePressed,
+  }) async {
+    if (attachments.isEmpty || !mounted || _conversation == null) {
+      return false;
     }
+    final theme = Theme.of(context);
+    final accentColor = ChatThemeTokens.resolveTeamAccentColor(
+      _selectedTeam?.color,
+      theme.colorScheme.primary,
+    );
+    final items = await ChatAttachmentPreviewPage.show(
+      context,
+      attachments: attachments,
+      accentColor: accentColor,
+      initialCaption: _messageController.text.trim(),
+      onAddMorePressed: onAddMorePressed,
+    );
+    if (items == null || items.isEmpty || !mounted) {
+      return false;
+    }
+
+    final replyTarget = _replyTarget;
+    _messageController.clear();
     _chatBloc.add(
-      ChatAttachmentSelected(
-        ChatDraftAttachment(
-          bytes: bytes,
-          fileName: pickedFile.name,
-          contentType: _resolveImageContentType(pickedFile.name),
-          sizeBytes: bytes.length,
-        ),
+      ChatAttachmentsSendRequested(
+        items: [
+          for (final item in items)
+            (attachment: item.attachment, caption: item.caption),
+        ],
+        actorDisplayName: AppLocalizations.of(context)!.chatYouLabel,
+        replyTarget: replyTarget,
       ),
     );
+    return true;
   }
 
   void _clearSelectedAttachment() {
@@ -1533,7 +1588,9 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         return;
       }
 
-      await _runWithLoadingOverlay(() => _shiftWorkflowController.submit(requests));
+      await _runWithLoadingOverlay(
+        () => _shiftWorkflowController.submit(requests),
+      );
       if (!mounted) {
         return;
       }
@@ -2404,10 +2461,8 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
                   // _prefetchWorkflowSuggestionsForMessage's dedupe guard
                   // read the not-yet-cleared cache and bail out as a no-op.
                   final cleared = _chatBloc.stream.firstWhere(
-                    (state) =>
-                        !state.workflowSuggestionsByMessageId.containsKey(
-                          message.id,
-                        ),
+                    (state) => !state.workflowSuggestionsByMessageId
+                        .containsKey(message.id),
                   );
                   _chatBloc.add(ChatWorkflowSuggestionCleared(message.id));
                   await cleared;
@@ -2451,12 +2506,14 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     );
   }
 
-  Future<Uint8List> _loadAttachmentBytes(String path) async {
+  Future<Uint8List> _loadAttachmentBytes(
+    ChatMessageEntity message,
+    String path,
+  ) async {
     final response = await DioClient().dio.get<List<int>>(
-      DioClient.usesAuthenticatedImageProxy(path) ? '/api/storage/file' : path,
-      queryParameters: DioClient.usesAuthenticatedImageProxy(path)
-          ? {'path': path}
-          : null,
+      DioClient.usesAuthenticatedImageProxy(path)
+          ? DioClient.chatAttachmentPath(message.id)
+          : path,
       options: Options(responseType: ResponseType.bytes),
     );
     final data = response.data;
@@ -2473,7 +2530,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     }
 
     try {
-      final bytes = await _loadAttachmentBytes(path);
+      final bytes = await _loadAttachmentBytes(message, path);
       final downloaded = await _fileDownloadBridge.saveBytes(
         bytes: bytes,
         fileName: message.attachmentOriginalName,
@@ -2507,6 +2564,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       context: context,
       builder: (dialogContext) {
         return ChatImageViewerDialog(
+          messageId: message.id,
           attachmentPath: path,
           attachmentName: message.attachmentOriginalName,
           onDownloadPressed: () async {
@@ -2774,8 +2832,9 @@ class _ChatReportMessageSheetState extends State<_ChatReportMessageSheet> {
                         width: 38,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.24),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.24,
+                          ),
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -2841,18 +2900,12 @@ class _ChatReportMessageSheetState extends State<_ChatReportMessageSheet> {
                                   Navigator.of(context).pop(
                                     _ChatReportSheetResult(
                                       reason: _selectedReason!,
-                                      comment: comment.isEmpty
-                                          ? null
-                                          : comment,
+                                      comment: comment.isEmpty ? null : comment,
                                     ),
                                   );
                                 },
                           child: Text(
-                            _chatActionText(
-                              locale,
-                              it: 'Invia',
-                              en: 'Submit',
-                            ),
+                            _chatActionText(locale, it: 'Invia', en: 'Submit'),
                           ),
                         ),
                       ],

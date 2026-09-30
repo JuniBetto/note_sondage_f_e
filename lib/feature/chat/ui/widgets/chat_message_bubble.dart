@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/core/network/setup_dio.dart';
+import 'package:note_sondage/core/utils/file_download_bridge.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reaction_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_reply_entity.dart';
@@ -543,8 +547,10 @@ class _ImageAttachmentPreview extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final imageUrl = DioClient.resolveImageUrl(path);
     final requiresAuth = DioClient.usesAuthenticatedImageProxy(path);
+    final imageUrl = requiresAuth
+        ? DioClient.chatAttachmentUrl(message.id)
+        : DioClient.resolveImageUrl(path);
     final authHeadersFuture = requiresAuth
         ? DioClient.resolveImageHeaders(path)
         : Future<Map<String, String>?>.value(null);
@@ -638,16 +644,22 @@ class _FileAttachmentPreview extends StatelessWidget {
     if (path == null || path.isEmpty) {
       return;
     }
-    final response = await DioClient().dio.get(
-      '/api/storage/file/url',
-      queryParameters: {'path': path},
-    );
-    final url = (response.data as Map<String, dynamic>)['url']?.toString();
-    if (url == null || url.isEmpty) {
+    if (!DioClient.usesAuthenticatedImageProxy(path)) {
+      await launchUrl(Uri.parse(path), mode: LaunchMode.platformDefault);
       return;
     }
-    final uri = Uri.parse(url);
-    await launchUrl(uri, mode: LaunchMode.platformDefault);
+    final response = await DioClient().dio.get<List<int>>(
+      DioClient.chatAttachmentPath(message.id),
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final data = response.data;
+    if (data == null || data.isEmpty) {
+      return;
+    }
+    await createFileDownloadBridge().saveBytes(
+      bytes: Uint8List.fromList(data),
+      fileName: message.attachmentOriginalName,
+    );
   }
 
   @override

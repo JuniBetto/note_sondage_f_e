@@ -65,6 +65,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       transformer: (events, mapper) => events.asyncExpand(mapper),
     );
     on<ChatMessageSendRequested>(_onMessageSendRequested);
+    on<ChatAttachmentsSendRequested>(_onAttachmentsSendRequested);
     on<ChatAttachmentSelected>(_onAttachmentSelected);
     on<ChatAttachmentCleared>(_onAttachmentCleared);
     on<ChatReplyTargetSet>(_onReplyTargetSet);
@@ -485,19 +486,53 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   Future<void> _onMessageSendRequested(
     ChatMessageSendRequested event,
     Emitter<ChatState> emit,
+  ) {
+    return _sendMessage(
+      emit,
+      content: event.content,
+      attachment: event.attachment,
+      replyTarget: event.replyTarget,
+      actorDisplayName: event.actorDisplayName,
+    );
+  }
+
+  Future<void> _onAttachmentsSendRequested(
+    ChatAttachmentsSendRequested event,
+    Emitter<ChatState> emit,
   ) async {
+    for (var i = 0; i < event.items.length; i++) {
+      if (emit.isDone) {
+        return;
+      }
+      final item = event.items[i];
+      await _sendMessage(
+        emit,
+        content: item.caption,
+        attachment: item.attachment,
+        replyTarget: i == 0 ? event.replyTarget : null,
+        actorDisplayName: event.actorDisplayName,
+      );
+    }
+  }
+
+  Future<void> _sendMessage(
+    Emitter<ChatState> emit, {
+    required String content,
+    required ChatDraftAttachment? attachment,
+    required ChatMessageEntity? replyTarget,
+    required String actorDisplayName,
+  }) async {
     final conversation = state.conversation;
-    if (conversation == null ||
-        (event.content.isEmpty && event.attachment == null)) {
+    if (conversation == null || (content.isEmpty && attachment == null)) {
       return;
     }
 
     final temporaryMessage = _buildOptimisticMessage(
       conversationId: conversation.id,
-      content: event.content,
-      attachment: event.attachment,
-      replyTo: event.replyTarget,
-      actorDisplayName: event.actorDisplayName,
+      content: content,
+      attachment: attachment,
+      replyTo: replyTarget,
+      actorDisplayName: actorDisplayName,
     );
 
     emit(
@@ -511,18 +546,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     );
 
     try {
-      final message = event.attachment == null
+      final message = attachment == null
           ? await chatUseCase.sendMessage(
               conversation.id,
-              event.content,
+              content,
               replyToMessageId: temporaryMessage.replyTo?.messageId,
             )
           : await chatUseCase.sendAttachmentMessage(
               conversation.id,
-              content: event.content,
-              bytes: event.attachment!.bytes,
-              fileName: event.attachment!.fileName,
-              contentType: event.attachment!.contentType,
+              content: content,
+              bytes: attachment.bytes,
+              fileName: attachment.fileName,
+              contentType: attachment.contentType,
               replyToMessageId: temporaryMessage.replyTo?.messageId,
             );
       emit(
@@ -550,8 +585,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
               error,
               fallback: 'We could not send this message. Please try again.',
             ),
-            content: event.content,
-            attachment: event.attachment,
+            content: content,
+            attachment: attachment,
             replyTarget: _restoredReplyTarget(
               temporaryMessage,
               conversation.id,

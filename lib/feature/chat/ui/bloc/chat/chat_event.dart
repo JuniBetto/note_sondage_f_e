@@ -76,7 +76,30 @@ class ChatMessageSendRequested extends ChatEvent {
   final ChatMessageEntity? replyTarget;
 
   @override
-  List<Object?> get props => [content, actorDisplayName, attachment, replyTarget];
+  List<Object?> get props => [
+    content,
+    actorDisplayName,
+    attachment,
+    replyTarget,
+  ];
+}
+
+/// Sends several attachments (each with its own caption) one after the
+/// other, so they appear in the chat in the order the user picked them.
+/// [replyTarget] applies to the first message only.
+class ChatAttachmentsSendRequested extends ChatEvent {
+  const ChatAttachmentsSendRequested({
+    required this.items,
+    required this.actorDisplayName,
+    this.replyTarget,
+  });
+
+  final List<({ChatDraftAttachment attachment, String caption})> items;
+  final String actorDisplayName;
+  final ChatMessageEntity? replyTarget;
+
+  @override
+  List<Object?> get props => [items, actorDisplayName, replyTarget];
 }
 
 class ChatAttachmentSelected extends ChatEvent {
@@ -153,11 +176,7 @@ class ChatMessageSenderBlocked extends ChatEvent {
 /// Dispatched after the widget's own report sheet collects a reason (and
 /// optional comment) for [message].
 class ChatMessageReported extends ChatEvent {
-  const ChatMessageReported(
-    this.message, {
-    required this.reason,
-    this.comment,
-  });
+  const ChatMessageReported(this.message, {required this.reason, this.comment});
 
   final ChatMessageEntity message;
   final ChatMessageReportReason reason;
@@ -185,7 +204,10 @@ class ChatWorkflowAiPreferenceChanged extends ChatEvent {
 }
 
 class ChatSondageDraftRequested extends ChatEvent {
-  const ChatSondageDraftRequested({required this.message, required this.locale});
+  const ChatSondageDraftRequested({
+    required this.message,
+    required this.locale,
+  });
 
   final ChatMessageEntity message;
   final String locale;

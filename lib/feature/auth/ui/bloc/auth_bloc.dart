@@ -29,6 +29,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthGoogleSignInRequested>(_onGoogleSignIn);
     on<AuthPasswordResetRequested>(_onPasswordReset);
     on<AuthLogoutRequested>(_onLogout);
+    on<AuthAccountRevoked>(_onAccountRevoked);
     on<AuthReloadRequested>(_onReload);
     on<AuthProfileEmailUpdated>(_onProfileEmailUpdated);
     on<AuthProfileDisplayNameUpdated>(_onProfileDisplayNameUpdated);
@@ -44,8 +45,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Helper per GoRouter e widget.
   bool get isAuthenticated => state.status == AuthStatus.authenticated;
 
+  /// Codice di [AuthState.errorCode] per il logout forzato da account
+  /// disattivato/eliminato; la pagina di login lo usa per mostrare il motivo.
+  static const accountRevokedCode = 'account-revoked';
+
   void _onUserChanged(_AuthUserChanged event, Emitter<AuthState> emit) {
     if (event.user.isEmpty) {
+      // Il logout forzato ha già emesso lo stato con il motivo: non
+      // sovrascriverlo, altrimenti la pagina di login non può mostrarlo.
+      if (state.errorCode == accountRevokedCode) return;
       emit(const AuthState.unauthenticated());
     } else {
       emit(AuthState.authenticated(event.user));
@@ -73,7 +81,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthState.verificationEmailRequired(event.email));
         return;
       }
-      emit(AuthState.error(message));
+      emit(AuthState.error(message, code: AuthUserMessageResolver.code(e)));
     }
   }
 
@@ -106,7 +114,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } on AuthMfaRequiredException catch (e) {
       emit(AuthState.mfaRequired(e.factors, e.message));
     } catch (e) {
-      emit(AuthState.error(AuthUserMessageResolver.resolve(e)));
+      // L'utente ha chiuso il login Google: nessun messaggio di errore.
+      if (AuthUserMessageResolver.isUserCancellation(e)) {
+        emit(const AuthState.unauthenticated());
+        return;
+      }
+      emit(
+        AuthState.error(
+          AuthUserMessageResolver.resolve(e),
+          code: AuthUserMessageResolver.code(e),
+        ),
+      );
     }
   }
 
@@ -135,6 +153,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  Future<void> _onAccountRevoked(
+    AuthAccountRevoked event,
+    Emitter<AuthState> emit,
+  ) async {
+    // Più richieste possono ricevere 401 insieme: il logout va fatto una volta.
+    if (state.status != AuthStatus.authenticated) return;
+    emit(
+      const AuthState.error(
+        'Your account is no longer active, so you have been signed out.',
+        code: accountRevokedCode,
+      ),
+    );
+    try {
+      await _authUseCase.signOut();
+    } catch (_) {
+      // Lo stato è già non autenticato: il router porta comunque al login.
+    }
+  }
+
   Future<void> _onReload(
     AuthReloadRequested event,
     Emitter<AuthState> emit,
@@ -155,7 +192,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // La sessione è ancora valida — ripristina lo stato autenticato
         emit(AuthState.authenticated(user));
       }
-    } catch (_) {
+    } catch (e) {
+      if (AuthUserMessageResolver.isAccountRevoked(e)) {
+        add(const AuthAccountRevoked());
+        return;
+      }
       // Errore di rete: non disconnettere l'utente, mantenere lo stato attuale.
       // Firebase Auth ha i token cached, l'utente può continuare offline.
     }

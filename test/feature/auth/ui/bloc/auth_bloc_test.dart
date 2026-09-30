@@ -8,6 +8,7 @@ import 'package:note_sondage/feature/auth/domain/entities/phone_sign_in_start_re
 import 'package:note_sondage/feature/auth/domain/entities/totp_enrollment_secret_entity.dart';
 import 'package:note_sondage/feature/auth/domain/repositories/auth_repository.dart';
 import 'package:note_sondage/feature/auth/domain/use_case/auth_use_case.dart';
+import 'package:note_sondage/feature/auth/infrastructure/repositories/firebase_auth_repository_impl.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 
 class _FakeAuthRepository implements AuthRepository {
@@ -29,6 +30,7 @@ class _FakeAuthRepository implements AuthRepository {
   })?
   createUserHandler;
   Future<void> Function()? reloadUserHandler;
+  Future<AuthUserEntity> Function()? googleSignInHandler;
 
   AuthUserEntity currentUserValue = AuthUserEntity.empty;
   int clearPendingMfaChallengeCalls = 0;
@@ -91,11 +93,17 @@ class _FakeAuthRepository implements AuthRepository {
   @override
   Future<void> refreshBackendSession() async {}
 
-  @override
-  Future<void> signOut() async {}
+  int signOutCalls = 0;
 
   @override
-  Future<AuthUserEntity> signInWithGoogle() => throw UnimplementedError();
+  Future<void> signOut() async {
+    signOutCalls++;
+    emitUser(AuthUserEntity.empty);
+  }
+
+  @override
+  Future<AuthUserEntity> signInWithGoogle() =>
+      googleSignInHandler?.call() ?? (throw UnimplementedError());
 
   @override
   Future<void> sendPasswordResetEmail({required String email}) =>
@@ -412,5 +420,112 @@ void main() {
         await subscription.cancel();
       },
     );
+
+    test(
+      'cancelling Google sign-in returns to unauthenticated without error',
+      () async {
+        final emittedStates = <AuthState>[];
+        repository.googleSignInHandler = () => Future<AuthUserEntity>.error(
+          const AuthException(
+            code: 'google-sign-in-cancelled',
+            message: 'Google sign-in was cancelled by user.',
+          ),
+        );
+
+        final subscription = bloc.stream.listen(emittedStates.add);
+        bloc.add(const AuthGoogleSignInRequested());
+        await pumpEventQueue(times: 20);
+
+        expect(emittedStates.last, const AuthState.unauthenticated());
+        expect(
+          emittedStates.any((state) => state.errorMessage != null),
+          isFalse,
+        );
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
+      'login on a disabled account exposes the user-disabled code',
+      () async {
+        final emittedStates = <AuthState>[];
+        repository.signInHandler = ({required email, required password}) {
+          return Future<AuthUserEntity>.error(
+            const AuthException(
+              code: 'user-disabled',
+              message: 'This user account has been disabled.',
+            ),
+          );
+        };
+
+        final subscription = bloc.stream.listen(emittedStates.add);
+        bloc.add(
+          const AuthLoginRequested(
+            email: 'off@example.com',
+            password: 'secret123',
+          ),
+        );
+        await pumpEventQueue(times: 20);
+
+        expect(emittedStates.last.errorCode, 'user-disabled');
+        expect(emittedStates.last.errorMessage, isNotNull);
+
+        await subscription.cancel();
+      },
+    );
+
+    group('account revoked', () {
+      const activeUser = AuthUserEntity(uid: 'user-9', email: 'x@example.com');
+
+      test('signs out once and keeps the reason for the login page', () async {
+        final emittedStates = <AuthState>[];
+        final subscription = bloc.stream.listen(emittedStates.add);
+        repository.emitUser(activeUser);
+        await pumpEventQueue(times: 10);
+
+        // Due 401 concorrenti: un solo logout.
+        bloc
+          ..add(const AuthAccountRevoked())
+          ..add(const AuthAccountRevoked());
+        await pumpEventQueue(times: 20);
+
+        expect(repository.signOutCalls, 1);
+        expect(bloc.state.status, AuthStatus.unauthenticated);
+        expect(bloc.state.errorCode, AuthBloc.accountRevokedCode);
+
+        await subscription.cancel();
+      });
+
+      test('reload on a disabled account forces the logout', () async {
+        repository.emitUser(activeUser);
+        await pumpEventQueue(times: 10);
+        repository.reloadUserHandler = () => Future<void>.error(
+          const AuthException(
+            code: 'user-disabled',
+            message: 'This user account has been disabled.',
+          ),
+        );
+
+        bloc.add(const AuthReloadRequested());
+        await pumpEventQueue(times: 20);
+
+        expect(repository.signOutCalls, 1);
+        expect(bloc.state.errorCode, AuthBloc.accountRevokedCode);
+      });
+
+      test('reload network errors keep the user signed in', () async {
+        repository.emitUser(activeUser);
+        await pumpEventQueue(times: 10);
+        repository.reloadUserHandler = () =>
+            Future<void>.error(Exception('offline'));
+
+        bloc.add(const AuthReloadRequested());
+        await pumpEventQueue(times: 20);
+
+        expect(repository.signOutCalls, 0);
+        expect(bloc.state, const AuthState.authenticated(activeUser));
+      });
+    });
   });
 }
