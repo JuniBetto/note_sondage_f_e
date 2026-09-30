@@ -92,6 +92,14 @@ class _ShiftReplacementRejectReasonDialogState
                 maxLines: 3,
                 autofocus: true,
                 decoration: InputDecoration(
+                  labelText: _localizedText(
+                    context,
+                    it: 'Motivo del rifiuto',
+                    en: 'Reason for declining',
+                    fr: 'Motif du refus',
+                    es: 'Motivo del rechazo',
+                  ),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
                   hintText: _localizedText(
                     context,
                     it: 'Es. ho gia un impegno quel giorno',

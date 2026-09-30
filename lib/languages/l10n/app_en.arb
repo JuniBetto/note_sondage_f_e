@@ -40,6 +40,8 @@
     "accountErasureReadyMessage": "This action permanently removes your account and associated data. It cannot be undone.",
     "confirmAccountErasure": "Delete account permanently",
     "reactivateAccount": "Reactivate account",
+    "accountActionsTitle": "Account management",
+    "accountActionsDescription": "Deactivate your account temporarily or delete it permanently. We will email you a confirmation link first.",
     "accountReactivationDialogMessage": "Enter the email address of the account you want to reactivate. We will send a confirmation link before restoring access.",
     "accountReactivationRequestSentTitle": "Check your email",
     "accountReactivationRequestSentMessage": "If an account exists for this email, we sent a confirmation link to complete the reactivation.",

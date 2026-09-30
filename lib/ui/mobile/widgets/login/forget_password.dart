@@ -7,6 +7,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
+import 'package:note_sondage/ui/widgets/legal/public_legal_links_panel.dart';
 
 class ForgetPassword extends StatefulWidget {
   const ForgetPassword({super.key});
@@ -61,6 +62,7 @@ class _ForgetPasswordState extends State<ForgetPassword> {
                 CustomInputField(
                   key: const ValueKey("login_email_field"),
                   hintText: "exemple@mail.com",
+                  label: localization.email,
                   controller: _loginEmailController,
                   prefixIcon: Icons.email_outlined,
                   validator: emailValidator,
@@ -104,6 +106,8 @@ class _ForgetPasswordState extends State<ForgetPassword> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 8),
+                const Center(child: PublicLegalInlineLinks()),
               ],
             ),
           ),

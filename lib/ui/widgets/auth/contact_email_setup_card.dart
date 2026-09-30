@@ -172,6 +172,7 @@ class _ContactEmailDialogState extends State<_ContactEmailDialog> {
               const SizedBox(height: 16),
               CustomInputField(
                 hintText: 'name@example.com',
+                label: 'Email',
                 controller: _controller,
                 prefixIcon: Icons.email_outlined,
                 validator: emailValidator,

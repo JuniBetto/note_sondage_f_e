@@ -7,13 +7,59 @@ const _kDefaultBorderRadius = 12.0;
 // Cache del Padding di default
 const _kContentPadding = EdgeInsets.symmetric(vertical: 15, horizontal: 20);
 
+// Stesso spessore per tutti gli stati del bordo: se cambia (es. 1px → 2px
+// quando il campo è attivo) il contenuto si sposta e i campi non risultano
+// più allineati tra loro. Lo stato si distingue dal colore.
+const _kBorderWidth = 1.5;
+
 // Cache del formatter numerico
 final _kDigitsOnlyFormatter = [FilteringTextInputFormatter.digitsOnly];
 
 // =========================================================
 
+/// Label visibile sopra il campo (accessibilità: non affidare il nome del
+/// campo al solo placeholder). Se la label è diversa dal placeholder,
+/// [MergeSemantics] la collega al campo per gli screen reader; se coincide,
+/// la label è solo visiva, così lo screen reader non la legge due volte.
+Widget _withExternalLabel(
+  BuildContext context,
+  String? label,
+  String? hintText,
+  Widget field,
+) {
+  if (label == null || label.trim().isEmpty) {
+    return field;
+  }
+  final theme = Theme.of(context);
+  final sameAsHint = label.trim() == hintText?.trim();
+  Widget labelText = Padding(
+    padding: const EdgeInsets.only(left: 4, bottom: 6),
+    child: Text(
+      label,
+      style: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: theme.colorScheme.onSurface,
+      ),
+    ),
+  );
+  if (sameAsHint) {
+    labelText = ExcludeSemantics(child: labelText);
+  }
+  final column = Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [labelText, field],
+  );
+  return sameAsHint ? column : MergeSemantics(child: column);
+}
+
 class CustomInputField extends StatefulWidget {
   final String hintText;
+
+  /// Label mostrata sopra il campo. Se `null`, viene usato [hintText] come
+  /// label; il placeholder resta comunque dentro il campo. I campi di
+  /// ricerca ([isSearch]) restano senza label.
+  final String? label;
   final IconData? prefixIcon; // Icona opzionale a sinistra
   final TextEditingController controller;
   final bool isPassword;
@@ -30,6 +76,7 @@ class CustomInputField extends StatefulWidget {
     super.key,
     required this.hintText,
     required this.controller,
+    this.label,
     this.prefixIcon,
     this.isPassword = false, // Default: false
     this.isSearch = false, // Default: false
@@ -81,79 +128,103 @@ class _CustomInputFieldState extends State<CustomInputField> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final label = widget.isSearch
+        ? widget.label
+        : (widget.label ?? widget.hintText);
 
-    return TextFormField(
-      enabled: widget.enabled,
-      maxLines: widget.maxLines,
-      minLines: widget.minLines,
-      controller: widget.controller,
-      cursorColor: colorScheme.cursorColor,
-      // Logica per nascondere il testo se è una password
-      obscureText: widget.isPassword ? _isObscured : false,
-      // Logica per la tastiera: Numerica o Testo
-      keyboardType: widget.isNumber ? TextInputType.number : TextInputType.text,
+    return _withExternalLabel(
+      context,
+      label,
+      widget.hintText,
+      TextFormField(
+        enabled: widget.enabled,
+        maxLines: widget.maxLines,
+        minLines: widget.minLines,
+        controller: widget.controller,
+        cursorColor: colorScheme.cursorColor,
+        // Logica per nascondere il testo se è una password
+        obscureText: widget.isPassword ? _isObscured : false,
+        // Logica per la tastiera: Numerica o Testo
+        keyboardType: widget.isNumber
+            ? TextInputType.number
+            : TextInputType.text,
 
-      // Se è number, accetta solo cifre (usando la costante cached)
-      inputFormatters: _getFormatters(),
+        // Se è number, accetta solo cifre (usando la costante cached)
+        inputFormatters: _getFormatters(),
 
-      // Funzione di validazione (gestisce bordo rosso e messaggio)
-      validator: widget.validator,
+        // Funzione di validazione (gestisce bordo rosso e messaggio)
+        validator: widget.validator,
 
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+          // Usa la costante cached
+          contentPadding: _kContentPadding,
 
-      decoration: InputDecoration(
-        hintText: widget.hintText,
-        // Usa la costante cached
-        contentPadding: _kContentPadding,
+          // Mostra l'icona a sinistra solo se è stata passata
+          prefixIcon: widget.prefixIcon != null
+              ? Icon(widget.prefixIcon, color: colorScheme.bgIcons)
+              : null,
 
-        // Mostra l'icona a sinistra solo se è stata passata
-        prefixIcon: widget.prefixIcon != null
-            ? Icon(widget.prefixIcon, color: colorScheme.bgIcons)
-            : null,
+          // Se è password, mostra l'icona per vedere/nascondere
+          suffixIcon: widget.isPassword
+              ? IconButton(
+                  icon: Icon(
+                    _isObscured ? Icons.visibility_off : Icons.visibility,
+                    color: colorScheme.bgIcons,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isObscured = !_isObscured;
+                    });
+                  },
+                )
+              : widget.isSearch
+              ? IconButton(
+                  icon: Icon(Icons.search, color: colorScheme.bgIcons),
+                  onPressed: widget.onSearchPressed,
+                )
+              : null,
 
-        // Se è password, mostra l'icona per vedere/nascondere
-        suffixIcon: widget.isPassword
-            ? IconButton(
-                icon: Icon(
-                  _isObscured ? Icons.visibility_off : Icons.visibility,
-                  color: colorScheme.bgIcons,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isObscured = !_isObscured;
-                  });
-                },
-              )
-            : widget.isSearch
-            ? IconButton(
-                icon: Icon(Icons.search, color: colorScheme.bgIcons),
-                onPressed: widget.onSearchPressed,
-              )
-            : null,
-
-        // =========================================================
-        // UTILIZZO DELLE COSTANTI CACHED PER I BORDER
-        // =========================================================
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
-          borderSide: BorderSide(color: colorScheme.bottomOutline!),
-        ), // Usa costante
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
-          borderSide: BorderSide(color: colorScheme.bottomOutline!),
-        ), // Usa costante
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
-          borderSide: BorderSide(color: colorScheme.selectionColor!, width: 2),
-        ), // Usa costante
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
-          borderSide: BorderSide(color: colorScheme.error, width: 1.5),
-        ), // Usa costante
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
-          borderSide: BorderSide(color: colorScheme.error, width: 2.0),
-        ), // Usa costante
-        // =========================================================
+          // =========================================================
+          // UTILIZZO DELLE COSTANTI CACHED PER I BORDER
+          // =========================================================
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
+            borderSide: BorderSide(
+              color: colorScheme.bottomOutline!,
+              width: _kBorderWidth,
+            ),
+          ), // Usa costante
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
+            borderSide: BorderSide(
+              color: colorScheme.bottomOutline!,
+              width: _kBorderWidth,
+            ),
+          ), // Usa costante
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
+            borderSide: BorderSide(
+              color: colorScheme.selectionColor!,
+              width: _kBorderWidth,
+            ),
+          ), // Usa costante
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
+            borderSide: BorderSide(
+              color: colorScheme.error,
+              width: _kBorderWidth,
+            ),
+          ), // Usa costante
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(_kDefaultBorderRadius),
+            borderSide: BorderSide(
+              color: colorScheme.error,
+              width: _kBorderWidth,
+            ),
+          ), // Usa costante
+          // =========================================================
+        ),
       ),
     );
   }
@@ -162,6 +233,9 @@ class _CustomInputFieldState extends State<CustomInputField> {
 // Widget per i campi di testo personalizzati
 class CustomTextFieldImmersive extends StatefulWidget {
   final String hintText;
+
+  /// Label mostrata sopra il campo; se `null` viene usato [hintText].
+  final String? label;
   final int maxLines;
   final Widget? suffixIcon;
   final TextEditingController controller;
@@ -171,6 +245,7 @@ class CustomTextFieldImmersive extends StatefulWidget {
   const CustomTextFieldImmersive({
     super.key,
     required this.hintText,
+    this.label,
     this.maxLines = 1,
     required this.controller,
     this.suffixIcon,
@@ -186,40 +261,47 @@ class CustomTextFieldImmersive extends StatefulWidget {
 class _CustomTextFieldImmersiveState extends State<CustomTextFieldImmersive> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: TextFormField(
-        maxLines: widget.maxLines,
-        cursorColor: Theme.of(context).colorScheme.cursorColor,
-        decoration: InputDecoration(
-          hintText: widget.hintText,
-          hintStyle: TextStyle(color: Colors.grey[400]),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(20),
-          suffixIcon: widget.suffixIcon,
+    final label = widget.label ?? widget.hintText;
+
+    return _withExternalLabel(
+      context,
+      label,
+      widget.hintText,
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
         ),
-        controller: widget.controller,
-        onChanged: widget.onChanged,
-        inputFormatters:  widget.toLowerCase
-            ? [
-          TextInputFormatter.withFunction((oldValue, newValue) {
-            return newValue.copyWith(
-              text: newValue.text.toLowerCase(), // Forza il minuscolo
-              selection: newValue.selection,     // Mantiene il cursore al suo posto
-            );
-          }),
-        ]
-            : null,
+        child: TextFormField(
+          maxLines: widget.maxLines,
+          cursorColor: Theme.of(context).colorScheme.cursorColor,
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.all(20),
+            suffixIcon: widget.suffixIcon,
+          ),
+          controller: widget.controller,
+          onChanged: widget.onChanged,
+          inputFormatters: widget.toLowerCase
+              ? [
+                  TextInputFormatter.withFunction((oldValue, newValue) {
+                    return newValue.copyWith(
+                      text: newValue.text.toLowerCase(), // Forza il minuscolo
+                      selection: newValue
+                          .selection, // Mantiene il cursore al suo posto
+                    );
+                  }),
+                ]
+              : null,
+        ),
       ),
     );
   }
 }
 
 String? emailValidator(String? value) {
-
   if (value == null || value.isEmpty) {
     return 'Email is required';
   }

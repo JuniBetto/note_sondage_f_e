@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:note_sondage/core/config/public_legal_links.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
+import 'package:note_sondage/ui/widgets/app_text_link.dart';
 
 class PublicLegalLinksPanel extends StatelessWidget {
   const PublicLegalLinksPanel({
@@ -69,6 +70,46 @@ class PublicLegalLinksPanel extends StatelessWidget {
               label: Text(localization.termsOfService),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Link legali in forma di testo (sottolineato, più leggero e più chiaro),
+/// da mettere in fondo ai form di accesso senza competere con le CTA.
+class PublicLegalInlineLinks extends StatelessWidget {
+  const PublicLegalInlineLinks({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final localization = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final locale = Localizations.localeOf(context);
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        AppTextLink(
+          label: localization.privacyPolicy,
+          tone: AppTextLinkTone.subtle,
+          onPressed: () =>
+              PublicLegalLinks.open(locale, PublicLegalDocument.privacy),
+        ),
+        ExcludeSemantics(
+          child: Text(
+            '·',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        AppTextLink(
+          label: localization.termsOfService,
+          tone: AppTextLinkTone.subtle,
+          onPressed: () =>
+              PublicLegalLinks.open(locale, PublicLegalDocument.terms),
         ),
       ],
     );

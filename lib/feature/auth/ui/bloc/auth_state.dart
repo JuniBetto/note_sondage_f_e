@@ -8,6 +8,9 @@ class AuthState extends Equatable {
   final AuthStatus status;
   final AuthUserEntity user;
   final String? errorMessage;
+
+  /// Codice dell'errore (es. `user-disabled`) per reazioni specifiche della UI.
+  final String? errorCode;
   final bool passwordResetSent;
   final bool verificationEmailSent;
   final bool verificationEmailRequired;
@@ -18,6 +21,7 @@ class AuthState extends Equatable {
     required this.status,
     this.user = AuthUserEntity.empty,
     this.errorMessage,
+    this.errorCode,
     this.passwordResetSent = false,
     this.verificationEmailSent = false,
     this.verificationEmailRequired = false,
@@ -42,8 +46,12 @@ class AuthState extends Equatable {
   const AuthState.loading() : this._(status: AuthStatus.loading);
 
   /// Errore durante un'operazione auth.
-  const AuthState.error(String message)
-    : this._(status: AuthStatus.unauthenticated, errorMessage: message);
+  const AuthState.error(String message, {String? code})
+    : this._(
+        status: AuthStatus.unauthenticated,
+        errorMessage: message,
+        errorCode: code,
+      );
 
   /// Email di reset password inviata con successo.
   const AuthState.passwordResetSent()
@@ -76,6 +84,7 @@ class AuthState extends Equatable {
     status,
     user,
     errorMessage,
+    errorCode,
     passwordResetSent,
     verificationEmailSent,
     verificationEmailRequired,

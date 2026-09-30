@@ -150,6 +150,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reactivateAccount => 'Reactivar cuenta';
 
   @override
+  String get accountActionsTitle => 'Gestión de la cuenta';
+
+  @override
+  String get accountActionsDescription =>
+      'Desactiva tu cuenta temporalmente o elimínala definitivamente. Primero te enviaremos un enlace de confirmación por correo.';
+
+  @override
   String get accountReactivationDialogMessage =>
       'Introduce el correo electrónico de la cuenta que quieres reactivar. Enviaremos un enlace de confirmación antes de restaurar el acceso.';
 

@@ -348,6 +348,18 @@ abstract class AppLocalizations {
   /// **'Reactivate account'**
   String get reactivateAccount;
 
+  /// No description provided for @accountActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account management'**
+  String get accountActionsTitle;
+
+  /// No description provided for @accountActionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate your account temporarily or delete it permanently. We will email you a confirmation link first.'**
+  String get accountActionsDescription;
+
   /// No description provided for @accountReactivationDialogMessage.
   ///
   /// In en, this message translates to:

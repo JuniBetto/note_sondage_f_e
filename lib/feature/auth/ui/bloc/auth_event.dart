@@ -75,6 +75,13 @@ final class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
 }
 
+/// L'account è stato disattivato o eliminato mentre l'utente era dentro
+/// l'app (rilevato da un 401 del gateway o dal reload Firebase): logout
+/// forzato con un messaggio che spiega il motivo.
+final class AuthAccountRevoked extends AuthEvent {
+  const AuthAccountRevoked();
+}
+
 /// Richiede il reload dei dati utente (es. al ritorno dal background).
 final class AuthReloadRequested extends AuthEvent {
   const AuthReloadRequested();

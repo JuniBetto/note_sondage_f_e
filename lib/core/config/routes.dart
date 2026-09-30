@@ -82,7 +82,9 @@ GoRouter createRouter(BuildContext context) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    observers: [FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance)],
+    observers: [
+      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+    ],
     routes: [
       // =====================
       // 🔒 WEB — ShellRoute: MainWeb rimane stabile.
@@ -628,6 +630,11 @@ abstract class RouterPaths {
     confirmAccountErasure,
     confirmAccountReactivation,
     resetPassword,
+    // Link di invito team dall'email ("Apri la tua applicazione e accetta
+    // invito") atterrano qui con ?mode=register&inviteToken=...: se l'app
+    // nativa non e' installata, il fallback e' proprio questa pagina web da
+    // mobile, quindi deve bypassare il gate come le altre route da email.
+    login,
   };
 
   static const team = '/team';

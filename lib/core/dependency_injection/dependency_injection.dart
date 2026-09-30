@@ -1,3 +1,4 @@
+import 'package:note_sondage/core/network/auth_interceptor.dart';
 import 'package:note_sondage/feature/notification/realtime/shift_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/event_realtime_coordinator.dart';
 import 'package:note_sondage/feature/notification/realtime/task_realtime_coordinator.dart';
@@ -135,6 +136,10 @@ void _registerAuth() {
   getIt.registerLazySingleton<AuthBloc>(
     () => AuthBloc(authUseCase: getIt<AuthUseCase>()),
   );
+
+  // Un 401 "account disattivato/eliminato" dal backend forza il logout.
+  AuthInterceptor.onAccountRevoked = () =>
+      getIt<AuthBloc>().add(const AuthAccountRevoked());
 
   // App Lifecycle BLoC — gestisce background/foreground
   getIt.registerLazySingleton<AppLifecycleBloc>(

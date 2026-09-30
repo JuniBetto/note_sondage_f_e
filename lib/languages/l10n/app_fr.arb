@@ -40,6 +40,8 @@
     "accountErasureReadyMessage": "Cette action supprime définitivement votre compte et les données associées. Elle est irréversible.",
     "confirmAccountErasure": "Supprimer définitivement le compte",
     "reactivateAccount": "Réactiver le compte",
+    "accountActionsTitle": "Gestion du compte",
+    "accountActionsDescription": "Désactivez temporairement votre compte ou supprimez-le définitivement. Nous vous enverrons d'abord un lien de confirmation par e-mail.",
     "accountReactivationDialogMessage": "Saisissez l'adresse e-mail du compte à réactiver. Nous enverrons un lien de confirmation avant de rétablir l'accès.",
     "accountReactivationRequestSentTitle": "Vérifiez votre e-mail",
     "accountReactivationRequestSentMessage": "Si un compte existe pour cet e-mail, nous avons envoyé un lien de confirmation pour terminer la réactivation.",

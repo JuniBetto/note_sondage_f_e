@@ -13,11 +13,11 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/app_text_link.dart';
 import 'package:note_sondage/ui/widgets/auth/mfa_sign_in_dialog.dart';
-import 'package:note_sondage/ui/widgets/auth/request_account_erasure_dialog.dart';
 import 'package:note_sondage/ui/widgets/auth/phone_sign_in_dialog.dart';
-import 'package:note_sondage/ui/widgets/auth/request_account_deletion_dialog.dart';
 import 'package:note_sondage/ui/widgets/auth/request_account_reactivation_dialog.dart';
+import 'package:note_sondage/ui/widgets/legal/public_legal_links_panel.dart';
 import 'package:note_sondage/ui/mobile/widgets/login/tab_bar_component.dart';
 import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
@@ -73,6 +73,25 @@ class _AuthTabLoginState extends State<AuthTabLogin>
 
     // AGGIUNGI QUESTO LISTENER per aggiornare la UI
     _tabController.addListener(_handleTabSelection);
+
+    // Logout forzato (account disattivato/eliminato): lo stato cambia prima
+    // che il router porti qui, quindi il listener non lo vede.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final state = context.read<AuthBloc>().state;
+      if (state.errorCode == AuthBloc.accountRevokedCode) {
+        _showAccountRevokedMessage(state);
+      }
+    });
+  }
+
+  void _showAccountRevokedMessage(AuthState state) {
+    AppSnackBar.showWarning(
+      context,
+      state.errorMessage ??
+          'Your account is no longer active, so you have been signed out.',
+      title: 'Signed out',
+    );
   }
 
   bool get _shouldStartOnRegister {
@@ -194,28 +213,10 @@ class _AuthTabLoginState extends State<AuthTabLogin>
     );
   }
 
-  Future<void> _openAccountDeletionDialog() async {
-    await showDialog<bool>(
-      context: context,
-      builder: (_) => RequestAccountDeletionDialog(
-        initialEmail: _loginEmailController.text.trim(),
-      ),
-    );
-  }
-
   Future<void> _openAccountReactivationDialog() async {
     await showDialog<bool>(
       context: context,
       builder: (_) => RequestAccountReactivationDialog(
-        initialEmail: _loginEmailController.text.trim(),
-      ),
-    );
-  }
-
-  Future<void> _openAccountErasureDialog() async {
-    await showDialog<bool>(
-      context: context,
-      builder: (_) => RequestAccountErasureDialog(
         initialEmail: _loginEmailController.text.trim(),
       ),
     );
@@ -288,6 +289,18 @@ class _AuthTabLoginState extends State<AuthTabLogin>
             'then sign in again.',
             title: 'Check your email',
           );
+          return;
+        }
+
+        if (state.errorCode == AuthBloc.accountRevokedCode) {
+          _showAccountRevokedMessage(state);
+          return;
+        }
+
+        if (state.errorCode == 'user-disabled') {
+          // Account disattivato: invece del solo errore proponiamo subito
+          // la riattivazione (non raggiungibile dal profilo senza login).
+          unawaited(_openAccountReactivationDialog());
           return;
         }
 
@@ -388,66 +401,18 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        CustomAppButton(
-                          type: ButtonType.outlined,
-                          backgroundColor: Colors.transparent,
-                          onPressed: () {
-                            context.pushNamed(RouterPaths.forgotPassword);
-                          },
-                          isActive: true,
-                          child: Text(
-                            localization.forgotPassword,
-                            style: textTheme.bodyLarge,
-                          ),
-                        ),
-                        CustomAppButton(
-                          type: ButtonType.outlined,
-                          backgroundColor: Colors.transparent,
-                          onPressed: _openAccountDeletionDialog,
-                          isActive: true,
-                          child: Text(
-                            localization.deleteAccount,
-                            style: textTheme.bodyLarge,
-                          ),
-                        ),
-                        CustomAppButton(
-                          type: ButtonType.outlined,
-                          backgroundColor: Colors.transparent,
-                          onPressed: _openAccountReactivationDialog,
-                          isActive: true,
-                          child: Text(
-                            localization.reactivateAccount,
-                            style: textTheme.bodyLarge,
-                          ),
-                        ),
-                        CustomAppButton(
-                          type: ButtonType.outlined,
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: colorScheme.errorColor,
-                          borderColor: colorScheme.errorColor,
-                          onPressed: _openAccountErasureDialog,
-                          isActive: true,
-                          child: Text(
-                            localization.permanentlyDeleteAccount,
-                            style: textTheme.bodyLarge?.copyWith(
-                              color: colorScheme.errorColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 8),
+              // Unica azione secondaria sotto la CTA principale: disattiva ed
+              // elimina account sono nel profilo, la riattivazione compare
+              // quando il login fallisce perché l'account è disattivato.
+              Center(
+                child: AppTextLink(
+                  key: const ValueKey('forgot_password_link'),
+                  label: localization.forgotPassword,
+                  onPressed: () {
+                    context.pushNamed(RouterPaths.forgotPassword);
+                  },
+                ),
               ),
               const SizedBox(height: 24),
               Row(
@@ -489,6 +454,8 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                   buttonText: 'Continue with Phone',
                 ),
               ],
+              const SizedBox(height: 24),
+              const Center(child: PublicLegalInlineLinks()),
             ],
           ),
         ),
@@ -633,6 +600,8 @@ class _AuthTabLoginState extends State<AuthTabLogin>
                   buttonText: 'Continue with Phone',
                 ),
               ],
+              const SizedBox(height: 24),
+              const Center(child: PublicLegalInlineLinks()),
             ],
           ),
         ),
@@ -697,6 +666,11 @@ class _RegisterAvatarPicker extends StatelessWidget {
         ),
         TextButton(
           onPressed: imageBytes == null ? onPickImage : onRemoveImage,
+          // Stesso colore testo della CTA principale sullo sfondo viola del
+          // pulsante: bianco in tema chiaro, scuro in tema scuro (contrasto).
+          style: TextButton.styleFrom(
+            foregroundColor: theme.colorScheme.textInvertedColor,
+          ),
           child: Text(imageBytes == null ? 'Scegli' : 'Rimuovi'),
         ),
       ],

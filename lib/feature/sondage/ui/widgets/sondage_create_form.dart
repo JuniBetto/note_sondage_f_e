@@ -1160,6 +1160,7 @@ class _SondageCreateFormState extends State<SondageCreateForm> {
                     children: [
                       CustomTextFieldImmersive(
                         hintText: localization.askQuestion,
+                        label: strings.questionLabel,
                         maxLines: 3,
                         controller: _questionController,
                       ),
@@ -1513,6 +1514,7 @@ class _SondageCreateStrings {
     required this.shiftGapWorkflowDescription,
     required this.surveyQuestionTitle,
     required this.surveyQuestionDescription,
+    required this.questionLabel,
     required this.optionalDescription,
     required this.answerOptionsTitle,
     required this.answerOptionsDescription,
@@ -1555,6 +1557,7 @@ class _SondageCreateStrings {
   final String shiftGapWorkflowDescription;
   final String surveyQuestionTitle;
   final String surveyQuestionDescription;
+  final String questionLabel;
   final String optionalDescription;
   final String answerOptionsTitle;
   final String answerOptionsDescription;
@@ -1622,6 +1625,7 @@ class _SondageCreateStrings {
     surveyQuestionTitle: 'Survey question',
     surveyQuestionDescription:
         'Write the main question here and add a short description when you want to give more context.',
+    questionLabel: 'Question',
     optionalDescription: 'Description (optional)',
     answerOptionsTitle: 'Answer options',
     answerOptionsDescription:
@@ -1682,6 +1686,7 @@ class _SondageCreateStrings {
     surveyQuestionTitle: 'Domanda del sondaggio',
     surveyQuestionDescription:
         'Qui scrivi la domanda principale e, se serve, una breve descrizione per dare contesto.',
+    questionLabel: 'Domanda',
     optionalDescription: 'Descrizione (opzionale)',
     answerOptionsTitle: 'Opzioni di risposta',
     answerOptionsDescription:
@@ -1743,6 +1748,7 @@ class _SondageCreateStrings {
     surveyQuestionTitle: 'Question du sondage',
     surveyQuestionDescription:
         'Saisissez ici la question principale et ajoutez une courte description si vous souhaitez donner plus de contexte.',
+    questionLabel: 'Question',
     optionalDescription: 'Description (facultative)',
     answerOptionsTitle: 'Options de réponse',
     answerOptionsDescription:
@@ -1803,6 +1809,7 @@ class _SondageCreateStrings {
     surveyQuestionTitle: 'Pregunta de la encuesta',
     surveyQuestionDescription:
         'Escribe aquí la pregunta principal y añade una breve descripción si quieres dar más contexto.',
+    questionLabel: 'Pregunta',
     optionalDescription: 'Descripción (opcional)',
     answerOptionsTitle: 'Opciones de respuesta',
     answerOptionsDescription:

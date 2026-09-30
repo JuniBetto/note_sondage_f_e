@@ -150,6 +150,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get reactivateAccount => 'Riattiva account';
 
   @override
+  String get accountActionsTitle => 'Gestione account';
+
+  @override
+  String get accountActionsDescription =>
+      'Disattiva temporaneamente l\'account o eliminalo definitivamente. Prima ti invieremo un link di conferma via email.';
+
+  @override
   String get accountReactivationDialogMessage =>
       'Inserisci l\'email dell\'account che vuoi riattivare. Ti invieremo un link di conferma prima di ripristinare l\'accesso.';
 
