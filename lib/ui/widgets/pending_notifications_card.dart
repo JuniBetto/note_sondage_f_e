@@ -89,7 +89,9 @@ class _PendingNotificationsCardState extends State<PendingNotificationsCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Notifiche da gestire',
+                          AppLocalizations.of(
+                            context,
+                          )!.pendingNotificationsTitle,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: colorScheme.textColor,
@@ -98,8 +100,12 @@ class _PendingNotificationsCardState extends State<PendingNotificationsCard> {
                         const SizedBox(height: 2),
                         Text(
                           pending.isEmpty
-                              ? 'Non hai nulla in sospeso.'
-                              : 'Qui trovi quelle non ancora viste o senza risposta.',
+                              ? AppLocalizations.of(
+                                  context,
+                                )!.pendingNotificationsEmptySubtitle
+                              : AppLocalizations.of(
+                                  context,
+                                )!.pendingNotificationsSubtitle,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.descriptionColor,
                             height: 1.35,
@@ -172,7 +178,9 @@ class _PendingNotificationsCardState extends State<PendingNotificationsCard> {
                 if (hiddenCount > 0) ...[
                   const SizedBox(height: 12),
                   Text(
-                    '+$hiddenCount altre notifiche restano disponibili nel centro notifiche.',
+                    AppLocalizations.of(
+                      context,
+                    )!.pendingNotificationsHiddenCount(hiddenCount),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.descriptionColor,
                     ),
@@ -186,7 +194,9 @@ class _PendingNotificationsCardState extends State<PendingNotificationsCard> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Impossibile aggiornare le notifiche in questo momento.',
+                        AppLocalizations.of(
+                          context,
+                        )!.pendingNotificationsRefreshError,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.error,
                         ),
@@ -196,7 +206,7 @@ class _PendingNotificationsCardState extends State<PendingNotificationsCard> {
                       onPressed: () => context
                           .read<NotificationCenterCubit>()
                           .loadNotifications(force: true),
-                      child: const Text('Riprova'),
+                      child: Text(AppLocalizations.of(context)!.tryAgain),
                     ),
                   ],
                 ),
@@ -242,7 +252,7 @@ class _EmptyPendingNotifications extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Hai gia visto tutto oppure hai gia risposto agli inviti in sospeso.',
+              AppLocalizations.of(context)!.pendingNotificationsAllHandled,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.textColor,
                 height: 1.35,
@@ -341,12 +351,18 @@ class _PendingNotificationTile extends StatelessWidget {
                                 children: [
                                   if (teamName != null)
                                     _DetailChip(
-                                      label: 'Team: $teamName',
+                                      label: localization
+                                          .pendingNotificationsTeamLabel(
+                                            teamName,
+                                          ),
                                       color: colorScheme.selectItem!,
                                     ),
                                   if (roleCode != null)
                                     _DetailChip(
-                                      label: 'Ruolo: ${_formatRole(roleCode)}',
+                                      label: localization
+                                          .pendingNotificationsRoleLabel(
+                                            _formatRole(roleCode),
+                                          ),
                                       color: const Color(0xFF1B8C4A),
                                     ),
                                 ],
@@ -431,7 +447,9 @@ class _PendingNotificationTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          isSeen ? 'Vista' : 'Nuova',
+                          isSeen
+                              ? localization.pendingNotificationsSeen
+                              : localization.pendingNotificationsNew,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: isSeen
                                 ? colorScheme.descriptionColor

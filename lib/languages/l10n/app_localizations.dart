@@ -5811,6 +5811,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Too many requests. Wait a few minutes before trying again.'**
   String get contactSupportRateError;
+
+  /// No description provided for @assistantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant'**
+  String get assistantTitle;
+
+  /// No description provided for @assistantTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the assistant'**
+  String get assistantTooltip;
+
+  /// No description provided for @assistantInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type what you want to do…'**
+  String get assistantInputHint;
+
+  /// No description provided for @assistantEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask me anything about the app: I can create teams, shifts, tasks, events and surveys, or clock in for you.'**
+  String get assistantEmptyState;
+
+  /// No description provided for @assistantSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get assistantSend;
+
+  /// No description provided for @assistantNewConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation'**
+  String get assistantNewConversation;
+
+  /// No description provided for @assistantThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Working on it…'**
+  String get assistantThinking;
+
+  /// No description provided for @assistantError.
+  ///
+  /// In en, this message translates to:
+  /// **'I couldn\'t reach the assistant. Please try again shortly.'**
+  String get assistantError;
+
+  /// No description provided for @assistantUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The assistant is not available right now.'**
+  String get assistantUnavailable;
+
+  /// No description provided for @pendingNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications to handle'**
+  String get pendingNotificationsTitle;
+
+  /// No description provided for @pendingNotificationsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You have nothing pending.'**
+  String get pendingNotificationsEmptySubtitle;
+
+  /// No description provided for @pendingNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you\'ll find the ones not yet seen or awaiting a reply.'**
+  String get pendingNotificationsSubtitle;
+
+  /// No description provided for @pendingNotificationsHiddenCount.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more notifications are available in the notification center.'**
+  String pendingNotificationsHiddenCount(int count);
+
+  /// No description provided for @pendingNotificationsRefreshError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to refresh notifications right now.'**
+  String get pendingNotificationsRefreshError;
+
+  /// No description provided for @pendingNotificationsAllHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'You have already seen everything or replied to all pending invitations.'**
+  String get pendingNotificationsAllHandled;
+
+  /// No description provided for @pendingNotificationsTeamLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Team: {team}'**
+  String pendingNotificationsTeamLabel(String team);
+
+  /// No description provided for @pendingNotificationsRoleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Role: {role}'**
+  String pendingNotificationsRoleLabel(String role);
+
+  /// No description provided for @pendingNotificationsSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Seen'**
+  String get pendingNotificationsSeen;
+
+  /// No description provided for @pendingNotificationsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get pendingNotificationsNew;
 }
 
 class _AppLocalizationsDelegate

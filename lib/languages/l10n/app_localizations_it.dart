@@ -3290,4 +3290,73 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get contactSupportRateError =>
       'Troppe richieste. Attendi qualche minuto prima di riprovare.';
+
+  @override
+  String get assistantTitle => 'Assistente';
+
+  @override
+  String get assistantTooltip => 'Chiedi all\'assistente';
+
+  @override
+  String get assistantInputHint => 'Scrivi cosa vuoi fare…';
+
+  @override
+  String get assistantEmptyState =>
+      'Chiedimi qualsiasi cosa sull\'app: posso creare team, turni, task, eventi e sondaggi, oppure timbrare per te.';
+
+  @override
+  String get assistantSend => 'Invia';
+
+  @override
+  String get assistantNewConversation => 'Nuova conversazione';
+
+  @override
+  String get assistantThinking => 'Sto lavorando…';
+
+  @override
+  String get assistantError =>
+      'Non sono riuscito a contattare l\'assistente. Riprova tra poco.';
+
+  @override
+  String get assistantUnavailable =>
+      'L\'assistente non è disponibile in questo momento.';
+
+  @override
+  String get pendingNotificationsTitle => 'Notifiche da gestire';
+
+  @override
+  String get pendingNotificationsEmptySubtitle => 'Non hai nulla in sospeso.';
+
+  @override
+  String get pendingNotificationsSubtitle =>
+      'Qui trovi quelle non ancora viste o senza risposta.';
+
+  @override
+  String pendingNotificationsHiddenCount(int count) {
+    return '+$count altre notifiche restano disponibili nel centro notifiche.';
+  }
+
+  @override
+  String get pendingNotificationsRefreshError =>
+      'Impossibile aggiornare le notifiche in questo momento.';
+
+  @override
+  String get pendingNotificationsAllHandled =>
+      'Hai già visto tutto oppure hai già risposto agli inviti in sospeso.';
+
+  @override
+  String pendingNotificationsTeamLabel(String team) {
+    return 'Team: $team';
+  }
+
+  @override
+  String pendingNotificationsRoleLabel(String role) {
+    return 'Ruolo: $role';
+  }
+
+  @override
+  String get pendingNotificationsSeen => 'Vista';
+
+  @override
+  String get pendingNotificationsNew => 'Nuova';
 }

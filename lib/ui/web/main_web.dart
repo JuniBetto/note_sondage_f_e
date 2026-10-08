@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/feature/assistant/ui/assistant_button.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/clocking/ui/web/clocking_web.dart';
 import 'package:note_sondage/feature/event/ui/web/event_web_page.dart';
@@ -315,19 +317,29 @@ class _MainWebState extends State<MainWeb> {
                       child: const NotificationCenterButton(),
                     ),
                   ),
-                  if (_supportsTutorial(currentNavIndex))
-                    Positioned(
-                      left: 20,
-                      bottom: 20,
-                      child: Tooltip(
-                        message: localizations.reviewTutorial,
-                        child: IconButton.filledTonal(
-                          onPressed: () =>
-                              _replayTutorialForIndex(currentNavIndex),
-                          icon: const Icon(Icons.help_outline_rounded),
-                        ),
-                      ),
+                  Positioned(
+                    left: 20,
+                    bottom: 20,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (RuntimeConfig.enableAiFeature)
+                          const AssistantButton(),
+                        if (RuntimeConfig.enableAiFeature &&
+                            _supportsTutorial(currentNavIndex))
+                          const SizedBox(height: 8),
+                        if (_supportsTutorial(currentNavIndex))
+                          Tooltip(
+                            message: localizations.reviewTutorial,
+                            child: IconButton.filledTonal(
+                              onPressed: () =>
+                                  _replayTutorialForIndex(currentNavIndex),
+                              icon: const Icon(Icons.help_outline_rounded),
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
                 ],
               );
             },
