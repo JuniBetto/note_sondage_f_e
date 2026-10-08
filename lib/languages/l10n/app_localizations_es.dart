@@ -3302,4 +3302,73 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get contactSupportRateError =>
       'Demasiadas solicitudes. Espera unos minutos antes de intentarlo de nuevo.';
+
+  @override
+  String get assistantTitle => 'Asistente';
+
+  @override
+  String get assistantTooltip => 'Pregunta al asistente';
+
+  @override
+  String get assistantInputHint => 'Escribe lo que quieres hacer…';
+
+  @override
+  String get assistantEmptyState =>
+      'Pregúntame lo que quieras sobre la app: puedo crear equipos, turnos, tareas, eventos y encuestas, o fichar por ti.';
+
+  @override
+  String get assistantSend => 'Enviar';
+
+  @override
+  String get assistantNewConversation => 'Nueva conversación';
+
+  @override
+  String get assistantThinking => 'Estoy en ello…';
+
+  @override
+  String get assistantError =>
+      'No he podido contactar con el asistente. Inténtalo de nuevo en un momento.';
+
+  @override
+  String get assistantUnavailable =>
+      'El asistente no está disponible en este momento.';
+
+  @override
+  String get pendingNotificationsTitle => 'Notificaciones por gestionar';
+
+  @override
+  String get pendingNotificationsEmptySubtitle => 'No tienes nada pendiente.';
+
+  @override
+  String get pendingNotificationsSubtitle =>
+      'Aquí encontrarás las que aún no has visto o están sin respuesta.';
+
+  @override
+  String pendingNotificationsHiddenCount(int count) {
+    return '+$count notificaciones más siguen disponibles en el centro de notificaciones.';
+  }
+
+  @override
+  String get pendingNotificationsRefreshError =>
+      'No se pueden actualizar las notificaciones en este momento.';
+
+  @override
+  String get pendingNotificationsAllHandled =>
+      'Ya lo has visto todo o ya has respondido a las invitaciones pendientes.';
+
+  @override
+  String pendingNotificationsTeamLabel(String team) {
+    return 'Equipo: $team';
+  }
+
+  @override
+  String pendingNotificationsRoleLabel(String role) {
+    return 'Rol: $role';
+  }
+
+  @override
+  String get pendingNotificationsSeen => 'Vista';
+
+  @override
+  String get pendingNotificationsNew => 'Nueva';
 }

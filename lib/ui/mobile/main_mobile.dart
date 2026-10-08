@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_sondage/core/config/runtime_config.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
+import 'package:note_sondage/feature/assistant/ui/assistant_button.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
 import 'package:note_sondage/feature/clocking/ui/mobile/clocking_shift_tab_page.dart';
 import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
@@ -103,15 +105,23 @@ class _MainMobileState extends State<MainMobile> {
           floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
           // Stesso widget (IconButton.filledTonal) usato dal bottone "?"
           // flottante su web, così i due si allineano per colore/stile.
-          floatingActionButton: _supportsTutorial(navBarItem)
-              ? Tooltip(
+          floatingActionButton: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (RuntimeConfig.enableAiFeature) const AssistantButton(),
+              if (RuntimeConfig.enableAiFeature &&
+                  _supportsTutorial(navBarItem))
+                const SizedBox(height: 8),
+              if (_supportsTutorial(navBarItem))
+                Tooltip(
                   message: loc.reviewTutorial,
                   child: IconButton.filledTonal(
                     onPressed: () => _replayTutorialForIndex(navBarItem),
                     icon: const Icon(Icons.help_outline_rounded),
                   ),
-                )
-              : null,
+                ),
+            ],
+          ),
         ),
       ),
     );

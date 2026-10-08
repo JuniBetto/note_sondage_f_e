@@ -3264,4 +3264,73 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get contactSupportRateError =>
       'Too many requests. Wait a few minutes before trying again.';
+
+  @override
+  String get assistantTitle => 'Assistant';
+
+  @override
+  String get assistantTooltip => 'Ask the assistant';
+
+  @override
+  String get assistantInputHint => 'Type what you want to do…';
+
+  @override
+  String get assistantEmptyState =>
+      'Ask me anything about the app: I can create teams, shifts, tasks, events and surveys, or clock in for you.';
+
+  @override
+  String get assistantSend => 'Send';
+
+  @override
+  String get assistantNewConversation => 'New conversation';
+
+  @override
+  String get assistantThinking => 'Working on it…';
+
+  @override
+  String get assistantError =>
+      'I couldn\'t reach the assistant. Please try again shortly.';
+
+  @override
+  String get assistantUnavailable =>
+      'The assistant is not available right now.';
+
+  @override
+  String get pendingNotificationsTitle => 'Notifications to handle';
+
+  @override
+  String get pendingNotificationsEmptySubtitle => 'You have nothing pending.';
+
+  @override
+  String get pendingNotificationsSubtitle =>
+      'Here you\'ll find the ones not yet seen or awaiting a reply.';
+
+  @override
+  String pendingNotificationsHiddenCount(int count) {
+    return '+$count more notifications are available in the notification center.';
+  }
+
+  @override
+  String get pendingNotificationsRefreshError =>
+      'Unable to refresh notifications right now.';
+
+  @override
+  String get pendingNotificationsAllHandled =>
+      'You have already seen everything or replied to all pending invitations.';
+
+  @override
+  String pendingNotificationsTeamLabel(String team) {
+    return 'Team: $team';
+  }
+
+  @override
+  String pendingNotificationsRoleLabel(String role) {
+    return 'Role: $role';
+  }
+
+  @override
+  String get pendingNotificationsSeen => 'Seen';
+
+  @override
+  String get pendingNotificationsNew => 'New';
 }

@@ -3307,4 +3307,74 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get contactSupportRateError =>
       'Trop de demandes. Attendez quelques minutes avant de réessayer.';
+
+  @override
+  String get assistantTitle => 'Assistant';
+
+  @override
+  String get assistantTooltip => 'Demander à l\'assistant';
+
+  @override
+  String get assistantInputHint => 'Écrivez ce que vous voulez faire…';
+
+  @override
+  String get assistantEmptyState =>
+      'Demandez-moi ce que vous voulez sur l\'application : je peux créer des équipes, des quarts, des tâches, des événements et des sondages, ou pointer pour vous.';
+
+  @override
+  String get assistantSend => 'Envoyer';
+
+  @override
+  String get assistantNewConversation => 'Nouvelle conversation';
+
+  @override
+  String get assistantThinking => 'Je m\'en occupe…';
+
+  @override
+  String get assistantError =>
+      'Impossible de contacter l\'assistant. Réessayez dans un instant.';
+
+  @override
+  String get assistantUnavailable =>
+      'L\'assistant n\'est pas disponible pour le moment.';
+
+  @override
+  String get pendingNotificationsTitle => 'Notifications à traiter';
+
+  @override
+  String get pendingNotificationsEmptySubtitle =>
+      'Vous n\'avez rien en attente.';
+
+  @override
+  String get pendingNotificationsSubtitle =>
+      'Vous trouverez ici celles non encore vues ou sans réponse.';
+
+  @override
+  String pendingNotificationsHiddenCount(int count) {
+    return '+$count autres notifications restent disponibles dans le centre de notifications.';
+  }
+
+  @override
+  String get pendingNotificationsRefreshError =>
+      'Impossible d\'actualiser les notifications pour le moment.';
+
+  @override
+  String get pendingNotificationsAllHandled =>
+      'Vous avez déjà tout vu ou déjà répondu aux invitations en attente.';
+
+  @override
+  String pendingNotificationsTeamLabel(String team) {
+    return 'Équipe : $team';
+  }
+
+  @override
+  String pendingNotificationsRoleLabel(String role) {
+    return 'Rôle : $role';
+  }
+
+  @override
+  String get pendingNotificationsSeen => 'Vue';
+
+  @override
+  String get pendingNotificationsNew => 'Nouvelle';
 }
