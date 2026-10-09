@@ -101,6 +101,7 @@ jobs:
           --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
           --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
           --dart-define=APP_ENV=${{ env.APP_ENV }}
+          --dart-define=ENABLE_AI_FEATURE=${{ vars.ENABLE_AI_FEATURE || 'false' }}
 
       - name: Build AAB Release
         run: >
@@ -110,6 +111,7 @@ jobs:
           --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
           --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
           --dart-define=APP_ENV=${{ env.APP_ENV }}
+          --dart-define=ENABLE_AI_FEATURE=${{ vars.ENABLE_AI_FEATURE || 'false' }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -148,6 +150,7 @@ jobs:
           --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
           --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
           --dart-define=APP_ENV=${{ env.APP_ENV }}
+          --dart-define=ENABLE_AI_FEATURE=${{ vars.ENABLE_AI_FEATURE || 'false' }}
 
       - name: Deploy Flutter Web to VPS
         if: github.event_name == 'push'
@@ -215,6 +218,7 @@ jobs:
           --dart-define=EMAIL_CONFIRMATION_URL=${{ secrets.EMAIL_CONFIRMATION_URL }}
           --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
           --dart-define=APP_ENV=${{ env.APP_ENV }}
+          --dart-define=ENABLE_AI_FEATURE=${{ vars.ENABLE_AI_FEATURE || 'false' }}
 
       - name: Upload iOS Folder
         uses: actions/upload-artifact@v4
@@ -280,6 +284,7 @@ jobs:
           EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           TUTORIAL_PLAYLIST_URL: ${{ secrets.TUTORIAL_PLAYLIST_URL }}
+          ENABLE_AI_FEATURE: ${{ vars.ENABLE_AI_FEATURE }}
           APP_ENV: ${{ env.APP_ENV }}
           APP_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
           APP_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
@@ -398,6 +403,7 @@ jobs:
           EMAIL_CONFIRMATION_URL: ${{ secrets.EMAIL_CONFIRMATION_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           TUTORIAL_PLAYLIST_URL: ${{ secrets.TUTORIAL_PLAYLIST_URL }}
+          ENABLE_AI_FEATURE: ${{ vars.ENABLE_AI_FEATURE }}
           APP_ENV: ${{ env.APP_ENV }}
           APP_BUILD_NAME: ${{ env.APP_BUILD_NAME }}
           APP_BUILD_NUMBER: ${{ env.APP_BUILD_NUMBER }}
