@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_report_table_data.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -31,7 +32,57 @@ class ShiftReportPdfExportService {
     required String noteColumn,
     required String defaultProfileLabel,
     required String privateTypeLabel,
+    required String accountColumn,
+    Map<String, String> emailByUserId = const {},
+    List<ShiftReportColumn>? columns,
   }) async {
+    final exportColumns = columns == null || columns.isEmpty
+        ? ShiftReportColumn.defaultExport
+        : columns;
+    final headerByColumn = <ShiftReportColumn, String>{
+      ShiftReportColumn.date: dateColumn,
+      ShiftReportColumn.user: userColumn,
+      ShiftReportColumn.account: accountColumn,
+      ShiftReportColumn.profile: profileColumn,
+      ShiftReportColumn.start: startColumn,
+      ShiftReportColumn.end: endColumn,
+      ShiftReportColumn.type: typeColumn,
+      ShiftReportColumn.note: noteColumn,
+    };
+    final hasFlexColumn = exportColumns.contains(ShiftReportColumn.note);
+    pw.TableColumnWidth widthFor(ShiftReportColumn column) {
+      switch (column) {
+        case ShiftReportColumn.date:
+          return const pw.FixedColumnWidth(64);
+        case ShiftReportColumn.user:
+          return hasFlexColumn
+              ? const pw.FixedColumnWidth(96)
+              : const pw.FlexColumnWidth(1);
+        case ShiftReportColumn.account:
+          return const pw.FixedColumnWidth(120);
+        case ShiftReportColumn.profile:
+          return const pw.FixedColumnWidth(92);
+        case ShiftReportColumn.start:
+        case ShiftReportColumn.end:
+          return const pw.FixedColumnWidth(62);
+        case ShiftReportColumn.type:
+          return const pw.FixedColumnWidth(54);
+        case ShiftReportColumn.note:
+          return const pw.FlexColumnWidth(2);
+      }
+    }
+
+    final table = buildShiftReportTable(
+      assignments: assignments,
+      columns: exportColumns,
+      headerByColumn: headerByColumn,
+      teamLabel: teamLabel,
+      defaultProfileLabel: defaultProfileLabel,
+      privateTypeLabel: privateTypeLabel,
+      emailByUserId: emailByUserId,
+      maxNoteLength: 60,
+    );
+
     final document = pw.Document(title: 'Shift report $teamName');
     final now = DateTime.now();
     final dateFormat = DateFormat('dd/MM/yyyy');
@@ -92,36 +143,11 @@ class ShiftReportPdfExportService {
               vertical: 8,
             ),
             columnWidths: {
-              0: const pw.FixedColumnWidth(64),
-              1: const pw.FixedColumnWidth(96),
-              2: const pw.FixedColumnWidth(92),
-              3: const pw.FixedColumnWidth(62),
-              4: const pw.FixedColumnWidth(62),
-              5: const pw.FixedColumnWidth(54),
-              6: const pw.FlexColumnWidth(2),
+              for (var i = 0; i < exportColumns.length; i++)
+                i: widthFor(exportColumns[i]),
             },
-            headers: [
-              dateColumn,
-              userColumn,
-              profileColumn,
-              startColumn,
-              endColumn,
-              typeColumn,
-              noteColumn,
-            ],
-            data: assignments
-                .map(
-                  (assignment) => [
-                    dateFormat.format(assignment.shiftDate),
-                    _displayUserName(assignment),
-                    assignment.profileName ?? defaultProfileLabel,
-                    _formatTime(assignment.startTime),
-                    _formatTime(assignment.endTime),
-                    assignment.isPublic ? teamLabel : privateTypeLabel,
-                    _compactNote(assignment.note),
-                  ],
-                )
-                .toList(),
+            headers: table.headers,
+            data: table.rows,
           ),
         ],
       ),
@@ -156,26 +182,5 @@ class ShiftReportPdfExportService {
         ),
       ),
     );
-  }
-
-  static String _displayUserName(ShiftAssignmentEntity assignment) {
-    final name = assignment.userName?.trim();
-    if (name != null && name.isNotEmpty) {
-      return name;
-    }
-    return assignment.userId;
-  }
-
-  static String _formatTime(dynamic time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-
-  static String _compactNote(String? note) {
-    if (note == null) return '';
-    final normalized = note.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (normalized.length <= 60) return normalized;
-    return '${normalized.substring(0, 57)}...';
   }
 }

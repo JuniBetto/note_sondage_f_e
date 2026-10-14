@@ -9,6 +9,7 @@ import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.
 import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
 import 'package:note_sondage/feature/clocking/ui/utils/clocking_access_resolver.dart';
 import 'package:note_sondage/feature/clocking/ui/utils/clocking_pdf_export_service.dart';
+import 'package:note_sondage/feature/clocking/ui/utils/clocking_status_localizations.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
@@ -706,6 +707,10 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
       return record.userName.toLowerCase().contains(query) ||
           record.teamName.toLowerCase().contains(query) ||
           record.statusLabel.toLowerCase().contains(query) ||
+          localizedClockingStatusLabel(
+            context,
+            record.status,
+          ).toLowerCase().contains(query) ||
           DateFormat('dd/MM/yyyy').format(record.date).contains(query);
     }).toList();
   }
@@ -2917,14 +2922,18 @@ class _RecordSummary extends StatelessWidget {
               color: Colors.teal,
             ),
             _StatusBadge(
-              label: record.statusLabel,
+              label: localizedClockingStatusLabel(context, record.status),
               color: _statusColor(record.status),
             ),
-            if (isSyncing) _StatusBadge(label: 'Syncing', color: Colors.amber),
+            if (isSyncing)
+              _StatusBadge(
+                label: AppLocalizations.of(context)!.syncing,
+                color: Colors.amber,
+              ),
             _StatusBadge(
               label: isCurrentUserRecord
-                  ? 'La tua timbratura'
-                  : 'Timbratura membro',
+                  ? localizedOwnClockingBadge(context)
+                  : localizedMemberClockingBadge(context),
               color: isCurrentUserRecord ? Colors.indigo : Colors.deepOrange,
             ),
             if (record.note != null && record.note!.trim().isNotEmpty)

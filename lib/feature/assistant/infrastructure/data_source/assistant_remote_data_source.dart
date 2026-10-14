@@ -21,6 +21,7 @@ class AssistantRemoteDataSource {
   Future<AssistantReplyEntity> sendMessage({
     required String message,
     String? conversationId,
+    String? language,
   }) async {
     try {
       final response = await _dio.post(
@@ -28,6 +29,8 @@ class AssistantRemoteDataSource {
         data: {
           if (conversationId != null) 'conversationId': conversationId,
           'message': message,
+          // Lingua attuale dell'app: l'assistente risponde in questa lingua.
+          if (language != null) 'language': language,
         },
         options: Options(receiveTimeout: _replyTimeout),
       );

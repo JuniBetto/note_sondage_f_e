@@ -1630,8 +1630,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                       showArchivedOnly: _showArchivedOnly,
                       primaryCount: foregroundAssignments.length,
                       archivedCount: archivedAssignments.length,
-                      primaryLabel: 'Calendario',
-                      archivedLabel: 'Archivio turni',
+                      primaryLabel: AppLocalizations.of(
+                        context,
+                      )!.shiftReportCalendarMode,
+                      archivedLabel: AppLocalizations.of(
+                        context,
+                      )!.tutorialShiftArchiveTitle,
                       onChanged: (value) {
                         setState(() => _showArchivedOnly = value);
                       },

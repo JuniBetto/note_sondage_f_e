@@ -983,6 +983,45 @@ class AppLocalizationsFr extends AppLocalizations {
   String get downloadPdf => 'Télécharger le PDF';
 
   @override
+  String get shiftReportDownload => 'Télécharger';
+
+  @override
+  String get shiftReportAccountColumn => 'Compte';
+
+  @override
+  String get shiftReportExportTitle => 'Exporter le rapport';
+
+  @override
+  String get shiftReportExportFormat => 'Format';
+
+  @override
+  String get shiftReportExportColumns => 'Colonnes';
+
+  @override
+  String shiftReportExportColumnsCount(int selected, int total) {
+    return '$selected sur $total';
+  }
+
+  @override
+  String get shiftReportExportDragHint =>
+      'Faites glisser pour changer l\'ordre';
+
+  @override
+  String get shiftReportExportFormatPdfHint => 'Prêt à imprimer ou à partager';
+
+  @override
+  String get shiftReportExportFormatCsvHint => 'Pour tout CRM ou tableur';
+
+  @override
+  String get shiftReportExportFormatExcelHint =>
+      'Avec en-têtes, prêt à filtrer';
+
+  @override
+  String shiftReportExportError(String error) {
+    return 'Erreur lors de l\'exportation du rapport : $error';
+  }
+
+  @override
   String get clockingOwnerHint => 'Propriétaire du pointage';
 
   @override

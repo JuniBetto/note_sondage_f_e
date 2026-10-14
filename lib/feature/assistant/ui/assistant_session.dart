@@ -29,7 +29,7 @@ class AssistantSession extends ChangeNotifier {
   List<AssistantMessage> get messages => List.unmodifiable(_messages);
   bool get sending => _sending;
 
-  Future<void> send(String text) async {
+  Future<void> send(String text, {String? language}) async {
     final message = text.trim();
     if (message.isEmpty || _sending) {
       return;
@@ -41,6 +41,7 @@ class AssistantSession extends ChangeNotifier {
       final reply = await _remote.sendMessage(
         message: message,
         conversationId: _conversationId,
+        language: language,
       );
       _conversationId = reply.conversationId;
       _messages.add(

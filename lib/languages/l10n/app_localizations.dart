@@ -1884,6 +1884,72 @@ abstract class AppLocalizations {
   /// **'Download PDF'**
   String get downloadPdf;
 
+  /// No description provided for @shiftReportDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get shiftReportDownload;
+
+  /// No description provided for @shiftReportAccountColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get shiftReportAccountColumn;
+
+  /// No description provided for @shiftReportExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export report'**
+  String get shiftReportExportTitle;
+
+  /// No description provided for @shiftReportExportFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get shiftReportExportFormat;
+
+  /// No description provided for @shiftReportExportColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get shiftReportExportColumns;
+
+  /// No description provided for @shiftReportExportColumnsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total}'**
+  String shiftReportExportColumnsCount(int selected, int total);
+
+  /// No description provided for @shiftReportExportDragHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to change the order'**
+  String get shiftReportExportDragHint;
+
+  /// No description provided for @shiftReportExportFormatPdfHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to print or share'**
+  String get shiftReportExportFormatPdfHint;
+
+  /// No description provided for @shiftReportExportFormatCsvHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens in any CRM or spreadsheet'**
+  String get shiftReportExportFormatCsvHint;
+
+  /// No description provided for @shiftReportExportFormatExcelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'With headers, ready to filter'**
+  String get shiftReportExportFormatExcelHint;
+
+  /// No description provided for @shiftReportExportError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error exporting the report: {error}'**
+  String shiftReportExportError(String error);
+
   /// No description provided for @clockingOwnerHint.
   ///
   /// In en, this message translates to:

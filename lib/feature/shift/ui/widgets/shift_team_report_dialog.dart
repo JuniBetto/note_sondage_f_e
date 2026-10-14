@@ -1,12 +1,16 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_report_file_export_service.dart';
 import 'package:note_sondage/feature/shift/ui/utils/shift_report_pdf_export_service.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_report_table_data.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_report_export_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
@@ -78,6 +82,12 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
   List<ShiftAssignmentEntity> _reportAssignments = <ShiftAssignmentEntity>[];
   bool _loading = false;
   bool _exporting = false;
+  // Ordine delle colonne della tabella, condiviso con l'esportazione.
+  List<ShiftReportColumn> _columnOrder = ShiftReportColumn.values;
+  // L'account (email) e' disattivato di default: si aggiunge solo al download.
+  Set<ShiftReportColumn> _exportSelected = ShiftReportColumn.defaultExport
+      .toSet();
+  ShiftReportExportFormat _exportFormat = ShiftReportExportFormat.pdf;
 
   @override
   void initState() {
@@ -281,7 +291,55 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
     });
   }
 
-  Future<void> _exportPdf() async {
+  Map<ShiftReportColumn, String> _columnLabels(AppLocalizations loc) => {
+    ShiftReportColumn.date: loc.shiftReportDateColumn,
+    ShiftReportColumn.user: loc.shiftReportUserColumn,
+    ShiftReportColumn.account: loc.shiftReportAccountColumn,
+    ShiftReportColumn.profile: loc.shiftReportProfileColumn,
+    ShiftReportColumn.start: loc.start,
+    ShiftReportColumn.end: loc.end,
+    ShiftReportColumn.type: loc.shiftReportTypeColumn,
+    ShiftReportColumn.note: loc.note,
+  };
+
+  void _moveColumn(ShiftReportColumn from, ShiftReportColumn to) {
+    if (from == to) {
+      return;
+    }
+    setState(() {
+      final order = List<ShiftReportColumn>.of(_columnOrder)..remove(from);
+      order.insert(_columnOrder.indexOf(to), from);
+      _columnOrder = order;
+    });
+  }
+
+  Future<void> _openExportDialog() async {
+    final team = _selectedTeamView;
+    if (team == null || _filteredAssignments.isEmpty) {
+      return;
+    }
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    final selection = await ShiftReportExportDialog.show(
+      context,
+      subtitle:
+          '${team.team.name} · ${dateFormat.format(_rangeStart)} - ${dateFormat.format(_rangeEnd)} · ${_filteredAssignments.length}',
+      initialColumns: _columnOrder.where(_exportSelected.contains).toList(),
+      initialOrder: _columnOrder,
+      initialFormat: _exportFormat,
+    );
+    if (selection == null || selection.columns.isEmpty || !mounted) {
+      return;
+    }
+    setState(() {
+      _columnOrder = selection.order;
+      _exportSelected = selection.columns.toSet();
+    });
+    _exportFormat = selection.format;
+    await _export(selection);
+  }
+
+  Future<void> _export(ShiftReportExportSelection selection) async {
+    final columns = selection.columns;
     final team = _selectedTeamView;
     final assignments = _filteredAssignments;
     if (team == null || assignments.isEmpty) {
@@ -290,12 +348,43 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
     setState(() => _exporting = true);
     try {
       final loc = AppLocalizations.of(context)!;
+      final emailByUserId = <String, String>{
+        for (final member in _availableMembers)
+          if ((member.teamMember.userId ?? '').isNotEmpty)
+            member.teamMember.userId!: member.teamMember.userEmail,
+      };
       final selectedNames = _availableMembers
           .where(
             (member) => _selectedUserIds.contains(member.teamMember.userId),
           )
           .map(_memberLabel)
           .toList();
+      if (selection.format != ShiftReportExportFormat.pdf) {
+        await ShiftReportFileExportService.export(
+          format: selection.format,
+          teamName: team.team.name,
+          sheetName: loc.shiftTeamReportTitle,
+          data: buildShiftReportTable(
+            assignments: assignments,
+            columns: columns,
+            headerByColumn: {
+              ShiftReportColumn.date: loc.shiftReportDateColumn,
+              ShiftReportColumn.user: loc.shiftReportUserColumn,
+              ShiftReportColumn.account: loc.shiftReportAccountColumn,
+              ShiftReportColumn.profile: loc.shiftReportProfileColumn,
+              ShiftReportColumn.start: loc.start,
+              ShiftReportColumn.end: loc.end,
+              ShiftReportColumn.type: loc.shiftReportTypeColumn,
+              ShiftReportColumn.note: loc.note,
+            },
+            teamLabel: loc.team,
+            defaultProfileLabel: loc.shiftReportDefaultProfile,
+            privateTypeLabel: loc.shiftReportPrivateType,
+            emailByUserId: emailByUserId,
+          ),
+        );
+        return;
+      }
       await ShiftReportPdfExportService.exportCurrentView(
         teamName: team.team.name,
         from: _rangeStart,
@@ -318,6 +407,9 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
         noteColumn: loc.note,
         defaultProfileLabel: loc.shiftReportDefaultProfile,
         privateTypeLabel: loc.shiftReportPrivateType,
+        accountColumn: loc.shiftReportAccountColumn,
+        emailByUserId: emailByUserId,
+        columns: columns,
       );
     } catch (e) {
       if (!mounted) {
@@ -325,7 +417,7 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
       }
       AppSnackBar.showError(
         context,
-        AppLocalizations.of(context)!.exportPdfError(e.toString()),
+        AppLocalizations.of(context)!.shiftReportExportError(e.toString()),
       );
     } finally {
       if (mounted) {
@@ -344,6 +436,21 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
     final team = _selectedTeamView;
     final hasAssignments = filteredAssignments.isNotEmpty;
     final dateFormat = DateFormat('dd/MM/yyyy');
+    final previewBox = DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.borderColor,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: _buildPreviewContent(
+          loc,
+          team,
+          filteredAssignments,
+          hasAssignments,
+        ),
+      ),
+    );
 
     return Material(
       color: Colors.transparent,
@@ -420,6 +527,187 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                 if (widget.teams.isEmpty)
                   Expanded(
                     child: Center(child: Text(loc.shiftReportUnavailable)),
+                  )
+                else if (widget.compact)
+                  // Su mobile tutta la pagina scorre in verticale, anche
+                  // fuori dalla tabella.
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final teamFieldWidth = widget.compact
+                                  ? constraints.maxWidth
+                                  : 260.0;
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  SizedBox(
+                                    width: teamFieldWidth,
+                                    child: ShiftCalendarTeamPicker(
+                                      teams: widget.teams,
+                                      selectedTeamId: _selectedTeamId,
+                                      includePersonalOption: false,
+                                      unselectedTitle:
+                                          loc.shiftReportSelectTeam,
+                                      triggerSubtitle: loc.changeOrSearchTeam,
+                                      teamFallbackSubtitle:
+                                          loc.shiftReportSelectTeam,
+                                      onChanged: (value) {
+                                        if (value == null ||
+                                            value == _selectedTeamId) {
+                                          return;
+                                        }
+                                        setState(() {
+                                          _selectedTeamId = value;
+                                          _selectAllUsersForCurrentTeam();
+                                        });
+                                        _refreshMembersForSelectedTeam();
+                                        _loadReport();
+                                      },
+                                    ),
+                                  ),
+                                  _DateButton(
+                                    label: loc.shiftReportStartDate,
+                                    value: dateFormat.format(_rangeStart),
+                                    onTap: _pickStartDate,
+                                  ),
+                                  _DateButton(
+                                    label: loc.shiftReportEndDate,
+                                    value: dateFormat.format(_rangeEnd),
+                                    onTap: _pickEndDate,
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            loc.shiftReportUsers,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              FilterChip(
+                                label: Text(loc.allUsers),
+                                selected: _allUsersSelected,
+                                onSelected: (_) async {
+                                  setState(_selectAllUsersForCurrentTeam);
+                                  await _loadReport();
+                                },
+                              ),
+                              for (final member in _availableMembers)
+                                FilterChip(
+                                  label: Text(_memberLabel(member)),
+                                  selected: _selectedUserIds.contains(
+                                    member.teamMember.userId,
+                                  ),
+                                  onSelected: (_) async {
+                                    final userId = member.teamMember.userId;
+                                    if (userId == null || userId.isEmpty) {
+                                      return;
+                                    }
+                                    _toggleUser(userId);
+                                    await _loadReport();
+                                  },
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              FilledButton.icon(
+                                onPressed: _loading ? null : _loadReport,
+                                icon: _loading
+                                    ? SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: colorScheme.textInvertedColor,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.refresh_rounded,
+                                        color: colorScheme.textInvertedColor,
+                                      ),
+                                label: Text(
+                                  loc.shiftReportRefresh,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.textInvertedColor,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: colorScheme.bgNavbarbutton,
+                                ),
+                              ),
+                              FilledButton.icon(
+                                onPressed: !hasAssignments || _exporting
+                                    ? null
+                                    : _openExportDialog,
+                                icon: _exporting
+                                    ? SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: colorScheme.textInvertedColor,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.download_rounded,
+                                        color: colorScheme.textInvertedColor,
+                                      ),
+                                label: Text(
+                                  loc.shiftReportDownload,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.textInvertedColor,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: colorScheme.bgNavbarbutton,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _InfoChip(
+                                label: loc.shiftReportPeriod,
+                                value:
+                                    '${dateFormat.format(_rangeStart)} - ${dateFormat.format(_rangeEnd)}',
+                              ),
+                              _InfoChip(
+                                label: loc.shiftReportShifts,
+                                value: '${filteredAssignments.length}',
+                              ),
+                              _InfoChip(
+                                label: loc.shiftReportMode,
+                                value: _showCalendarPreview
+                                    ? loc.shiftReportCalendarMode
+                                    : loc.shiftReportTableMode,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          previewBox,
+                          const SizedBox(height: 8),
+                        ],
+                      ),
+                    ),
                   )
                 else ...[
                   LayoutBuilder(
@@ -537,7 +825,7 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                       FilledButton.icon(
                         onPressed: !hasAssignments || _exporting
                             ? null
-                            : _exportPdf,
+                            : _openExportDialog,
                         icon: _exporting
                             ? SizedBox(
                                 width: 16,
@@ -552,7 +840,7 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                                 color: colorScheme.textInvertedColor,
                               ),
                         label: Text(
-                          loc.downloadPdf,
+                          loc.shiftReportDownload,
                           style: textTheme.bodyMedium?.copyWith(
                             color: colorScheme.textInvertedColor,
                           ),
@@ -586,23 +874,7 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Expanded(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.borderColor,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: _buildPreviewContent(
-                          loc,
-                          team,
-                          filteredAssignments,
-                          hasAssignments,
-                        ),
-                      ),
-                    ),
-                  ),
+                  Expanded(child: previewBox),
                 ],
               ],
             ),
@@ -650,14 +922,18 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
     List<ShiftAssignmentEntity> filteredAssignments,
     bool hasAssignments,
   ) {
+    Widget placeholder(Widget child) => widget.compact
+        ? SizedBox(height: 160, child: Center(child: child))
+        : Center(child: child);
+
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return placeholder(const CircularProgressIndicator());
     }
     if (team == null) {
-      return Center(child: Text(loc.shiftReportSelectTeam));
+      return placeholder(Text(loc.shiftReportSelectTeam));
     }
     if (!hasAssignments) {
-      return Center(child: Text(loc.shiftReportNoResults));
+      return placeholder(Text(loc.shiftReportNoResults));
     }
 
     final preview = _showCalendarPreview
@@ -673,26 +949,18 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
           )
         : _ShiftReportTable(
             assignments: filteredAssignments,
-            dateColumn: loc.shiftReportDateColumn,
-            userColumn: loc.shiftReportUserColumn,
-            profileColumn: loc.shiftReportProfileColumn,
-            startColumn: loc.start,
-            endColumn: loc.end,
-            typeColumn: loc.shiftReportTypeColumn,
-            noteColumn: loc.note,
+            columnOrder: _columnOrder
+                .where((column) => column.isShownInTable)
+                .toList(),
+            onMoveColumn: _moveColumn,
+            labels: _columnLabels(loc),
             defaultProfileLabel: loc.shiftReportDefaultProfile,
             privateTypeLabel: loc.shiftReportPrivateType,
             teamLabel: loc.team,
+            embedded: widget.compact,
           );
 
-    if (!widget.compact) {
-      return preview;
-    }
-
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: preview,
-    );
+    return preview;
   }
 }
 
@@ -759,36 +1027,48 @@ class _InfoChip extends StatelessWidget {
 }
 
 class _ShiftReportTable extends StatelessWidget {
-  static const double _dateColumnWidth = 120;
-  static const double _userColumnWidth = 220;
-  static const double _profileColumnWidth = 170;
-  static const double _timeColumnWidth = 92;
-  static const double _typeColumnWidth = 120;
-  static const double _noteColumnWidth = 190;
   static const double _rowGap = 16;
+
+  static double widthOf(ShiftReportColumn column) {
+    switch (column) {
+      case ShiftReportColumn.date:
+        return 120;
+      case ShiftReportColumn.user:
+        return 220;
+      case ShiftReportColumn.account:
+        return 200;
+      case ShiftReportColumn.profile:
+        return 170;
+      case ShiftReportColumn.start:
+      case ShiftReportColumn.end:
+        return 92;
+      case ShiftReportColumn.type:
+        return 120;
+      case ShiftReportColumn.note:
+        return 190;
+    }
+  }
 
   const _ShiftReportTable({
     required this.assignments,
-    required this.dateColumn,
-    required this.userColumn,
-    required this.profileColumn,
-    required this.startColumn,
-    required this.endColumn,
-    required this.typeColumn,
-    required this.noteColumn,
+    required this.columnOrder,
+    required this.onMoveColumn,
+    required this.labels,
     required this.defaultProfileLabel,
     required this.privateTypeLabel,
     required this.teamLabel,
+    this.embedded = false,
   });
 
+  /// `true` quando la tabella e' dentro una pagina che scorre gia' in verticale.
+  final bool embedded;
   final List<ShiftAssignmentEntity> assignments;
-  final String dateColumn;
-  final String userColumn;
-  final String profileColumn;
-  final String startColumn;
-  final String endColumn;
-  final String typeColumn;
-  final String noteColumn;
+  final List<ShiftReportColumn> columnOrder;
+
+  /// Sposta la colonna [from] nella posizione occupata da [to].
+  final void Function(ShiftReportColumn from, ShiftReportColumn to)
+  onMoveColumn;
+  final Map<ShiftReportColumn, String> labels;
   final String defaultProfileLabel;
   final String privateTypeLabel;
   final String teamLabel;
@@ -798,37 +1078,65 @@ class _ShiftReportTable extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final dateFormat = DateFormat('dd/MM/yyyy');
-    final isCompact = MediaQuery.sizeOf(context).width < 760;
     final minTableWidth =
-        _dateColumnWidth +
-        _userColumnWidth +
-        _profileColumnWidth +
-        (_timeColumnWidth * 2) +
-        _typeColumnWidth +
-        _noteColumnWidth +
-        (_rowGap * 6) +
+        columnOrder.fold<double>(0, (sum, c) => sum + widthOf(c)) +
+        (_rowGap * columnOrder.length) +
         32;
     final tableWidth = math.max(
       MediaQuery.sizeOf(context).width * 0.68,
       minTableWidth,
     );
 
-    if (isCompact) {
-      return Column(
-        children: [
-          for (final assignment in assignments) ...[
-            _ShiftReportMobileCard(
-              assignment: assignment,
-              dateLabel: dateFormat.format(assignment.shiftDate),
-              userLabel: _displayUserName(assignment),
-              profileLabel: assignment.profileName ?? defaultProfileLabel,
-              timeRangeLabel:
-                  '${_formatTime(assignment.startTime)} - ${_formatTime(assignment.endTime)}',
-              typeLabel: assignment.isPublic ? teamLabel : privateTypeLabel,
+    final table = SizedBox(
+      width: tableWidth,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.bgNavbarSurface?.withValues(alpha: 0.78),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color:
+                colorScheme.borderColor?.withValues(alpha: 0.55) ??
+                Colors.black.withValues(alpha: 0.06),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
             ),
-            if (assignment != assignments.last) const SizedBox(height: 12),
           ],
-        ],
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _ShiftReportTableHeader(
+              columnOrder: columnOrder,
+              labels: labels,
+              onMoveColumn: onMoveColumn,
+            ),
+            const SizedBox(height: 12),
+            for (final assignment in assignments) ...[
+              _ShiftReportTableRow(
+                assignment: assignment,
+                columnOrder: columnOrder,
+                dateLabel: dateFormat.format(assignment.shiftDate),
+                userLabel: _displayUserName(assignment),
+                profileLabel: assignment.profileName ?? defaultProfileLabel,
+                startLabel: _formatTime(assignment.startTime),
+                endLabel: _formatTime(assignment.endTime),
+                typeLabel: assignment.isPublic ? teamLabel : privateTypeLabel,
+              ),
+              if (assignment != assignments.last) const SizedBox(height: 10),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    if (embedded) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: table,
       );
     }
 
@@ -837,70 +1145,7 @@ class _ShiftReportTable extends StatelessWidget {
       child: SingleChildScrollView(
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: tableWidth,
-            child: Container(
-              decoration: BoxDecoration(
-                color: colorScheme.bgNavbarSurface?.withValues(alpha: 0.78),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color:
-                      colorScheme.borderColor?.withValues(alpha: 0.55) ??
-                      Colors.black.withValues(alpha: 0.06),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _ShiftReportTableHeader(
-                    dateColumn: dateColumn,
-                    userColumn: userColumn,
-                    profileColumn: profileColumn,
-                    startColumn: startColumn,
-                    endColumn: endColumn,
-                    typeColumn: typeColumn,
-                    noteColumn: noteColumn,
-                    dateColumnWidth: _dateColumnWidth,
-                    userColumnWidth: _userColumnWidth,
-                    profileColumnWidth: _profileColumnWidth,
-                    timeColumnWidth: _timeColumnWidth,
-                    typeColumnWidth: _typeColumnWidth,
-                    noteColumnWidth: _noteColumnWidth,
-                  ),
-                  const SizedBox(height: 12),
-                  for (final assignment in assignments) ...[
-                    _ShiftReportTableRow(
-                      assignment: assignment,
-                      dateLabel: dateFormat.format(assignment.shiftDate),
-                      userLabel: _displayUserName(assignment),
-                      profileLabel:
-                          assignment.profileName ?? defaultProfileLabel,
-                      startLabel: _formatTime(assignment.startTime),
-                      endLabel: _formatTime(assignment.endTime),
-                      typeLabel: assignment.isPublic
-                          ? teamLabel
-                          : privateTypeLabel,
-                      dateColumnWidth: _dateColumnWidth,
-                      userColumnWidth: _userColumnWidth,
-                      profileColumnWidth: _profileColumnWidth,
-                      timeColumnWidth: _timeColumnWidth,
-                      typeColumnWidth: _typeColumnWidth,
-                      noteColumnWidth: _noteColumnWidth,
-                    ),
-                    if (assignment != assignments.last)
-                      const SizedBox(height: 10),
-                  ],
-                ],
-              ),
-            ),
-          ),
+          child: table,
         ),
       ),
     );
@@ -921,36 +1166,20 @@ class _ShiftReportTable extends StatelessWidget {
   }
 }
 
+/// Intestazione della tabella: ogni colonna si puo' trascinare su un'altra per
+/// cambiare l'ordine. Su touch serve un tap lungo, cosi' non si scscontra con
+/// lo scroll orizzontale.
 class _ShiftReportTableHeader extends StatelessWidget {
   const _ShiftReportTableHeader({
-    required this.dateColumn,
-    required this.userColumn,
-    required this.profileColumn,
-    required this.startColumn,
-    required this.endColumn,
-    required this.typeColumn,
-    required this.noteColumn,
-    required this.dateColumnWidth,
-    required this.userColumnWidth,
-    required this.profileColumnWidth,
-    required this.timeColumnWidth,
-    required this.typeColumnWidth,
-    required this.noteColumnWidth,
+    required this.columnOrder,
+    required this.labels,
+    required this.onMoveColumn,
   });
 
-  final String dateColumn;
-  final String userColumn;
-  final String profileColumn;
-  final String startColumn;
-  final String endColumn;
-  final String typeColumn;
-  final String noteColumn;
-  final double dateColumnWidth;
-  final double userColumnWidth;
-  final double profileColumnWidth;
-  final double timeColumnWidth;
-  final double typeColumnWidth;
-  final double noteColumnWidth;
+  final List<ShiftReportColumn> columnOrder;
+  final Map<ShiftReportColumn, String> labels;
+  final void Function(ShiftReportColumn from, ShiftReportColumn to)
+  onMoveColumn;
 
   @override
   Widget build(BuildContext context) {
@@ -971,13 +1200,13 @@ class _ShiftReportTableHeader extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _ShiftHeaderCell(label: dateColumn, width: dateColumnWidth),
-          _ShiftHeaderCell(label: userColumn, width: userColumnWidth),
-          _ShiftHeaderCell(label: profileColumn, width: profileColumnWidth),
-          _ShiftHeaderCell(label: startColumn, width: timeColumnWidth),
-          _ShiftHeaderCell(label: endColumn, width: timeColumnWidth),
-          _ShiftHeaderCell(label: typeColumn, width: typeColumnWidth),
-          _ShiftHeaderCell(label: noteColumn, width: noteColumnWidth),
+          for (final column in columnOrder)
+            _ShiftHeaderCell(
+              column: column,
+              label: labels[column] ?? '',
+              width: _ShiftReportTable.widthOf(column),
+              onMoveColumn: onMoveColumn,
+            ),
         ],
       ),
     );
@@ -985,26 +1214,124 @@ class _ShiftReportTableHeader extends StatelessWidget {
 }
 
 class _ShiftHeaderCell extends StatelessWidget {
-  const _ShiftHeaderCell({required this.label, required this.width});
+  const _ShiftHeaderCell({
+    required this.column,
+    required this.label,
+    required this.width,
+    required this.onMoveColumn,
+  });
 
+  final ShiftReportColumn column;
   final String label;
   final double width;
+  final void Function(ShiftReportColumn from, ShiftReportColumn to)
+  onMoveColumn;
+
+  static bool get _isTouch {
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return true;
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+        return false;
+    }
+  }
+
+  Widget _labelRow(BuildContext context, {required bool showHandle}) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        if (showHandle) ...[
+          Icon(
+            Icons.drag_indicator_rounded,
+            size: 14,
+            color: colorScheme.descriptionColor,
+          ),
+          const SizedBox(width: 2),
+        ],
+        Expanded(
+          child: Text(
+            label.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.labelLarge?.copyWith(
+              color: colorScheme.textColor,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.45,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final accent =
+        theme.colorScheme.bgNavbarbutton ?? theme.colorScheme.primary;
+    final touch = _isTouch;
 
-    return SizedBox(
+    final content = SizedBox(
       width: width,
-      child: Text(
-        label.toUpperCase(),
-        style: textTheme.labelLarge?.copyWith(
-          color: colorScheme.textColor,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.45,
+      child: _labelRow(context, showHandle: !touch),
+    );
+    final feedback = Material(
+      elevation: 6,
+      borderRadius: BorderRadius.circular(12),
+      color: theme.colorScheme.bgNavbarSurface ?? theme.cardColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Text(
+          label.toUpperCase(),
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.textColor,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
+    );
+
+    return DragTarget<ShiftReportColumn>(
+      onWillAcceptWithDetails: (details) => details.data != column,
+      onAcceptWithDetails: (details) => onMoveColumn(details.data, column),
+      builder: (context, candidates, _) {
+        final highlighted = candidates.isNotEmpty;
+        final child = AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: highlighted ? accent : Colors.transparent,
+                width: 3,
+              ),
+            ),
+          ),
+          child: content,
+        );
+        final dimmed = Opacity(opacity: 0.3, child: content);
+        if (touch) {
+          return LongPressDraggable<ShiftReportColumn>(
+            data: column,
+            feedback: feedback,
+            childWhenDragging: dimmed,
+            child: child,
+          );
+        }
+        return MouseRegion(
+          cursor: SystemMouseCursors.grab,
+          child: Draggable<ShiftReportColumn>(
+            data: column,
+            feedback: feedback,
+            childWhenDragging: dimmed,
+            child: child,
+          ),
+        );
+      },
     );
   }
 }
@@ -1012,33 +1339,23 @@ class _ShiftHeaderCell extends StatelessWidget {
 class _ShiftReportTableRow extends StatelessWidget {
   const _ShiftReportTableRow({
     required this.assignment,
+    required this.columnOrder,
     required this.dateLabel,
     required this.userLabel,
     required this.profileLabel,
     required this.startLabel,
     required this.endLabel,
     required this.typeLabel,
-    required this.dateColumnWidth,
-    required this.userColumnWidth,
-    required this.profileColumnWidth,
-    required this.timeColumnWidth,
-    required this.typeColumnWidth,
-    required this.noteColumnWidth,
   });
 
   final ShiftAssignmentEntity assignment;
+  final List<ShiftReportColumn> columnOrder;
   final String dateLabel;
   final String userLabel;
   final String profileLabel;
   final String startLabel;
   final String endLabel;
   final String typeLabel;
-  final double dateColumnWidth;
-  final double userColumnWidth;
-  final double profileColumnWidth;
-  final double timeColumnWidth;
-  final double typeColumnWidth;
-  final double noteColumnWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -1050,6 +1367,73 @@ class _ShiftReportTableRow extends StatelessWidget {
     final badgeColor = assignment.isPublic
         ? colorScheme.bgNavbarbutton ?? colorScheme.primary
         : Colors.orange.shade700;
+
+    Widget timeText(String value) => Text(
+      value,
+      style: textTheme.bodyMedium?.copyWith(
+        color: colorScheme.textColor,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+
+    Widget cellFor(ShiftReportColumn column) {
+      switch (column) {
+        case ShiftReportColumn.date:
+          return Text(
+            dateLabel,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.descriptionColor,
+              fontWeight: FontWeight.w600,
+            ),
+          );
+        case ShiftReportColumn.user:
+          return Row(
+            children: [
+              _UserInitialsBadge(label: _initialsFrom(userLabel)),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  userLabel,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.textColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          );
+        case ShiftReportColumn.account:
+          // Presente solo nell'esportazione, non nella tabella a schermo.
+          return const SizedBox.shrink();
+        case ShiftReportColumn.profile:
+          return _SoftBadge(
+            label: profileLabel,
+            foreground: colorScheme.textColor ?? Colors.black87,
+            background: (colorScheme.textInvertedColor ?? Colors.white)
+                .withValues(alpha: 0.92),
+          );
+        case ShiftReportColumn.start:
+          return timeText(startLabel);
+        case ShiftReportColumn.end:
+          return timeText(endLabel);
+        case ShiftReportColumn.type:
+          return _SoftBadge(
+            label: typeLabel,
+            foreground: badgeColor,
+            background: badgeColor.withValues(alpha: 0.14),
+          );
+        case ShiftReportColumn.note:
+          return Text(
+            hasNote ? note : '',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.descriptionColor,
+            ),
+          );
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -1066,85 +1450,11 @@ class _ShiftReportTableRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _ShiftValueCell(
-            width: dateColumnWidth,
-            child: Text(
-              dateLabel,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.descriptionColor,
-                fontWeight: FontWeight.w600,
-              ),
+          for (final column in columnOrder)
+            _ShiftValueCell(
+              width: _ShiftReportTable.widthOf(column),
+              child: cellFor(column),
             ),
-          ),
-          _ShiftValueCell(
-            width: userColumnWidth,
-            child: Row(
-              children: [
-                _UserInitialsBadge(label: _initialsFrom(userLabel)),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    userLabel,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.textColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _ShiftValueCell(
-            width: profileColumnWidth,
-            child: _SoftBadge(
-              label: profileLabel,
-              foreground: colorScheme.textColor ?? Colors.black87,
-              background: (colorScheme.textInvertedColor ?? Colors.white)
-                  .withValues(alpha: 0.92),
-            ),
-          ),
-          _ShiftValueCell(
-            width: timeColumnWidth,
-            child: Text(
-              startLabel,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.textColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          _ShiftValueCell(
-            width: timeColumnWidth,
-            child: Text(
-              endLabel,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.textColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          _ShiftValueCell(
-            width: typeColumnWidth,
-            child: _SoftBadge(
-              label: typeLabel,
-              foreground: Colors.white,
-              background: badgeColor,
-            ),
-          ),
-          _ShiftValueCell(
-            width: noteColumnWidth,
-            child: Text(
-              hasNote ? note : '—',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodyMedium?.copyWith(
-                color: hasNote
-                    ? colorScheme.descriptionColor
-                    : colorScheme.descriptionColor?.withValues(alpha: 0.75),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -1179,193 +1489,6 @@ class _ShiftValueCell extends StatelessWidget {
   }
 }
 
-class _ShiftReportMobileCard extends StatelessWidget {
-  const _ShiftReportMobileCard({
-    required this.assignment,
-    required this.dateLabel,
-    required this.userLabel,
-    required this.profileLabel,
-    required this.timeRangeLabel,
-    required this.typeLabel,
-  });
-
-  final ShiftAssignmentEntity assignment;
-  final String dateLabel;
-  final String userLabel;
-  final String profileLabel;
-  final String timeRangeLabel;
-  final String typeLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final note = assignment.note?.trim();
-    final hasNote = note != null && note.isNotEmpty;
-    final badgeColor = assignment.isPublic
-        ? colorScheme.bgNavbarbutton ?? colorScheme.primary
-        : Colors.orange.shade700;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final ultraCompact = constraints.maxWidth < 380;
-        final gap = ultraCompact ? 4.0 : 6.0;
-        final compactTextStyle =
-            (ultraCompact ? textTheme.labelSmall : textTheme.bodySmall)
-                ?.copyWith(
-                  color: colorScheme.textColor,
-                  fontWeight: FontWeight.w700,
-                  height: 1.15,
-                );
-
-        return Container(
-          padding: EdgeInsets.all(ultraCompact ? 10 : 12),
-          decoration: BoxDecoration(
-            color: colorScheme.bgNavbarSurface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color:
-                  colorScheme.borderColor?.withValues(alpha: 0.5) ??
-                  Colors.black.withValues(alpha: 0.06),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.025),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: 12,
-                child: Text(
-                  dateLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: compactTextStyle?.copyWith(
-                    color: colorScheme.descriptionColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              SizedBox(width: gap),
-              Expanded(
-                flex: 24,
-                child: Row(
-                  children: [
-                    _UserInitialsBadge(
-                      label: _initialsFrom(userLabel),
-                      size: ultraCompact ? 22 : 24,
-                    ),
-                    SizedBox(width: ultraCompact ? 4 : 6),
-                    Expanded(
-                      child: Text(
-                        userLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: compactTextStyle?.copyWith(
-                          color: colorScheme.textColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: gap),
-              Expanded(
-                flex: 16,
-                child: Text(
-                  profileLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: compactTextStyle,
-                ),
-              ),
-              SizedBox(width: gap),
-              Expanded(
-                flex: 14,
-                child: Text(
-                  timeRangeLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: compactTextStyle?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              SizedBox(width: gap),
-              Expanded(
-                flex: 12,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: ultraCompact ? 4 : 6,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: badgeColor.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    typeLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style:
-                        (ultraCompact
-                                ? textTheme.labelSmall
-                                : textTheme.bodySmall)
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              height: 1.05,
-                            ),
-                  ),
-                ),
-              ),
-              SizedBox(width: gap),
-              Expanded(
-                flex: 16,
-                child: Text(
-                  hasNote ? note : '—',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: compactTextStyle?.copyWith(
-                    color: hasNote
-                        ? colorScheme.descriptionColor
-                        : colorScheme.descriptionColor?.withValues(alpha: 0.75),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  String _initialsFrom(String value) {
-    final parts = value
-        .split(RegExp(r'\s+'))
-        .map((part) => part.trim())
-        .where((part) => part.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) {
-      return '--';
-    }
-    if (parts.length == 1) {
-      return parts.first.characters.take(2).toString().toUpperCase();
-    }
-    return '${parts.first.characters.first}${parts.last.characters.first}'
-        .toUpperCase();
-  }
-}
-
 class _SoftBadge extends StatelessWidget {
   const _SoftBadge({
     required this.label,
@@ -1380,7 +1503,6 @@ class _SoftBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
@@ -1390,7 +1512,7 @@ class _SoftBadge extends StatelessWidget {
       child: Text(
         label,
         style:
-           // textStyle ??
+            // textStyle ??
             Theme.of(context).textTheme.labelMedium?.copyWith(
               color: foreground,
               fontWeight: FontWeight.w700,
@@ -1401,10 +1523,11 @@ class _SoftBadge extends StatelessWidget {
 }
 
 class _UserInitialsBadge extends StatelessWidget {
-  const _UserInitialsBadge({required this.label, this.size = 34});
+  const _UserInitialsBadge({required this.label});
+
+  static const double size = 34;
 
   final String label;
-  final double size;
 
   @override
   Widget build(BuildContext context) {

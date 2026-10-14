@@ -12,14 +12,17 @@ class _FakeRemote extends AssistantRemoteDataSource {
   final Future<AssistantReplyEntity> Function(String message, String? id)
   _answer;
   final List<String?> conversationIds = <String?>[];
+  final List<String?> languages = <String?>[];
   final List<String> deleted = <String>[];
 
   @override
   Future<AssistantReplyEntity> sendMessage({
     required String message,
     String? conversationId,
+    String? language,
   }) {
     conversationIds.add(conversationId);
+    languages.add(language);
     return _answer(message, conversationId);
   }
 
@@ -66,6 +69,8 @@ void main() {
 
       await _type(tester, 'invita pipo1@gmail.com');
       expect(remote.conversationIds, [null, 'conv-1']);
+    // La lingua dell'app viaggia con ogni messaggio.
+    expect(remote.languages, ['it', 'it']);
     },
   );
 
