@@ -3,6 +3,7 @@ import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_enti
 import 'package:note_sondage/feature/shift/domain/entities/shift_auto_plan_entity.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/ui/utils/shift_profile_display_filter.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_overnight_notice.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/ui/widgets/app_toggle_switch.dart';
 
@@ -275,6 +276,11 @@ class _ShiftAutoPlanPreviewAssignmentEditorDialogState
                 ),
                 value: _overnight,
                 onChanged: (value) => setState(() => _overnight = value),
+              ),
+              ShiftOvernightNotice(
+                start: _startTime,
+                end: _endTime,
+                overnight: _overnight,
               ),
               TextField(
                 controller: _noteController,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_profile_entity.dart';
 import 'package:note_sondage/feature/shift/ui/bloc/shift_bloc.dart';
 import 'package:note_sondage/feature/shift/ui/utils/shift_profile_display_filter.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_overnight_notice.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/theme_extensions.dart';
 import 'package:note_sondage/ui/widgets/app_confirmation_dialog.dart';
@@ -46,10 +48,18 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
   // prossimo caricamento — su questo stesso dispositivo o su un altro.
   Set<String> _hiddenSystemProfileIds = const <String>{};
 
+  final ScrollController _horizontalController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     _profiles = List<ShiftProfileEntity>.from(widget.profiles);
+  }
+
+  @override
+  void dispose() {
+    _horizontalController.dispose();
+    super.dispose();
   }
 
   @override
@@ -270,6 +280,12 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
                       title: Text(loc.overnightShift),
                       contentPadding: EdgeInsets.zero,
                     ),
+                    if (hasValidTimeRange())
+                      ShiftOvernightNotice(
+                        start: startTime,
+                        end: endTime,
+                        overnight: overnight,
+                      ),
                     if (!hasValidTimeRange())
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
@@ -501,66 +517,108 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        loc.customProfile,
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      IconButton.filled(
-                        onPressed: _showCreateDialog,
-                        icon: Icon(Icons.add, size: 18),
-                        tooltip: loc.createCustomProfile,
-                        style: IconButton.styleFrom(
-                          backgroundColor: colorScheme.bgNavbarbutton,
-                          foregroundColor: colorScheme.textInvertedColor,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final content = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          loc.customProfile,
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                        IconButton.filled(
+                          onPressed: _showCreateDialog,
+                          icon: Icon(Icons.add, size: 18),
+                          tooltip: loc.createCustomProfile,
+                          style: IconButton.styleFrom(
+                            backgroundColor: colorScheme.bgNavbarbutton,
+                            foregroundColor: colorScheme.textInvertedColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    if (customProfiles.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          loc.noShiftsThisMonth,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.descriptionColor,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  if (customProfiles.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        loc.noShiftsThisMonth,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.descriptionColor,
-                          fontSize: 13,
-                        ),
+                    ...customProfiles.map(
+                      (p) => _ProfileTile(
+                        profile: p,
+                        isSystem: false,
+                        isOwner: widget.isOwner,
+                        isSyncing: widget.syncingProfileIds.contains(p.id),
+                        onEdit: () => _showEditDialog(p),
+                        onDelete: () => _confirmDelete(p),
                       ),
                     ),
-                  ...customProfiles.map(
-                    (p) => _ProfileTile(
-                      profile: p,
+                    const Divider(height: 24),
+                    Text(
+                      loc.systemProfile,
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    ...systemProfiles.map(
+                      (p) => _ProfileTile(
+                        profile: p,
+                        isSystem: true,
+                        isSyncing: widget.syncingProfileIds.contains(p.id),
+                        onDuplicate: () => _showDuplicateDialog(p),
+                      ),
+                    ),
+                  ],
+                );
+                final needed = [
+                  for (final p in systemProfiles)
+                    _ProfileTile.minWidth(
+                      context,
+                      p,
+                      isSystem: true,
+                      isOwner: widget.isOwner,
+                    ),
+                  for (final p in customProfiles)
+                    _ProfileTile.minWidth(
+                      context,
+                      p,
                       isSystem: false,
                       isOwner: widget.isOwner,
-                      isSyncing: widget.syncingProfileIds.contains(p.id),
-                      onEdit: () => _showEditDialog(p),
-                      onDelete: () => _confirmDelete(p),
+                    ),
+                ].fold<double>(0, math.max);
+
+                // Larghezza sufficiente: scorre solo in verticale. Altrimenti
+                // il blocco scorre anche in orizzontale, dal nome all'icona
+                // di copia.
+                if (needed <= constraints.maxWidth) {
+                  return SingleChildScrollView(child: content);
+                }
+                return Scrollbar(
+                  controller: _horizontalController,
+                  thumbVisibility: true,
+                  notificationPredicate: (n) =>
+                      n.metrics.axis == Axis.horizontal,
+                  child: SingleChildScrollView(
+                    controller: _horizontalController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: needed,
+                      height: constraints.maxHeight,
+                      child: SingleChildScrollView(child: content),
                     ),
                   ),
-                  const Divider(height: 24),
-                  Text(
-                    loc.systemProfile,
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  ...systemProfiles.map(
-                    (p) => _ProfileTile(
-                      profile: p,
-                      isSystem: true,
-                      isSyncing: widget.syncingProfileIds.contains(p.id),
-                      onDuplicate: () => _showDuplicateDialog(p),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -570,6 +628,11 @@ class _ShiftProfileManagerState extends State<ShiftProfileManager> {
 }
 
 class _ProfileTile extends StatelessWidget {
+  static const double _dotSize = 12;
+  static const double _leadingGap = 12;
+  static const double _trailingGap = 8;
+  static const double _iconButtonWidth = 48;
+
   final ShiftProfileEntity profile;
   final bool isSystem;
   final bool isOwner;
@@ -588,6 +651,59 @@ class _ProfileTile extends StatelessWidget {
     this.onDuplicate,
   });
 
+  static TextStyle _nameStyle(BuildContext context) =>
+      Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 14);
+
+  static TextStyle _timeStyle(BuildContext context) =>
+      Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 12);
+
+  static String _timeLabel(ShiftProfileEntity profile) =>
+      '${profile.startTime.hour.toString().padLeft(2, '0')}:${profile.startTime.minute.toString().padLeft(2, '0')}'
+      ' – '
+      '${profile.endTime.hour.toString().padLeft(2, '0')}:${profile.endTime.minute.toString().padLeft(2, '0')}';
+
+  static double _textWidth(BuildContext context, String text, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    return painter.width;
+  }
+
+  bool get _showsActions => isSystem || !(profile.isPublic && !isOwner);
+
+  /// Larghezza minima per leggere la riga senza tagli, dal pallino
+  /// all'ultima icona. Sotto questa larghezza il blocco scorre in orizzontale.
+  static double minWidth(
+    BuildContext context,
+    ShiftProfileEntity profile, {
+    required bool isSystem,
+    required bool isOwner,
+  }) {
+    final loc = AppLocalizations.of(context)!;
+    final textBlock = math.max(
+      _textWidth(context, profile.name, _nameStyle(context)),
+      _textWidth(context, _timeLabel(profile), _timeStyle(context)),
+    );
+    double trailing;
+    if (isSystem) {
+      final chipStyle = Theme.of(context).textTheme.bodySmall!;
+      // Chip: etichetta + padding orizzontale interno di 8 per lato.
+      trailing =
+          _textWidth(context, loc.systemProfile, chipStyle) +
+          16 +
+          _trailingGap +
+          _iconButtonWidth;
+    } else if (profile.isPublic && !isOwner) {
+      trailing = 0;
+    } else {
+      trailing = _trailingGap + (_iconButtonWidth * 2);
+    }
+    return _dotSize + _leadingGap + textBlock + trailing + 8;
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = profile.displayColor;
@@ -596,132 +712,149 @@ class _ProfileTile extends StatelessWidget {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
+
+    // Nome e orario stanno su una riga se c'e' spazio; altrimenti l'orario
+    // passa sotto il nome. Il nome non va mai a capo: se manca spazio anche
+    // per quello, il blocco intero scorre in orizzontale.
+    final details = Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 2,
+      children: [
+        Text(
+          profile.name,
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          style: _nameStyle(context),
+        ),
+        Text(_timeLabel(profile), softWrap: false, style: _timeStyle(context)),
+        if (profile.isPublic)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.public, size: 9, color: Colors.blue.shade700),
+                const SizedBox(width: 2),
+                Text(
+                  loc.publicProfile,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (isSyncing)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.34)),
+            ),
+            child: Text(
+              loc.syncing,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: Colors.amber.shade900,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+      ],
+    );
+
+    Widget? trailing;
+    if (isSystem) {
+      trailing = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Chip(
+            label: Text(
+              loc.systemProfile,
+              softWrap: false,
+              style: textTheme.bodySmall!.copyWith(
+                color: colorScheme.textColor,
+              ),
+            ),
+            backgroundColor: color,
+            padding: EdgeInsets.zero,
+            elevation: 6,
+            shape: const StadiumBorder(),
+            side: BorderSide.none,
+          ),
+          IconButton(
+            icon: const Icon(Icons.content_copy_outlined, size: 15),
+            onPressed: isSyncing ? null : onDuplicate,
+            tooltip: loc.createCustomProfile,
+          ),
+        ],
+      );
+    } else if (_showsActions) {
+      trailing = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 16),
+            onPressed: isSyncing ? null : onEdit,
+            tooltip: loc.editShiftProfile,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 16),
+            onPressed: isSyncing ? null : onDelete,
+            tooltip: loc.deleteShiftProfileConfirm,
+          ),
+        ],
+      );
+    }
+
     return Opacity(
       opacity: isSyncing ? 0.78 : 1,
-      child: ListTile(
-        dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-        leading: Stack(
-          clipBehavior: Clip.none,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            if (profile.isPublic)
-              Positioned(
-                bottom: -4,
-                right: -6,
-                child: Icon(
-                  Icons.public,
-                  size: 10,
-                  color: Colors.blue.shade600,
-                ),
-              ),
-          ],
-        ),
-        title: Row(
-          children: [
-            Flexible(
-              child: Text(profile.name, style: const TextStyle(fontSize: 14)),
-            ),
-            if (profile.isPublic) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.public, size: 9, color: Colors.blue.shade700),
-                    const SizedBox(width: 2),
-                    Text(
-                      loc.publicProfile,
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: Colors.blue.shade700,
-                        fontWeight: FontWeight.w600,
+            Padding(
+              padding: const EdgeInsets.only(right: _leadingGap),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: _dotSize,
+                    height: _dotSize,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  if (profile.isPublic)
+                    Positioned(
+                      bottom: -4,
+                      right: -6,
+                      child: Icon(
+                        Icons.public,
+                        size: 10,
+                        color: Colors.blue.shade600,
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
-            ],
-            if (isSyncing) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: Colors.amber.withValues(alpha: 0.34),
-                  ),
-                ),
-                child: Text(
-                  loc.syncing,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: Colors.amber.shade900,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+            ),
+            Expanded(child: details),
+            if (trailing != null) ...[
+              const SizedBox(width: _trailingGap),
+              trailing,
             ],
           ],
         ),
-        subtitle: Text(
-          '${profile.startTime.hour.toString().padLeft(2, '0')}:${profile.startTime.minute.toString().padLeft(2, '0')}'
-          ' – '
-          '${profile.endTime.hour.toString().padLeft(2, '0')}:${profile.endTime.minute.toString().padLeft(2, '0')}',
-          style: const TextStyle(fontSize: 12),
-        ),
-        trailing: isSystem
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Chip(
-                    label: Text(
-                      loc.systemProfile,
-                      style: textTheme.bodySmall!.copyWith(
-                        color: colorScheme.textColor,
-                      ), //const TextStyle(fontSize: 10),
-                    ),
-                    backgroundColor: color,
-                    padding: EdgeInsets.zero,
-                    elevation: 6,
-                    shape: const StadiumBorder(),
-                    // Forma a stadio
-                    side: BorderSide.none,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.content_copy_outlined, size: 15),
-                    onPressed: isSyncing ? null : onDuplicate,
-                    tooltip: loc.createCustomProfile,
-                  ),
-                ],
-              )
-            : (profile.isPublic && !isOwner)
-            ? const SizedBox.shrink()
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 16),
-                    onPressed: isSyncing ? null : onEdit,
-                    tooltip: loc.editShiftProfile,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    onPressed: isSyncing ? null : onDelete,
-                    tooltip: loc.deleteShiftProfileConfirm,
-                  ),
-                ],
-              ),
       ),
     );
   }

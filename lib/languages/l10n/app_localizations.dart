@@ -1884,6 +1884,156 @@ abstract class AppLocalizations {
   /// **'Download PDF'**
   String get downloadPdf;
 
+  /// No description provided for @shiftReportDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get shiftReportDownload;
+
+  /// No description provided for @shiftReportAccountColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get shiftReportAccountColumn;
+
+  /// No description provided for @shiftReportTableSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Table size'**
+  String get shiftReportTableSize;
+
+  /// No description provided for @shiftNoticeOver24Hours.
+  ///
+  /// In en, this message translates to:
+  /// **'This shift lasts more than 24 hours ({duration}) and covers two days.'**
+  String shiftNoticeOver24Hours(String duration);
+
+  /// No description provided for @shiftNoticeSingleDay.
+  ///
+  /// In en, this message translates to:
+  /// **'This shift lasts {duration} and ends at midnight: it covers a single day.'**
+  String shiftNoticeSingleDay(String duration);
+
+  /// No description provided for @shiftNoticeTwoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'This shift ends the next day and lasts {duration}: it covers two days.'**
+  String shiftNoticeTwoDays(String duration);
+
+  /// No description provided for @clockingColumnStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get clockingColumnStatus;
+
+  /// No description provided for @clockingColumnClockIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock-in'**
+  String get clockingColumnClockIn;
+
+  /// No description provided for @clockingColumnClockOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock-out'**
+  String get clockingColumnClockOut;
+
+  /// No description provided for @clockingColumnDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration (out − in)'**
+  String get clockingColumnDuration;
+
+  /// No description provided for @clockingColumnWorked.
+  ///
+  /// In en, this message translates to:
+  /// **'Worked'**
+  String get clockingColumnWorked;
+
+  /// No description provided for @clockingColumnBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Break'**
+  String get clockingColumnBreak;
+
+  /// No description provided for @clockingExportSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get clockingExportSearchLabel;
+
+  /// No description provided for @clockingExportAllLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get clockingExportAllLabel;
+
+  /// No description provided for @clockingExportRecordsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Records'**
+  String get clockingExportRecordsLabel;
+
+  /// No description provided for @shiftReportDurationColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration (end − start)'**
+  String get shiftReportDurationColumn;
+
+  /// No description provided for @shiftReportExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export report'**
+  String get shiftReportExportTitle;
+
+  /// No description provided for @shiftReportExportFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get shiftReportExportFormat;
+
+  /// No description provided for @shiftReportExportColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get shiftReportExportColumns;
+
+  /// No description provided for @shiftReportExportColumnsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total}'**
+  String shiftReportExportColumnsCount(int selected, int total);
+
+  /// No description provided for @shiftReportExportDragHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to change the order'**
+  String get shiftReportExportDragHint;
+
+  /// No description provided for @shiftReportExportFormatPdfHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to print or share'**
+  String get shiftReportExportFormatPdfHint;
+
+  /// No description provided for @shiftReportExportFormatCsvHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens in any CRM or spreadsheet'**
+  String get shiftReportExportFormatCsvHint;
+
+  /// No description provided for @shiftReportExportFormatExcelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'With headers, ready to filter'**
+  String get shiftReportExportFormatExcelHint;
+
+  /// No description provided for @shiftReportExportError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error exporting the report: {error}'**
+  String shiftReportExportError(String error);
+
   /// No description provided for @clockingOwnerHint.
   ///
   /// In en, this message translates to:

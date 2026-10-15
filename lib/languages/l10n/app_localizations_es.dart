@@ -983,6 +983,94 @@ class AppLocalizationsEs extends AppLocalizations {
   String get downloadPdf => 'Descargar PDF';
 
   @override
+  String get shiftReportDownload => 'Descargar';
+
+  @override
+  String get shiftReportAccountColumn => 'Cuenta';
+
+  @override
+  String get shiftReportTableSize => 'Tamaño de la tabla';
+
+  @override
+  String shiftNoticeOver24Hours(String duration) {
+    return 'Este turno dura más de 24 horas ($duration) y ocupa dos días.';
+  }
+
+  @override
+  String shiftNoticeSingleDay(String duration) {
+    return 'Este turno dura $duration y termina a medianoche: ocupa un solo día.';
+  }
+
+  @override
+  String shiftNoticeTwoDays(String duration) {
+    return 'Este turno termina al día siguiente y dura $duration: ocupa dos días.';
+  }
+
+  @override
+  String get clockingColumnStatus => 'Estado';
+
+  @override
+  String get clockingColumnClockIn => 'Entrada';
+
+  @override
+  String get clockingColumnClockOut => 'Salida';
+
+  @override
+  String get clockingColumnDuration => 'Duración (salida − entrada)';
+
+  @override
+  String get clockingColumnWorked => 'Trabajado';
+
+  @override
+  String get clockingColumnBreak => 'Pausa';
+
+  @override
+  String get clockingExportSearchLabel => 'Búsqueda';
+
+  @override
+  String get clockingExportAllLabel => 'Todos';
+
+  @override
+  String get clockingExportRecordsLabel => 'Registros';
+
+  @override
+  String get shiftReportDurationColumn => 'Duración (fin − inicio)';
+
+  @override
+  String get shiftReportExportTitle => 'Exportar informe';
+
+  @override
+  String get shiftReportExportFormat => 'Formato';
+
+  @override
+  String get shiftReportExportColumns => 'Columnas';
+
+  @override
+  String shiftReportExportColumnsCount(int selected, int total) {
+    return '$selected de $total';
+  }
+
+  @override
+  String get shiftReportExportDragHint => 'Arrastra para cambiar el orden';
+
+  @override
+  String get shiftReportExportFormatPdfHint =>
+      'Listo para imprimir o compartir';
+
+  @override
+  String get shiftReportExportFormatCsvHint =>
+      'Para cualquier CRM u hoja de cálculo';
+
+  @override
+  String get shiftReportExportFormatExcelHint =>
+      'Con encabezados, listo para filtrar';
+
+  @override
+  String shiftReportExportError(String error) {
+    return 'Error al exportar el informe: $error';
+  }
+
+  @override
   String get clockingOwnerHint => 'Propietario del fichaje';
 
   @override

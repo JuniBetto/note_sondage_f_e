@@ -18,6 +18,7 @@ import 'package:note_sondage/feature/shift/ui/shift_absence_status.dart';
 import 'package:note_sondage/feature/shift/ui/shift_assignment_access_policy.dart';
 import 'package:note_sondage/feature/shift/ui/utils/shift_profile_display_filter.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_replacement_candidates_dialog.dart';
+import 'package:note_sondage/feature/shift/ui/widgets/shift_overnight_notice.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_swap_request_dialog.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
@@ -2287,6 +2288,12 @@ class _ShiftDaySheetState extends State<_ShiftDaySheet> {
                         onChanged: (_readOnly || _timeLocked)
                             ? null
                             : (v) => setState(() => _overnight = v),
+                      ),
+                    if (_hasValidTimeRange)
+                      ShiftOvernightNotice(
+                        start: _startTime,
+                        end: _endTime,
+                        overnight: _overnight,
                       ),
                     if (!_hasValidTimeRange)
                       Padding(

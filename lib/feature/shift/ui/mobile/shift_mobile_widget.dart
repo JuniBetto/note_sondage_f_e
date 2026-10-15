@@ -1681,8 +1681,9 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
                     showArchivedOnly: _showArchivedOnly,
                     primaryCount: foregroundAssignments.length,
                     archivedCount: archivedAssignments.length,
-                    primaryLabel: 'Calendario',
-                    archivedLabel: 'Archivio',
+                    primaryLabel: AppLocalizations.of(
+                      context,
+                    )!.shiftReportCalendarMode,
                     onChanged: (value) {
                       setState(() => _showArchivedOnly = value);
                     },

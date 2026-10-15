@@ -470,6 +470,193 @@ class TeamClockingRequirementSection extends StatelessWidget {
   }
 }
 
+/// Riga "testo a sinistra, valore a destra" delle tile di impostazione.
+///
+/// Se a destra il valore (es. "Aucune date de fin") occupa cosi' tanto che al
+/// testo resterebbe una colonna stretta, quest'ultimo andava a capo quasi
+/// lettera per lettera — succede con schermi stretti o con font di sistema
+/// grandi. In quel caso il valore passa sotto il testo, che torna a usare
+/// tutta la larghezza della tile.
+class _AdaptiveTileRow extends StatelessWidget {
+  const _AdaptiveTileRow({
+    required this.info,
+    required this.trailing,
+    required this.trailingWidth,
+  });
+
+  static const double _minInfoWidth = 150;
+  static const double _gap = 12;
+
+  /// Titolo e sottotitolo.
+  final Widget info;
+
+  /// Riquadro con il valore e l'icona.
+  final Widget trailing;
+
+  /// Larghezza che [trailing] occupa quando sta tutto su una riga.
+  final double trailingWidth;
+
+  /// Misura il riquadro del valore: testo + spazio + icona + padding interno.
+  static double measureTrailing(
+    BuildContext context, {
+    required String value,
+    required TextStyle? style,
+    double iconSize = 18,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: value, style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    return painter.width + 8 + iconSize + 24;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sideBySide =
+            constraints.maxWidth - trailingWidth - _gap >= _minInfoWidth;
+        if (sideBySide) {
+          return Row(
+            children: [
+              Expanded(child: info),
+              const SizedBox(width: _gap),
+              trailing,
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            info,
+            const SizedBox(height: 10),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+              child: trailing,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Riquadro con il valore di una tile (data o orario) e la sua icona.
+///
+/// Se lo spazio non basta e il valore viene accorciato con "…", compare un
+/// "!" che al tap mostra il testo completo. Se il valore sta per intero il
+/// "!" non c'e'.
+class _TileValueBox extends StatelessWidget {
+  const _TileValueBox({
+    required this.title,
+    required this.value,
+    required this.background,
+    required this.radius,
+    required this.textStyle,
+    required this.icon,
+    required this.iconColor,
+  });
+
+  static const double _horizontalPadding = 12;
+  static const double _iconSize = 18;
+  static const double _gap = 8;
+
+  final String title;
+  final String value;
+  final Color? background;
+  final double radius;
+  final TextStyle? textStyle;
+  final IconData icon;
+  final Color? iconColor;
+
+  bool _isTruncated(BuildContext context, double maxWidth) {
+    if (!maxWidth.isFinite) {
+      return false;
+    }
+    final painter = TextPainter(
+      text: TextSpan(text: value, style: textStyle),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final available = maxWidth - (_horizontalPadding * 2) - _gap - _iconSize;
+    return painter.width > available;
+  }
+
+  Future<void> _showFullValue(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: SelectableText(value),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(loc.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final truncated = _isTruncated(context, constraints.maxWidth);
+        return Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: _horizontalPadding,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(radius),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (truncated) ...[
+                // Il tap sul "!" non deve aprire il selettore della tile.
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _showFullValue(context),
+                  child: Tooltip(
+                    message: value,
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: Icon(
+                        Icons.error_outline_rounded,
+                        size: _iconSize,
+                        color: colorScheme.error,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle,
+                ),
+              ),
+              const SizedBox(width: _gap),
+              Icon(icon, size: _iconSize, color: iconColor),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _TimeTile extends StatelessWidget {
   const _TimeTile({
     required this.title,
@@ -502,59 +689,45 @@ class _TimeTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.descriptionColor,
-                      ),
-                    ),
-                  ],
+          child: _AdaptiveTileRow(
+            info: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.descriptionColor,
+                  ),
+                ),
+              ],
+            ),
+            trailingWidth: _AdaptiveTileRow.measureTrailing(
+              context,
+              value: value,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.bgNavbarSurface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      value,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.schedule_rounded,
-                      size: 18,
-                      color: enabled
-                          ? colorScheme.primary
-                          : colorScheme.descriptionColor,
-                    ),
-                  ],
-                ),
+            ),
+            trailing: _TileValueBox(
+              title: title,
+              value: value,
+              background: colorScheme.bgNavbarSurface,
+              radius: 12,
+              textStyle: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-            ],
+              icon: Icons.schedule_rounded,
+              iconColor: enabled
+                  ? colorScheme.primary
+                  : colorScheme.descriptionColor,
+            ),
           ),
         ),
       ),
@@ -624,53 +797,43 @@ class _SettingTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.descriptionColor,
-                      ),
-                    ),
-                  ],
+          child: _AdaptiveTileRow(
+            info: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.descriptionColor,
+                  ),
+                ),
+              ],
+            ),
+            trailingWidth: _AdaptiveTileRow.measureTrailing(
+              context,
+              value: value,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.homeSecondary?.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      value,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(icon, size: 18, color: colorScheme.descriptionColor),
-                  ],
-                ),
+            ),
+            trailing: _TileValueBox(
+              title: title,
+              value: value,
+              background: colorScheme.homeSecondary?.withValues(alpha: 0.7),
+              radius: 14,
+              textStyle: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-            ],
+              icon: icon,
+              iconColor: colorScheme.descriptionColor,
+            ),
           ),
         ),
       ),

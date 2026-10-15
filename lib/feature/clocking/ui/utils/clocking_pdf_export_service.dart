@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
-import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_entity.dart';
+import 'package:note_sondage/core/export/report_table_data.dart';
+import 'package:note_sondage/feature/clocking/ui/utils/clocking_report_table_data.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -9,19 +10,45 @@ import 'package:printing/printing.dart';
 class ClockingPdfExportService {
   const ClockingPdfExportService._();
 
+  /// [filters] sono le coppie etichetta/valore mostrate sotto il titolo.
   static Future<void> exportCurrentView({
-    required List<ClockingRecordEntity> records,
+    required ReportTableData table,
+    required List<ClockingReportColumn> columns,
     required String teamName,
-    required String searchQuery,
-    required DateTime startDate,
-    required DateTime endDate,
-    required Set<ClockingStatus> selectedStatuses,
+    required String title,
+    required String teamLabel,
+    required String generatedAtLabel,
+    required List<MapEntry<String, String>> filters,
   }) async {
     final document = pw.Document(title: 'Clocking $teamName');
     final now = DateTime.now();
-    final dateFormat = DateFormat('dd/MM/yyyy');
     final dateTimeFormat = DateFormat('dd/MM/yyyy HH:mm');
     final compactDateTimeFormat = DateFormat('yyyyMMdd_HHmm');
+    final hasFlexColumn = columns.contains(ClockingReportColumn.note);
+
+    pw.TableColumnWidth widthFor(ClockingReportColumn column) {
+      switch (column) {
+        case ClockingReportColumn.date:
+          return const pw.FixedColumnWidth(56);
+        case ClockingReportColumn.user:
+          return hasFlexColumn
+              ? const pw.FixedColumnWidth(90)
+              : const pw.FlexColumnWidth(1);
+        case ClockingReportColumn.account:
+          return const pw.FixedColumnWidth(120);
+        case ClockingReportColumn.status:
+          return const pw.FixedColumnWidth(80);
+        case ClockingReportColumn.clockIn:
+        case ClockingReportColumn.clockOut:
+        case ClockingReportColumn.worked:
+        case ClockingReportColumn.breakTime:
+          return const pw.FixedColumnWidth(56);
+        case ClockingReportColumn.duration:
+          return const pw.FixedColumnWidth(76);
+        case ClockingReportColumn.note:
+          return const pw.FlexColumnWidth(2);
+      }
+    }
 
     document.addPage(
       pw.MultiPage(
@@ -34,7 +61,7 @@ class ClockingPdfExportService {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  'Report timbrature team',
+                  title,
                   style: pw.TextStyle(
                     fontSize: 22,
                     fontWeight: pw.FontWeight.bold,
@@ -42,11 +69,11 @@ class ClockingPdfExportService {
                 ),
                 pw.SizedBox(height: 6),
                 pw.Text(
-                  'Team: $teamName',
+                  '$teamLabel: $teamName',
                   style: const pw.TextStyle(fontSize: 12),
                 ),
                 pw.Text(
-                  'Generato il: ${dateTimeFormat.format(now)}',
+                  '$generatedAtLabel: ${dateTimeFormat.format(now)}',
                   style: const pw.TextStyle(fontSize: 12),
                 ),
                 pw.SizedBox(height: 10),
@@ -54,25 +81,8 @@ class ClockingPdfExportService {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _filterBadge(
-                      'Ricerca',
-                      searchQuery.isEmpty ? 'Tutte' : searchQuery,
-                    ),
-                    _filterBadge(
-                      'Intervallo',
-                      _formatDateRange(
-                        startDate: startDate,
-                        endDate: endDate,
-                        dateFormat: dateFormat,
-                      ),
-                    ),
-                    _filterBadge(
-                      'Stato',
-                      selectedStatuses.isEmpty
-                          ? 'Tutti'
-                          : selectedStatuses.map(_statusLabel).join(', '),
-                    ),
-                    _filterBadge('Record', '${records.length}'),
+                    for (final filter in filters)
+                      _filterBadge(filter.key, filter.value),
                   ],
                 ),
               ],
@@ -94,39 +104,10 @@ class ClockingPdfExportService {
               vertical: 8,
             ),
             columnWidths: {
-              0: const pw.FixedColumnWidth(56),
-              1: const pw.FixedColumnWidth(90),
-              2: const pw.FixedColumnWidth(80),
-              3: const pw.FixedColumnWidth(56),
-              4: const pw.FixedColumnWidth(56),
-              5: const pw.FixedColumnWidth(56),
-              6: const pw.FixedColumnWidth(56),
-              7: const pw.FlexColumnWidth(2),
+              for (var i = 0; i < columns.length; i++) i: widthFor(columns[i]),
             },
-            headers: const [
-              'Data',
-              'Utente',
-              'Stato',
-              'Clock-in',
-              'Clock-out',
-              'Worked',
-              'Break',
-              'Nota',
-            ],
-            data: records
-                .map(
-                  (record) => [
-                    dateFormat.format(record.date),
-                    record.userName,
-                    record.statusLabel,
-                    record.clockInFormatted,
-                    record.clockOutFormatted,
-                    record.timeWorkedFormatted,
-                    record.breakWorkedFormatted,
-                    _compactNote(record.note),
-                  ],
-                )
-                .toList(),
+            headers: table.headers,
+            data: table.rows,
           ),
         ],
       ),
@@ -163,11 +144,12 @@ class ClockingPdfExportService {
     );
   }
 
-  static String _formatDateRange({
+  /// Intervallo di date nel formato `dd/MM/yyyy` (o un solo giorno).
+  static String formatDateRange({
     required DateTime startDate,
     required DateTime endDate,
-    required DateFormat dateFormat,
   }) {
+    final dateFormat = DateFormat('dd/MM/yyyy');
     final normalizedStart = DateTime(
       startDate.year,
       startDate.month,
@@ -178,35 +160,5 @@ class ClockingPdfExportService {
       return dateFormat.format(normalizedStart);
     }
     return '${dateFormat.format(normalizedStart)} - ${dateFormat.format(normalizedEnd)}';
-  }
-
-  static String _statusLabel(ClockingStatus status) {
-    switch (status) {
-      case ClockingStatus.committed:
-        return 'Committed';
-      case ClockingStatus.decommitted:
-        return 'Decommitted';
-      case ClockingStatus.clockedIn:
-        return 'Clocked in';
-      case ClockingStatus.onBreak:
-        return 'On break';
-      case ClockingStatus.absent:
-        return 'Absent';
-      case ClockingStatus.late:
-        return 'Late';
-      case ClockingStatus.vacation:
-        return 'Vacation';
-      case ClockingStatus.permission:
-        return 'Permission';
-      case ClockingStatus.sick:
-        return 'Sick';
-    }
-  }
-
-  static String _compactNote(String? note) {
-    if (note == null) return '';
-    final normalized = note.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (normalized.length <= 60) return normalized;
-    return '${normalized.substring(0, 57)}...';
   }
 }

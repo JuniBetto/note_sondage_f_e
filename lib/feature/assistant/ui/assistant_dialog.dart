@@ -61,7 +61,10 @@ class _AssistantDialogState extends State<AssistantDialog> {
       return;
     }
     _input.clear();
-    widget.session.send(text);
+    widget.session.send(
+      text,
+      language: Localizations.localeOf(context).languageCode,
+    );
     _inputFocus.requestFocus();
   }
 
