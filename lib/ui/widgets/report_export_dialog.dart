@@ -1,57 +1,69 @@
 import 'package:flutter/material.dart';
-import 'package:note_sondage/feature/shift/ui/utils/shift_report_table_data.dart';
+import 'package:note_sondage/core/export/report_table_data.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 /// Scelta fatta nel modal di esportazione.
-class ShiftReportExportSelection {
-  const ShiftReportExportSelection({
+class ReportExportSelection<C> {
+  const ReportExportSelection({
     required this.format,
     required this.columns,
     required this.order,
   });
 
-  final ShiftReportExportFormat format;
+  final ReportExportFormat format;
 
   /// Colonne selezionate, nell'ordine scelto.
-  final List<ShiftReportColumn> columns;
+  final List<C> columns;
 
   /// Ordine di tutte le colonne (anche quelle non selezionate).
-  final List<ShiftReportColumn> order;
+  final List<C> order;
 }
 
-/// Modal di esportazione del report turni: formato (PDF, CSV, Excel) e colonne
+/// Modal di esportazione di un report: formato (PDF, CSV, Excel) e colonne
 /// da includere, riordinabili con il drag.
-class ShiftReportExportDialog extends StatefulWidget {
-  const ShiftReportExportDialog({
+class ReportExportDialog<C extends Object> extends StatefulWidget {
+  const ReportExportDialog({
     super.key,
     required this.subtitle,
+    required this.allColumns,
+    required this.labelOf,
     required this.initialColumns,
     this.initialOrder,
-    this.initialFormat = ShiftReportExportFormat.pdf,
+    this.initialFormat = ReportExportFormat.pdf,
   });
 
   final String subtitle;
-  final List<ShiftReportColumn> initialColumns;
+
+  /// Tutte le colonne esportabili, nell'ordine predefinito.
+  final List<C> allColumns;
+
+  /// Etichetta tradotta di una colonna.
+  final String Function(C column) labelOf;
+  final List<C> initialColumns;
 
   /// Ordine di partenza di tutte le colonne; se assente si parte da
   /// [initialColumns] seguite dalle altre.
-  final List<ShiftReportColumn>? initialOrder;
-  final ShiftReportExportFormat initialFormat;
+  final List<C>? initialOrder;
+  final ReportExportFormat initialFormat;
 
   /// Restituisce formato e colonne (nell'ordine scelto), oppure `null`
   /// se l'utente annulla.
-  static Future<ShiftReportExportSelection?> show(
+  static Future<ReportExportSelection<C>?> show<C extends Object>(
     BuildContext context, {
     required String subtitle,
-    required List<ShiftReportColumn> initialColumns,
-    List<ShiftReportColumn>? initialOrder,
-    ShiftReportExportFormat initialFormat = ShiftReportExportFormat.pdf,
+    required List<C> allColumns,
+    required String Function(C column) labelOf,
+    required List<C> initialColumns,
+    List<C>? initialOrder,
+    ReportExportFormat initialFormat = ReportExportFormat.pdf,
   }) {
-    return showDialog<ShiftReportExportSelection>(
+    return showDialog<ReportExportSelection<C>>(
       context: context,
-      builder: (_) => ShiftReportExportDialog(
+      builder: (_) => ReportExportDialog<C>(
         subtitle: subtitle,
+        allColumns: allColumns,
+        labelOf: labelOf,
         initialColumns: initialColumns,
         initialOrder: initialOrder,
         initialFormat: initialFormat,
@@ -60,14 +72,14 @@ class ShiftReportExportDialog extends StatefulWidget {
   }
 
   @override
-  State<ShiftReportExportDialog> createState() =>
-      _ShiftReportExportDialogState();
+  State<ReportExportDialog<C>> createState() => _ReportExportDialogState<C>();
 }
 
-class _ShiftReportExportDialogState extends State<ShiftReportExportDialog> {
-  late List<ShiftReportColumn> _order;
-  late Set<ShiftReportColumn> _selected;
-  late ShiftReportExportFormat _format;
+class _ReportExportDialogState<C extends Object>
+    extends State<ReportExportDialog<C>> {
+  late List<C> _order;
+  late Set<C> _selected;
+  late ReportExportFormat _format;
 
   @override
   void initState() {
@@ -77,54 +89,33 @@ class _ShiftReportExportDialogState extends State<ShiftReportExportDialog> {
     final base = widget.initialOrder ?? widget.initialColumns;
     _order = [
       ...base,
-      ...ShiftReportColumn.values.where((column) => !base.contains(column)),
+      ...widget.allColumns.where((column) => !base.contains(column)),
     ];
   }
 
-  String _label(AppLocalizations loc, ShiftReportColumn column) {
-    switch (column) {
-      case ShiftReportColumn.date:
-        return loc.shiftReportDateColumn;
-      case ShiftReportColumn.user:
-        return loc.shiftReportUserColumn;
-      case ShiftReportColumn.account:
-        return loc.shiftReportAccountColumn;
-      case ShiftReportColumn.profile:
-        return loc.shiftReportProfileColumn;
-      case ShiftReportColumn.start:
-        return loc.start;
-      case ShiftReportColumn.end:
-        return loc.end;
-      case ShiftReportColumn.type:
-        return loc.shiftReportTypeColumn;
-      case ShiftReportColumn.note:
-        return loc.note;
-    }
-  }
-
-  String _formatTitle(ShiftReportExportFormat format) {
+  String _formatTitle(ReportExportFormat format) {
     switch (format) {
-      case ShiftReportExportFormat.pdf:
+      case ReportExportFormat.pdf:
         return 'PDF';
-      case ShiftReportExportFormat.csv:
+      case ReportExportFormat.csv:
         return 'CSV';
-      case ShiftReportExportFormat.excel:
+      case ReportExportFormat.excel:
         return 'Excel';
     }
   }
 
-  String _formatHint(AppLocalizations loc, ShiftReportExportFormat format) {
+  String _formatHint(AppLocalizations loc, ReportExportFormat format) {
     switch (format) {
-      case ShiftReportExportFormat.pdf:
+      case ReportExportFormat.pdf:
         return loc.shiftReportExportFormatPdfHint;
-      case ShiftReportExportFormat.csv:
+      case ReportExportFormat.csv:
         return loc.shiftReportExportFormatCsvHint;
-      case ShiftReportExportFormat.excel:
+      case ReportExportFormat.excel:
         return loc.shiftReportExportFormatExcelHint;
     }
   }
 
-  void _toggle(ShiftReportColumn column, bool value) {
+  void _toggle(C column, bool value) {
     setState(() {
       if (value) {
         _selected.add(column);
@@ -214,7 +205,7 @@ class _ShiftReportExportDialogState extends State<ShiftReportExportDialog> {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        for (final format in ShiftReportExportFormat.values)
+                        for (final format in ReportExportFormat.values)
                           _FormatCard(
                             title: _formatTitle(format),
                             hint: _formatHint(loc, format),
@@ -269,7 +260,7 @@ class _ShiftReportExportDialogState extends State<ShiftReportExportDialog> {
                           _ColumnTile(
                             key: ValueKey(_order[i]),
                             index: i,
-                            label: _label(loc, _order[i]),
+                            label: widget.labelOf(_order[i]),
                             selected: _selected.contains(_order[i]),
                             onChanged: (value) => _toggle(_order[i], value),
                           ),
@@ -292,7 +283,7 @@ class _ShiftReportExportDialogState extends State<ShiftReportExportDialog> {
                   const SizedBox(width: 10),
                   FilledButton.icon(
                     onPressed: () => Navigator.of(context).pop(
-                      ShiftReportExportSelection(
+                      ReportExportSelection<C>(
                         format: _format,
                         columns: _order.where(_selected.contains).toList(),
                         order: List.of(_order),

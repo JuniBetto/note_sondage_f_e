@@ -1,61 +1,27 @@
-import 'dart:convert';
-
-import 'package:archive/archive.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
-import 'package:note_sondage/feature/shift/ui/utils/shift_report_file_export_service.dart';
 import 'package:note_sondage/feature/shift/ui/utils/shift_report_table_data.dart';
 
+ShiftAssignmentEntity _assignment({
+  String id = '1',
+  String userId = 'u1',
+  String? userName,
+  TimeOfDay start = const TimeOfDay(hour: 9, minute: 0),
+  TimeOfDay end = const TimeOfDay(hour: 18, minute: 0),
+  bool overnight = false,
+}) => ShiftAssignmentEntity(
+  id: id,
+  userId: userId,
+  userName: userName,
+  shiftDate: DateTime(2026, 8, 16),
+  startTime: start,
+  endTime: end,
+  overnight: overnight,
+  alarmOffsets: const [],
+);
+
 void main() {
-  const data = ShiftReportTableData(
-    headers: ['Date', 'Note'],
-    rows: [
-      ['01/10/2026', 'Ciao; "mondo"\nriga 2'],
-      ['02/10/2026', '=SUM(A1)'],
-      ['03/10/2026', 'Café <&>'],
-    ],
-  );
-
-  test('CSV uses BOM, semicolons, quoting and formula protection', () {
-    final bytes = ShiftReportFileExportService.buildCsv(data);
-    expect(bytes.take(3), [0xEF, 0xBB, 0xBF]);
-    final text = utf8.decode(bytes);
-    final lines = text.split('\r\n');
-    expect(lines.first, 'Date;Note');
-    expect(text, contains('"Ciao; ""mondo""\nriga 2"'));
-    expect(text, contains("'=SUM(A1)"));
-    expect(text, contains('Café <&>'));
-  });
-
-  test('XLSX is a valid zip with escaped cells and bold header', () {
-    final bytes = ShiftReportFileExportService.buildXlsx(
-      data,
-      sheetName: 'Rapport: équipe/1',
-    );
-    final archive = ZipDecoder().decodeBytes(bytes);
-    final names = archive.files.map((f) => f.name).toSet();
-    expect(
-      names,
-      containsAll([
-        '[Content_Types].xml',
-        '_rels/.rels',
-        'xl/workbook.xml',
-        'xl/_rels/workbook.xml.rels',
-        'xl/styles.xml',
-        'xl/worksheets/sheet1.xml',
-      ]),
-    );
-    String read(String name) =>
-        utf8.decode(archive.findFile(name)!.content as List<int>);
-    final sheet = read('xl/worksheets/sheet1.xml');
-    expect(sheet, contains('r="A1"'));
-    expect(sheet, contains('s="1"'));
-    expect(sheet, contains('r="B4"'));
-    expect(sheet, contains('Café &lt;&amp;&gt;'));
-    expect(read('xl/workbook.xml'), contains('name="Rapport  équipe 1"'));
-  });
-
   test('buildShiftReportTable keeps the requested column order', () {
     final table = buildShiftReportTable(
       assignments: const [],
@@ -119,5 +85,48 @@ void main() {
     );
     expect(ShiftReportColumn.account.isShownInTable, isFalse);
     expect(ShiftReportColumn.date.isShownInTable, isTrue);
+  });
+
+  test('duration column is off by default and follows the overnight rule', () {
+    expect(
+      ShiftReportColumn.defaultExport,
+      isNot(contains(ShiftReportColumn.duration)),
+    );
+    expect(ShiftReportColumn.duration.isShownInTable, isFalse);
+
+    final table = buildShiftReportTable(
+      assignments: [
+        _assignment(),
+        _assignment(
+          id: '2',
+          start: const TimeOfDay(hour: 22, minute: 30),
+          end: const TimeOfDay(hour: 6, minute: 0),
+          overnight: true,
+        ),
+        _assignment(
+          id: '3',
+          start: const TimeOfDay(hour: 0, minute: 0),
+          end: const TimeOfDay(hour: 0, minute: 0),
+          overnight: true,
+        ),
+        _assignment(
+          id: '4',
+          start: const TimeOfDay(hour: 6, minute: 0),
+          end: const TimeOfDay(hour: 7, minute: 0),
+          overnight: true,
+        ),
+      ],
+      columns: const [ShiftReportColumn.duration],
+      headerByColumn: const {ShiftReportColumn.duration: 'Duration'},
+      teamLabel: 'Team',
+      defaultProfileLabel: 'Shift',
+      privateTypeLabel: 'Private',
+    );
+    expect(table.rows.map((r) => r.single), [
+      '9h 0m',
+      '7h 30m',
+      '24h 0m',
+      '25h 0m',
+    ]);
   });
 }

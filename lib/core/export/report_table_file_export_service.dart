@@ -4,15 +4,15 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/core/utils/file_download_bridge.dart';
-import 'package:note_sondage/feature/shift/ui/utils/shift_report_table_data.dart';
+import 'package:note_sondage/core/export/report_table_data.dart';
 
-/// Esporta il report turni come CSV o Excel (.xlsx).
-class ShiftReportFileExportService {
-  const ShiftReportFileExportService._();
+/// Esporta un report tabellare come CSV o Excel (.xlsx).
+class ReportTableFileExportService {
+  const ReportTableFileExportService._();
 
   /// CSV in UTF-8 con BOM e separatore `;`, cosi' Excel (IT/FR/ES) lo apre
   /// direttamente con le colonne separate e gli accenti corretti.
-  static Uint8List buildCsv(ShiftReportTableData data) {
+  static Uint8List buildCsv(ReportTableData data) {
     final buffer = StringBuffer('﻿');
     void writeRow(List<String> cells) {
       buffer
@@ -40,7 +40,7 @@ class ShiftReportFileExportService {
   /// Foglio Excel minimale: intestazione in grassetto, colonne con larghezza
   /// adattata al contenuto e testo salvato come stringa (mai come formula).
   static Uint8List buildXlsx(
-    ShiftReportTableData data, {
+    ReportTableData data, {
     String sheetName = 'Report',
   }) {
     final widths = List<double>.generate(data.headers.length, (i) {
@@ -167,13 +167,14 @@ class ShiftReportFileExportService {
 
   /// Genera e salva il file. Lancia un'eccezione se il salvataggio fallisce.
   static Future<void> export({
-    required ShiftReportExportFormat format,
-    required ShiftReportTableData data,
+    required ReportExportFormat format,
+    required ReportTableData data,
     required String teamName,
+    required String filePrefix,
     String? sheetName,
   }) async {
-    assert(format != ShiftReportExportFormat.pdf);
-    final isCsv = format == ShiftReportExportFormat.csv;
+    assert(format != ReportExportFormat.pdf);
+    final isCsv = format == ReportExportFormat.csv;
     final bytes = isCsv
         ? buildCsv(data)
         : buildXlsx(data, sheetName: sheetName ?? 'Report');
@@ -185,7 +186,7 @@ class ShiftReportFileExportService {
         .replaceAll(RegExp(r'^_|_$'), '');
     final stamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
     final fileName =
-        'shift_report_${normalizedTeamName.isEmpty ? 'team' : normalizedTeamName}_$stamp.${isCsv ? 'csv' : 'xlsx'}';
+        '${filePrefix}_${normalizedTeamName.isEmpty ? 'team' : normalizedTeamName}_$stamp.${isCsv ? 'csv' : 'xlsx'}';
 
     final saved = await createFileDownloadBridge().saveBytes(
       bytes: bytes,

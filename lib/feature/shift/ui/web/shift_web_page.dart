@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -57,6 +58,12 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
   final GlobalKey _archiveToggleKey = GlobalKey();
   final GlobalKey _calendarKey = GlobalKey();
   final GlobalKey _profilesKey = GlobalKey();
+
+  // Larghezza del blocco profili, regolabile trascinando il bordo.
+  static const double _profilesPanelDefaultWidth = 280;
+  static const double _profilesPanelMinWidth = 220;
+  static const double _profilesPanelMaxWidth = 520;
+  double _profilesPanelWidth = _profilesPanelDefaultWidth;
   final TeamBloc _teamBloc = GetIt.instance<TeamBloc>();
   final TeamMemberBloc _teamMemberBloc = GetIt.instance<TeamMemberBloc>();
   final RoleUseCase _roleUseCase = GetIt.instance<RoleUseCase>();
@@ -1710,7 +1717,22 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                                   ),
                           ),
                         ),
-                        const SizedBox(width: 24),
+                        _ProfilesPanelResizeHandle(
+                          onDrag: (dx) => setState(() {
+                            final maxWidth = math.min(
+                              _profilesPanelMaxWidth,
+                              MediaQuery.sizeOf(context).width * 0.45,
+                            );
+                            // Il pannello e' a destra: trascinare verso
+                            // sinistra lo allarga.
+                            _profilesPanelWidth = (_profilesPanelWidth - dx)
+                                .clamp(_profilesPanelMinWidth, maxWidth);
+                          }),
+                          onReset: () => setState(
+                            () => _profilesPanelWidth =
+                                _profilesPanelDefaultWidth,
+                          ),
+                        ),
                         appShowcase(
                           key: _profilesKey,
                           title: AppLocalizations.of(
@@ -1720,7 +1742,7 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
                             context,
                           )!.tutorialShiftProfilesDescription,
                           child: SizedBox(
-                            width: 280,
+                            width: _profilesPanelWidth,
                             child: Card(
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
@@ -1928,5 +1950,45 @@ class _ShiftWebPageState extends State<ShiftWebPage> {
       return email;
     }
     return member.teamMember.userId?.trim() ?? '';
+  }
+}
+
+/// Maniglia tra calendario e blocco profili: trascinandola si allarga o si
+/// restringe il blocco; il doppio click ripristina la larghezza predefinita.
+class _ProfilesPanelResizeHandle extends StatelessWidget {
+  const _ProfilesPanelResizeHandle({
+    required this.onDrag,
+    required this.onReset,
+  });
+
+  final ValueChanged<double> onDrag;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeColumn,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragUpdate: (details) => onDrag(details.delta.dx),
+        onDoubleTap: onReset,
+        child: SizedBox(
+          width: 24,
+          child: Center(
+            child: Container(
+              width: 4,
+              height: 48,
+              decoration: BoxDecoration(
+                color: (colorScheme.descriptionColor ?? Colors.grey).withValues(
+                  alpha: 0.45,
+                ),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

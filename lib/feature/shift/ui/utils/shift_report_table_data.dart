@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
+import 'package:note_sondage/core/export/report_table_data.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
+import 'package:note_sondage/feature/shift/ui/utils/shift_duration.dart';
 
 /// Colonne del report turni, nell'ordine predefinito.
 enum ShiftReportColumn {
@@ -11,31 +13,24 @@ enum ShiftReportColumn {
   profile,
   start,
   end,
+
+  /// Fine − inizio: solo nell'esportazione, spenta di default.
+  duration,
   type,
   note;
 
   /// Colonne mostrate nella tabella a schermo.
-  bool get isShownInTable => this != ShiftReportColumn.account;
+  bool get isShownInTable =>
+      this != ShiftReportColumn.account && this != ShiftReportColumn.duration;
 
   /// Colonne incluse in un'esportazione se l'utente non cambia la selezione.
-  static List<ShiftReportColumn> get defaultExport => values
-      .where((column) => column != ShiftReportColumn.account)
-      .toList(growable: false);
-}
-
-/// Formati di esportazione del report turni.
-enum ShiftReportExportFormat { pdf, csv, excel }
-
-class ShiftReportTableData {
-  const ShiftReportTableData({required this.headers, required this.rows});
-
-  final List<String> headers;
-  final List<List<String>> rows;
+  static List<ShiftReportColumn> get defaultExport =>
+      values.where((column) => column.isShownInTable).toList(growable: false);
 }
 
 /// Costruisce intestazioni e righe del report, nell'ordine delle [columns],
 /// cosi' PDF, CSV ed Excel mostrano gli stessi dati.
-ShiftReportTableData buildShiftReportTable({
+ReportTableData buildShiftReportTable({
   required List<ShiftAssignmentEntity> assignments,
   required List<ShiftReportColumn> columns,
   required Map<ShiftReportColumn, String> headerByColumn,
@@ -65,6 +60,8 @@ ShiftReportTableData buildShiftReportTable({
         );
       case ShiftReportColumn.end:
         return _formatTime(assignment.endTime.hour, assignment.endTime.minute);
+      case ShiftReportColumn.duration:
+        return formatReportDuration(shiftDuration(assignment));
       case ShiftReportColumn.type:
         return assignment.isPublic ? teamLabel : privateTypeLabel;
       case ShiftReportColumn.note:
@@ -72,7 +69,7 @@ ShiftReportTableData buildShiftReportTable({
     }
   }
 
-  return ShiftReportTableData(
+  return ReportTableData(
     headers: [for (final column in columns) headerByColumn[column]!],
     rows: [
       for (final assignment in assignments)
@@ -90,3 +87,10 @@ String _note(String? note, int? maxLength) {
   if (maxLength == null || normalized.length <= maxLength) return normalized;
   return '${normalized.substring(0, maxLength - 3)}...';
 }
+
+/// Durata di un turno (vedi [shiftDurationFor]).
+Duration shiftDuration(ShiftAssignmentEntity assignment) => shiftDurationFor(
+  start: assignment.startTime,
+  end: assignment.endTime,
+  overnight: assignment.overnight,
+);

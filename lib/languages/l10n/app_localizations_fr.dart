@@ -989,6 +989,54 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shiftReportAccountColumn => 'Compte';
 
   @override
+  String get shiftReportTableSize => 'Taille du tableau';
+
+  @override
+  String shiftNoticeOver24Hours(String duration) {
+    return 'Ce quart dure plus de 24 heures ($duration) et occupe deux jours.';
+  }
+
+  @override
+  String shiftNoticeSingleDay(String duration) {
+    return 'Ce quart dure $duration et se termine à minuit : il occupe un seul jour.';
+  }
+
+  @override
+  String shiftNoticeTwoDays(String duration) {
+    return 'Ce quart se termine le lendemain et dure $duration : il occupe deux jours.';
+  }
+
+  @override
+  String get clockingColumnStatus => 'Statut';
+
+  @override
+  String get clockingColumnClockIn => 'Entrée';
+
+  @override
+  String get clockingColumnClockOut => 'Sortie';
+
+  @override
+  String get clockingColumnDuration => 'Durée (sortie − entrée)';
+
+  @override
+  String get clockingColumnWorked => 'Travaillé';
+
+  @override
+  String get clockingColumnBreak => 'Pause';
+
+  @override
+  String get clockingExportSearchLabel => 'Recherche';
+
+  @override
+  String get clockingExportAllLabel => 'Tous';
+
+  @override
+  String get clockingExportRecordsLabel => 'Enregistrements';
+
+  @override
+  String get shiftReportDurationColumn => 'Durée (fin − début)';
+
+  @override
   String get shiftReportExportTitle => 'Exporter le rapport';
 
   @override

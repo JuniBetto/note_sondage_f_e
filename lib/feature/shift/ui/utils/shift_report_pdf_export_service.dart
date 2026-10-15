@@ -33,6 +33,7 @@ class ShiftReportPdfExportService {
     required String defaultProfileLabel,
     required String privateTypeLabel,
     required String accountColumn,
+    required String durationColumn,
     Map<String, String> emailByUserId = const {},
     List<ShiftReportColumn>? columns,
   }) async {
@@ -43,6 +44,7 @@ class ShiftReportPdfExportService {
       ShiftReportColumn.date: dateColumn,
       ShiftReportColumn.user: userColumn,
       ShiftReportColumn.account: accountColumn,
+      ShiftReportColumn.duration: durationColumn,
       ShiftReportColumn.profile: profileColumn,
       ShiftReportColumn.start: startColumn,
       ShiftReportColumn.end: endColumn,
@@ -60,6 +62,8 @@ class ShiftReportPdfExportService {
               : const pw.FlexColumnWidth(1);
         case ShiftReportColumn.account:
           return const pw.FixedColumnWidth(120);
+        case ShiftReportColumn.duration:
+          return const pw.FixedColumnWidth(70);
         case ShiftReportColumn.profile:
           return const pw.FixedColumnWidth(92);
         case ShiftReportColumn.start:

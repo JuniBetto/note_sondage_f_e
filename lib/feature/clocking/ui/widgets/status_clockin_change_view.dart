@@ -8,7 +8,10 @@ import 'package:note_sondage/feature/clocking/domain/entities/clocking_record_en
 import 'package:note_sondage/feature/clocking/domain/use_case/clocking_use_case.dart';
 import 'package:note_sondage/feature/clocking/ui/bloc/clocking_bloc.dart';
 import 'package:note_sondage/feature/clocking/ui/utils/clocking_access_resolver.dart';
+import 'package:note_sondage/core/export/report_table_data.dart';
+import 'package:note_sondage/core/export/report_table_file_export_service.dart';
 import 'package:note_sondage/feature/clocking/ui/utils/clocking_pdf_export_service.dart';
+import 'package:note_sondage/feature/clocking/ui/utils/clocking_report_table_data.dart';
 import 'package:note_sondage/feature/clocking/ui/utils/clocking_status_localizations.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dart';
@@ -23,6 +26,7 @@ import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 import 'package:note_sondage/ui/widgets/custom_app_button.dart';
 import 'package:note_sondage/ui/widgets/custom_date_range_picker.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
+import 'package:note_sondage/ui/widgets/report_export_dialog.dart';
 
 class StatusClockInChangeView extends StatefulWidget {
   const StatusClockInChangeView({
@@ -59,6 +63,13 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
   bool _canManageClocking = false;
   String? _resolvedTeamId;
   String? _editingRecordId;
+
+  // Colonne dell'esportazione: ordine, selezione e formato restano finche' la
+  // schermata e' aperta. Account e durata partono sempre spente.
+  List<ClockingReportColumn> _exportOrder = ClockingReportColumn.values;
+  Set<ClockingReportColumn> _exportSelected = ClockingReportColumn.defaultExport
+      .toSet();
+  ReportExportFormat _exportFormat = ReportExportFormat.pdf;
 
   @override
   void initState() {
@@ -326,14 +337,17 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
                     child: IntrinsicWidth(
                       child: CustomAppButton(
                         onPressed: displayedRecords.isNotEmpty
-                            ? () => _exportPdf(displayedRecords, selectedTeam)
+                            ? () => _openExportDialog(
+                                displayedRecords,
+                                selectedTeam,
+                              )
                             : null,
                         type: ButtonType.outlined,
                         isActive: true,
                         fullWidth: widget.isMobile,
                         leadingIcon: const Icon(Icons.download_rounded),
                         child: Text(
-                          localization.downloadPdf,
+                          localization.shiftReportDownload,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -2398,33 +2412,155 @@ class _StatusClockInChangeViewState extends State<StatusClockInChangeView> {
     );
   }
 
-  Future<void> _exportPdf(
+  Map<ClockingReportColumn, String> _exportColumnLabels(AppLocalizations loc) =>
+      {
+        ClockingReportColumn.date: loc.shiftReportDateColumn,
+        ClockingReportColumn.user: loc.shiftReportUserColumn,
+        ClockingReportColumn.account: loc.shiftReportAccountColumn,
+        ClockingReportColumn.status: loc.clockingColumnStatus,
+        ClockingReportColumn.clockIn: loc.clockingColumnClockIn,
+        ClockingReportColumn.clockOut: loc.clockingColumnClockOut,
+        ClockingReportColumn.duration: loc.clockingColumnDuration,
+        ClockingReportColumn.worked: loc.clockingColumnWorked,
+        ClockingReportColumn.breakTime: loc.clockingColumnBreak,
+        ClockingReportColumn.note: loc.note,
+      };
+
+  Future<void> _openExportDialog(
     List<ClockingRecordEntity> records,
     TeamEntity? selectedTeam,
   ) async {
+    final loc = AppLocalizations.of(context)!;
     if (records.isEmpty) {
-      _showSnackBar(
-        AppLocalizations.of(context)!.noClockingsToExport,
-        Colors.orange,
-      );
+      _showSnackBar(loc.noClockingsToExport, Colors.orange);
       return;
     }
 
+    final labels = _exportColumnLabels(loc);
+    final selection = await ReportExportDialog.show<ClockingReportColumn>(
+      context,
+      subtitle:
+          '${selectedTeam?.name ?? 'Team'} · '
+          '${ClockingPdfExportService.formatDateRange(startDate: _startDateFilter, endDate: _endDateFilter)}'
+          ' · ${records.length}',
+      allColumns: ClockingReportColumn.values,
+      labelOf: (column) => labels[column] ?? '',
+      initialColumns: _exportOrder.where(_exportSelected.contains).toList(),
+      initialOrder: _exportOrder,
+      initialFormat: _exportFormat,
+    );
+    if (selection == null || selection.columns.isEmpty || !mounted) {
+      return;
+    }
+    setState(() {
+      _exportOrder = selection.order;
+      _exportSelected = selection.columns.toSet();
+      _exportFormat = selection.format;
+    });
+    await _export(records, selectedTeam, selection);
+  }
+
+  /// Email degli utenti dei record, necessarie solo per la colonna account.
+  Future<Map<String, String>> _loadEmailsForExport(
+    List<ClockingRecordEntity> records,
+    TeamEntity? selectedTeam,
+  ) async {
+    final emails = <String, String>{};
+    final teamId = selectedTeam?.id;
+    if (teamId != null && teamId.isNotEmpty) {
+      try {
+        final members = await _teamMemberUseCase.getAllMembersByTeamId(teamId);
+        for (final member in members) {
+          final userId = member.userId;
+          if (userId != null && userId.isNotEmpty) {
+            emails[userId] = member.userEmail;
+          }
+        }
+      } catch (_) {
+        // Senza i membri restano vuote solo le email: l'export prosegue.
+      }
+    }
+    if (!mounted) return emails;
+    // Lo storico personale contiene solo timbrature dell'utente corrente.
+    final currentUser = context.read<AuthBloc>().state.user;
+    if (currentUser.uid.isNotEmpty && currentUser.email.trim().isNotEmpty) {
+      emails.putIfAbsent(currentUser.uid, () => currentUser.email.trim());
+    }
+    return emails;
+  }
+
+  Future<void> _export(
+    List<ClockingRecordEntity> records,
+    TeamEntity? selectedTeam,
+    ReportExportSelection<ClockingReportColumn> selection,
+  ) async {
+    final loc = AppLocalizations.of(context)!;
+    final labels = _exportColumnLabels(loc);
+    String statusLabelOf(ClockingStatus status) =>
+        localizedClockingStatusLabel(context, status);
+
     try {
-      await ClockingPdfExportService.exportCurrentView(
+      final columns = selection.columns;
+      final emailByUserId = columns.contains(ClockingReportColumn.account)
+          ? await _loadEmailsForExport(records, selectedTeam)
+          : const <String, String>{};
+      if (!mounted) return;
+
+      final teamName = selectedTeam?.name ?? 'Team';
+      final isPdf = selection.format == ReportExportFormat.pdf;
+      final table = buildClockingReportTable(
         records: records,
-        teamName: selectedTeam?.name ?? 'Team',
-        searchQuery: _searchController.text.trim(),
-        startDate: _startDateFilter,
-        endDate: _endDateFilter,
-        selectedStatuses: Set<ClockingStatus>.from(_selectedStatusFilters),
+        columns: columns,
+        headerByColumn: labels,
+        statusLabelOf: statusLabelOf,
+        emailByUserId: emailByUserId,
+        // Solo il PDF accorcia le note: nei file restano complete.
+        maxNoteLength: isPdf ? 60 : null,
+      );
+
+      if (!isPdf) {
+        await ReportTableFileExportService.export(
+          format: selection.format,
+          data: table,
+          teamName: teamName,
+          filePrefix: 'clocking',
+          sheetName: loc.teamClockings,
+        );
+        return;
+      }
+
+      final search = _searchController.text.trim();
+      await ClockingPdfExportService.exportCurrentView(
+        table: table,
+        columns: columns,
+        teamName: teamName,
+        title: loc.teamClockings,
+        teamLabel: loc.team,
+        generatedAtLabel: loc.shiftReportGeneratedAt,
+        filters: [
+          MapEntry(
+            loc.clockingExportSearchLabel,
+            search.isEmpty ? loc.clockingExportAllLabel : search,
+          ),
+          MapEntry(
+            loc.shiftReportPeriod,
+            ClockingPdfExportService.formatDateRange(
+              startDate: _startDateFilter,
+              endDate: _endDateFilter,
+            ),
+          ),
+          MapEntry(
+            loc.clockingColumnStatus,
+            _selectedStatusFilters.isEmpty
+                ? loc.clockingExportAllLabel
+                : _selectedStatusFilters.map(statusLabelOf).join(', '),
+          ),
+          MapEntry(loc.clockingExportRecordsLabel, '${records.length}'),
+        ],
       );
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar(
-        AppLocalizations.of(context)!.exportPdfError(e.toString()),
-        Colors.red,
-      );
+      _showSnackBar(loc.shiftReportExportError(e.toString()), Colors.red);
     }
   }
 }

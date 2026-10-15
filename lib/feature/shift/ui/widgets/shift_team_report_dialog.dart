@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
@@ -6,11 +7,11 @@ import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 import 'package:note_sondage/feature/shift/domain/entities/shift_assignment_entity.dart';
 import 'package:note_sondage/feature/shift/domain/repositories/shift_repository.dart';
-import 'package:note_sondage/feature/shift/ui/utils/shift_report_file_export_service.dart';
+import 'package:note_sondage/core/export/report_table_data.dart';
+import 'package:note_sondage/core/export/report_table_file_export_service.dart';
 import 'package:note_sondage/feature/shift/ui/utils/shift_report_pdf_export_service.dart';
 import 'package:note_sondage/feature/shift/ui/utils/shift_report_table_data.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_widget.dart';
-import 'package:note_sondage/feature/shift/ui/widgets/shift_report_export_dialog.dart';
 import 'package:note_sondage/feature/shift/ui/widgets/shift_calendar_team_picker.dart';
 import 'package:note_sondage/feature/team/domain/entities/team_entity.dart';
 import 'package:note_sondage/feature/team/domain/entities/user_status.dart';
@@ -19,6 +20,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/ui/widgets/report_export_dialog.dart';
 
 class ShiftTeamReportDialog extends StatefulWidget {
   const ShiftTeamReportDialog({
@@ -87,7 +89,10 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
   // L'account (email) e' disattivato di default: si aggiunge solo al download.
   Set<ShiftReportColumn> _exportSelected = ShiftReportColumn.defaultExport
       .toSet();
-  ShiftReportExportFormat _exportFormat = ShiftReportExportFormat.pdf;
+  ReportExportFormat _exportFormat = ReportExportFormat.pdf;
+
+  // Zoom della tabella su mobile: 1.0 = dimensione normale.
+  double _tableScale = 1.0;
 
   @override
   void initState() {
@@ -298,6 +303,7 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
     ShiftReportColumn.profile: loc.shiftReportProfileColumn,
     ShiftReportColumn.start: loc.start,
     ShiftReportColumn.end: loc.end,
+    ShiftReportColumn.duration: loc.shiftReportDurationColumn,
     ShiftReportColumn.type: loc.shiftReportTypeColumn,
     ShiftReportColumn.note: loc.note,
   };
@@ -319,8 +325,11 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
       return;
     }
     final dateFormat = DateFormat('dd/MM/yyyy');
-    final selection = await ShiftReportExportDialog.show(
+    final labels = _columnLabels(AppLocalizations.of(context)!);
+    final selection = await ReportExportDialog.show<ShiftReportColumn>(
       context,
+      allColumns: ShiftReportColumn.values,
+      labelOf: (column) => labels[column] ?? '',
       subtitle:
           '${team.team.name} · ${dateFormat.format(_rangeStart)} - ${dateFormat.format(_rangeEnd)} · ${_filteredAssignments.length}',
       initialColumns: _columnOrder.where(_exportSelected.contains).toList(),
@@ -338,7 +347,9 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
     await _export(selection);
   }
 
-  Future<void> _export(ShiftReportExportSelection selection) async {
+  Future<void> _export(
+    ReportExportSelection<ShiftReportColumn> selection,
+  ) async {
     final columns = selection.columns;
     final team = _selectedTeamView;
     final assignments = _filteredAssignments;
@@ -359,24 +370,16 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
           )
           .map(_memberLabel)
           .toList();
-      if (selection.format != ShiftReportExportFormat.pdf) {
-        await ShiftReportFileExportService.export(
+      if (selection.format != ReportExportFormat.pdf) {
+        await ReportTableFileExportService.export(
           format: selection.format,
           teamName: team.team.name,
+          filePrefix: 'shift_report',
           sheetName: loc.shiftTeamReportTitle,
           data: buildShiftReportTable(
             assignments: assignments,
             columns: columns,
-            headerByColumn: {
-              ShiftReportColumn.date: loc.shiftReportDateColumn,
-              ShiftReportColumn.user: loc.shiftReportUserColumn,
-              ShiftReportColumn.account: loc.shiftReportAccountColumn,
-              ShiftReportColumn.profile: loc.shiftReportProfileColumn,
-              ShiftReportColumn.start: loc.start,
-              ShiftReportColumn.end: loc.end,
-              ShiftReportColumn.type: loc.shiftReportTypeColumn,
-              ShiftReportColumn.note: loc.note,
-            },
+            headerByColumn: _columnLabels(loc),
             teamLabel: loc.team,
             defaultProfileLabel: loc.shiftReportDefaultProfile,
             privateTypeLabel: loc.shiftReportPrivateType,
@@ -408,6 +411,7 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
         defaultProfileLabel: loc.shiftReportDefaultProfile,
         privateTypeLabel: loc.shiftReportPrivateType,
         accountColumn: loc.shiftReportAccountColumn,
+        durationColumn: loc.shiftReportDurationColumn,
         emailByUserId: emailByUserId,
         columns: columns,
       );
@@ -958,9 +962,29 @@ class _ShiftTeamReportDialogState extends State<ShiftTeamReportDialog> {
             privateTypeLabel: loc.shiftReportPrivateType,
             teamLabel: loc.team,
             embedded: widget.compact,
+            scale: widget.compact ? _tableScale : 1.0,
           );
 
-    return preview;
+    if (!widget.compact || _showCalendarPreview) {
+      return preview;
+    }
+
+    // Su mobile la tabella si puo' rimpicciolire per vederne di piu'.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: _TableSizeButton(
+            scale: _tableScale,
+            tooltip: loc.shiftReportTableSize,
+            onChanged: (value) => setState(() => _tableScale = value),
+          ),
+        ),
+        const SizedBox(height: 8),
+        preview,
+      ],
+    );
   }
 }
 
@@ -1026,7 +1050,7 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-class _ShiftReportTable extends StatelessWidget {
+class _ShiftReportTable extends StatefulWidget {
   static const double _rowGap = 16;
 
   static double widthOf(ShiftReportColumn column) {
@@ -1037,6 +1061,8 @@ class _ShiftReportTable extends StatelessWidget {
         return 220;
       case ShiftReportColumn.account:
         return 200;
+      case ShiftReportColumn.duration:
+        return 120;
       case ShiftReportColumn.profile:
         return 170;
       case ShiftReportColumn.start:
@@ -1058,7 +1084,11 @@ class _ShiftReportTable extends StatelessWidget {
     required this.privateTypeLabel,
     required this.teamLabel,
     this.embedded = false,
+    this.scale = 1.0,
   });
+
+  /// Fattore di zoom: tabella e contenuto vengono ridotti in proporzione.
+  final double scale;
 
   /// `true` quando la tabella e' dentro una pagina che scorre gia' in verticale.
   final bool embedded;
@@ -1074,13 +1104,96 @@ class _ShiftReportTable extends StatelessWidget {
   final String teamLabel;
 
   @override
+  State<_ShiftReportTable> createState() => _ShiftReportTableState();
+}
+
+class _ShiftReportTableState extends State<_ShiftReportTable> {
+  static const double _autoScrollEdge = 64;
+  static const double _autoScrollMaxStep = 14;
+
+  final ScrollController _horizontalController = ScrollController();
+  final GlobalKey _viewportKey = GlobalKey();
+  final ValueNotifier<ShiftReportColumn?> _draggingColumn =
+      ValueNotifier<ShiftReportColumn?>(null);
+  Timer? _autoScrollTimer;
+  double? _dragGlobalX;
+
+  @override
+  void dispose() {
+    _autoScrollTimer?.cancel();
+    _draggingColumn.dispose();
+    _horizontalController.dispose();
+    super.dispose();
+  }
+
+  void _onDragStarted(ShiftReportColumn column) {
+    _draggingColumn.value = column;
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer.periodic(
+      const Duration(milliseconds: 16),
+      (_) => _autoScrollStep(),
+    );
+  }
+
+  void _onDragUpdate(Offset globalPosition) {
+    _dragGlobalX = globalPosition.dx;
+  }
+
+  void _onDragEnded() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = null;
+    _dragGlobalX = null;
+    _draggingColumn.value = null;
+  }
+
+  /// Mentre si trascina una colonna vicino al bordo la tabella scorre da sola:
+  /// su telefono la tabella e' piu' larga dello schermo e senza questo non si
+  /// potrebbero raggiungere le colonne fuori vista.
+  void _autoScrollStep() {
+    final x = _dragGlobalX;
+    if (x == null || !_horizontalController.hasClients) {
+      return;
+    }
+    final box = _viewportKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached) {
+      return;
+    }
+    final left = box.localToGlobal(Offset.zero).dx;
+    final right = left + box.size.width;
+    double step = 0;
+    if (x < left + _autoScrollEdge) {
+      step =
+          -_autoScrollMaxStep *
+          ((left + _autoScrollEdge - x) / _autoScrollEdge);
+    } else if (x > right - _autoScrollEdge) {
+      step =
+          _autoScrollMaxStep *
+          ((x - (right - _autoScrollEdge)) / _autoScrollEdge);
+    }
+    if (step == 0) {
+      return;
+    }
+    final position = _horizontalController.position;
+    final target =
+        (position.pixels +
+                step.clamp(-_autoScrollMaxStep * 1.5, _autoScrollMaxStep * 1.5))
+            .clamp(position.minScrollExtent, position.maxScrollExtent);
+    if (target != position.pixels) {
+      _horizontalController.jumpTo(target);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final dateFormat = DateFormat('dd/MM/yyyy');
     final minTableWidth =
-        columnOrder.fold<double>(0, (sum, c) => sum + widthOf(c)) +
-        (_rowGap * columnOrder.length) +
+        widget.columnOrder.fold<double>(
+          0,
+          (sum, c) => sum + _ShiftReportTable.widthOf(c),
+        ) +
+        (_ShiftReportTable._rowGap * widget.columnOrder.length) +
         32;
     final tableWidth = math.max(
       MediaQuery.sizeOf(context).width * 0.68,
@@ -1110,42 +1223,69 @@ class _ShiftReportTable extends StatelessWidget {
         child: Column(
           children: [
             _ShiftReportTableHeader(
-              columnOrder: columnOrder,
-              labels: labels,
-              onMoveColumn: onMoveColumn,
+              columnOrder: widget.columnOrder,
+              labels: widget.labels,
+              onMoveColumn: widget.onMoveColumn,
+              draggingColumn: _draggingColumn,
+              onDragStarted: _onDragStarted,
+              onDragUpdate: _onDragUpdate,
+              onDragEnded: _onDragEnded,
             ),
             const SizedBox(height: 12),
-            for (final assignment in assignments) ...[
+            for (final assignment in widget.assignments) ...[
               _ShiftReportTableRow(
                 assignment: assignment,
-                columnOrder: columnOrder,
+                columnOrder: widget.columnOrder,
                 dateLabel: dateFormat.format(assignment.shiftDate),
                 userLabel: _displayUserName(assignment),
-                profileLabel: assignment.profileName ?? defaultProfileLabel,
+                profileLabel:
+                    assignment.profileName ?? widget.defaultProfileLabel,
                 startLabel: _formatTime(assignment.startTime),
                 endLabel: _formatTime(assignment.endTime),
-                typeLabel: assignment.isPublic ? teamLabel : privateTypeLabel,
+                typeLabel: assignment.isPublic
+                    ? widget.teamLabel
+                    : widget.privateTypeLabel,
               ),
-              if (assignment != assignments.last) const SizedBox(height: 10),
+              if (assignment != widget.assignments.last)
+                const SizedBox(height: 10),
             ],
           ],
         ),
       ),
     );
 
-    if (embedded) {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: table,
+    final scaledTable = widget.scale == 1.0
+        ? table
+        : SizedBox(
+            width: tableWidth * widget.scale,
+            child: FittedBox(
+              fit: BoxFit.fitWidth,
+              alignment: Alignment.topLeft,
+              child: table,
+            ),
+          );
+
+    if (widget.embedded) {
+      return KeyedSubtree(
+        key: _viewportKey,
+        child: SingleChildScrollView(
+          controller: _horizontalController,
+          scrollDirection: Axis.horizontal,
+          child: scaledTable,
+        ),
       );
     }
 
     return Scrollbar(
       thumbVisibility: true,
       child: SingleChildScrollView(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: table,
+        child: KeyedSubtree(
+          key: _viewportKey,
+          child: SingleChildScrollView(
+            controller: _horizontalController,
+            scrollDirection: Axis.horizontal,
+            child: scaledTable,
+          ),
         ),
       ),
     );
@@ -1167,19 +1307,31 @@ class _ShiftReportTable extends StatelessWidget {
 }
 
 /// Intestazione della tabella: ogni colonna si puo' trascinare su un'altra per
-/// cambiare l'ordine. Su touch serve un tap lungo, cosi' non si scscontra con
-/// lo scroll orizzontale.
+/// cambiare l'ordine.
+///
+/// - Web/desktop: si afferra l'intestazione e si trascina.
+/// - Touch: si trascina subito dalla maniglia (⠿), oppure si tiene premuto
+///   un attimo il titolo. Il resto dell'intestazione continua a far scorrere
+///   la tabella in orizzontale.
 class _ShiftReportTableHeader extends StatelessWidget {
   const _ShiftReportTableHeader({
     required this.columnOrder,
     required this.labels,
     required this.onMoveColumn,
+    required this.draggingColumn,
+    required this.onDragStarted,
+    required this.onDragUpdate,
+    required this.onDragEnded,
   });
 
   final List<ShiftReportColumn> columnOrder;
   final Map<ShiftReportColumn, String> labels;
   final void Function(ShiftReportColumn from, ShiftReportColumn to)
   onMoveColumn;
+  final ValueNotifier<ShiftReportColumn?> draggingColumn;
+  final ValueChanged<ShiftReportColumn> onDragStarted;
+  final ValueChanged<Offset> onDragUpdate;
+  final VoidCallback onDragEnded;
 
   @override
   Widget build(BuildContext context) {
@@ -1206,6 +1358,10 @@ class _ShiftReportTableHeader extends StatelessWidget {
               label: labels[column] ?? '',
               width: _ShiftReportTable.widthOf(column),
               onMoveColumn: onMoveColumn,
+              draggingColumn: draggingColumn,
+              onDragStarted: onDragStarted,
+              onDragUpdate: onDragUpdate,
+              onDragEnded: onDragEnded,
             ),
         ],
       ),
@@ -1219,13 +1375,24 @@ class _ShiftHeaderCell extends StatelessWidget {
     required this.label,
     required this.width,
     required this.onMoveColumn,
+    required this.draggingColumn,
+    required this.onDragStarted,
+    required this.onDragUpdate,
+    required this.onDragEnded,
   });
+
+  /// Tempo di pressione per iniziare il trascinamento dal titolo su touch.
+  static const Duration _touchHoldDelay = Duration(milliseconds: 250);
 
   final ShiftReportColumn column;
   final String label;
   final double width;
   final void Function(ShiftReportColumn from, ShiftReportColumn to)
   onMoveColumn;
+  final ValueNotifier<ShiftReportColumn?> draggingColumn;
+  final ValueChanged<ShiftReportColumn> onDragStarted;
+  final ValueChanged<Offset> onDragUpdate;
+  final VoidCallback onDragEnded;
 
   static bool get _isTouch {
     switch (defaultTargetPlatform) {
@@ -1240,47 +1407,9 @@ class _ShiftHeaderCell extends StatelessWidget {
     }
   }
 
-  Widget _labelRow(BuildContext context, {required bool showHandle}) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        if (showHandle) ...[
-          Icon(
-            Icons.drag_indicator_rounded,
-            size: 14,
-            color: colorScheme.descriptionColor,
-          ),
-          const SizedBox(width: 2),
-        ],
-        Expanded(
-          child: Text(
-            label.toUpperCase(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.labelLarge?.copyWith(
-              color: colorScheme.textColor,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.45,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _feedback(BuildContext context) {
     final theme = Theme.of(context);
-    final accent =
-        theme.colorScheme.bgNavbarbutton ?? theme.colorScheme.primary;
-    final touch = _isTouch;
-
-    final content = SizedBox(
-      width: width,
-      child: _labelRow(context, showHandle: !touch),
-    );
-    final feedback = Material(
+    return Material(
       elevation: 6,
       borderRadius: BorderRadius.circular(12),
       color: theme.colorScheme.bgNavbarSurface ?? theme.cardColor,
@@ -1295,40 +1424,108 @@ class _ShiftHeaderCell extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _handle(BuildContext context, {required bool draggable}) {
+    final icon = Padding(
+      // Area di tocco piu' ampia della sola icona, per il dito.
+      padding: EdgeInsets.symmetric(
+        horizontal: draggable ? 6 : 0,
+        vertical: draggable ? 6 : 0,
+      ),
+      child: Icon(
+        Icons.drag_indicator_rounded,
+        size: 16,
+        color: Theme.of(context).colorScheme.descriptionColor,
+      ),
+    );
+    if (!draggable) {
+      return icon;
+    }
+    return Draggable<ShiftReportColumn>(
+      data: column,
+      feedback: _feedback(context),
+      onDragStarted: () => onDragStarted(column),
+      onDragUpdate: (details) => onDragUpdate(details.globalPosition),
+      onDragEnd: (_) => onDragEnded(),
+      child: icon,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+    final accent = colorScheme.bgNavbarbutton ?? colorScheme.primary;
+    final touch = _isTouch;
+
+    final title = Text(
+      label.toUpperCase(),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: textTheme.labelLarge?.copyWith(
+        color: colorScheme.textColor,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.45,
+      ),
+    );
+
+    Widget content() => SizedBox(
+      width: width,
+      child: Row(
+        children: [
+          // Su touch la maniglia e' l'unico punto che trascina subito.
+          _handle(context, draggable: touch),
+          const SizedBox(width: 2),
+          Expanded(child: title),
+        ],
+      ),
+    );
 
     return DragTarget<ShiftReportColumn>(
       onWillAcceptWithDetails: (details) => details.data != column,
       onAcceptWithDetails: (details) => onMoveColumn(details.data, column),
       builder: (context, candidates, _) {
         final highlighted = candidates.isNotEmpty;
-        final child = AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(
-                color: highlighted ? accent : Colors.transparent,
-                width: 3,
+        final cell = ValueListenableBuilder<ShiftReportColumn?>(
+          valueListenable: draggingColumn,
+          builder: (context, dragging, child) =>
+              Opacity(opacity: dragging == column ? 0.3 : 1, child: child),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: highlighted ? accent : Colors.transparent,
+                  width: 3,
+                ),
               ),
             ),
+            child: content(),
           ),
-          child: content,
         );
-        final dimmed = Opacity(opacity: 0.3, child: content);
+
         if (touch) {
           return LongPressDraggable<ShiftReportColumn>(
             data: column,
-            feedback: feedback,
-            childWhenDragging: dimmed,
-            child: child,
+            delay: _touchHoldDelay,
+            feedback: _feedback(context),
+            onDragStarted: () => onDragStarted(column),
+            onDragUpdate: (details) => onDragUpdate(details.globalPosition),
+            onDragEnd: (_) => onDragEnded(),
+            child: cell,
           );
         }
         return MouseRegion(
           cursor: SystemMouseCursors.grab,
           child: Draggable<ShiftReportColumn>(
             data: column,
-            feedback: feedback,
-            childWhenDragging: dimmed,
-            child: child,
+            feedback: _feedback(context),
+            onDragStarted: () => onDragStarted(column),
+            onDragUpdate: (details) => onDragUpdate(details.globalPosition),
+            onDragEnd: (_) => onDragEnded(),
+            child: cell,
           ),
         );
       },
@@ -1404,7 +1601,8 @@ class _ShiftReportTableRow extends StatelessWidget {
             ],
           );
         case ShiftReportColumn.account:
-          // Presente solo nell'esportazione, non nella tabella a schermo.
+        case ShiftReportColumn.duration:
+          // Presenti solo nell'esportazione, non nella tabella a schermo.
           return const SizedBox.shrink();
         case ShiftReportColumn.profile:
           return _SoftBadge(
@@ -1553,6 +1751,70 @@ class _UserInitialsBadge extends StatelessWidget {
           color: colorScheme.textInvertedColor ?? Colors.white,
           fontWeight: FontWeight.w800,
           height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+/// Pulsante "dimensione testo" (icona TT + freccia) che apre il menu con i
+/// livelli di zoom della tabella.
+class _TableSizeButton extends StatelessWidget {
+  const _TableSizeButton({
+    required this.scale,
+    required this.tooltip,
+    required this.onChanged,
+  });
+
+  static const List<double> options = [1.0, 0.85, 0.7, 0.55, 0.35];
+
+  final double scale;
+  final String tooltip;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return PopupMenuButton<double>(
+      tooltip: tooltip,
+      initialValue: scale,
+      onSelected: onChanged,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      itemBuilder: (context) => [
+        for (final option in options)
+          CheckedPopupMenuItem<double>(
+            value: option,
+            checked: option == scale,
+            child: Text('${(option * 100).round()}%'),
+          ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: colorScheme.bgNavbarSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color:
+                colorScheme.borderColor?.withValues(alpha: 0.5) ??
+                Colors.black.withValues(alpha: 0.08),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.format_size_rounded,
+              size: 20,
+              color: colorScheme.textColor,
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 20,
+              color: colorScheme.descriptionColor,
+            ),
+          ],
         ),
       ),
     );
