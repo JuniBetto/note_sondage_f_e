@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_local_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 class _FakeChatLocalDataSource extends ChatLocalDataSource {
   String scope = 'user-a';
@@ -189,6 +190,7 @@ class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) async {
     await requestHandler?.call();
     return sendMessageResult!;
@@ -202,6 +204,7 @@ class _FakeChatRemoteDataSource extends ChatRemoteDataSource {
     required String fileName,
     required String contentType,
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) async {
     await requestHandler?.call();
     return sendAttachmentMessageResult!;

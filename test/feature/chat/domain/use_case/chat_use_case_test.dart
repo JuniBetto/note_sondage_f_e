@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_re
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/repositories/chat_repository.dart';
 import 'package:note_sondage/feature/chat/domain/use_case/chat_use_case.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 class _FakeChatRepository implements ChatRepository {
   ChatConversationEntity? cachedTeamConversation;
@@ -178,6 +179,7 @@ class _FakeChatRepository implements ChatRepository {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) {
     sendMessageCalls.add((
       conversationId: conversationId,
@@ -199,6 +201,7 @@ class _FakeChatRepository implements ChatRepository {
     required String fileName,
     required String contentType,
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) {
     sendAttachmentMessageCalls.add((
       conversationId: conversationId,

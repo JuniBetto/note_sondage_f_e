@@ -7,6 +7,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.da
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data/chat_mapper.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 class ChatRemoteDataSource {
   ChatRemoteDataSource({Dio? dio}) : _dio = dio ?? DioClient().dio;
@@ -96,6 +97,7 @@ class ChatRemoteDataSource {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) async {
     try {
       final response = await _dio.post(
@@ -104,6 +106,8 @@ class ChatRemoteDataSource {
           'content': content,
           if (replyToMessageId != null && replyToMessageId.trim().isNotEmpty)
             'replyToMessageId': replyToMessageId.trim(),
+          if (mentions.userIds.isNotEmpty) 'mentionedUserIds': mentions.userIds,
+          if (mentions.all) 'mentionAll': true,
         },
       );
       return ChatMapper.messageFromJson(response.data as Map<String, dynamic>);
@@ -119,6 +123,7 @@ class ChatRemoteDataSource {
     required String fileName,
     required String contentType,
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -127,7 +132,9 @@ class ChatRemoteDataSource {
           'content': content.trim(),
         if (replyToMessageId != null && replyToMessageId.trim().isNotEmpty)
           'replyToMessageId': replyToMessageId.trim(),
-      });
+        if (mentions.userIds.isNotEmpty) 'mentionedUserIds': mentions.userIds,
+        if (mentions.all) 'mentionAll': 'true',
+      }, ListFormat.multi);
       final response = await _dio.post(
         '/api/chat/conversations/$conversationId/messages',
         data: formData,

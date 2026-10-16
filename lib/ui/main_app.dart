@@ -190,8 +190,14 @@ class _MainAppState extends State<MainApp> {
       notification,
       currentUserId: currentUserId,
     );
+    // Le menzioni ("@nome" / "@tutti") si mostrano anche con le notifiche
+    // chat disattivate, come lato notification-service.
+    final isChatMention =
+        notification.eventType.trim().toUpperCase() == 'CHAT_MESSAGE_MENTION';
     if (!suppressChatNotification &&
-        (!_isChatNotification(notification) || chatNotificationsEnabled)) {
+        (!_isChatNotification(notification) ||
+            chatNotificationsEnabled ||
+            isChatMention)) {
       getIt<NotificationCenterCubit>().ingestRealtimeNotification(notification);
     }
 
@@ -589,10 +595,7 @@ class _MainAppState extends State<MainApp> {
   bool _isChatRouteOpen() {
     final routeInformation = _router?.routeInformationProvider.value;
     final uri = routeInformation?.uri;
-    final path = uri?.path.trim();
-    return path == RouterPaths.chat ||
-        path == RouterPaths.sondageChat ||
-        path == RouterPaths.sondageChatConversation;
+    return RouterPaths.isChatPath(uri?.path);
   }
 
   @override

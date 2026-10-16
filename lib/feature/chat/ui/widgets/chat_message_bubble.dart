@@ -12,6 +12,7 @@ import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/aspect_ratio.dart' as app_ratio;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:note_sondage/feature/chat/ui/widgets/chat_mention_widgets.dart';
 
 /// Consecutive messages from one sender less than this apart read as one
 /// burst: they share a single name/time header and stack tightly.
@@ -403,8 +404,9 @@ class _MessageBody extends StatelessWidget {
 
     if (message.hasTextContent) {
       children.add(
-        Text(
+        ChatMentionText(
           message.contentText,
+          mine: message.mine,
           style: theme.textTheme.bodySmall?.copyWith(
             color: textColor,
             fontWeight: FontWeight.w600,

@@ -14,7 +14,6 @@ class ChatConversationPanel extends StatelessWidget {
     required this.messageController,
     required this.scrollController,
     required this.loadingMessages,
-    required this.refreshingMessages,
     required this.loadingOlderMessages,
     required this.hasMoreOlderMessages,
     required this.sending,
@@ -46,7 +45,6 @@ class ChatConversationPanel extends StatelessWidget {
   final TextEditingController messageController;
   final ScrollController scrollController;
   final bool loadingMessages;
-  final bool refreshingMessages;
   final bool loadingOlderMessages;
   final bool hasMoreOlderMessages;
   final bool sending;
@@ -120,16 +118,6 @@ class ChatConversationPanel extends StatelessWidget {
                           onDeleteRequested: onDeleteRequested,
                           messageFooterBuilder: messageFooterBuilder,
                         ),
-                  // Overlaid instead of stacked in the Column so it doesn't
-                  // change the list's available height (and shift its
-                  // content) when it appears/disappears.
-                  if (refreshingMessages)
-                    const Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: LinearProgressIndicator(minHeight: 2),
-                    ),
                 ],
               ),
             ),

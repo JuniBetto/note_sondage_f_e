@@ -77,6 +77,12 @@ int _pathToNavIndex(String path) {
   }
 }
 
+/// Rimappa un path legacy della chat mobile (`/sondage/chat...`) sul nuovo
+/// [targetPath] (`/team/chat...`) conservando i query parameters.
+String legacyChatRedirect(Uri uri, String targetPath) {
+  return uri.replace(path: targetPath).toString();
+}
+
 GoRouter createRouter(BuildContext context) {
   final authBloc = context.read<AuthBloc>(); // Ottiene l'istanza del BLoC
 
@@ -324,23 +330,23 @@ GoRouter createRouter(BuildContext context) {
               const NoTransitionPage<void>(child: SondageMobile()),
         ),
         GoRoute(
-          path: RouterPaths.sondageChat,
-          name: RouterPaths.sondageChat,
+          path: RouterPaths.teamChat,
+          name: RouterPaths.teamChat,
           pageBuilder: (context, state) => NoTransitionPage<void>(
-            child: SondageMobile(
-              initialTabIndex: 2,
+            child: TeamsMobile(
+              initialTabIndex: TeamsMobile.chatTabIndex,
               initialChatTeamId: state.uri.queryParameters['teamId'],
             ),
           ),
         ),
         GoRoute(
-          path: RouterPaths.sondageChatConversation,
-          name: RouterPaths.sondageChatConversation,
+          path: RouterPaths.teamChatConversation,
+          name: RouterPaths.teamChatConversation,
           pageBuilder: (context, state) {
             final teamId = state.uri.queryParameters['teamId']?.trim();
             if (teamId == null || teamId.isEmpty) {
               return const NoTransitionPage<void>(
-                child: SondageMobile(initialTabIndex: 2),
+                child: TeamsMobile(initialTabIndex: TeamsMobile.chatTabIndex),
               );
             }
             final page = ChatMobileConversationPage(
@@ -356,6 +362,21 @@ GoRouter createRouter(BuildContext context) {
             }
             return NoTransitionPage<void>(child: page);
           },
+        ),
+        // Legacy aliases: la Chat mobile prima viveva sotto Sondage/Chat.
+        // Restano per deep link / notifiche salvate con i vecchi path e
+        // reindirizzano mantenendo la query string.
+        GoRoute(
+          path: RouterPaths.sondageChat,
+          name: RouterPaths.sondageChat,
+          redirect: (context, state) =>
+              legacyChatRedirect(state.uri, RouterPaths.teamChat),
+        ),
+        GoRoute(
+          path: RouterPaths.sondageChatConversation,
+          name: RouterPaths.sondageChatConversation,
+          redirect: (context, state) =>
+              legacyChatRedirect(state.uri, RouterPaths.teamChatConversation),
         ),
         GoRoute(
           path: RouterPaths.shifts,
@@ -647,8 +668,32 @@ abstract class RouterPaths {
   static const settingsContactUs = '/settings/contact_us';
   static const clocking = '/clocking';
   static const sondage = '/sondage';
+  static const teamChat = '/team/chat';
+  static const teamChatConversation = '/team/chat/conversation';
+
+  /// Legacy alias di [teamChat] (mobile): reindirizza, non usarlo per
+  /// nuove navigazioni.
   static const sondageChat = '/sondage/chat';
+
+  /// Legacy alias di [teamChatConversation] (mobile): reindirizza, non
+  /// usarlo per nuove navigazioni.
   static const sondageChatConversation = '/sondage/chat/conversation';
+
+  /// Path legacy della chat mobile mappati sui nuovi.
+  static const legacyChatPaths = <String, String>{
+    sondageChat: teamChat,
+    sondageChatConversation: teamChatConversation,
+  };
+
+  /// `true` se [path] è una pagina chat (web, mobile o alias legacy).
+  static bool isChatPath(String? path) {
+    final normalized = path?.trim();
+    return normalized == chat ||
+        normalized == teamChat ||
+        normalized == teamChatConversation ||
+        legacyChatPaths.containsKey(normalized);
+  }
+
   static const shifts = '/shifts';
   static const tasks = '/tasks';
   static const chat = '/chat';

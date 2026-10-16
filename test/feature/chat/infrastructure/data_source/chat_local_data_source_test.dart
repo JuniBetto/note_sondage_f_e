@@ -16,6 +16,7 @@ import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
 
 import '../../../../support/chat_cache_fixtures.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 class _RemotePage extends ChatRemoteDataSource {
   List<ChatMessageEntity> page = [];
@@ -26,6 +27,7 @@ class _RemotePage extends ChatRemoteDataSource {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) async {
     await responseGate;
     return cacheMessage(conversationId: conversationId, content: content);
@@ -50,6 +52,7 @@ class _BurstRemote extends _RemotePage {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) async => cacheMessage(
     index: sent++,
     conversationId: conversationId,

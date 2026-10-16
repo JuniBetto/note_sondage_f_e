@@ -23,11 +23,16 @@ class ChatDirectListCard extends StatelessWidget {
   final Color accentColor;
   final VoidCallback onTap;
 
+  // La card ha sempre sfondo bianco: i colori del testo non possono seguire
+  // il tema (in dark mode onSurface/onSurfaceVariant sono chiari e
+  // diventano illeggibili), come in ChatTeamListCard.
+  static const Color _titleColor = Colors.black87;
+  static const Color _previewColor = Colors.black54;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    final colorScheme = theme.colorScheme;
     final description = preview != null && preview!.trim().isNotEmpty
         ? preview!.trim()
         : loc.chatDirectConversationInTeam(teamName);
@@ -70,7 +75,10 @@ class ChatDirectListCard extends StatelessWidget {
                                 (compact
                                         ? theme.textTheme.titleSmall
                                         : theme.textTheme.titleMedium)
-                                    ?.copyWith(fontWeight: FontWeight.w700),
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: _titleColor,
+                                    ),
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -118,7 +126,9 @@ class ChatDirectListCard extends StatelessWidget {
                               ? theme.textTheme.bodySmall
                               : theme.textTheme.bodyMedium)
                           ?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                            color: unreadCount > 0
+                                ? _titleColor
+                                : _previewColor,
                             height: 1.3,
                             fontWeight: unreadCount > 0
                                 ? FontWeight.w700

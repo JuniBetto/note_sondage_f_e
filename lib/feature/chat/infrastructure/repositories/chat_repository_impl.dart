@@ -10,6 +10,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation
 import 'package:note_sondage/feature/chat/domain/repositories/chat_repository.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_local_data_source.dart';
 import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote_data_source.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
   ChatRepositoryImpl(this.local, this.remote);
@@ -122,12 +123,14 @@ class ChatRepositoryImpl implements ChatRepository {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) async {
     final scope = local.cacheScope;
     final message = await remote.sendMessage(
       conversationId,
       content,
       replyToMessageId: replyToMessageId,
+      mentions: mentions,
     );
     _cacheInBackground(
       scope,
@@ -144,6 +147,7 @@ class ChatRepositoryImpl implements ChatRepository {
     required String fileName,
     required String contentType,
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) async {
     final scope = local.cacheScope;
     final message = await remote.sendAttachmentMessage(
@@ -153,6 +157,7 @@ class ChatRepositoryImpl implements ChatRepository {
       fileName: fileName,
       contentType: contentType,
       replyToMessageId: replyToMessageId,
+      mentions: mentions,
     );
     _cacheInBackground(
       scope,

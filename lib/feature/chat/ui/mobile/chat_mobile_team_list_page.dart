@@ -154,7 +154,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
 
   Future<void> _openTeamConversation(String teamId) async {
     final path = Uri(
-      path: RouterPaths.sondageChatConversation,
+      path: RouterPaths.teamChatConversation,
       queryParameters: <String, String>{'teamId': teamId},
     ).toString();
     await context.push(path, extra: chatSlideRouteExtra);
@@ -174,7 +174,7 @@ class _ChatMobileTeamListPageState extends State<ChatMobileTeamListPage> {
       return;
     }
     final path = Uri(
-      path: RouterPaths.sondageChatConversation,
+      path: RouterPaths.teamChatConversation,
       queryParameters: <String, String>{
         'teamId': teamId,
         'memberUserId': memberUserId,

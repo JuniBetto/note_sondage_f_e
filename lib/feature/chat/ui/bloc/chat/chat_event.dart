@@ -68,6 +68,7 @@ class ChatMessageSendRequested extends ChatEvent {
     required this.actorDisplayName,
     this.attachment,
     this.replyTarget,
+    this.mentions = ChatMentions.none,
   });
 
   final String content;
@@ -75,12 +76,17 @@ class ChatMessageSendRequested extends ChatEvent {
   final ChatDraftAttachment? attachment;
   final ChatMessageEntity? replyTarget;
 
+  /// "@nome" / "@tutti" presenti in [content] (solo chat di team).
+  final ChatMentions mentions;
+
   @override
   List<Object?> get props => [
     content,
     actorDisplayName,
     attachment,
     replyTarget,
+    mentions.userIds,
+    mentions.all,
   ];
 }
 

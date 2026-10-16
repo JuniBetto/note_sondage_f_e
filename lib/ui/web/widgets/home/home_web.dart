@@ -159,38 +159,12 @@ class _HomeWebState extends State<HomeWeb> {
                                   const SizedBox(width: 14),
                                   Expanded(
                                     child: _StatCard(
-                                      icon: Icons.people_rounded,
-                                      label: l.totalMembers,
-                                      value: isLoading
-                                          ? null
-                                          : '${stats?.totalMembers ?? 0}',
-                                      color: Colors.teal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _StatCard(
                                       icon: Icons.checklist_rounded,
                                       label: l.activeSurveys,
                                       value: isLoading
                                           ? null
                                           : '${stats?.activeSurveys ?? 0}',
                                       color: Colors.orange,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: _StatCard(
-                                      icon: Icons.timer_rounded,
-                                      label: l.todayClocking,
-                                      value: isLoading
-                                          ? null
-                                          : '${stats?.todayClocking ?? 0}',
-                                      color: Colors.blue,
                                     ),
                                   ),
                                 ],
@@ -266,17 +240,6 @@ class _HomeWebState extends State<HomeWeb> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: _StatCard(
-                                      icon: Icons.people_rounded,
-                                      label: l.totalMembers,
-                                      value: isLoading
-                                          ? null
-                                          : '${stats?.totalMembers ?? 0}',
-                                      color: Colors.teal,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: _StatCard(
                                       icon: Icons.checklist_rounded,
                                       label: l.activeSurveys,
                                       value: isLoading
@@ -288,21 +251,6 @@ class _HomeWebState extends State<HomeWeb> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: _StatCard(
-                                      icon: Icons.timer_rounded,
-                                      label: l.todayClocking,
-                                      value: isLoading
-                                          ? null
-                                          : '${stats?.todayClocking ?? 0}',
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _StatCard(
                                       icon: Icons.calendar_month_rounded,
                                       label: l.myShifts,
                                       value: isLoading
@@ -311,7 +259,11 @@ class _HomeWebState extends State<HomeWeb> {
                                       color: Colors.purple,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
                                   Expanded(
                                     child: _StatCard(
                                       icon: Icons.task_alt_rounded,

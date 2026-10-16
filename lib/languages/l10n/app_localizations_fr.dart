@@ -303,6 +303,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sondageChat => 'Sondage/Chat';
 
   @override
+  String get teamChat => 'Équipe/Chat';
+
+  @override
+  String get chatMentionAllKeyword => 'tous';
+
+  @override
+  String get chatMentionAllDescription =>
+      'Notifier tous les membres de l\'équipe';
+
+  @override
+  String get permissionReadDescription =>
+      'Accès de base à l\'équipe : voit les membres, le chat, les quarts et les sondages.';
+
+  @override
+  String get permissionUpdateDescription =>
+      'Modifie le nom et la description de l\'équipe et le texte des sondages.';
+
+  @override
+  String get permissionAdminDescription =>
+      'Invite et retire des membres, crée des sondages, gère tâches, événements et quarts publics, approuve les pointages.';
+
+  @override
+  String get permissionDeleteDescription =>
+      'Retire les membres sans permissions élevées et supprime les sondages.';
+
+  @override
+  String get permissionManageDescription =>
+      'Change le rôle des membres (non admin), gère la planification, les tâches, les événements et les quarts.';
+
+  @override
   String get selectedTeam => 'Selection equipe';
 
   @override
@@ -3214,7 +3244,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutorialNavigationTeamsMobileDescription =>
-      'Explorez les équipes, ouvrez leurs détails et gérez la collaboration depuis cet espace.';
+      'Explorez les équipes, ouvrez leurs détails, discutez avec votre équipe et gérez la collaboration depuis cet espace.';
 
   @override
   String get tutorialNavigationPlanningDescription =>

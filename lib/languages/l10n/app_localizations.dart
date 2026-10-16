@@ -624,6 +624,54 @@ abstract class AppLocalizations {
   /// **'Sondage/Chat'**
   String get sondageChat;
 
+  /// No description provided for @teamChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Team/Chat'**
+  String get teamChat;
+
+  /// No description provided for @chatMentionAllKeyword.
+  ///
+  /// In en, this message translates to:
+  /// **'all'**
+  String get chatMentionAllKeyword;
+
+  /// No description provided for @chatMentionAllDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify every team member'**
+  String get chatMentionAllDescription;
+
+  /// No description provided for @permissionReadDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic team access: sees members, chat, shifts and surveys.'**
+  String get permissionReadDescription;
+
+  /// No description provided for @permissionUpdateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Edits the team name and description and the text of surveys.'**
+  String get permissionUpdateDescription;
+
+  /// No description provided for @permissionAdminDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Invites and removes members, creates surveys, manages tasks, events and public shifts, approves clock-ins.'**
+  String get permissionAdminDescription;
+
+  /// No description provided for @permissionDeleteDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes members without elevated permissions and deletes surveys.'**
+  String get permissionDeleteDescription;
+
+  /// No description provided for @permissionManageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes members\' roles (non-admin), manages planning, tasks, events and shifts.'**
+  String get permissionManageDescription;
+
   /// No description provided for @selectedTeam.
   ///
   /// In en, this message translates to:
@@ -5671,7 +5719,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialNavigationTeamsMobileDescription.
   ///
   /// In en, this message translates to:
-  /// **'Explore teams, open details, and manage collaboration from here.'**
+  /// **'Explore teams, open details, chat with your team, and manage collaboration from here.'**
   String get tutorialNavigationTeamsMobileDescription;
 
   /// No description provided for @tutorialNavigationPlanningDescription.

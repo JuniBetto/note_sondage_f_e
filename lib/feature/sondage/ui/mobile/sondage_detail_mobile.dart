@@ -414,7 +414,7 @@ class _SondageDetailMobileState extends State<SondageDetailMobile> {
     }
 
     final path = Uri(
-      path: RouterPaths.sondageChatConversation,
+      path: RouterPaths.teamChatConversation,
       queryParameters: <String, String>{
         'teamId': teamId,
         'conversationId': conversationId,

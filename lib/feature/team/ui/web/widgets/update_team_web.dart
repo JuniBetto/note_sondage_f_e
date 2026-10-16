@@ -80,10 +80,18 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
 
   bool get _showClockingSection => _teamPermissions.canManageClockingSettings;
   bool get _canEditTeamFields => !widget.readOnly && _teamPermissions.isOwner;
+
+  /// Nome e descrizione: OWNER o ruoli con UPDATE/ADMIN.
+  bool get _canEditTeamBasics =>
+      !widget.readOnly && _teamPermissions.canEditTeamBasics;
   bool get _canManageWorkflowAi =>
       !widget.readOnly && _teamPermissions.canAccessRoleManager;
   bool get _isWorkflowAiOnlyManagerUpdate =>
       _canManageWorkflowAi && !_teamPermissions.isOwner;
+  bool get _isBasicsOnlyUpdate =>
+      _canEditTeamBasics && !_teamPermissions.isOwner;
+  bool get _canSaveTeam =>
+      _canEditTeamFields || _canEditTeamBasics || _canManageWorkflowAi;
   bool get _canOpenRoleManager =>
       !widget.readOnly &&
       widget.teamId != null &&
@@ -343,7 +351,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                               child: CustomInputField(
                                 hintText: localization.teamName,
                                 controller: nameTeamController,
-                                enabled: _canEditTeamFields,
+                                enabled: _canEditTeamBasics,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Il nome del team è obbligatorio';
@@ -357,7 +365,7 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                               child: CustomInputField(
                                 hintText: localization.teamDescription,
                                 controller: focusTeamController,
-                                enabled: _canEditTeamFields,
+                                enabled: _canEditTeamBasics,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'La descrizione è obbligatoria';
@@ -507,14 +515,12 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
                 const SizedBox(height: 32),
 
                 // ── Save Button ──
-                if (!_canEditTeamFields)
+                if (!_canSaveTeam)
                   Align(
                     alignment: Alignment.centerRight,
                     child: Text(
                       widget.readOnly
                           ? 'This team is in read-only mode.'
-                          : _canManageWorkflowAi
-                          ? 'You can manage the AI toggle for this team, while basic team information remains owner-only.'
                           : 'Only the team owner can edit team information.',
                       style: textTheme.bodyMedium?.copyWith(
                         color: colorScheme.descriptionColor,
@@ -621,7 +627,9 @@ class _UpdateTeamWebState extends State<UpdateTeamWeb> {
         workflowAiEnabled: _workflowAiEnabled,
         workflowAiEnabledChanged: true,
         workflowAiOnlyUpdate: _isWorkflowAiOnlyManagerUpdate,
-        clearClockingRequiredEndDate: _isWorkflowAiOnlyManagerUpdate
+        basicsOnlyUpdate: _isBasicsOnlyUpdate,
+        clearClockingRequiredEndDate:
+            _isWorkflowAiOnlyManagerUpdate || _isBasicsOnlyUpdate
             ? false
             : _initialClockingRequiredEndDate != null &&
                   _clockingRequiredEndDate == null,
