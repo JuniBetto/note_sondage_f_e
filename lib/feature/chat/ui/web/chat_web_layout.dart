@@ -15,7 +15,6 @@ class ChatWebLayout extends StatelessWidget {
     required this.messageController,
     required this.scrollController,
     required this.loadingMessages,
-    required this.refreshingMessages,
     required this.loadingOlderMessages,
     required this.hasMoreOlderMessages,
     required this.sending,
@@ -52,7 +51,6 @@ class ChatWebLayout extends StatelessWidget {
   final TextEditingController messageController;
   final ScrollController scrollController;
   final bool loadingMessages;
-  final bool refreshingMessages;
   final bool loadingOlderMessages;
   final bool hasMoreOlderMessages;
   final bool sending;
@@ -93,7 +91,6 @@ class ChatWebLayout extends StatelessWidget {
           messageController: messageController,
           scrollController: scrollController,
           loadingMessages: loadingMessages,
-          refreshingMessages: refreshingMessages,
           loadingOlderMessages: loadingOlderMessages,
           hasMoreOlderMessages: hasMoreOlderMessages,
           sending: sending,
@@ -148,7 +145,6 @@ class ChatWebLayout extends StatelessWidget {
                     messageController: messageController,
                     scrollController: scrollController,
                     loadingMessages: loadingMessages,
-                    refreshingMessages: refreshingMessages,
                     loadingOlderMessages: loadingOlderMessages,
                     hasMoreOlderMessages: hasMoreOlderMessages,
                     sending: sending,
@@ -205,7 +201,6 @@ class ChatWebLayout extends StatelessWidget {
                   messageController: messageController,
                   scrollController: scrollController,
                   loadingMessages: loadingMessages,
-                  refreshingMessages: refreshingMessages,
                   loadingOlderMessages: loadingOlderMessages,
                   hasMoreOlderMessages: hasMoreOlderMessages,
                   sending: sending,

@@ -117,7 +117,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   String? _selectedMemberUserId;
   String? _conversationDisplayName;
   bool _loadingMessages = false;
-  bool _refreshingMessages = false;
   bool _skipNextTeamsConversationLoad = false;
   bool _loadingOlderMessages = false;
   bool _hasMoreOlderMessages = true;
@@ -322,9 +321,9 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
   /// Reacts to every [ChatBloc] emission. Most fields this screen reads are
   /// now plain getters over `_chatBloc.state`. `loadingMessages`/
-  /// `refreshingMessages`/`loadingOlderMessages` are blanket-mirrored on
-  /// every emission below — safe because nothing else still writes them
-  /// locally. `_conversation`/`_messages`/`_conversationDisplayName`/
+  /// `loadingOlderMessages` are blanket-mirrored on every emission below —
+  /// safe because nothing else still writes them locally. Background
+  /// refreshes (`refreshingMessages`) are deliberately not shown in the UI. `_conversation`/`_messages`/`_conversationDisplayName`/
   /// `_selectedMemberUserId`/`_hasMoreOlderMessages` are NOT
   /// blanket-mirrored: send, reactions, delete and mark-read (not yet
   /// migrated) still mutate them directly, and syncing on every unrelated
@@ -342,7 +341,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
 
     setState(() {
       _loadingMessages = next.loadingMessages;
-      _refreshingMessages = next.refreshingMessages;
       _loadingOlderMessages = next.loadingOlderMessages;
     });
 
@@ -2677,7 +2675,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
           messageController: _messageController,
           scrollController: _scrollController,
           loadingMessages: _loadingMessages,
-          refreshingMessages: _refreshingMessages,
           loadingOlderMessages: _loadingOlderMessages,
           hasMoreOlderMessages: _hasMoreOlderMessages,
           sending: _sending,
@@ -2718,7 +2715,6 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
         messageController: _messageController,
         scrollController: _scrollController,
         loadingMessages: _loadingMessages,
-        refreshingMessages: _refreshingMessages,
         loadingOlderMessages: _loadingOlderMessages,
         hasMoreOlderMessages: _hasMoreOlderMessages,
         sending: _sending,
