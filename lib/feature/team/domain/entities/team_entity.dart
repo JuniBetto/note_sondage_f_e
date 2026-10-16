@@ -82,7 +82,14 @@ class TeamUpdate extends TeamEntity {
   final bool? isDeleted; // New field to indicate if the team is deleted
   final bool clearClockingRequiredEndDate;
   final bool workflowAiEnabledChanged;
+
+  /// Update di un non-OWNER: invia il flag workflowAiEnabled (ADMIN/MANAGE).
   final bool workflowAiOnlyUpdate;
+
+  /// Update di un non-OWNER: invia nome e descrizione (UPDATE/ADMIN).
+  /// Con [workflowAiOnlyUpdate] il payload contiene solo i campi abilitati;
+  /// colore e pointage restano riservati all'OWNER.
+  final bool basicsOnlyUpdate;
   final List<TeamMemberUpdateTeam> listMember;
 
   TeamUpdate(
@@ -101,6 +108,7 @@ class TeamUpdate extends TeamEntity {
     bool workflowAiEnabled = false,
     this.workflowAiEnabledChanged = false,
     this.workflowAiOnlyUpdate = false,
+    this.basicsOnlyUpdate = false,
     this.clearClockingRequiredEndDate = false,
     DateTime? createdAt,
     List<PlanningWorkerTypeEntity> planningWorkerTypes =
@@ -142,6 +150,7 @@ class TeamUpdate extends TeamEntity {
     bool? workflowAiEnabled,
     bool? workflowAiEnabledChanged,
     bool? workflowAiOnlyUpdate,
+    bool? basicsOnlyUpdate,
     bool? clearClockingRequiredEndDate,
     List<PlanningWorkerTypeEntity>? planningWorkerTypes,
     List<TeamMemberUpdateTeam>? listMember,
@@ -166,6 +175,7 @@ class TeamUpdate extends TeamEntity {
       workflowAiEnabledChanged:
           workflowAiEnabledChanged ?? this.workflowAiEnabledChanged,
       workflowAiOnlyUpdate: workflowAiOnlyUpdate ?? this.workflowAiOnlyUpdate,
+      basicsOnlyUpdate: basicsOnlyUpdate ?? this.basicsOnlyUpdate,
       clearClockingRequiredEndDate:
           clearClockingRequiredEndDate ?? this.clearClockingRequiredEndDate,
       planningWorkerTypes: planningWorkerTypes ?? this.planningWorkerTypes,

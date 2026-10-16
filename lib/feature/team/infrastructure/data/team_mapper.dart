@@ -138,9 +138,14 @@ class TeamMapper {
   }
 
   static Map<String, dynamic> toJsonForUpdate(TeamUpdate entity) {
-    if (entity.workflowAiOnlyUpdate) {
+    if (entity.workflowAiOnlyUpdate || entity.basicsOnlyUpdate) {
+      // Non-OWNER: solo i campi che il suo ruolo può modificare.
       return {
-        if (entity.workflowAiEnabledChanged)
+        if (entity.basicsOnlyUpdate) ...{
+          'name': entity.name,
+          'description': entity.description,
+        },
+        if (entity.workflowAiOnlyUpdate && entity.workflowAiEnabledChanged)
           'workflowAiEnabled': entity.workflowAiEnabled,
       };
     }

@@ -308,6 +308,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatMentionAllDescription => 'Notify every team member';
 
   @override
+  String get permissionReadDescription =>
+      'Basic team access: sees members, chat, shifts and surveys.';
+
+  @override
+  String get permissionUpdateDescription =>
+      'Edits the team name and description and the text of surveys.';
+
+  @override
+  String get permissionAdminDescription =>
+      'Invites and removes members, creates surveys, manages tasks, events and public shifts, approves clock-ins.';
+
+  @override
+  String get permissionDeleteDescription =>
+      'Removes members without elevated permissions and deletes surveys.';
+
+  @override
+  String get permissionManageDescription =>
+      'Changes members\' roles (non-admin), manages planning, tasks, events and shifts.';
+
+  @override
   String get selectedTeam => 'Select Team';
 
   @override

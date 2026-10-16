@@ -313,6 +313,26 @@ class AppLocalizationsEs extends AppLocalizations {
       'Notificar a todos los miembros del equipo';
 
   @override
+  String get permissionReadDescription =>
+      'Acceso básico al equipo: ve miembros, chat, turnos y encuestas.';
+
+  @override
+  String get permissionUpdateDescription =>
+      'Edita el nombre y la descripción del equipo y el texto de las encuestas.';
+
+  @override
+  String get permissionAdminDescription =>
+      'Invita y elimina miembros, crea encuestas, gestiona tareas, eventos y turnos públicos, aprueba fichajes.';
+
+  @override
+  String get permissionDeleteDescription =>
+      'Elimina miembros sin permisos elevados y borra encuestas.';
+
+  @override
+  String get permissionManageDescription =>
+      'Cambia el rol de los miembros (no admin), gestiona planificación, tareas, eventos y turnos.';
+
+  @override
   String get selectedTeam => 'seleccionar equipo';
 
   @override

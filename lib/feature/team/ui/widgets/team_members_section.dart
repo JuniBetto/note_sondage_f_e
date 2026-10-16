@@ -912,11 +912,32 @@ class _MemberRow extends StatelessWidget {
     required this.onEditPlanningConstraints,
   });
 
+  /// Chi non è OWNER (es. ruolo con MANAGE) non può assegnare ruoli con
+  /// permessi elevati (ADMIN/MANAGE): il backend lo rifiuterebbe.
   List<RoleEntity> get _editableRoles => roles
       .where(
-        (role) => !_isOwnerRole(role.id) && !_isDeprecatedViewerRole(role.id),
+        (role) =>
+            !_isOwnerRole(role.id) &&
+            !_isDeprecatedViewerRole(role.id) &&
+            (permissions.isOwner || !_isElevatedRole(role.id ?? '')),
       )
       .toList();
+
+  bool _isElevatedRole(String roleCode) {
+    final code = roleCode.trim().toUpperCase();
+    final rolePermissions = _permissionsForRole(code);
+    return code == 'ADMIN' ||
+        rolePermissions.contains('ADMIN') ||
+        rolePermissions.contains('MANAGE');
+  }
+
+  bool get _isCurrentUser {
+    final currentEmail = getIt<AuthBloc>().state.user.email
+        .trim()
+        .toLowerCase();
+    return currentEmail.isNotEmpty &&
+        member.userEmail.trim().toLowerCase() == currentEmail;
+  }
 
   bool _isOwnerRole(String? roleCode) =>
       (roleCode ?? '').trim().toUpperCase() == 'OWNER';
@@ -956,10 +977,13 @@ class _MemberRow extends StatelessWidget {
         memberRole == 'ADMIN' ||
         targetPermissions.contains('ADMIN') ||
         targetPermissions.contains('MANAGE');
+    // Un non-OWNER non cambia il proprio ruolo né quello di chi ha
+    // permessi elevati (stesse regole del team-service).
     final canEdit =
         permissions.canChangeMemberRoles &&
         member.status == UserStatus.active &&
-        memberRole != 'OWNER';
+        memberRole != 'OWNER' &&
+        (permissions.isOwner || (!targetIsProtected && !_isCurrentUser));
     final canDelete =
         permissions.canRemoveMembers &&
         member.status == UserStatus.active &&

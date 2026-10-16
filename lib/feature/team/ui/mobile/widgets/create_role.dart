@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
-import 'package:note_sondage/core/utils/app_constant.dart'
-    show listPermissionsUser;
 import 'package:note_sondage/feature/team/domain/entities/role_entity.dart';
 
 import 'package:note_sondage/feature/team/ui/bloc/role/role_bloc.dart';
-import 'package:note_sondage/feature/team/ui/widgets/select_option_with_search.dart';
 import 'package:note_sondage/ui/widgets/custom_input_field.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
 import 'package:note_sondage/ui/widgets/app_snackbar.dart';
+import 'package:note_sondage/feature/team/ui/widgets/role_permission_selector.dart';
 
 class CreateRoleWidget extends StatefulWidget {
   const CreateRoleWidget({super.key, this.teamId});
@@ -155,18 +153,13 @@ class _CreateRoleWidgetState extends State<CreateRoleWidget> {
                       color: colorScheme.borderColor!.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: GenericMultiSelectDropdown<String>(
-                    label: '',
-                    items: listPermissionsUser,
-                    selectedItems: _selectedStatusList,
-                    displayText: (item) => item,
-                    valueGetter: (item) => item,
-                    onChanged: (List<String> selectedItems) {
+                  child: RolePermissionSelector(
+                    selected: _selectedStatusList,
+                    onChanged: (selectedItems) {
                       setState(() {
                         _selectedStatusList = selectedItems;
                       });
                     },
-                    hintText: localization.selectedPermission,
                   ),
                 ),
 

@@ -101,6 +101,25 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
       !_teamPermissions.isOwner &&
       _teamPermissions.canAccessRoleManager;
 
+  /// Nome e descrizione: in creazione sempre; in modifica OWNER o ruoli con
+  /// UPDATE/ADMIN.
+  bool get _canEditTeamBasics =>
+      !widget.readOnly && (!_isEditMode || _teamPermissions.canEditTeamBasics);
+
+  /// Colore: in creazione sempre; in modifica solo l'OWNER.
+  bool get _canEditTeamColor =>
+      !widget.readOnly && (!_isEditMode || _teamPermissions.isOwner);
+  bool get _canSaveTeam =>
+      !_isEditMode ||
+      _teamPermissions.isOwner ||
+      _isBasicsOnlyUpdate ||
+      _isWorkflowAiOnlyManagerUpdate;
+  bool get _isBasicsOnlyUpdate =>
+      _isEditMode &&
+      !widget.readOnly &&
+      !_teamPermissions.isOwner &&
+      _teamPermissions.canEditTeamBasics;
+
   @override
   void initState() {
     super.initState();
@@ -369,13 +388,13 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                               CustomInputField(
                                 hintText: localization.teamName,
                                 controller: nameTeamController,
-                                enabled: !widget.readOnly,
+                                enabled: _canEditTeamBasics,
                               ),
                               const SizedBox(height: 14),
                               CustomInputField(
                                 hintText: localization.teamDescription,
                                 controller: descriptionTeamController,
-                                enabled: !widget.readOnly,
+                                enabled: _canEditTeamBasics,
                               ),
                             ],
                           ),
@@ -416,7 +435,7 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                           child: ListCheckbox(
                             selectedColor: selectedColor,
                             isEditMode: _isEditMode,
-                            isEnabled: !widget.readOnly,
+                            isEnabled: _canEditTeamColor,
                           ),
                         ),
                       ),
@@ -563,10 +582,12 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
                       const SizedBox(height: 32),
 
                       // ── Save / Create Button ──
-                      if (widget.readOnly)
+                      if (widget.readOnly || !_canSaveTeam)
                         Center(
                           child: Text(
-                            'This team is in read-only mode.',
+                            widget.readOnly
+                                ? 'This team is in read-only mode.'
+                                : 'Only the team owner can edit team information.',
                             style: textTheme.bodyMedium?.copyWith(
                               color: colorScheme.descriptionColor,
                             ),
@@ -676,7 +697,9 @@ class _CreateTeamMobileState extends State<CreateTeamMobile> {
         workflowAiEnabled: _workflowAiEnabled,
         workflowAiEnabledChanged: true,
         workflowAiOnlyUpdate: _isWorkflowAiOnlyManagerUpdate,
-        clearClockingRequiredEndDate: _isWorkflowAiOnlyManagerUpdate
+        basicsOnlyUpdate: _isBasicsOnlyUpdate,
+        clearClockingRequiredEndDate:
+            _isWorkflowAiOnlyManagerUpdate || _isBasicsOnlyUpdate
             ? false
             : _initialClockingRequiredEndDate != null &&
                   _clockingRequiredEndDate == null,
