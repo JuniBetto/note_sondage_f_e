@@ -25,6 +25,7 @@ import 'package:note_sondage/feature/team/domain/entities/team_member_entity.dar
 import 'package:note_sondage/feature/team/domain/use_case/role/role_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dart';
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 part 'chat_event.dart';
 part 'chat_state.dart';
@@ -493,6 +494,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       attachment: event.attachment,
       replyTarget: event.replyTarget,
       actorDisplayName: event.actorDisplayName,
+      mentions: event.mentions,
     );
   }
 
@@ -521,6 +523,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     required ChatDraftAttachment? attachment,
     required ChatMessageEntity? replyTarget,
     required String actorDisplayName,
+    ChatMentions mentions = ChatMentions.none,
   }) async {
     final conversation = state.conversation;
     if (conversation == null || (content.isEmpty && attachment == null)) {
@@ -551,6 +554,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
               conversation.id,
               content,
               replyToMessageId: temporaryMessage.replyTo?.messageId,
+              mentions: mentions,
             )
           : await chatUseCase.sendAttachmentMessage(
               conversation.id,
@@ -559,6 +563,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
               fileName: attachment.fileName,
               contentType: attachment.contentType,
               replyToMessageId: temporaryMessage.replyTo?.messageId,
+              mentions: mentions,
             );
       emit(
         state.copyWith(

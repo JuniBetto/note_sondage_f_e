@@ -4,6 +4,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_direct_conversati
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 abstract class ChatRepository {
   ChatConversationEntity? getCachedTeamConversation(String teamId);
@@ -48,6 +49,7 @@ abstract class ChatRepository {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   });
 
   Future<ChatMessageEntity> sendAttachmentMessage(
@@ -57,6 +59,7 @@ abstract class ChatRepository {
     required String fileName,
     required String contentType,
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   });
 
   Future<ChatMessageEntity> toggleReaction(String messageId, String emoji);

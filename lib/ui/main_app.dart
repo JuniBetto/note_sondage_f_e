@@ -190,8 +190,14 @@ class _MainAppState extends State<MainApp> {
       notification,
       currentUserId: currentUserId,
     );
+    // Le menzioni ("@nome" / "@tutti") si mostrano anche con le notifiche
+    // chat disattivate, come lato notification-service.
+    final isChatMention =
+        notification.eventType.trim().toUpperCase() == 'CHAT_MESSAGE_MENTION';
     if (!suppressChatNotification &&
-        (!_isChatNotification(notification) || chatNotificationsEnabled)) {
+        (!_isChatNotification(notification) ||
+            chatNotificationsEnabled ||
+            isChatMention)) {
       getIt<NotificationCenterCubit>().ingestRealtimeNotification(notification);
     }
 

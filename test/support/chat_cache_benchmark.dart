@@ -13,6 +13,7 @@ import 'package:note_sondage/feature/chat/infrastructure/data_source/chat_remote
 import 'package:note_sondage/feature/chat/infrastructure/repositories/chat_repository_impl.dart';
 
 import 'chat_cache_fixtures.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 const _samples = 20;
 const _warmups = 3;
@@ -43,6 +44,7 @@ class _ConfirmedRemote extends ChatRemoteDataSource {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) async => message;
 }
 

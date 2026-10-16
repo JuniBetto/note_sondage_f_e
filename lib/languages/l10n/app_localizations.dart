@@ -630,6 +630,18 @@ abstract class AppLocalizations {
   /// **'Team/Chat'**
   String get teamChat;
 
+  /// No description provided for @chatMentionAllKeyword.
+  ///
+  /// In en, this message translates to:
+  /// **'all'**
+  String get chatMentionAllKeyword;
+
+  /// No description provided for @chatMentionAllDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify every team member'**
+  String get chatMentionAllDescription;
+
   /// No description provided for @selectedTeam.
   ///
   /// In en, this message translates to:

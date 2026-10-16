@@ -4,6 +4,8 @@ import 'package:note_sondage/feature/chat/ui/widgets/chat_draft_attachment.dart'
 import 'package:note_sondage/feature/chat/ui/widgets/chat_theme.dart';
 import 'package:note_sondage/languages/l10n/app_localizations.dart';
 import 'package:note_sondage/theme/extensions/color_scheme/color_scheme.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
+import 'package:note_sondage/feature/chat/ui/widgets/chat_mention_widgets.dart';
 
 class ChatComposer extends StatefulWidget {
   const ChatComposer({
@@ -119,6 +121,57 @@ class _ChatComposerState extends State<ChatComposer> {
     });
   }
 
+  int get _cursor {
+    final value = widget.messageController.value;
+    final offset = value.selection.isValid
+        ? value.selection.baseOffset
+        : value.text.length;
+    return offset.clamp(0, value.text.length);
+  }
+
+  void _insertMention(ChatMentionQuery query, String mention) {
+    final edit = applyChatMention(
+      widget.messageController.text,
+      query,
+      mention,
+      _cursor,
+    );
+    widget.messageController.value = TextEditingValue(
+      text: edit.text,
+      selection: TextSelection.collapsed(offset: edit.cursor),
+    );
+  }
+
+  /// Suggerimenti "@" per il token in scrittura, `null` se non ce ne sono.
+  Widget? _buildMentionSuggestions(AppLocalizations loc) {
+    final scope = ChatMentionScope.maybeOf(context);
+    if (scope == null) {
+      return null;
+    }
+    final query = activeChatMentionQuery(
+      widget.messageController.text,
+      _cursor,
+    );
+    if (query == null) {
+      return null;
+    }
+    final matches = filterChatMentionCandidates(scope.suggestable, query.query);
+    final showAll =
+        scope.suggestable.isNotEmpty &&
+        chatMentionAllMatches(query.query, loc.chatMentionAllKeyword);
+    if (matches.isEmpty && !showAll) {
+      return null;
+    }
+    return ChatMentionSuggestions(
+      candidates: matches,
+      showAll: showAll,
+      accentColor: widget.accentColor,
+      onSelected: (candidate) =>
+          _insertMention(query, candidate.displayName.trim()),
+      onAllSelected: () => _insertMention(query, loc.chatMentionAllKeyword),
+    );
+  }
+
   void _insertEmoji(String emoji) {
     final value = widget.messageController.value;
     final text = value.text;
@@ -146,6 +199,7 @@ class _ChatComposerState extends State<ChatComposer> {
     final inputTextStyle = widget.compact
         ? theme.textTheme.bodyMedium
         : theme.textTheme.bodyLarge;
+    final mentionSuggestions = _buildMentionSuggestions(loc);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -156,6 +210,11 @@ class _ChatComposerState extends State<ChatComposer> {
       ),
       child: Column(
         children: [
+          if (mentionSuggestions != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: mentionSuggestions,
+            ),
           if (widget.replyTarget != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),

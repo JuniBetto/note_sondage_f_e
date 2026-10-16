@@ -5,6 +5,7 @@ import 'package:note_sondage/feature/chat/domain/entities/chat_message_entity.da
 import 'package:note_sondage/feature/chat/domain/entities/chat_message_report_reason.dart';
 import 'package:note_sondage/feature/chat/domain/entities/chat_team_conversation_summary_entity.dart';
 import 'package:note_sondage/feature/chat/domain/repositories/chat_repository.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 class ChatUseCase {
   ChatUseCase(this.repository);
@@ -73,11 +74,13 @@ class ChatUseCase {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) {
     return repository.sendMessage(
       conversationId,
       content,
       replyToMessageId: replyToMessageId,
+      mentions: mentions,
     );
   }
 
@@ -88,6 +91,7 @@ class ChatUseCase {
     required String fileName,
     required String contentType,
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) {
     return repository.sendAttachmentMessage(
       conversationId,
@@ -96,6 +100,7 @@ class ChatUseCase {
       fileName: fileName,
       contentType: contentType,
       replyToMessageId: replyToMessageId,
+      mentions: mentions,
     );
   }
 
@@ -128,6 +133,10 @@ class ChatUseCase {
     required ChatMessageReportReason reason,
     String? comment,
   }) {
-    return repository.reportMessage(messageId, reason: reason, comment: comment);
+    return repository.reportMessage(
+      messageId,
+      reason: reason,
+      comment: comment,
+    );
   }
 }

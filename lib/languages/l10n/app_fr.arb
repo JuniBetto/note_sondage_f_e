@@ -87,6 +87,8 @@
     "sondage": "Sondage",
     "sondageChat": "Sondage/Chat",
     "teamChat": "Équipe/Chat",
+    "chatMentionAllKeyword": "tous",
+    "chatMentionAllDescription": "Notifier tous les membres de l'équipe",
     "selectedTeam": "Selection equipe",
     "createTeam": "Cree equipe",
     "teamMember": "effectif del l'equipe",

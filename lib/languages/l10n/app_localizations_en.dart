@@ -302,6 +302,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamChat => 'Team/Chat';
 
   @override
+  String get chatMentionAllKeyword => 'all';
+
+  @override
+  String get chatMentionAllDescription => 'Notify every team member';
+
+  @override
   String get selectedTeam => 'Select Team';
 
   @override

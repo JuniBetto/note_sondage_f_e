@@ -61,6 +61,7 @@ import 'package:note_sondage/feature/team/domain/use_case/team/team_use_case.dar
 import 'package:note_sondage/feature/team/domain/use_case/team_member/team_member_use_case.dart';
 
 import '../../../../../support/team_fixtures.dart';
+import 'package:note_sondage/feature/chat/domain/chat_mentions.dart';
 
 class _FakeTeamRepository implements TeamRepository {
   Future<List<TeamEntity>> Function()? getAllHandler;
@@ -290,6 +291,7 @@ class _FakeChatRepository implements ChatRepository {
     String conversationId,
     String content, {
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) => sendMessageHandler!(content, replyToMessageId: replyToMessageId);
 
   @override
@@ -300,6 +302,7 @@ class _FakeChatRepository implements ChatRepository {
     required String fileName,
     required String contentType,
     String? replyToMessageId,
+    ChatMentions mentions = ChatMentions.none,
   }) => sendAttachmentMessageHandler!(
     content: content,
     bytes: bytes,
