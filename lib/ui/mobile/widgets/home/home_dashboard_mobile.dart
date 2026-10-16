@@ -60,7 +60,7 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
                 const SizedBox(height: 20),
 
                 // ═══════════════════════════════
-                // Stats grid 2×2 + 1 riga shift
+                // Stats grid 3 righe × 2
                 // ═══════════════════════════════
                 Row(
                   children: [
@@ -75,36 +75,12 @@ class _HomeDashboardMobileState extends State<HomeDashboardMobile> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _MobileStatCard(
-                        icon: Icons.people_rounded,
-                        label: l.totalMembers,
-                        value: isLoading ? null : '${stats?.totalMembers ?? 0}',
-                        color: Colors.teal,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MobileStatCard(
                         icon: Icons.checklist_rounded,
                         label: l.activeSurveys,
                         value: isLoading
                             ? null
                             : '${stats?.activeSurveys ?? 0}',
                         color: Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _MobileStatCard(
-                        icon: Icons.timer_rounded,
-                        label: l.todayClocking,
-                        value: isLoading
-                            ? null
-                            : '${stats?.todayClocking ?? 0}',
-                        color: Colors.blue,
                       ),
                     ),
                   ],
