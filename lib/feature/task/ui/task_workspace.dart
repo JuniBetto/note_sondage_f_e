@@ -1172,7 +1172,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     }
     final path = Uri(
       path: MediaQuery.of(context).size.width < 760
-          ? RouterPaths.sondageChatConversation
+          ? RouterPaths.teamChatConversation
           : RouterPaths.chat,
       queryParameters: <String, String>{'teamId': teamId, 'focus': 'latest'},
     ).toString();

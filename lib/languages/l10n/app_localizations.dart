@@ -624,6 +624,12 @@ abstract class AppLocalizations {
   /// **'Sondage/Chat'**
   String get sondageChat;
 
+  /// No description provided for @teamChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Team/Chat'**
+  String get teamChat;
+
   /// No description provided for @selectedTeam.
   ///
   /// In en, this message translates to:
@@ -5671,7 +5677,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialNavigationTeamsMobileDescription.
   ///
   /// In en, this message translates to:
-  /// **'Explore teams, open details, and manage collaboration from here.'**
+  /// **'Explore teams, open details, chat with your team, and manage collaboration from here.'**
   String get tutorialNavigationTeamsMobileDescription;
 
   /// No description provided for @tutorialNavigationPlanningDescription.

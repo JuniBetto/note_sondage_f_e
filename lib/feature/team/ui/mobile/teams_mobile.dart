@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
+import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_team_list_page.dart';
 import 'package:note_sondage/feature/team/ui/bloc/team/team_bloc.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/create_team_mobile.dart';
 import 'package:note_sondage/feature/team/ui/mobile/widgets/team_display.dart';
@@ -11,7 +12,24 @@ import 'package:note_sondage/ui/widgets/app_snackbar.dart';
 
 // 3. Modifica il tuo TeamsMobile widget per utilizzare i nuovi componenti
 class TeamsMobile extends StatefulWidget {
-  const TeamsMobile({super.key});
+  const TeamsMobile({
+    super.key,
+    this.initialTabIndex = 0,
+    this.initialChatTeamId,
+  });
+
+  /// Index of the Chat inner tab.
+  static const int chatTabIndex = 2;
+
+  /// Set this before navigating to the Team/Chat bottom-nav tab to land
+  /// directly on a specific inner tab (0 = list, 1 = create, 2 = chat), used
+  /// when [initialTabIndex] can't be threaded through (bottom-nav switch).
+  /// Reset to 0 after the first build so subsequent navigations default back
+  /// to the team list — mirrors [ClockingShiftTabPage.requestedInitialTab].
+  static int requestedInitialTab = 0;
+
+  final int initialTabIndex;
+  final String? initialChatTeamId;
 
   @override
   State<TeamsMobile> createState() => _TeamsMobileState();
@@ -27,7 +45,16 @@ class _TeamsMobileState extends State<TeamsMobile>
   void initState() {
     super.initState();
     _teamBloc = getIt<TeamBloc>();
-    tabController = TabController(length: 2, vsync: this);
+    final requestedTab = TeamsMobile.requestedInitialTab;
+    TeamsMobile.requestedInitialTab = 0; // reset for next navigation
+    final effectiveInitialTab = widget.initialTabIndex != 0
+        ? widget.initialTabIndex
+        : requestedTab;
+    tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: effectiveInitialTab.clamp(0, TeamsMobile.chatTabIndex),
+    );
     tabController.addListener(_handleTabChange);
     final teamState = _teamBloc.state;
     if (teamState is! TeamsLoaded && teamState is! TeamLoading) {
@@ -37,11 +64,11 @@ class _TeamsMobileState extends State<TeamsMobile>
 
   void _handleTabChange() {
     if (tabController.indexIsChanging) {
-      setState(() {
-        // Reset della view quando cambi tab (opzionale)
-        // currentViewType = 1;
-      });
+      AppTutorialController.dismissActiveTutorialIfAny();
     }
+    // Rebuild anche a fine animazione: la tab Chat dipende da
+    // `tabController.index` / `indexIsChanging` per isActive.
+    setState(() {});
   }
 
   void _handleViewTypeChanged(int viewType) {
@@ -75,9 +102,11 @@ class _TeamsMobileState extends State<TeamsMobile>
       tutorialId: 'mobile-main-1',
       action: () => AppTutorialController.replayRegistered(
         context: context,
-        tutorialId: tabController.index == 0
-            ? 'mobile-team-list'
-            : 'mobile-team-create',
+        tutorialId: tabController.index == 1
+            ? 'mobile-team-create'
+            : tabController.index == TeamsMobile.chatTabIndex
+            ? 'mobile-chat-list'
+            : 'mobile-team-list',
       ),
     );
 
@@ -97,6 +126,7 @@ class _TeamsMobileState extends State<TeamsMobile>
               TabBarComponent(
                 childTab1: Text(localization.selectedTeam),
                 childTab2: Text(localization.createTeam),
+                childTab3: Text(localization.chatTitle),
                 tabController: tabController,
                 setToUpdate: setState,
               ),
@@ -118,6 +148,13 @@ class _TeamsMobileState extends State<TeamsMobile>
 
                     // Seconda tab: Creazione team
                     CreateTeamMobile(onTeamCreated: _handleTeamCreated),
+
+                    // Terza tab: Chat
+                    ChatMobileTeamListPage(
+                      initialTeamId: widget.initialChatTeamId,
+                      isActive: tabController.index == TeamsMobile.chatTabIndex,
+                      isTabTransitioning: tabController.indexIsChanging,
+                    ),
                   ],
                 ),
               ),

@@ -118,13 +118,13 @@ class NavigationBarWidget extends StatelessWidget {
                       Icons.people_outlined,
                       //color: colorScheme.textInvertedColor,
                     ),
-                    Text(l10n.team),
+                    Text(l10n.teamChat),
                   ),
                   activeIcon: _buildSectionTitle(
                     context,
                     const Icon(Icons.people_alt_rounded),
                     Text(
-                      l10n.team,
+                      l10n.teamChat,
                       style: textTheme.labelMedium!.copyWith(
                         color: colorScheme.textInvertedColor,
                       ),
@@ -132,7 +132,7 @@ class NavigationBarWidget extends StatelessWidget {
                     isActive: position == 1,
                   ),
                   label: '', //l10n.team,
-                  tooltip: l10n.team,
+                  tooltip: l10n.teamChat,
                 ),
                 BottomNavigationBarItem(
                   icon: _buildSectionTitle(
@@ -178,13 +178,13 @@ class NavigationBarWidget extends StatelessWidget {
                   icon: _buildSectionTitle(
                     context,
                     const Icon(Icons.list_alt_outlined),
-                    Text(l10n.sondageChat),
+                    Text(l10n.sondage),
                   ),
                   activeIcon: _buildSectionTitle(
                     context,
                     const Icon(Icons.list_alt),
                     Text(
-                      l10n.sondageChat,
+                      l10n.sondage,
                       style: textTheme.labelMedium!.copyWith(
                         color: colorScheme.textInvertedColor,
                       ),
@@ -192,7 +192,7 @@ class NavigationBarWidget extends StatelessWidget {
                     isActive: position == 4,
                   ),
                   label: '', //l10n.settings,
-                  tooltip: l10n.sondageChat,
+                  tooltip: l10n.sondage,
                 ),
               ],
             ),

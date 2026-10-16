@@ -2219,7 +2219,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
   }) {
     final path = Uri(
       path: widget.layout == ChatScreenLayout.mobile
-          ? RouterPaths.sondageChatConversation
+          ? RouterPaths.teamChatConversation
           : RouterPaths.chat,
       queryParameters: <String, String>{
         'teamId': teamId,

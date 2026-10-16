@@ -228,9 +228,9 @@ class _MainMobileState extends State<MainMobile> {
 
   String _pageTitle(AppLocalizations localizations, int navIndex) {
     return switch (navIndex) {
-      1 => localizations.team,
+      1 => localizations.teamChat,
       3 => localizations.planningTabLabel,
-      4 => localizations.sondageChat,
+      4 => localizations.sondage,
       _ => localizations.home,
     };
   }

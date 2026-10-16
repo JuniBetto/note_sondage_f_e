@@ -910,7 +910,7 @@ class _ShiftMobileWidgetState extends State<ShiftMobileWidget> {
     }
 
     final path = Uri(
-      path: RouterPaths.sondageChatConversation,
+      path: RouterPaths.teamChatConversation,
       queryParameters: <String, String>{
         'teamId': teamId,
         'conversationId': conversationId,

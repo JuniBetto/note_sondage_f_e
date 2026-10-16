@@ -10,7 +10,7 @@ import 'package:note_sondage/feature/event/navigation/event_open_intent_controll
 import 'package:note_sondage/feature/shift/navigation/shift_open_intent_controller.dart';
 import 'package:note_sondage/feature/task/navigation/task_open_intent_controller.dart';
 import 'package:note_sondage/feature/notification/inbox/notification_center_item.dart';
-import 'package:note_sondage/feature/sondage/ui/mobile/widgets/sondage_mobile.dart';
+import 'package:note_sondage/feature/team/ui/mobile/teams_mobile.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_bloc.dart';
 import 'package:note_sondage/ui/bloc/navigation_bloc/navigation_event.dart';
 import 'package:note_sondage/ui/app_keys.dart';
@@ -171,41 +171,72 @@ class NotificationNavigation {
       return false;
     }
 
-    final uri = Uri.parse(destination.path!);
+    final target = mobileShellTargetFor(destination.path!);
+    if (target == null) {
+      return false;
+    }
+
+    if (target.openTeamChat) {
+      TeamsMobile.requestedInitialTab = TeamsMobile.chatTabIndex;
+    }
+
+    final navigationBloc = getIt<NavigationBloc>();
+    navigationBloc.add(NavigationPositionChanged(target.navIndex));
+    runtime.router.go(RouterPaths.home);
+    return true;
+  }
+
+  /// Decide se una destinazione mobile va aperta *dentro* MainMobile
+  /// (cambio tab della bottom bar + `go(home)`) invece che come route
+  /// standalone. Ritorna `null` quando il path va aperto direttamente.
+  @visibleForTesting
+  static ({int navIndex, bool openTeamChat})? mobileShellTargetFor(
+    String path,
+  ) {
+    final rawUri = Uri.parse(path);
+    // I vecchi path /sondage/chat... (chat spostata in Team/Chat) vengono
+    // trattati come i nuovi /team/chat...
+    final legacyTarget = RouterPaths.legacyChatPaths[rawUri.path];
+    final uri = legacyTarget == null
+        ? rawUri
+        : rawUri.replace(path: legacyTarget);
     final basePath = uri.path;
 
-    // /sondage/chat/conversation renders SondageMobile's bare Chat tab
+    // /team/chat/conversation renders TeamsMobile's bare Chat tab
     // (no Scaffold of its own — it expects to live inside MainMobile's
     // shell) only when no teamId is present; with a teamId it resolves to
     // ChatMobileConversationPage instead, which has its own Scaffold and is
     // safe to open as a standalone route. Opening the bare variant outside
     // the shell renders without background/theme (black screen, unstyled
     // text), so it must go through the shell like the other destinations.
-    final isBareSondageChatConversation =
-        basePath == RouterPaths.sondageChatConversation &&
+    final isBareTeamChatConversation =
+        basePath == RouterPaths.teamChatConversation &&
         (uri.queryParameters['teamId']?.trim().isEmpty ?? true);
+    final isTeamChat =
+        basePath == RouterPaths.teamChat || isBareTeamChatConversation;
 
     final navIndex = switch (basePath) {
       RouterPaths.home => 0,
       RouterPaths.team => 1,
       RouterPaths.clocking => 3,
       RouterPaths.sondage => 4,
-      RouterPaths.sondageChat => 4,
-      _ when isBareSondageChatConversation => 4,
+      _ when isTeamChat => 1,
       _ => null,
     };
     if (navIndex == null) {
-      return false;
+      return null;
     }
+    return (navIndex: navIndex, openTeamChat: isTeamChat);
+  }
 
-    if (navIndex == 4 && basePath != RouterPaths.sondage) {
-      SondageMobile.requestedInitialTab = 2;
-    }
-
-    final navigationBloc = getIt<NavigationBloc>();
-    navigationBloc.add(NavigationPositionChanged(navIndex));
-    runtime.router.go(RouterPaths.home);
-    return true;
+  /// Path di destinazione (solo destinazioni di tipo path) per [item],
+  /// senza effetti collaterali (nessun intent armato).
+  @visibleForTesting
+  static String? destinationPathFor(
+    NotificationCenterItem item, {
+    required String currentUserId,
+  }) {
+    return _resolve(item, currentUserId: currentUserId)?.path;
   }
 
   /// Naviga direttamente alla pagina dei turni (usato per allarmi locali).
@@ -266,11 +297,12 @@ class NotificationNavigation {
   static _NotificationDestination? _resolve(
     NotificationCenterItem item, {
     bool armIntents = false,
+    String? currentUserId,
   }) {
     final metadata = item.metadata;
     final workflowContext = item.workflowContext;
     final eventType = item.eventType.toUpperCase();
-    final currentUserId = getIt<AuthBloc>().state.user.uid;
+    currentUserId ??= getIt<AuthBloc>().state.user.uid;
     final teamId = workflowContext.resolvedTeamId;
 
     // Le notifiche che richiedono una decisione (accetta/rifiuta, o altro)
@@ -298,7 +330,7 @@ class NotificationNavigation {
           : '';
       final basePath = kIsWeb
           ? RouterPaths.chat
-          : RouterPaths.sondageChatConversation;
+          : RouterPaths.teamChatConversation;
       final queryParameters = <String, String>{
         if (teamId?.isNotEmpty ?? false) 'teamId': teamId!,
         if (directMemberUserId.isNotEmpty) 'memberUserId': directMemberUserId,

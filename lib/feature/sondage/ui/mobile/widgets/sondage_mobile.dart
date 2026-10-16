@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:note_sondage/core/dependency_injection/dependency_injection.dart';
 import 'package:note_sondage/core/tutorial/app_tutorial_controller.dart';
 import 'package:note_sondage/feature/auth/ui/bloc/auth_bloc.dart';
-import 'package:note_sondage/feature/chat/ui/mobile/chat_mobile_team_list_page.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_model.dart';
 import 'package:note_sondage/feature/notification/realtime/realtime_notification_service.dart';
 import 'package:note_sondage/feature/sondage/domain/entities/sondage_entity.dart';
@@ -21,21 +20,16 @@ import 'package:note_sondage/ui/widgets/app_search_field.dart';
 import 'package:note_sondage/core/tutorial/debug_showcase.dart';
 
 class SondageMobile extends StatefulWidget {
-  const SondageMobile({
-    super.key,
-    this.initialTabIndex = 0,
-    this.initialChatTeamId,
-  });
+  const SondageMobile({super.key, this.initialTabIndex = 0});
 
-  /// Set this before navigating to the Sondage/Chat bottom-nav tab to land
-  /// directly on a specific inner tab (0 = list, 1 = create, 2 = chat), used
+  /// Set this before navigating to the Sondage bottom-nav tab to land
+  /// directly on a specific inner tab (0 = list, 1 = create), used
   /// when [initialTabIndex] can't be threaded through (bottom-nav switch).
   /// Reset to 0 after the first build so subsequent navigations default back
   /// to the survey list — mirrors [ClockingShiftTabPage.requestedInitialTab].
   static int requestedInitialTab = 0;
 
   final int initialTabIndex;
-  final String? initialChatTeamId;
 
   @override
   State<SondageMobile> createState() => _SondageMobileState();
@@ -65,9 +59,9 @@ class _SondageMobileState extends State<SondageMobile>
     final effectiveInitialTab = widget.initialTabIndex != 0
         ? widget.initialTabIndex
         : requestedTab;
-    final safeInitialTab = effectiveInitialTab.clamp(0, 2);
+    final safeInitialTab = effectiveInitialTab.clamp(0, 1);
     tabController = TabController(
-      length: 3,
+      length: 2,
       vsync: this,
       initialIndex: safeInitialTab,
     );
@@ -281,8 +275,6 @@ class _SondageMobileState extends State<SondageMobile>
         context: context,
         tutorialId: tabController.index == 1
             ? 'mobile-sondage-create'
-            : tabController.index == 2
-            ? 'mobile-chat-list'
             : 'mobile-sondage-list',
       ),
     );
@@ -322,7 +314,7 @@ class _SondageMobileState extends State<SondageMobile>
                 : 16.0;
             // No bottom inset here: the TabBarView below must reach the true
             // bottom of the page so every tab's card background (list,
-            // chat...) extends behind the floating nav bar/tutorial button
+            // create...) extends behind the floating nav bar/tutorial button
             // instead of stopping short of it. Each tab reserves its own
             // bottom room internally for its actual scrollable content.
             final pagePadding = EdgeInsets.fromLTRB(
@@ -348,7 +340,6 @@ class _SondageMobileState extends State<SondageMobile>
                     childTab2: Text(
                       '${localization.create} ${localization.sondage}',
                     ),
-                    childTab3: Text(localization.chatTitle),
                     tabController: tabController,
                     setToUpdate: setState,
                   ),
@@ -411,7 +402,9 @@ class _SondageMobileState extends State<SondageMobile>
                                 children: [
                                   Text(
                                     localization.sondageListSubtitle,
-                                    style: Theme.of(context).textTheme.bodyMedium
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
                                         ?.copyWith(
                                           color: Colors.grey[700],
                                           fontWeight: FontWeight.w600,
@@ -419,7 +412,8 @@ class _SondageMobileState extends State<SondageMobile>
                                   ),
                                   const SizedBox(height: 12),
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       Expanded(
                                         child: AppSearchField(
@@ -551,11 +545,6 @@ class _SondageMobileState extends State<SondageMobile>
                         CreateSondageMobile(
                           onsondageCreated: _handleSondageCreated,
                           enableTutorial: tabController.index == 1,
-                        ),
-                        ChatMobileTeamListPage(
-                          initialTeamId: widget.initialChatTeamId,
-                          isActive: tabController.index == 2,
-                          isTabTransitioning: tabController.indexIsChanging,
                         ),
                       ],
                     ),

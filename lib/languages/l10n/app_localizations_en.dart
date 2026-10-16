@@ -299,6 +299,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sondageChat => 'Sondage/Chat';
 
   @override
+  String get teamChat => 'Team/Chat';
+
+  @override
   String get selectedTeam => 'Select Team';
 
   @override
@@ -3172,7 +3175,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutorialNavigationTeamsMobileDescription =>
-      'Explore teams, open details, and manage collaboration from here.';
+      'Explore teams, open details, chat with your team, and manage collaboration from here.';
 
   @override
   String get tutorialNavigationPlanningDescription =>

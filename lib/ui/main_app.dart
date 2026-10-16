@@ -589,10 +589,7 @@ class _MainAppState extends State<MainApp> {
   bool _isChatRouteOpen() {
     final routeInformation = _router?.routeInformationProvider.value;
     final uri = routeInformation?.uri;
-    final path = uri?.path.trim();
-    return path == RouterPaths.chat ||
-        path == RouterPaths.sondageChat ||
-        path == RouterPaths.sondageChatConversation;
+    return RouterPaths.isChatPath(uri?.path);
   }
 
   @override
