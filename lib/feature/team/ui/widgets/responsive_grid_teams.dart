@@ -437,7 +437,13 @@ String _normalizeRoleCode(String? roleCode) {
   return normalized == 'VIEWER' ? 'MEMBER' : normalized;
 }
 
-bool _canManageTeamFromItem(
+/// Matita "modifica" sulla card del team: OWNER, oppure un ruolo (anche
+/// personalizzato) con almeno un permesso che serve nella pagina di modifica:
+/// UPDATE (nome/descrizione), ADMIN (inviti), DELETE (rimuovere membri),
+/// MANAGE (ruoli e pianificazione). Solo READ → nessuna matita.
+/// Archivia è personale (sempre visibile); elimina resta solo all'OWNER.
+@visibleForTesting
+bool canManageTeamFromItem(
   Map<String, dynamic> item, {
   required String currentUserId,
   required String currentUserEmail,
@@ -482,7 +488,10 @@ bool _canManageTeamFromItem(
     return roleCode == 'ADMIN';
   }
 
-  return permissions.contains('ADMIN') || permissions.contains('MANAGE');
+  return permissions.contains('UPDATE') ||
+      permissions.contains('ADMIN') ||
+      permissions.contains('DELETE') ||
+      permissions.contains('MANAGE');
 }
 
 Widget viewScrollWebMobile(
@@ -508,7 +517,7 @@ Widget viewScrollWebMobile(
       final teamId = item["teamId"] as String;
       final ownerUserId = (item["ownerUserId"] as String?) ?? '';
       final isOwner = currentUserId.isNotEmpty && currentUserId == ownerUserId;
-      final canManageTeam = _canManageTeamFromItem(
+      final canManageTeam = canManageTeamFromItem(
         item,
         currentUserId: currentUserId,
         currentUserEmail: currentUserEmail,
